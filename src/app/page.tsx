@@ -13,6 +13,8 @@ import { defaultImages, getRandomImage, type DefaultImage } from "@/lib/defaultI
 import DefaultImageSelector from "@/components/DefaultImageSelector";
 import { carDatabase, type CarManufacturer, type CarModel } from "@/lib/carDatabase";
 import CarModelSelector from "@/components/CarModelSelector";
+import TypeaheadCarSelector from "@/components/TypeaheadCarSelector";
+import AutoReminderPreview from "@/components/AutoReminderPreview";
 import { addInsurancePolicy, watchInsurancePolicies, updateInsurancePolicy, removeInsurancePolicy, addInsuranceClaim, watchInsuranceClaims, updateInsuranceClaim, removeInsuranceClaim, type InsurancePolicy, type InsuranceClaim, calculateMonthlyInsuranceCosts, getDaysUntilExpiry, getExpiryStatus } from "@/lib/insurance";
 import { watchInsuranceNotifications, type InsuranceNotification } from "@/lib/insuranceNotifications";
 import InsuranceNotificationSettings from "@/components/InsuranceNotificationSettings";
@@ -42,6 +44,14 @@ export default function Home() {
   const [showEditReminderModal, setShowEditReminderModal] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
   const [showInsuranceNotificationSettings, setShowInsuranceNotificationSettings] = useState(false);
+  const [showTypeaheadCarSelector, setShowTypeaheadCarSelector] = useState(false);
+  const [showAutoReminderPreview, setShowAutoReminderPreview] = useState(false);
+  const [pendingCarData, setPendingCarData] = useState<{
+    manufacturer: CarManufacturer | null;
+    model: CarModel | null;
+    year: number | null;
+    inspectionExpiry: string;
+  } | null>(null);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
 
@@ -403,6 +413,106 @@ export default function Home() {
     }
   }, [activeCarId, allMaintenanceRecords.length]);
 
+  // タイプアヘッド車種選択のハンドラー
+  const handleTypeaheadCarSelect = (data: {
+    manufacturer: CarManufacturer | null;
+    model: CarModel | null;
+    year: number | null;
+    inspectionExpiry: string;
+  }) => {
+    setPendingCarData(data);
+    setShowTypeaheadCarSelector(false);
+    setShowAutoReminderPreview(true);
+  };
+
+  // 自動リマインダープレビューのハンドラー
+  const handleAutoReminderConfirm = async (enabledReminders: string[]) => {
+    if (!pendingCarData) return;
+
+    try {
+      console.log("=== 車両追加開始 ===");
+      console.log("pendingCarData:", pendingCarData);
+      console.log("enabledReminders:", enabledReminders);
+      
+      // 認証状態を確認
+      const { auth } = await import('@/lib/firebase');
+      console.log("認証状態:", auth.currentUser);
+      if (!auth.currentUser) {
+        throw new Error("ユーザーがログインしていません");
+      }
+      
+      // 車両データを作成
+      const carData: CarInput = {
+        name: pendingCarData.model 
+          ? `${pendingCarData.manufacturer?.name || ''} ${pendingCarData.model.name}`.trim()
+          : pendingCarData.manufacturer?.name || '未設定',
+        modelCode: pendingCarData.model?.modelCode || undefined,
+        year: pendingCarData.year || new Date().getFullYear(),
+        odoKm: 0,
+        inspectionExpiry: pendingCarData.inspectionExpiry,
+        firstRegYm: undefined,
+        avgKmPerMonth: undefined,
+        imagePath: pendingCarData.model?.defaultImagePath || '/car.jpg' // デフォルト画像パスを設定
+      };
+
+      console.log("作成する車両データ:", carData);
+
+      // 車両を追加
+      const newCar = await addCar(carData);
+      console.log("車両追加成功, ID:", newCar);
+      
+      // 自動リマインダーを生成（有効なもののみ）
+      if (enabledReminders.length > 0) {
+        const { generateInitialReminders, saveAutoReminders } = await import("@/lib/reminders");
+        const vehicleData = {
+          id: newCar,
+          name: carData.name,
+          inspectionExpiry: new Date(pendingCarData.inspectionExpiry),
+          firstRegYm: undefined,
+          odoAtReg: 0,
+          avgKmPerMonth: undefined
+        };
+        
+        const autoReminders = generateInitialReminders(vehicleData);
+        // 有効なリマインダーのみフィルタリング
+        const filteredReminders = autoReminders.filter(reminder => 
+          enabledReminders.includes(reminder.type)
+        );
+        
+        await saveAutoReminders(newCar, filteredReminders);
+      }
+
+      // モーダルを閉じる
+      setShowAutoReminderPreview(false);
+      setPendingCarData(null);
+      
+      // 成功メッセージ
+      alert('車両が正常に追加され、自動リマインダーが設定されました！');
+      
+    } catch (error) {
+      console.error('=== 車両追加エラー ===');
+      console.error('Error:', error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      // より詳細なエラーメッセージを表示
+      let errorMessage = '車両の追加に失敗しました。';
+      if (error instanceof Error) {
+        if (error.message.includes('not signed in')) {
+          errorMessage = 'ログインが必要です。ページを再読み込みしてください。';
+        } else if (error.message.includes('permission')) {
+          errorMessage = '権限エラーが発生しました。Firebase設定を確認してください。';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'ネットワークエラーが発生しました。接続を確認してください。';
+        } else {
+          errorMessage = `車両の追加に失敗しました: ${error.message}`;
+        }
+      }
+      
+      alert(errorMessage);
+    }
+  };
+
   // 簡単なテスト用のFirestore直接アクセス
   const testFirestoreAccess = async () => {
     try {
@@ -581,6 +691,7 @@ export default function Home() {
                 setShowAddCarModal={setShowAddCarModal}
                 setShowEditCarModal={setShowEditCarModal}
                 setEditingCar={setEditingCar}
+                setShowTypeaheadCarSelector={setShowTypeaheadCarSelector}
               />
             ) : currentPage === 'maintenance-history' ? (
               <MaintenanceHistoryContent 
@@ -744,285 +855,29 @@ export default function Home() {
         />
       )}
 
-      {/* デバッグ情報 - 常に表示 */}
-      <div className="fixed bottom-4 left-4 bg-black/80 text-white p-2 rounded text-xs max-w-xs z-50">
-        <div>showMaintenanceModal: {showMaintenanceModal.toString()}</div>
-        <div>activeCarId: {activeCarId || 'undefined'}</div>
-        <div>cars.length: {cars.length}</div>
-        <div>currentPage: {currentPage}</div>
-        <div>maintenanceRecords.length: {maintenanceRecords.length}</div>
-        <div>allMaintenanceRecords.length: {allMaintenanceRecords.length}</div>
-        <div>authTrigger: {authTrigger}</div>
-        <div>auth.currentUser: {auth.currentUser ? auth.currentUser.email : 'null'}</div>
-        <button 
-          onClick={testFirestoreAccess}
-          className="mt-2 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
-        >
-          Firestore直接テスト
-        </button>
-        <button 
-          onClick={() => {
-            console.log("=== Current State ===");
-            console.log("Current cars state:", cars);
-            console.log("Current activeCarId:", activeCarId);
-            console.log("Current user:", auth.currentUser);
-            console.log("User ID:", auth.currentUser?.uid);
-            console.log("User email:", auth.currentUser?.email);
-            console.log("Cars count:", cars.length);
-            if (cars.length > 0) {
-              console.log("Cars details:", cars.map(c => ({ id: c.id, name: c.name })));
-            }
+      {/* タイプアヘッド車種選択モーダル */}
+      {showTypeaheadCarSelector && (
+        <TypeaheadCarSelector
+          onSelect={handleTypeaheadCarSelect}
+          onClose={() => setShowTypeaheadCarSelector(false)}
+        />
+      )}
+
+      {/* 自動リマインダープレビューモーダル */}
+      {showAutoReminderPreview && pendingCarData && (
+        <AutoReminderPreview
+          manufacturer={pendingCarData.manufacturer}
+          model={pendingCarData.model}
+          year={pendingCarData.year}
+          inspectionExpiry={pendingCarData.inspectionExpiry}
+          onConfirm={handleAutoReminderConfirm}
+          onClose={() => {
+            setShowAutoReminderPreview(false);
+            setPendingCarData(null);
           }}
-          className="mt-1 px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 block"
-        >
-          状態確認
-        </button>
-        <button 
-          onClick={() => {
-            console.log("=== Force Refresh Cars ===");
-            // 車両データを強制的に再取得
-            try {
-              const off = watchCars((list) => {
-                console.log("Force refresh - Cars received:", list.length, "cars");
-                setCars(list);
-                if (list.length > 0 && !activeCarId) {
-                  setActiveCarId(list[0].id);
-                }
-                off && off(); // 一度だけ実行してクリーンアップ
-              });
-            } catch (error) {
-              console.error("Force refresh error:", error);
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700 block"
-        >
-          車両データ再取得
-        </button>
-        <button 
-          onClick={() => {
-            console.log("=== Initialize Cars Watcher ===");
-            // 車両データの監視を初期化
-            if (!auth.currentUser) {
-              console.log("No user authenticated");
-              return;
-            }
-            
-            try {
-              const off = watchCars((list) => {
-                console.log("Initialize - Cars received:", list.length, "cars");
-                setCars(list);
-                if (list.length > 0 && !activeCarId) {
-                  setActiveCarId(list[0].id);
-                }
-              });
-              
-              // 5秒後にクリーンアップ
-              setTimeout(() => {
-                console.log("Cleaning up initialize watcher");
-                off && off();
-              }, 5000);
-            } catch (error) {
-              console.error("Initialize error:", error);
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 block"
-        >
-          車両監視初期化
-        </button>
-        <button 
-          onClick={() => {
-            console.log("=== Maintenance Records Debug ===");
-            console.log("Current maintenance records:", maintenanceRecords.length);
-            console.log("Current all maintenance records:", allMaintenanceRecords.length);
-            console.log("Active car ID:", activeCarId);
-            console.log("Current user:", auth.currentUser?.email);
-            
-            if (maintenanceRecords.length > 0) {
-              console.log("Maintenance records details:", maintenanceRecords.map(r => ({ id: r.id, title: r.title, carId: r.carId })));
-            }
-            if (allMaintenanceRecords.length > 0) {
-              console.log("All maintenance records details:", allMaintenanceRecords.map(r => ({ id: r.id, title: r.title, carId: r.carId })));
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700 block"
-        >
-          メンテナンス確認
-        </button>
-        <button 
-          onClick={() => {
-            console.log("=== Force Refresh Maintenance ===");
-            if (!auth.currentUser) {
-              console.log("No user authenticated");
-              return;
-            }
-            
-            if (!activeCarId) {
-              console.log("No active car selected");
-              return;
-            }
-            
-            try {
-              const off = watchMaintenanceRecords(activeCarId, (records) => {
-                console.log("Force refresh - Maintenance records received:", records.length, "records");
-                setMaintenanceRecords(records);
-                off && off(); // 一度だけ実行してクリーンアップ
-              });
-            } catch (error) {
-              console.error("Force refresh maintenance error:", error);
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 block"
-        >
-          メンテナンス再取得
-        </button>
-        <button 
-          onClick={() => {
-            console.log("=== Force Auth Refresh ===");
-            console.log("Current auth state:", auth.currentUser);
-            console.log("Current authTrigger:", authTrigger);
-            
-            if (auth.currentUser) {
-              console.log("Forcing data refresh after auth");
-              setAuthTrigger(prev => prev + 1);
-              
-              // データをクリアして再取得
-              setCars([]);
-              setMaintenanceRecords([]);
-              setAllMaintenanceRecords([]);
-              
-              setTimeout(() => {
-                console.log("Delayed auth trigger");
-                setAuthTrigger(prev => prev + 1);
-              }, 1000);
-            } else {
-              console.log("No user authenticated");
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 block"
-        >
-          認証リフレッシュ
-        </button>
-        <button 
-          onClick={async () => {
-            console.log("=== Generate Auto Reminders ===");
-            if (!activeCarId || !car) {
-              console.log("No active car selected");
-              return;
-            }
-            
-            try {
-              const { generateInitialReminders, saveAutoReminders } = await import("@/lib/reminders");
-              type VehicleData = import("@/lib/reminders").VehicleData;
-              
-              const vehicleData: VehicleData = {
-                id: activeCarId,
-                name: car.name,
-                nextShakenDate: car.inspectionExpiry ? new Date(car.inspectionExpiry) : undefined,
-                firstRegYm: car.firstRegYm,
-                odoAtReg: car.odoKm,
-                avgKmPerMonth: car.avgKmPerMonth,
-                currentOdoKm: car.odoKm,
-              };
-              
-              const autoReminders = generateInitialReminders(vehicleData);
-              console.log("Generated auto reminders:", autoReminders.length);
-              
-              await saveAutoReminders(activeCarId, autoReminders);
-              console.log("Auto reminders saved successfully");
-            } catch (error) {
-              console.error("Error generating auto reminders:", error);
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 block"
-        >
-          自動リマインダー生成
-        </button>
-        <button 
-          onClick={async () => {
-            console.log("=== Clear Auto Reminders ===");
-            if (!activeCarId) {
-              console.log("No active car selected");
-              return;
-            }
-            
-            try {
-              const { clearAutoReminders } = await import("@/lib/reminders");
-              await clearAutoReminders(activeCarId);
-              console.log("Auto reminders cleared successfully");
-            } catch (error) {
-              console.error("Error clearing auto reminders:", error);
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700 block"
-        >
-          自動リマインダークリア
-        </button>
-        <button 
-          onClick={async () => {
-            console.log("=== Clear All Reminders ===");
-            if (!activeCarId) {
-              console.log("No active car selected");
-              return;
-            }
-            
-            try {
-              const { clearAllReminders } = await import("@/lib/reminders");
-              await clearAllReminders(activeCarId);
-              console.log("All reminders cleared successfully");
-            } catch (error) {
-              console.error("Error clearing all reminders:", error);
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 block"
-        >
-          全リマインダークリア
-        </button>
-        <button 
-          onClick={async () => {
-            console.log("=== Generate Insurance Notifications ===");
-            if (insurancePolicies.length === 0) {
-              console.log("No insurance policies found");
-              return;
-            }
-            
-            try {
-              const { generatePolicyExpiryNotifications } = await import("@/lib/insuranceNotifications");
-              for (const policy of insurancePolicies) {
-                if (policy.id) {
-                  await generatePolicyExpiryNotifications(policy);
-                }
-              }
-              console.log("Insurance notifications generated successfully");
-            } catch (error) {
-              console.error("Error generating insurance notifications:", error);
-            }
-          }}
-          className="mt-1 px-2 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 block"
-        >
-          保険通知生成
-        </button>
-        <button 
-          onClick={() => {
-            console.log("=== Image Upload Test ===");
-            console.log("Current cars:", cars.length);
-            console.log("Active car:", activeCarId);
-            console.log("Image upload functions available:", {
-              uploadCarImage: typeof uploadCarImage,
-              uploadCarImageWithProgress: typeof uploadCarImageWithProgress,
-              compressImage: typeof compressImage,
-              isImageFile: typeof isImageFile,
-              validateFileSize: typeof validateFileSize
-            });
-            console.log("Firebase Storage config:", {
-              projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-              storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-            });
-          }}
-          className="mt-1 px-2 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 block"
-        >
-          画像アップロードテスト
-        </button>
-      </div>
+        />
+      )}
+
 
     </AuthGate>
   );
@@ -1710,6 +1565,7 @@ function MaintenanceHistoryContent({
       setSelectedRecords(filteredRecords.map(record => record.id!));
     }
   };
+
 
   return (
     <>
@@ -2689,7 +2545,8 @@ function CarManagementContent({
   setActiveCarId, 
   setShowAddCarModal,
   setShowEditCarModal,
-  setEditingCar
+  setEditingCar,
+  setShowTypeaheadCarSelector
 }: {
   cars: Car[];
   activeCarId?: string;
@@ -2697,6 +2554,7 @@ function CarManagementContent({
   setShowAddCarModal: (show: boolean) => void;
   setShowEditCarModal: (show: boolean) => void;
   setEditingCar: (car: Car | null) => void;
+  setShowTypeaheadCarSelector: (show: boolean) => void;
 }) {
   const handleDeleteCar = async (carId: string, carName: string) => {
     if (!confirm(`「${carName}」を削除しますか？この操作は取り消せません。`)) {
@@ -2727,12 +2585,20 @@ function CarManagementContent({
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">車両管理</h1>
-        <button
-          onClick={() => setShowAddCarModal(true)}
-          className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-        >
-          ＋ 車を追加
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowTypeaheadCarSelector(true)}
+            className="rounded-xl bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-500 transition"
+          >
+            🚗 簡単追加（推奨）
+          </button>
+          <button
+            onClick={() => setShowAddCarModal(true)}
+            className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
+          >
+            ＋ 詳細追加
+          </button>
+        </div>
       </div>
 
       {/* 車一覧 */}
@@ -2746,12 +2612,20 @@ function CarManagementContent({
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">車が登録されていません</h3>
             <p className="text-gray-500 mb-4">まず車を追加して、メンテナンス履歴を管理しましょう。</p>
-            <button
-              onClick={() => setShowAddCarModal(true)}
-              className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-            >
-              車を追加
-            </button>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={() => setShowTypeaheadCarSelector(true)}
+                className="rounded-xl bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-500 transition"
+              >
+                🚗 簡単追加（推奨）
+              </button>
+              <button
+                onClick={() => setShowAddCarModal(true)}
+                className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
+              >
+                ＋ 詳細追加
+              </button>
+            </div>
           </div>
         ) : (
           cars.map((car) => (
@@ -3315,12 +3189,12 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex gap-2">
-                <input
+        <input
                   className="flex-1 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
                   placeholder="車名（例：シビック Type R）"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
                 <button
                   type="button"
                   onClick={() => setShowCarModelSelector(true)}
@@ -3329,12 +3203,12 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
                   車種選択
                 </button>
               </div>
-              <input
+        <input
                 className="rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
-                placeholder="型式（例：FL5）"
-                value={modelCode}
-                onChange={(e) => setModel(e.target.value)}
-              />
+          placeholder="型式（例：FL5）"
+          value={modelCode}
+          onChange={(e) => setModel(e.target.value)}
+        />
             </div>
             
             {selectedManufacturer && selectedModel && (
@@ -3354,21 +3228,21 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
                 </div>
               </div>
             )}
-            <input
+        <input
               className="rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
-              placeholder="年式（例：2023）"
-              inputMode="numeric"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-            />
-            <input
+          placeholder="年式（例：2023）"
+          inputMode="numeric"
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+        />
+        <input
               className="rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
-              placeholder="走行距離 km"
-              inputMode="numeric"
-              value={odoKm}
-              onChange={(e) => setOdo(e.target.value)}
-            />
-          </div>
+          placeholder="走行距離 km"
+          inputMode="numeric"
+          value={odoKm}
+          onChange={(e) => setOdo(e.target.value)}
+        />
+      </div>
           
           {/* 画像アップロード */}
           <div>
@@ -3402,14 +3276,14 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
             >
               {selectedFile ? "画像を変更" : "画像を選択"}
             </label>
-            <button
+        <button
               type="button"
               onClick={() => setShowDefaultImageSelector(true)}
               className="px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm"
-            >
+        >
               デフォルト画像
-            </button>
-          </div>
+        </button>
+      </div>
           
           {selectedFile && (
             <div className="text-xs text-gray-500 mt-1 space-y-1">
@@ -5229,5 +5103,6 @@ function EditReminderModal({
     </div>
   );
 }
+
 
 

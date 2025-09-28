@@ -42,8 +42,14 @@ export async function addCar(data: CarInput) {
   
   try {
     const ref = collection(db, "users", u.uid, "cars");
+    
+    // undefined値をnullに変換（Firestoreではundefinedは保存できない）
+    const cleanData = Object.fromEntries(
+      Object.entries(data).map(([key, value]) => [key, value === undefined ? null : value])
+    );
+    
     const docRef = await addDoc(ref, {
-      ...data,
+      ...cleanData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -136,8 +142,13 @@ export async function updateCar(carId: string, data: Partial<Car>) {
   const u = auth.currentUser;
   if (!u) throw new Error("not signed in");
   
+  // undefined値をnullに変換（Firestoreではundefinedは保存できない）
+  const cleanData = Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, value === undefined ? null : value])
+  );
+  
   await updateDoc(doc(db, "users", u.uid, "cars", carId), {
-    ...data,
+    ...cleanData,
     updatedAt: serverTimestamp(),
   });
   
