@@ -6,19 +6,9 @@ import {
   doc, updateDoc, deleteDoc, where
 } from "firebase/firestore";
 
-export type MaintenanceType = 
-  | "オイル交換"
-  | "タイヤ交換"
-  | "ブレーキパッド交換"
-  | "エアフィルター交換"
-  | "バッテリー交換"
-  | "車検"
-  | "その他";
-
 export type MaintenanceRecord = {
   id?: string;
   carId: string;
-  type: MaintenanceType;
   title: string;
   description?: string;
   cost?: number;
@@ -31,11 +21,10 @@ export type MaintenanceRecord = {
 
 export type MaintenanceInput = {
   carId: string;
-  type: MaintenanceType;
   title: string;
   description?: string;
   cost?: number;
-  mileage?: number;
+  mileage: number; // 必須項目に変更
   date: Date;
   location?: string;
 };
@@ -51,7 +40,6 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
     // データを準備（Dateオブジェクトを適切に処理）
     const recordData = {
       carId: data.carId,
-      type: data.type,
       title: data.title,
       description: data.description || null,
       cost: data.cost || null,
@@ -73,6 +61,57 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
     const docRef = await addDoc(ref, recordData);
     console.log("Maintenance record added successfully with ID:", docRef.id);
     console.log("Document path:", docRef.path);
+    
+    // 車両の走行距離を更新
+    try {
+      const { updateCarMileage } = await import("@/lib/cars");
+      await updateCarMileage(data.carId, data.mileage);
+      console.log("車両の走行距離を更新しました:", data.mileage);
+    } catch (mileageError) {
+      console.error("車両の走行距離更新に失敗しました:", mileageError);
+      // 走行距離更新の失敗はメンテナンス記録の作成を阻害しない
+    }
+
+    // メンテナンス記録からリマインダーを自動生成（統合システム）
+    try {
+      const { generateReminderFromMaintenance } = await import("@/lib/reminders");
+      
+      // デバッグ情報を追加
+      console.log('メンテナンス記録からリマインダー生成:', {
+        title: data.title,
+        date: data.date,
+        dateType: typeof data.date,
+        parsedDate: new Date(data.date),
+        now: new Date()
+      });
+      
+      const reminderId = await generateReminderFromMaintenance(
+        data.carId,
+        data.title,
+        new Date(data.date),
+        data.mileage, // 必須項目なので必ず数値
+        docRef.id
+      );
+
+      if (reminderId) {
+        console.log("リマインダーを作成しました:", reminderId);
+      }
+    } catch (reminderError) {
+      console.error("リマインダーの作成に失敗しました:", reminderError);
+      // リマインダー作成の失敗はメンテナンス記録の作成を阻害しない
+    }
+    
+    // 作成されたレコードの情報を返す
+    return {
+      id: docRef.id,
+      carId: data.carId,
+      title: data.title,
+      description: data.description,
+      cost: data.cost,
+      mileage: data.mileage,
+      date: data.date,
+      location: data.location,
+    };
   } catch (error) {
     console.error("Error adding maintenance record:", error);
     throw error;
@@ -138,7 +177,6 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
     
     // 各フィールドをチェックしてundefinedでないもののみ追加
     if (data.carId !== undefined) updateData.carId = data.carId;
-    if (data.type !== undefined) updateData.type = data.type;
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description || null;
     if (data.cost !== undefined) updateData.cost = data.cost || null;
@@ -149,6 +187,18 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
     console.log("Updating maintenance record with data:", updateData);
     await updateDoc(doc(db, "users", u.uid, "maintenance", recordId), updateData);
     console.log("Maintenance record updated successfully");
+    
+    // 走行距離が更新された場合は車両の走行距離も更新
+    if (data.mileage !== undefined && data.carId) {
+      try {
+        const { updateCarMileage } = await import("@/lib/cars");
+        await updateCarMileage(data.carId, data.mileage);
+        console.log("車両の走行距離を更新しました:", data.mileage);
+      } catch (mileageError) {
+        console.error("車両の走行距離更新に失敗しました:", mileageError);
+        // 走行距離更新の失敗はメンテナンス記録の更新を阻害しない
+      }
+    }
   } catch (error) {
     console.error("Error updating maintenance record:", error);
     throw error;

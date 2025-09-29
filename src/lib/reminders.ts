@@ -12,8 +12,48 @@ import {
   serverTimestamp,
   DocumentReference,
   getDoc,
-  getDocs
+  getDocs,
+  Timestamp
 } from 'firebase/firestore';
+
+// 購入候補の型定義
+export interface PurchaseCandidate {
+  sku: string;
+  title: string;
+  store: "amazon" | "rakuten";
+  url: string;
+  price?: number;
+  imageUrl?: string;
+  category: "oil" | "filter";
+  grade: "oem" | "value" | "premium";
+}
+
+// タイムスタンプを安全にDateオブジェクトに変換するヘルパー関数
+function safeToDate(timestamp: any): Date | null {
+  if (!timestamp) return null;
+  
+  // 既にDateオブジェクトの場合
+  if (timestamp instanceof Date) return timestamp;
+  
+  // FirestoreのTimestampオブジェクトの場合
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  
+  // 文字列の場合
+  if (typeof timestamp === 'string') {
+    const date = new Date(timestamp);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  
+  // 数値の場合（ミリ秒）
+  if (typeof timestamp === 'number') {
+    const date = new Date(timestamp);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  
+  return null;
+}
 
 // リマインダーの型定義
 export interface Reminder {
@@ -32,6 +72,18 @@ export interface Reminder {
   notes: string;
   createdAt: Date;
   updatedAt: Date;
+  
+  // オイルリマインダー専用フィールド（オプション）
+  type?: "oil_change"; // オイル交換リマインダーの識別
+  purchaseCandidates?: PurchaseCandidate[]; // 購入候補
+  reservationUrl?: string; // 予約URL
+  carName?: string; // 車名
+  lastOilChangeAt?: Date; // 最終オイル交換日
+  oilSpec?: { // オイル仕様
+    viscosity: string;
+    api: string;
+    volumeL: number;
+  };
 }
 
 // リマインダーの作成
@@ -97,9 +149,11 @@ export function watchReminders(callback: (reminders: Reminder[]) => void): () =>
       reminders.push({
         id: doc.id,
         ...data,
-        dueDate: data.dueDate?.toDate() || null,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        dueDate: safeToDate(data.dueDate),
+        dueOdoKm: data.dueOdoKm || null,
+        lastOilChangeAt: safeToDate(data.lastOilChangeAt),
+        createdAt: safeToDate(data.createdAt) || new Date(),
+        updatedAt: safeToDate(data.updatedAt) || new Date(),
       } as Reminder);
     });
     
@@ -138,9 +192,11 @@ export function watchRemindersByCar(
       reminders.push({
         id: doc.id,
         ...data,
-        dueDate: data.dueDate?.toDate() || null,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        dueDate: safeToDate(data.dueDate),
+        dueOdoKm: data.dueOdoKm || null,
+        lastOilChangeAt: safeToDate(data.lastOilChangeAt),
+        createdAt: safeToDate(data.createdAt) || new Date(),
+        updatedAt: safeToDate(data.updatedAt) || new Date(),
       } as Reminder);
     });
     
@@ -176,9 +232,11 @@ export function watchActiveReminders(callback: (reminders: Reminder[]) => void):
       reminders.push({
         id: doc.id,
         ...data,
-        dueDate: data.dueDate?.toDate() || null,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        dueDate: safeToDate(data.dueDate),
+        dueOdoKm: data.dueOdoKm || null,
+        lastOilChangeAt: safeToDate(data.lastOilChangeAt),
+        createdAt: safeToDate(data.createdAt) || new Date(),
+        updatedAt: safeToDate(data.updatedAt) || new Date(),
       } as Reminder);
     });
     
@@ -235,9 +293,11 @@ export async function getReminderById(reminderId: string): Promise<Reminder | nu
       return {
         id: docSnap.id,
         ...data,
-        dueDate: data.dueDate?.toDate() || null,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        dueDate: safeToDate(data.dueDate),
+        dueOdoKm: data.dueOdoKm || null,
+        lastOilChangeAt: safeToDate(data.lastOilChangeAt),
+        createdAt: safeToDate(data.createdAt) || new Date(),
+        updatedAt: safeToDate(data.updatedAt) || new Date(),
       } as Reminder;
     }
     return null;
@@ -257,22 +317,37 @@ export function suggestReminders(
 
   switch (maintenanceType.toLowerCase()) {
     case 'オイル交換':
+      // オイル交換した日付から6ヶ月後を計算
+      const oilDate = new Date(performedAt);
+      oilDate.setMonth(oilDate.getMonth() + 6);
+      
+      // デバッグ情報を追加
+      console.log('オイル交換リマインダー作成:', {
+        performedAt: performedAt,
+        oilDate: oilDate,
+        now: new Date(),
+        isOverdue: oilDate <= new Date()
+      });
+      
       suggestions.push({
         kind: 'both',
         title: '次回オイル交換',
         threshold: { months: 6, km: 5000 },
-        dueDate: new Date(performedAt.getTime() + 6 * 30 * 24 * 60 * 60 * 1000),
+        dueDate: oilDate,
         dueOdoKm: odoKm + 5000,
-        status: 'active'
+        status: 'active',
+        type: 'oil_change' // オイルリマインダーとして識別
       });
       break;
 
     case 'ブレーキフルード':
+      const brakeDate = new Date();
+      brakeDate.setMonth(brakeDate.getMonth() + 24);
       suggestions.push({
         kind: 'time',
         title: '次回ブレーキフルード交換',
         threshold: { months: 24 },
-        dueDate: new Date(performedAt.getTime() + 24 * 30 * 24 * 60 * 60 * 1000),
+        dueDate: brakeDate,
         dueOdoKm: null,
         status: 'active'
       });
@@ -290,37 +365,23 @@ export function suggestReminders(
       break;
 
     case 'エアフィルター':
+      const filterDate = new Date();
+      filterDate.setMonth(filterDate.getMonth() + 12);
       suggestions.push({
         kind: 'both',
         title: '次回エアフィルター交換',
         threshold: { months: 12, km: 20000 },
-        dueDate: new Date(performedAt.getTime() + 12 * 30 * 24 * 60 * 60 * 1000),
+        dueDate: filterDate,
         dueOdoKm: odoKm + 20000,
         status: 'active'
       });
       break;
 
-    case 'スパークプラグ':
-      suggestions.push({
-        kind: 'distance',
-        title: '次回スパークプラグ交換',
-        threshold: { km: 100000 },
-        dueDate: null,
-        dueOdoKm: odoKm + 100000,
-        status: 'active'
-      });
-      break;
+
 
     default:
-      // デフォルトの提案
-      suggestions.push({
-        kind: 'time',
-        title: '次回整備',
-        threshold: { months: 6 },
-        dueDate: new Date(performedAt.getTime() + 6 * 30 * 24 * 60 * 60 * 1000),
-        dueOdoKm: null,
-        status: 'active'
-      });
+      // デフォルトではリマインダーを作成しない
+      break;
   }
 
   return suggestions;
@@ -330,13 +391,28 @@ export function suggestReminders(
 export function checkReminderDue(reminder: Reminder, currentOdoKm?: number): boolean {
   const now = new Date();
   
+  // デバッグ情報を追加
+  console.log(`Checking reminder due: ${reminder.title}`, {
+    dueDate: reminder.dueDate,
+    dueDateType: typeof reminder.dueDate,
+    now: now,
+    dueOdoKm: reminder.dueOdoKm,
+    currentOdoKm: currentOdoKm
+  });
+  
   // 日付ベースのチェック
-  if (reminder.dueDate && reminder.dueDate <= now) {
-    return true;
+  if (reminder.dueDate) {
+    // FirestoreのTimestampオブジェクトの場合はDateに変換
+    const dueDate = reminder.dueDate instanceof Date ? reminder.dueDate : new Date(reminder.dueDate);
+    console.log(`Date comparison: ${dueDate} <= ${now} = ${dueDate <= now}`);
+    if (dueDate <= now) {
+      return true;
+    }
   }
   
   // 走行距離ベースのチェック
   if (reminder.dueOdoKm && currentOdoKm && currentOdoKm >= reminder.dueOdoKm) {
+    console.log(`Distance comparison: ${currentOdoKm} >= ${reminder.dueOdoKm} = ${currentOdoKm >= reminder.dueOdoKm}`);
     return true;
   }
   
@@ -348,7 +424,9 @@ export function getDaysUntilDue(reminder: Reminder): number | null {
   if (!reminder.dueDate) return null;
   
   const now = new Date();
-  const diffTime = reminder.dueDate.getTime() - now.getTime();
+  // FirestoreのTimestampオブジェクトの場合はDateに変換
+  const dueDate = reminder.dueDate instanceof Date ? reminder.dueDate : new Date(reminder.dueDate);
+  const diffTime = dueDate.getTime() - now.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
@@ -411,26 +489,20 @@ export function generateShakenReminders(nextShakenDate: Date): AutoReminderConfi
   const now = new Date();
   const daysUntilShaken = Math.ceil((nextShakenDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   
-  let title = '';
+  let title = '車検期限';
   let priority: 'low' | 'medium' | 'high' | 'urgent' = 'low';
   
   if (daysUntilShaken > 30) {
-    title = `車検まであと${daysUntilShaken}日`;
     priority = 'low';
   } else if (daysUntilShaken > 14) {
-    title = `車検まであと${daysUntilShaken}日（準備開始）`;
     priority = 'medium';
   } else if (daysUntilShaken > 7) {
-    title = `車検まであと${daysUntilShaken}日（予約推奨）`;
     priority = 'high';
   } else if (daysUntilShaken > 0) {
-    title = `車検まであと${daysUntilShaken}日（緊急）`;
     priority = 'urgent';
   } else if (daysUntilShaken === 0) {
-    title = `車検期限日（本日）`;
     priority = 'urgent';
   } else {
-    title = `車検期限切れ（${Math.abs(daysUntilShaken)}日経過）`;
     priority = 'urgent';
   }
   
@@ -722,4 +794,490 @@ export async function clearAllReminders(carId: string): Promise<void> {
   await Promise.all(deletePromises);
   
   console.log(`Cleared ${snapshot.docs.length} reminders for car ${carId}`);
+}
+
+// 車両IDから車両情報を取得
+async function getCarInfo(carId: string): Promise<{ make: string; model: string; year?: number } | null> {
+  const user = auth.currentUser;
+  if (!user) return null;
+
+  try {
+    const carDoc = await getDoc(doc(db, 'users', user.uid, 'cars', carId));
+    if (carDoc.exists()) {
+      const carData = carDoc.data();
+      // 車両名からメーカーとモデルを推定（簡易版）
+      const name = carData.name || '';
+      const parts = name.split(' ');
+      const make = parts[0] || 'Generic';
+      const model = parts.slice(1).join(' ') || 'Generic';
+      const year = carData.year;
+      
+      return { make, model, year };
+    }
+  } catch (error) {
+    console.error("車両情報の取得に失敗:", error);
+  }
+  
+  return null;
+}
+
+// オイルリマインダーの特別な機能を生成
+async function generateOilReminderFeatures(carId: string): Promise<{
+  purchaseCandidates: PurchaseCandidate[];
+  reservationUrl: string;
+  oilSpec: { viscosity: string; api: string; volumeL: number };
+}> {
+  try {
+    // 車両情報を取得
+    const carInfo = await getCarInfo(carId);
+    if (!carInfo) {
+      throw new Error("車両情報を取得できませんでした");
+    }
+    
+    // オイル仕様を取得
+    const { getOilSpecForCar } = await import("@/lib/carOilSpecs");
+    const oilSpec = getOilSpecForCar(carInfo);
+    
+    if (!oilSpec) {
+      throw new Error("オイル仕様を取得できませんでした");
+    }
+    
+    // 購入候補を生成
+    const { generatePurchaseCandidatesWithAffiliate } = await import("@/lib/affiliateLinks");
+    const purchaseCandidates = generatePurchaseCandidatesWithAffiliate(carId, oilSpec, carInfo);
+    
+    // 予約URLを生成
+    const { generateReservationUrl } = await import("@/lib/affiliateLinks");
+    const reservationUrl = generateReservationUrl(carId);
+    
+    return {
+      purchaseCandidates,
+      reservationUrl,
+      oilSpec: {
+        viscosity: oilSpec.viscosity,
+        api: oilSpec.api,
+        volumeL: oilSpec.volumeL
+      }
+    };
+  } catch (error) {
+    console.error("オイルリマインダー機能の生成に失敗:", error);
+    // フォールバック値を返す
+    return {
+      purchaseCandidates: [],
+      reservationUrl: "",
+      oilSpec: { viscosity: "0W-20", api: "SP", volumeL: 4.0 }
+    };
+  }
+}
+
+// メンテナンス記録からリマインダーを自動生成
+export async function generateReminderFromMaintenance(
+  carId: string,
+  maintenanceType: string,
+  performedAt: Date,
+  odoKm: number,
+  entryId: string
+): Promise<string | null> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーが認証されていません');
+
+  // メンテナンスタイプに基づいてリマインダーを生成
+  const suggestions = suggestReminders(maintenanceType, performedAt, odoKm);
+  
+  if (suggestions.length === 0) {
+    console.log('No reminder suggestions for maintenance type:', maintenanceType);
+    return null;
+  }
+
+  // 最初の提案を使用（通常は1つ）
+  const suggestion = suggestions[0];
+  
+  // 既存の同種リマインダーを削除（重複防止）
+  await clearExistingRemindersByType(carId, maintenanceType);
+  
+  // オイル交換の場合は、既存のリマインダーをクリア（統合システムで処理済み）
+  
+  // undefinedの値を除外するヘルパー関数（再帰的、nullは保持）
+  const removeUndefined = (obj: any): any => {
+    if (obj === null) {
+      return obj; // nullは保持
+    }
+    
+    if (obj === undefined) {
+      return undefined;
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => removeUndefined(item)).filter(item => item !== undefined);
+    }
+    
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+          const cleanedValue = removeUndefined(value);
+          if (cleanedValue !== undefined) {
+            cleaned[key] = cleanedValue;
+          }
+        }
+      }
+      return cleaned;
+    }
+    
+    return obj;
+  };
+
+  // デバッグ情報を追加
+  console.log('リマインダーデータ作成前:', {
+    suggestion: suggestion,
+    performedAt: performedAt
+  });
+
+  // 新しいリマインダーを作成
+  const reminderData = removeUndefined({
+    carId,
+    kind: suggestion.kind || 'time',
+    title: suggestion.title || `次回${maintenanceType}`,
+    dueDate: suggestion.dueDate || null,
+    dueOdoKm: suggestion.dueOdoKm || null,
+    baseEntryRef: entryId,
+    threshold: suggestion.threshold ? removeUndefined(suggestion.threshold) : {},
+    status: 'active' as const,
+    notes: `メンテナンス記録から自動生成: ${maintenanceType}`,
+    type: suggestion.type || undefined,
+    lastOilChangeAt: performedAt,
+  });
+  
+  console.log('リマインダーデータ作成後:', reminderData);
+  
+  // オイル交換リマインダーの場合は特別な機能を追加
+  if (maintenanceType === "オイル交換" && suggestion.type === "oil_change") {
+    try {
+      const oilFeatures = await generateOilReminderFeatures(carId);
+      
+      // 車両名を設定
+      const carInfo = await getCarInfo(carId);
+      
+      // オイルリマインダーの特別な機能を追加（undefinedの値を除外）
+      const oilReminderData = removeUndefined({
+        purchaseCandidates: oilFeatures.purchaseCandidates,
+        reservationUrl: oilFeatures.reservationUrl,
+        oilSpec: oilFeatures.oilSpec,
+        carName: carInfo ? `${carInfo.make} ${carInfo.model}` : undefined,
+      });
+      
+      // リマインダーデータにマージ
+      Object.assign(reminderData, oilReminderData);
+    } catch (error) {
+      console.error("オイルリマインダー機能の生成に失敗:", error);
+    }
+  }
+  
+  // 最終的なクリーンアップ
+  const finalReminderData = removeUndefined(reminderData);
+  
+  console.log('Final reminder data:', finalReminderData);
+  
+  const docRef = await addDoc(collection(db, 'users', user.uid, 'reminders'), finalReminderData);
+  console.log(`Generated reminder from maintenance: ${maintenanceType} -> ${suggestion.title}`);
+  
+  return docRef.id;
+}
+
+// 特定のメンテナンスタイプの既存リマインダーをクリア
+export async function clearExistingRemindersByType(carId: string, maintenanceType: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーが認証されていません');
+  
+  // メンテナンスタイプに基づくタイトルパターンを定義
+  const titlePatterns = getTitlePatternsForMaintenanceType(maintenanceType);
+  
+  // 空文字の場合は処理をスキップ
+  if (titlePatterns.length === 0 || titlePatterns[0] === '') {
+    return;
+  }
+  
+  // 既存のリマインダーを検索
+  const q = query(
+    collection(db, 'users', user.uid, 'reminders'),
+    where('carId', '==', carId)
+  );
+  
+  const snapshot = await getDocs(q);
+  const remindersToDelete = snapshot.docs.filter(doc => {
+    const data = doc.data();
+    const title = data.title || '';
+    return titlePatterns.some(pattern => title.includes(pattern));
+  });
+  
+  // 該当するリマインダーを完了状態に更新
+  const updatePromises = remindersToDelete.map(doc => 
+    updateDoc(doc.ref, {
+      status: 'done',
+      updatedAt: serverTimestamp()
+    })
+  );
+  await Promise.all(updatePromises);
+  
+  if (remindersToDelete.length > 0) {
+    console.log(`Marked ${remindersToDelete.length} existing reminders as done for ${maintenanceType}`);
+  }
+}
+
+// メンテナンスタイプに基づくタイトルパターンを取得
+function getTitlePatternsForMaintenanceType(maintenanceType: string): string[] {
+  switch (maintenanceType.toLowerCase()) {
+    case 'オイル交換':
+      return ['オイル交換', 'エンジンオイル'];
+    case 'ブレーキフルード':
+      return ['ブレーキフルード'];
+    case 'タイヤローテーション':
+      return ['タイヤローテーション', 'タイヤ点検'];
+    case 'エアフィルター':
+      return ['エアフィルター'];
+    default:
+      return [maintenanceType];
+  }
+}
+
+// メンテナンス記録のタイトルからメンテナンスタイプを推定
+export function extractMaintenanceTypeFromTitle(title: string): string {
+  const lowerTitle = title.toLowerCase();
+  
+  // オイル関連
+  if (lowerTitle.includes('オイル') || lowerTitle.includes('oil') || 
+      lowerTitle.includes('潤滑油') || lowerTitle.includes('lubricant')) {
+    return 'オイル交換';
+  }
+  
+  // ブレーキ関連
+  if (lowerTitle.includes('ブレーキ') || lowerTitle.includes('brake') || 
+      lowerTitle.includes('制動') || lowerTitle.includes('パッド')) {
+    return 'ブレーキパッド交換';
+  }
+  
+  // タイヤ関連
+  if (lowerTitle.includes('タイヤ') || lowerTitle.includes('tire') || 
+      lowerTitle.includes('ローテーション') || lowerTitle.includes('rotation')) {
+    return 'タイヤ交換';
+  }
+  
+  // フィルター関連
+  if (lowerTitle.includes('エアフィルター') || lowerTitle.includes('air filter') || 
+      lowerTitle.includes('フィルター') || lowerTitle.includes('filter')) {
+    return 'エアフィルター交換';
+  }
+  
+  // バッテリー関連
+  if (lowerTitle.includes('バッテリー') || lowerTitle.includes('battery') || 
+      lowerTitle.includes('電池')) {
+    return 'バッテリー交換';
+  }
+  
+  
+  // クーラント関連
+  if (lowerTitle.includes('クーラント') || lowerTitle.includes('coolant') || 
+      lowerTitle.includes('冷却水') || lowerTitle.includes('ラジエーター')) {
+    return 'クーラント';
+  }
+  
+  // 車検関連
+  if (lowerTitle.includes('車検') || lowerTitle.includes('検査') || 
+      lowerTitle.includes('inspection')) {
+    return '車検';
+  }
+  
+  // デフォルトは空文字（リマインダーを作成しない）
+  return '';
+}
+
+// 特定のメンテナンス記録に関連するリマインダーを削除
+export async function deleteRemindersByMaintenanceRecord(
+  carId: string,
+  entryId: string
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーが認証されていません');
+  
+  // 特定のメンテナンス記録に関連するリマインダーを検索
+  const q = query(
+    collection(db, 'users', user.uid, 'reminders'),
+    where('carId', '==', carId),
+    where('baseEntryRef', '==', entryId)
+  );
+  
+  const snapshot = await getDocs(q);
+  const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+  await Promise.all(deletePromises);
+  
+  if (snapshot.docs.length > 0) {
+    console.log(`Deleted ${snapshot.docs.length} reminders related to maintenance record ${entryId}`);
+  }
+}
+
+// リマインダー完了時に次のリマインダーを自動生成
+export async function generateNextReminderOnComplete(
+  reminder: Reminder
+): Promise<string | null> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーが認証されていません');
+
+  // メンテナンス記録から生成されたリマインダーの場合のみ処理
+  if (!reminder.baseEntryRef || !reminder.notes?.includes('メンテナンス記録から自動生成')) {
+    return null;
+  }
+
+  // メンテナンス記録のタイトルからメンテナンスタイプを推定
+  const maintenanceType = extractMaintenanceTypeFromTitle(reminder.title);
+  
+  // 現在の日付と走行距離を取得
+  const now = new Date();
+  const currentOdoKm = reminder.dueOdoKm || 0;
+  
+  // 次のリマインダーを生成
+  const suggestions = suggestReminders(maintenanceType, now, currentOdoKm);
+  
+  if (suggestions.length === 0) {
+    console.log('No next reminder suggestions for maintenance type:', maintenanceType);
+    return null;
+  }
+
+  const suggestion = suggestions[0];
+  
+  // 新しいリマインダーを作成
+  const reminderData = {
+    carId: reminder.carId,
+    kind: suggestion.kind || 'time',
+    title: suggestion.title || `次回${maintenanceType}`,
+    dueDate: suggestion.dueDate,
+    dueOdoKm: suggestion.dueOdoKm,
+    baseEntryRef: reminder.baseEntryRef,
+    threshold: suggestion.threshold || {},
+    status: 'active' as const,
+    notes: `メンテナンス記録から自動生成: ${maintenanceType} (継続)`,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  
+  const docRef = await addDoc(collection(db, 'users', user.uid, 'reminders'), reminderData);
+  console.log(`Generated next reminder from completed maintenance: ${maintenanceType} -> ${suggestion.title}`);
+  
+  return docRef.id;
+}
+
+// 既存のリマインダーの日付を修正（デバッグ用）
+export async function fixReminderDates(carId: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーが認証されていません');
+  
+  // 車両に関連するすべてのリマインダーを取得
+  const q = query(
+    collection(db, 'users', user.uid, 'reminders'),
+    where('carId', '==', carId)
+  );
+  
+  const snapshot = await getDocs(q);
+  const updatePromises = snapshot.docs.map(async (doc) => {
+    const data = doc.data();
+    const reminder = {
+      id: doc.id,
+      ...data,
+      dueDate: data.dueDate?.toDate() || null,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    } as Reminder;
+    
+    // メンテナンス記録から生成されたリマインダーの場合、日付を再計算
+    if (reminder.baseEntryRef && reminder.notes?.includes('メンテナンス記録から自動生成')) {
+      const maintenanceType = extractMaintenanceTypeFromTitle(reminder.title);
+      
+      // 現在の日付から正しい期日を計算
+      const now = new Date();
+      let newDueDate: Date | null = null;
+      
+      switch (maintenanceType.toLowerCase()) {
+        case 'オイル交換':
+          newDueDate = new Date(now);
+          newDueDate.setMonth(newDueDate.getMonth() + 6);
+          break;
+        case 'ブレーキフルード':
+        case 'ブレーキパッド交換':
+          newDueDate = new Date(now);
+          newDueDate.setMonth(newDueDate.getMonth() + 24);
+          break;
+        case 'エアフィルター':
+        case 'エアフィルター交換':
+          newDueDate = new Date(now);
+          newDueDate.setMonth(newDueDate.getMonth() + 12);
+          break;
+        case 'タイヤ交換':
+        case 'タイヤローテーション':
+          newDueDate = new Date(now);
+          newDueDate.setMonth(newDueDate.getMonth() + 12);
+          break;
+        case 'バッテリー交換':
+          newDueDate = new Date(now);
+          newDueDate.setMonth(newDueDate.getMonth() + 36);
+          break;
+        case '整備':
+          newDueDate = new Date(now);
+          newDueDate.setMonth(newDueDate.getMonth() + 6);
+          break;
+      }
+      
+      if (newDueDate) {
+        console.log(`Fixing reminder date: ${reminder.title} from ${reminder.dueDate} to ${newDueDate}`);
+        await updateDoc(doc.ref, {
+          dueDate: newDueDate,
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+  });
+  
+  await Promise.all(updatePromises);
+  console.log(`Fixed ${snapshot.docs.length} reminders for car ${carId}`);
+}
+
+// 「次回整備」リマインダーを削除（デバッグ用）
+export async function removeGenericMaintenanceReminders(carId: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーが認証されていません');
+  
+  // 「次回整備」のリマインダーを検索
+  const q = query(
+    collection(db, 'users', user.uid, 'reminders'),
+    where('carId', '==', carId),
+    where('title', '==', '次回整備')
+  );
+  
+  const snapshot = await getDocs(q);
+  const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+  await Promise.all(deletePromises);
+  
+  console.log(`Removed ${snapshot.docs.length} generic maintenance reminders for car ${carId}`);
+}
+
+// 古い形式の車検リマインダーを削除（デバッグ用）
+export async function removeOldShakenReminders(carId: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーが認証されていません');
+  
+  // 古い形式の車検リマインダーを検索（タイトルに日数が含まれているもの）
+  const q = query(
+    collection(db, 'users', user.uid, 'reminders'),
+    where('carId', '==', carId)
+  );
+  
+  const snapshot = await getDocs(q);
+  const oldShakenReminders = snapshot.docs.filter(doc => {
+    const data = doc.data();
+    const title = data.title || '';
+    return title.includes('車検まであと') || title.includes('車検期限切れ');
+  });
+  
+  const deletePromises = oldShakenReminders.map(doc => deleteDoc(doc.ref));
+  await Promise.all(deletePromises);
+  
+  console.log(`Removed ${oldShakenReminders.length} old shaken reminders for car ${carId}`);
 }

@@ -5,12 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import AuthGate from "@/components/AuthGate";
 import { addCar, watchCars, type Car, type CarInput, updateCar, removeCar } from "@/lib/cars";
 import { auth, watchAuth } from "@/lib/firebase";
-import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords, type MaintenanceRecord, type MaintenanceType } from "@/lib/maintenance";
+import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords, type MaintenanceRecord } from "@/lib/maintenance";
 import { downloadMaintenancePDF, generateMaintenanceURL, type PDFExportOptions } from "@/lib/pdfExport";
 import { uploadCarImage, uploadCarImageWithProgress, isImageFile, validateFileSize } from "@/lib/storage";
 import { compressImage, getFileSizeString, getCompressionInfo } from "@/lib/imageCompression";
-import { defaultImages, getRandomImage, type DefaultImage } from "@/lib/defaultImages";
-import DefaultImageSelector from "@/components/DefaultImageSelector";
 import { carDatabase, type CarManufacturer, type CarModel } from "@/lib/carDatabase";
 import CarModelSelector from "@/components/CarModelSelector";
 import TypeaheadCarSelector from "@/components/TypeaheadCarSelector";
@@ -18,7 +16,7 @@ import AutoReminderPreview from "@/components/AutoReminderPreview";
 import { addInsurancePolicy, watchInsurancePolicies, updateInsurancePolicy, removeInsurancePolicy, addInsuranceClaim, watchInsuranceClaims, updateInsuranceClaim, removeInsuranceClaim, type InsurancePolicy, type InsuranceClaim, calculateMonthlyInsuranceCosts, getDaysUntilExpiry, getExpiryStatus } from "@/lib/insurance";
 import { watchInsuranceNotifications, type InsuranceNotification } from "@/lib/insuranceNotifications";
 import InsuranceNotificationSettings from "@/components/InsuranceNotificationSettings";
-import { addReminder, watchReminders, updateReminder, removeReminder, markReminderDone, snoozeReminder, dismissReminder, suggestReminders, checkReminderDue, getDaysUntilDue, getKmUntilDue, getReminderPriority, type Reminder } from "@/lib/reminders";
+import { addReminder, watchReminders, updateReminder, removeReminder, markReminderDone, snoozeReminder, dismissReminder, suggestReminders, checkReminderDue, getDaysUntilDue, getKmUntilDue, getReminderPriority, generateReminderFromMaintenance, extractMaintenanceTypeFromTitle, deleteRemindersByMaintenanceRecord, generateNextReminderOnComplete, type Reminder } from "@/lib/reminders";
 import { BarChart, Bar as RechartsBar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, AreaChart } from 'recharts';
 
 /* -------------------- ページ本体 -------------------- */
@@ -53,7 +51,7 @@ export default function Home() {
     inspectionExpiry: string;
   } | null>(null);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'data-management' | 'notifications' | 'reminders' | 'insurance'>('dashboard');
 
   // テスト用の車両データ（開発時のみ）
   const testCars: Car[] = [
@@ -399,7 +397,6 @@ export default function Home() {
       const testRecord = {
         id: 'test-record-1',
         carId: activeCarId,
-        type: 'オイル交換' as MaintenanceType,
         title: 'テスト記録',
         description: 'これはテスト用のメンテナンス記録です',
         cost: 5000,
@@ -646,9 +643,14 @@ export default function Home() {
               onClick={() => setCurrentPage('data-management')}
             />
             <NavItem 
-              label="通知・リマインダー" 
+              label="通知設定" 
               active={currentPage === 'notifications'} 
               onClick={() => setCurrentPage('notifications')}
+            />
+            <NavItem 
+              label="リマインダー" 
+              active={currentPage === 'reminders'} 
+              onClick={() => setCurrentPage('reminders')}
             />
             </nav>
 
@@ -716,10 +718,41 @@ export default function Home() {
                 cars={cars}
                 maintenanceRecords={allMaintenanceRecords}
               />
+            ) : currentPage === 'reminders' ? (
+              <RemindersContent 
+                cars={cars}
+                maintenanceRecords={allMaintenanceRecords}
+                reminders={reminders}
+                activeReminders={activeReminders}
+                overdueReminders={overdueReminders}
+                thisWeekReminders={thisWeekReminders}
+                setShowReminderModal={setShowReminderModal}
+                setShowEditReminderModal={setShowEditReminderModal}
+                setEditingReminder={setEditingReminder}
+                markReminderDone={markReminderDone}
+                snoozeReminder={snoozeReminder}
+                dismissReminder={dismissReminder}
+                getDaysUntilDue={getDaysUntilDue}
+                getKmUntilDue={getKmUntilDue}
+                checkReminderDue={checkReminderDue}
+              />
             ) : (
               <NotificationsContent 
                 cars={cars}
                 maintenanceRecords={allMaintenanceRecords}
+                reminders={reminders}
+                activeReminders={activeReminders}
+                overdueReminders={overdueReminders}
+                thisWeekReminders={thisWeekReminders}
+                setShowReminderModal={setShowReminderModal}
+                setShowEditReminderModal={setShowEditReminderModal}
+                setEditingReminder={setEditingReminder}
+                markReminderDone={markReminderDone}
+                snoozeReminder={snoozeReminder}
+                dismissReminder={dismissReminder}
+                getDaysUntilDue={getDaysUntilDue}
+                getKmUntilDue={getKmUntilDue}
+                checkReminderDue={checkReminderDue}
               />
             )}
           </main>
@@ -760,6 +793,7 @@ export default function Home() {
         <MaintenanceModal
           carId={activeCarId}
           carName={car?.name || "車"}
+          currentMileage={car?.odoKm}
           onClose={() => setShowMaintenanceModal(false)}
           onAdded={() => {
             console.log("Maintenance record added, closing modal");
@@ -962,6 +996,10 @@ function DashboardContent({
       switch (action) {
         case 'done':
           await markReminderDone(reminder.id);
+          
+          // リマインダー完了時の自動生成は無効化（無限ループ防止）
+          // 必要に応じて手動でメンテナンス記録を作成してリマインダーを生成
+          console.log("リマインダーを完了しました。次のリマインダーは手動でメンテナンス記録を作成して生成してください。");
           break;
         case 'snooze':
           await snoozeReminder(reminder.id, 7);
@@ -1130,7 +1168,7 @@ function DashboardContent({
                     )}
                 </div>
                 </div>
-              
+
               {activeReminders.length > 0 ? (
                 <div className="space-y-4">
                   {activeReminders
@@ -1218,17 +1256,25 @@ function DashboardContent({
                           {/* 内容 */}
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-gray-900 truncate">{reminder.title}</h4>
+                            
+                            {/* オイルリマインダーの特別な情報 */}
+                            {reminder.type === 'oil_change' && reminder.oilSpec && (
+                              <div className="text-xs text-blue-600 mb-1">
+                                {reminder.oilSpec.viscosity} / {reminder.oilSpec.api}
+                              </div>
+                            )}
+                            
                             <p className="text-sm text-gray-500">
                               {isOverdue ? (
                                 <span className="text-red-600 font-medium">期限切れ</span>
                               ) : (
                                 <>
-                                  {/* 車検の場合は日数表示をスキップ（タイトルに含まれているため） */}
-                                  {!reminder.title.includes('車検まで') && daysUntilDue !== null && (
+                                  {/* 日数表示 */}
+                                  {daysUntilDue !== null && (
                                     <span>あと{daysUntilDue}日</span>
                                   )}
                                   {kmUntilDue !== null && kmUntilDue > 0 && (
-                                    <span className={daysUntilDue !== null && !reminder.title.includes('車検まで') ? 'ml-2' : ''}>
+                                    <span className={daysUntilDue !== null ? 'ml-2' : ''}>
                                       または {kmUntilDue.toLocaleString()}km
                                     </span>
                                   )}
@@ -1249,6 +1295,32 @@ function DashboardContent({
                                 ></div>
                               </div>
                             </div>
+                            
+                            {/* オイルリマインダーのアクションボタン */}
+                            {reminder.type === 'oil_change' && (reminder.purchaseCandidates?.length || reminder.reservationUrl) && (
+                              <div className="mt-2 flex gap-2">
+                                {reminder.reservationUrl && (
+                                  <a
+                                    href={reminder.reservationUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition"
+                                  >
+                                    予約する
+                                  </a>
+                                )}
+                                {reminder.purchaseCandidates && reminder.purchaseCandidates.length > 0 && (
+                                  <a
+                                    href={reminder.purchaseCandidates[0].url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 transition"
+                                  >
+                                    オイルを買う
+                                  </a>
+                                )}
+                              </div>
+                            )}
                           </div>
                           
                           {/* アクションボタン */}
@@ -1315,7 +1387,7 @@ function DashboardContent({
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-medium text-gray-900">{record.title}</h4>
                             <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-                              {record.type}
+                              {record.title}
                             </span>
                 </div>
                           <p className="text-sm text-gray-600 mb-2">
@@ -1487,7 +1559,6 @@ function MaintenanceHistoryContent({
     if (searchTerm) {
       filtered = filtered.filter(record => 
         record.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (record.description && record.description.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
@@ -1516,6 +1587,16 @@ function MaintenanceHistoryContent({
     if (confirm(`「${record.title}」を削除しますか？`)) {
       try {
         await deleteMaintenanceRecord(record.id);
+        
+        // 関連するリマインダーも削除
+        try {
+          await deleteRemindersByMaintenanceRecord(record.carId, record.id);
+          console.log("Related reminders deleted successfully");
+        } catch (reminderError) {
+          console.error("リマインダー削除エラー:", reminderError);
+          // リマインダー削除に失敗してもメンテナンス記録の削除は成功とする
+        }
+        
         console.log("Maintenance record deleted successfully");
       } catch (error) {
         console.error("Error deleting maintenance record:", error);
@@ -1538,6 +1619,23 @@ function MaintenanceHistoryContent({
     setIsDeleting(true);
     try {
       await deleteMultipleMaintenanceRecords(selectedRecords);
+      
+      // 関連するリマインダーも削除
+      try {
+        const deletePromises = selectedRecords.map(recordId => {
+          const record = maintenanceRecords.find((r: MaintenanceRecord) => r.id === recordId);
+          if (record) {
+            return deleteRemindersByMaintenanceRecord(record.carId, recordId);
+          }
+          return Promise.resolve();
+        });
+        await Promise.all(deletePromises);
+        console.log("Related reminders deleted successfully");
+      } catch (reminderError) {
+        console.error("リマインダー削除エラー:", reminderError);
+        // リマインダー削除に失敗してもメンテナンス記録の削除は成功とする
+      }
+      
       setSelectedRecords([]);
       alert(`${selectedRecords.length}件の記録を削除しました`);
     } catch (error) {
@@ -1678,7 +1776,7 @@ function MaintenanceHistoryContent({
                     <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {record.type}
+                        {record.title}
                       </span>
                       <span className="text-sm text-gray-500">
                         {getCarName(record.carId)}
@@ -1786,7 +1884,6 @@ function DataManagementContent({
       id: record.id,
       carId: record.carId,
       carName: cars.find(c => c.id === record.carId)?.name || '不明',
-      type: record.type,
       title: record.title,
       description: record.description || '',
       cost: record.cost || '',
@@ -1815,7 +1912,6 @@ function DataManagementContent({
         id: record.id,
         carId: record.carId,
         carName: cars.find(c => c.id === record.carId)?.name || '不明',
-        type: record.type,
         title: record.title,
         description: record.description || '',
         cost: record.cost || '',
@@ -2069,10 +2165,36 @@ function DataManagementContent({
 
 function NotificationsContent({
   cars,
-  maintenanceRecords
+  maintenanceRecords,
+  reminders,
+  activeReminders,
+  overdueReminders,
+  thisWeekReminders,
+  setShowReminderModal,
+  setShowEditReminderModal,
+  setEditingReminder,
+  markReminderDone,
+  snoozeReminder,
+  dismissReminder,
+  getDaysUntilDue,
+  getKmUntilDue,
+  checkReminderDue
 }: {
   cars: Car[];
   maintenanceRecords: MaintenanceRecord[];
+  reminders: Reminder[];
+  activeReminders: Reminder[];
+  overdueReminders: Reminder[];
+  thisWeekReminders: Reminder[];
+  setShowReminderModal: (show: boolean) => void;
+  setShowEditReminderModal: (show: boolean) => void;
+  setEditingReminder: (reminder: Reminder | null) => void;
+  markReminderDone: (reminderId: string) => Promise<void>;
+  snoozeReminder: (reminderId: string, days: number) => Promise<void>;
+  dismissReminder: (reminderId: string) => Promise<void>;
+  getDaysUntilDue: (reminder: Reminder) => number | null;
+  getKmUntilDue: (reminder: Reminder, currentOdo: number) => number | null;
+  checkReminderDue: (reminder: Reminder, currentOdo?: number) => boolean;
 }) {
   // 通知設定の状態
   const [notificationSettings, setNotificationSettings] = useState({
@@ -2083,79 +2205,7 @@ function NotificationsContent({
     pushNotifications: true
   });
 
-  // アラートの計算
-  const alerts = useMemo(() => {
-    const alertsList: Array<{
-      id: string;
-      type: 'inspection' | 'maintenance';
-      severity: 'high' | 'medium' | 'low';
-      title: string;
-      message: string;
-      carName: string;
-      dueDate?: Date;
-      daysRemaining?: number;
-      maintenanceType?: string;
-      remainingKm?: number;
-    }> = [];
 
-    // 車検期限のアラート
-    cars.forEach(car => {
-      if (car.inspectionExpiry) {
-        const expiryDate = new Date(car.inspectionExpiry);
-        const today = new Date();
-        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (daysUntilExpiry <= 30) {
-          alertsList.push({
-            id: `inspection-${car.id}`,
-            type: 'inspection',
-            severity: daysUntilExpiry <= 7 ? 'high' : daysUntilExpiry <= 14 ? 'medium' : 'low',
-            title: '車検期限が近づいています',
-            message: `${car.name}の車検期限まで${daysUntilExpiry}日です`,
-            carName: car.name,
-            dueDate: expiryDate,
-            daysRemaining: daysUntilExpiry
-          });
-        }
-      }
-    });
-
-    // メンテナンス予定のアラート
-    cars.forEach(car => {
-      if (car.odoKm) {
-        const currentMileage = car.odoKm;
-        const maintenanceIntervals = [
-          { type: "オイル交換", interval: 10000 },
-          { type: "エアフィルター交換", interval: 20000 },
-          { type: "タイヤ交換", interval: 50000 },
-          { type: "ブレーキパッド交換", interval: 30000 },
-        ];
-
-        maintenanceIntervals.forEach(maintenance => {
-          const nextDue = Math.ceil(currentMileage / maintenance.interval) * maintenance.interval;
-          const remainingKm = nextDue - currentMileage;
-          
-          if (remainingKm <= 2000) {
-            alertsList.push({
-              id: `maintenance-${car.id}-${maintenance.type}`,
-              type: 'maintenance',
-              severity: remainingKm <= 500 ? 'high' : remainingKm <= 1000 ? 'medium' : 'low',
-              title: `${maintenance.type}の時期です`,
-              message: `${car.name}の${maintenance.type}まで残り${remainingKm.toLocaleString()}kmです`,
-              carName: car.name,
-              maintenanceType: maintenance.type,
-              remainingKm
-            });
-          }
-        });
-      }
-    });
-
-    return alertsList.sort((a, b) => {
-      const severityOrder = { high: 3, medium: 2, low: 1 };
-      return severityOrder[b.severity] - severityOrder[a.severity];
-    });
-  }, [cars]);
 
   // 通知設定の更新
   const updateNotificationSetting = (key: string, value: boolean) => {
@@ -2190,7 +2240,7 @@ function NotificationsContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">通知・リマインダー</h1>
+        <h1 className="text-2xl font-bold">通知設定</h1>
         <button
           onClick={testNotification}
           className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
@@ -2199,47 +2249,7 @@ function NotificationsContent({
         </button>
         </div>
 
-      {/* アラート一覧 */}
-      {alerts.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">現在のアラート</h3>
-          <div className="space-y-3">
-            {alerts.map((alert) => (
-              <div key={alert.id} className={`p-4 rounded-xl border ${
-                alert.severity === 'high' ? 'border-red-200 bg-red-50' :
-                alert.severity === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                'border-blue-200 bg-blue-50'
-              }`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-gray-900">{alert.title}</h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        alert.severity === 'high' ? 'bg-red-100 text-red-800' :
-                        alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {alert.severity === 'high' ? '緊急' : alert.severity === 'medium' ? '注意' : '情報'}
-                      </span>
-      </div>
-                    <p className="text-sm text-gray-600">{alert.message}</p>
-                    {alert.daysRemaining !== undefined && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        期限: {alert.dueDate?.toLocaleDateString('ja-JP')}
-                      </p>
-                    )}
-                  </div>
-                  <button className="text-gray-400 hover:text-gray-600 ml-4">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* 通知設定 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
@@ -2249,7 +2259,7 @@ function NotificationsContent({
             <div>
               <h4 className="font-medium text-gray-900">メンテナンスリマインダー</h4>
               <p className="text-sm text-gray-600">メンテナンス時期の通知</p>
-            </div>
+      </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -2336,7 +2346,6 @@ function EditMaintenanceModal({
   onClose: () => void;
   onUpdated: () => void;
 }) {
-  const [type, setType] = useState<MaintenanceType>(record.type);
   const [title, setTitle] = useState(record.title);
   const [description, setDescription] = useState(record.description || '');
   const [cost, setCost] = useState(record.cost?.toString() || '');
@@ -2345,16 +2354,28 @@ function EditMaintenanceModal({
   const [location, setLocation] = useState(record.location || '');
   const [carId, setCarId] = useState(record.carId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 選択された車両の現在の走行距離を取得
+  const selectedCar = cars.find(car => car.id === carId);
+  const currentMileage = selectedCar?.odoKm;
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!record.id) return;
+    
+    // 走行距離のバリデーション
+    if (mileage) {
+      const inputMileage = Number(mileage);
+      if (currentMileage && inputMileage < currentMileage) {
+        alert(`走行距離は現在の値（${currentMileage.toLocaleString()} km）以上である必要があります`);
+        return;
+      }
+    }
 
     setIsSubmitting(true);
     try {
       const updateData = {
         carId,
-        type,
         title,
         description: description || undefined,
         cost: cost ? Number(cost) : undefined,
@@ -2364,6 +2385,27 @@ function EditMaintenanceModal({
       };
 
       await updateMaintenanceRecord(record.id, updateData);
+      
+      // メンテナンス記録の更新時にリマインダーも更新
+      try {
+        const maintenanceType = title; // メンテナンス記録のtitleフィールドを使用
+        const performedAt = new Date(date);
+        const odoKm = mileage ? Number(mileage) : 0;
+        
+        await generateReminderFromMaintenance(
+          carId,
+          maintenanceType,
+          performedAt,
+          odoKm,
+          record.id
+        );
+        
+        console.log(`リマインダーを更新しました: ${maintenanceType}`);
+      } catch (reminderError) {
+        console.error("リマインダー更新エラー:", reminderError);
+        // リマインダー更新に失敗してもメンテナンス記録の更新は成功とする
+      }
+      
       onUpdated();
     } catch (error) {
       console.error("Error updating maintenance record:", error);
@@ -2410,40 +2452,31 @@ function EditMaintenanceModal({
             </select>
           </div>
 
-          {/* メンテナンス種類 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              メンテナンス種類
-            </label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as MaintenanceType)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
-              required
-            >
-              <option value="オイル交換">オイル交換</option>
-              <option value="タイヤ交換">タイヤ交換</option>
-              <option value="ブレーキパッド交換">ブレーキパッド交換</option>
-              <option value="エアフィルター交換">エアフィルター交換</option>
-              <option value="バッテリー交換">バッテリー交換</option>
-              <option value="車検">車検</option>
-              <option value="その他">その他</option>
-            </select>
-          </div>
 
           {/* タイトル */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               タイトル
             </label>
-            <input
-              type="text"
+            <select
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
-              placeholder="例: オイル交換"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
               required
-            />
+            >
+              <option value="">選択してください</option>
+              {['メンテナンス', '法定点検', 'その他'].map((category) => (
+                <optgroup key={category} label={category}>
+                  {MAINTENANCE_TITLE_OPTIONS
+                    .filter(option => option.category === category)
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
 
           {/* 説明 */}
@@ -2482,9 +2515,19 @@ function EditMaintenanceModal({
                 type="number"
                 value={mileage}
                 onChange={(e) => setMileage(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
-                placeholder="例: 50000"
+                className={`w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 placeholder:text-gray-600 text-gray-900 ${
+                  currentMileage && Number(mileage) < currentMileage && mileage !== ""
+                    ? "border-red-300 focus:ring-red-100 bg-red-50"
+                    : "border-gray-300 focus:ring-blue-100"
+                }`}
+                placeholder={currentMileage ? `現在: ${currentMileage.toLocaleString()} km` : "例: 50000"}
+                min={currentMileage || 0}
               />
+              {currentMileage && Number(mileage) < currentMileage && mileage !== "" && (
+                <p className="text-red-600 text-sm mt-1">
+                  現在の走行距離（{currentMileage.toLocaleString()} km）以上を入力してください
+                </p>
+              )}
             </div>
           </div>
 
@@ -2777,35 +2820,37 @@ function Spec({ label, value }: { label: string; value: string }) {
 function MaintenanceModal({ 
   carId, 
   carName, 
+  currentMileage,
   onClose, 
   onAdded 
 }: { 
   carId: string; 
   carName: string; 
+  currentMileage?: number;
   onClose: () => void; 
   onAdded: () => void; 
 }) {
-  const [type, setType] = useState<MaintenanceType>("オイル交換");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState<string>("");
-  const [mileage, setMileage] = useState<string>("");
+  const [mileage, setMileage] = useState<string>(currentMileage ? currentMileage.toString() : "");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState("");
-
-  const maintenanceTypes: MaintenanceType[] = [
-    "オイル交換", "タイヤ交換", "ブレーキパッド交換", 
-    "エアフィルター交換", "バッテリー交換", "車検", "その他"
-  ];
 
   async function handleAdd() {
     if (!title) return alert("タイトルを入力してください");
     if (!carId) return alert("車両が選択されていません");
+    if (!mileage) return alert("走行距離を入力してください");
+    
+    // 走行距離のバリデーション
+    const inputMileage = Number(mileage);
+    if (currentMileage && inputMileage < currentMileage) {
+      return alert(`走行距離は現在の値（${currentMileage.toLocaleString()} km）以上である必要があります`);
+    }
     
     try {
       console.log("Adding maintenance record with data:", {
         carId,
-        type,
         title,
         description,
         cost,
@@ -2814,16 +2859,35 @@ function MaintenanceModal({
         location
       });
       
-      await addMaintenanceRecord({
+      const newRecord = await addMaintenanceRecord({
         carId,
-        type,
         title,
         description: description || undefined,
         cost: cost ? Number(cost) : undefined,
-        mileage: mileage ? Number(mileage) : undefined,
+        mileage: Number(mileage), // 必須項目なので必ず数値
         date: new Date(date),
         location: location || undefined,
       });
+      
+      // メンテナンス記録からリマインダーを自動生成
+      try {
+        const maintenanceType = title; // メンテナンス記録のtitleフィールドを使用
+        const performedAt = new Date(date);
+        const odoKm = Number(mileage); // 必須項目なので必ず数値
+        
+        await generateReminderFromMaintenance(
+          carId,
+          maintenanceType,
+          performedAt,
+          odoKm,
+          newRecord.id
+        );
+        
+        console.log(`自動リマインダーを生成しました: ${maintenanceType}`);
+      } catch (reminderError) {
+        console.error("リマインダー生成エラー:", reminderError);
+        // リマインダー生成に失敗してもメンテナンス記録の追加は成功とする
+      }
       
       // フォームをリセット
       setTitle("");
@@ -2852,48 +2916,44 @@ function MaintenanceModal({
         </div>
         
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                メンテナンス種別
-              </label>
-              <select
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
-                value={type}
-                onChange={(e) => setType(e.target.value as MaintenanceType)}
-              >
-                {maintenanceTypes.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-        </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                日付
-              </label>
-              <input
-                type="date"
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-      </div>
-      </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              日付
+            </label>
+            <input
+              type="date"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               タイトル *
             </label>
-            <input
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
-              placeholder="例：エンジンオイル交換"
+            <select
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-            />
-    </div>
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              required
+            >
+              <option value="">選択してください</option>
+              {['メンテナンス', '法定点検', 'その他'].map((category) => (
+                <optgroup key={category} label={category}>
+                  {MAINTENANCE_TITLE_OPTIONS
+                    .filter(option => option.category === category)
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
 
-    <div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               詳細・メモ
             </label>
@@ -2904,7 +2964,7 @@ function MaintenanceModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-      </div>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -2918,20 +2978,31 @@ function MaintenanceModal({
                 value={cost}
                 onChange={(e) => setCost(e.target.value)}
               />
-      </div>
+            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                走行距離 (km)
+                走行距離 (km) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
-                placeholder="0"
+                className={`w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 placeholder:text-gray-600 text-gray-900 ${
+                  currentMileage && Number(mileage) < currentMileage && mileage !== ""
+                    ? "border-red-300 focus:ring-red-100 bg-red-50"
+                    : "border-gray-300 focus:ring-blue-100"
+                }`}
+                placeholder={currentMileage ? `現在: ${currentMileage.toLocaleString()} km` : "例: 50000"}
                 value={mileage}
                 onChange={(e) => setMileage(e.target.value)}
+                min={currentMileage || 0}
+                required
               />
-    </div>
+              {currentMileage && Number(mileage) < currentMileage && mileage !== "" && (
+                <p className="text-red-600 text-sm mt-1">
+                  現在の走行距離（{currentMileage.toLocaleString()} km）以上を入力してください
+                </p>
+              )}
+            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2983,8 +3054,6 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
     compressedSize: string;
     compressionRatio: string;
   } | null>(null);
-  const [showDefaultImageSelector, setShowDefaultImageSelector] = useState(false);
-  const [selectedDefaultImage, setSelectedDefaultImage] = useState<DefaultImage | null>(null);
   const [showCarModelSelector, setShowCarModelSelector] = useState(false);
   const [selectedManufacturer, setSelectedManufacturer] = useState<CarManufacturer | null>(null);
   const [selectedModel, setSelectedModel] = useState<CarModel | null>(null);
@@ -3039,16 +3108,8 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
     setSelectedFile(null);
     setImagePreview(null);
     setCompressionInfo(null);
-    setSelectedDefaultImage(null);
   };
 
-  // デフォルト画像選択処理
-  const handleDefaultImageSelect = (image: DefaultImage) => {
-    setSelectedDefaultImage(image);
-    setImagePreview(image.path);
-    setSelectedFile(null); // カスタム画像をクリア
-    setCompressionInfo(null);
-  };
 
   // 車種選択処理
   const handleCarModelSelect = (manufacturer: CarManufacturer, model: CarModel) => {
@@ -3063,9 +3124,6 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
 
   // 画像アップロード処理
   const handleImageUpload = async (): Promise<string> => {
-    if (selectedDefaultImage) {
-      return selectedDefaultImage.path; // デフォルト画像を返す
-    }
     if (!selectedFile) return "/car.jpg"; // デフォルト画像
 
     setIsUploading(true);
@@ -3276,26 +3334,19 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
             >
               {selectedFile ? "画像を変更" : "画像を選択"}
             </label>
-        <button
-              type="button"
-              onClick={() => setShowDefaultImageSelector(true)}
-              className="px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm"
-        >
-              デフォルト画像
-        </button>
       </div>
           
           {selectedFile && (
             <div className="text-xs text-gray-500 mt-1 space-y-1">
               <div className="flex items-center justify-between">
                 <p>選択中: {selectedFile.name}</p>
-                <button
+        <button
                   onClick={handleImageDelete}
                   className="text-red-600 hover:text-red-800 text-xs"
-                >
+        >
                   削除
-                </button>
-              </div>
+        </button>
+      </div>
               {compressionInfo && (
                 <div className="bg-green-50 p-2 rounded border border-green-200">
                   <p className="text-green-700">
@@ -3327,19 +3378,6 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
             </div>
           )}
           
-          {selectedDefaultImage && (
-            <div className="text-xs text-gray-500 mt-1 space-y-1">
-              <div className="flex items-center justify-between">
-                <p>選択中: {selectedDefaultImage.name}</p>
-                <button
-                  onClick={handleImageDelete}
-                  className="text-red-600 hover:text-red-800 text-xs"
-                >
-                  削除
-                </button>
-              </div>
-            </div>
-          )}
         </div>
         
         <div>
@@ -3406,14 +3444,6 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
           </div>
         </div>
       
-      {/* デフォルト画像セレクター */}
-      {showDefaultImageSelector && (
-        <DefaultImageSelector
-          onSelect={handleDefaultImageSelect}
-          onClose={() => setShowDefaultImageSelector(false)}
-          currentImage={imagePreview || undefined}
-        />
-      )}
       
       {/* 車種セレクター */}
       {showCarModelSelector && (
@@ -3453,8 +3483,6 @@ function EditCarModal({
     compressedSize: string;
     compressionRatio: string;
   } | null>(null);
-  const [showDefaultImageSelector, setShowDefaultImageSelector] = useState(false);
-  const [selectedDefaultImage, setSelectedDefaultImage] = useState<DefaultImage | null>(null);
 
   // ファイル選択ハンドラー
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -3506,22 +3534,11 @@ function EditCarModal({
     setSelectedFile(null);
     setImagePreview(null);
     setCompressionInfo(null);
-    setSelectedDefaultImage(null);
   };
 
-  // デフォルト画像選択処理
-  const handleDefaultImageSelect = (image: DefaultImage) => {
-    setSelectedDefaultImage(image);
-    setImagePreview(image.path);
-    setSelectedFile(null); // カスタム画像をクリア
-    setCompressionInfo(null);
-  };
 
   // 画像アップロード処理
   const handleImageUpload = async (): Promise<string> => {
-    if (selectedDefaultImage) {
-      return selectedDefaultImage.path; // デフォルト画像を返す
-    }
     if (!selectedFile) return car.imagePath || "/car.jpg"; // 既存の画像またはデフォルト
 
     setIsUploading(true);
@@ -3695,13 +3712,6 @@ function EditCarModal({
               >
                 {selectedFile ? "画像を変更" : "画像を選択"}
               </label>
-              <button
-                type="button"
-                onClick={() => setShowDefaultImageSelector(true)}
-                className="px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm"
-              >
-                デフォルト画像
-              </button>
             </div>
             
             {selectedFile && (
@@ -3746,19 +3756,6 @@ function EditCarModal({
               </div>
             )}
             
-            {selectedDefaultImage && (
-              <div className="text-xs text-gray-500 mt-1 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p>選択中: {selectedDefaultImage.name}</p>
-                  <button
-                    onClick={handleImageDelete}
-                    className="text-red-600 hover:text-red-800 text-xs"
-                  >
-                    削除
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
           
           <div>
@@ -3821,14 +3818,6 @@ function EditCarModal({
         </div>
       </div>
       
-      {/* デフォルト画像セレクター */}
-      {showDefaultImageSelector && (
-        <DefaultImageSelector
-          onSelect={handleDefaultImageSelect}
-          onClose={() => setShowDefaultImageSelector(false)}
-          currentImage={imagePreview || undefined}
-        />
-      )}
     </div>
   );
 }
@@ -4715,6 +4704,49 @@ function EditInsuranceModal({
   );
 }
 
+// リマインダータイトルの選択肢
+const REMINDER_TITLE_OPTIONS = [
+  { value: 'オイル交換', label: 'オイル交換', category: 'メンテナンス' },
+  { value: 'タイヤ交換', label: 'タイヤ交換', category: 'メンテナンス' },
+  { value: 'ブレーキパッド交換', label: 'ブレーキパッド交換', category: 'メンテナンス' },
+  { value: 'エアフィルター交換', label: 'エアフィルター交換', category: 'メンテナンス' },
+  { value: 'バッテリー交換', label: 'バッテリー交換', category: 'メンテナンス' },
+  { value: '車検', label: '車検', category: '法定点検' },
+  { value: '自動車税納付', label: '自動車税納付', category: '税金' },
+  { value: '自賠責保険更新', label: '自賠責保険更新', category: '保険' },
+  { value: '任意保険更新', label: '任意保険更新', category: '保険' },
+  { value: 'タイヤローテーション', label: 'タイヤローテーション', category: 'メンテナンス' },
+  { value: 'ブレーキフルード交換', label: 'ブレーキフルード交換', category: 'メンテナンス' },
+  { value: 'クーラント交換', label: 'クーラント交換', category: 'メンテナンス' },
+  { value: 'スパークプラグ交換', label: 'スパークプラグ交換', category: 'メンテナンス' },
+  { value: 'ベルト交換', label: 'ベルト交換', category: 'メンテナンス' },
+  { value: 'その他', label: 'その他', category: 'その他' }
+];
+
+// メンテナンス記録タイトルの選択肢
+const MAINTENANCE_TITLE_OPTIONS = [
+  { value: 'オイル交換', label: 'オイル交換', category: 'メンテナンス' },
+  { value: 'タイヤ交換', label: 'タイヤ交換', category: 'メンテナンス' },
+  { value: 'ブレーキパッド交換', label: 'ブレーキパッド交換', category: 'メンテナンス' },
+  { value: 'エアフィルター交換', label: 'エアフィルター交換', category: 'メンテナンス' },
+  { value: 'バッテリー交換', label: 'バッテリー交換', category: 'メンテナンス' },
+  { value: '車検', label: '車検', category: '法定点検' },
+  { value: 'タイヤローテーション', label: 'タイヤローテーション', category: 'メンテナンス' },
+  { value: 'ブレーキフルード交換', label: 'ブレーキフルード交換', category: 'メンテナンス' },
+  { value: 'クーラント交換', label: 'クーラント交換', category: 'メンテナンス' },
+  { value: 'スパークプラグ交換', label: 'スパークプラグ交換', category: 'メンテナンス' },
+  { value: 'ベルト交換', label: 'ベルト交換', category: 'メンテナンス' },
+  { value: 'ワイパー交換', label: 'ワイパー交換', category: 'メンテナンス' },
+  { value: '電球交換', label: '電球交換', category: 'メンテナンス' },
+  { value: 'エンジン点検', label: 'エンジン点検', category: 'メンテナンス' },
+  { value: 'トランスミッションオイル交換', label: 'トランスミッションオイル交換', category: 'メンテナンス' },
+  { value: 'ディファレンシャルオイル交換', label: 'ディファレンシャルオイル交換', category: 'メンテナンス' },
+  { value: 'ブレーキディスク交換', label: 'ブレーキディスク交換', category: 'メンテナンス' },
+  { value: 'サスペンション点検', label: 'サスペンション点検', category: 'メンテナンス' },
+  { value: 'エアコン点検', label: 'エアコン点検', category: 'メンテナンス' },
+  { value: 'その他', label: 'その他', category: 'その他' }
+];
+
 // リマインダー追加モーダル
 function ReminderModal({
   carId,
@@ -4753,8 +4785,8 @@ function ReminderModal({
         dueOdoKm: dueOdoKm ? parseInt(dueOdoKm) : null,
         baseEntryRef: null,
         threshold: {
-          months: thresholdMonths ? parseInt(thresholdMonths) : undefined,
-          km: thresholdKm ? parseInt(thresholdKm) : undefined,
+          ...(thresholdMonths && { months: parseInt(thresholdMonths) }),
+          ...(thresholdKm && { km: parseInt(thresholdKm) }),
         },
         status: 'active' as const,
         notes: notes.trim(),
@@ -4798,14 +4830,25 @@ function ReminderModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               タイトル *
             </label>
-            <input
-              type="text"
+            <select
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="例: オイル交換"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               required
-            />
+            >
+              <option value="">選択してください</option>
+              {['メンテナンス', '法定点検', '税金', '保険', 'その他'].map((category) => (
+                <optgroup key={category} label={category}>
+                  {REMINDER_TITLE_OPTIONS
+                    .filter(option => option.category === category)
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -4955,8 +4998,8 @@ function EditReminderModal({
         dueDate: dueDate ? new Date(dueDate) : null,
         dueOdoKm: dueOdoKm ? parseInt(dueOdoKm) : null,
         threshold: {
-          months: thresholdMonths ? parseInt(thresholdMonths) : undefined,
-          km: thresholdKm ? parseInt(thresholdKm) : undefined,
+          ...(thresholdMonths && { months: parseInt(thresholdMonths) }),
+          ...(thresholdKm && { km: parseInt(thresholdKm) }),
         },
         notes: notes.trim(),
       };
@@ -4992,14 +5035,25 @@ function EditReminderModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               タイトル *
             </label>
-            <input
-              type="text"
+            <select
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="例: オイル交換"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               required
-            />
+            >
+              <option value="">選択してください</option>
+              {['メンテナンス', '法定点検', '税金', '保険', 'その他'].map((category) => (
+                <optgroup key={category} label={category}>
+                  {REMINDER_TITLE_OPTIONS
+                    .filter(option => option.category === category)
+                    .map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -5106,3 +5160,357 @@ function EditReminderModal({
 
 
 
+function RemindersContent({
+  cars,
+  maintenanceRecords,
+  reminders,
+  activeReminders,
+  overdueReminders,
+  thisWeekReminders,
+  setShowReminderModal,
+  setShowEditReminderModal,
+  setEditingReminder,
+  markReminderDone,
+  snoozeReminder,
+  dismissReminder,
+  getDaysUntilDue,
+  getKmUntilDue,
+  checkReminderDue
+}: {
+  cars: Car[];
+  maintenanceRecords: MaintenanceRecord[];
+  reminders: Reminder[];
+  activeReminders: Reminder[];
+  overdueReminders: Reminder[];
+  thisWeekReminders: Reminder[];
+  setShowReminderModal: (show: boolean) => void;
+  setShowEditReminderModal: (show: boolean) => void;
+  setEditingReminder: (reminder: Reminder | null) => void;
+  markReminderDone: (reminderId: string) => Promise<void>;
+  snoozeReminder: (reminderId: string, days: number) => Promise<void>;
+  dismissReminder: (reminderId: string) => Promise<void>;
+  getDaysUntilDue: (reminder: Reminder) => number | null;
+  getKmUntilDue: (reminder: Reminder, currentOdo: number) => number | null;
+  checkReminderDue: (reminder: Reminder, currentOdo?: number) => boolean;
+}) {
+  // 非表示にしたアラートの状態管理
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+
+  // アラートを非表示にする関数
+  const dismissAlert = (alertId: string) => {
+    setDismissedAlerts(prev => new Set([...prev, alertId]));
+  };
+
+  // アラートを再表示する関数
+  const showAlert = (alertId: string) => {
+    setDismissedAlerts(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(alertId);
+      return newSet;
+    });
+  };
+
+  // アラートの計算
+  const alerts = useMemo(() => {
+    const alertsList: Array<{
+      id: string;
+      type: 'inspection' | 'maintenance';
+      severity: 'high' | 'medium' | 'low';
+      title: string;
+      message: string;
+      carName: string;
+      dueDate?: Date;
+      daysRemaining?: number;
+      maintenanceType?: string;
+      remainingKm?: number;
+    }> = [];
+
+    // 車検期限のアラート
+    cars.forEach(car => {
+      if (car.inspectionExpiry) {
+        const expiryDate = new Date(car.inspectionExpiry);
+        const today = new Date();
+        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilExpiry <= 30) {
+          alertsList.push({
+            id: `inspection-${car.id}`,
+            type: 'inspection',
+            severity: daysUntilExpiry <= 7 ? 'high' : daysUntilExpiry <= 14 ? 'medium' : 'low',
+            title: '車検期限が近づいています',
+            message: `${car.name}の車検期限まで${daysUntilExpiry}日です`,
+            carName: car.name,
+            dueDate: expiryDate,
+            daysRemaining: daysUntilExpiry
+          });
+        }
+      }
+    });
+
+    // メンテナンス予定のアラート
+    cars.forEach(car => {
+      if (car.odoKm) {
+        const currentMileage = car.odoKm;
+        const maintenanceIntervals = [
+          { type: "オイル交換", interval: 10000 },
+          { type: "エアフィルター交換", interval: 20000 },
+          { type: "タイヤ交換", interval: 50000 },
+          { type: "ブレーキパッド交換", interval: 30000 },
+        ];
+
+        maintenanceIntervals.forEach(maintenance => {
+          const nextDue = Math.ceil(currentMileage / maintenance.interval) * maintenance.interval;
+          const remainingKm = nextDue - currentMileage;
+          
+          if (remainingKm <= 2000) {
+            alertsList.push({
+              id: `maintenance-${car.id}-${maintenance.type}`,
+              type: 'maintenance',
+              severity: remainingKm <= 500 ? 'high' : remainingKm <= 1000 ? 'medium' : 'low',
+              title: `${maintenance.type}の時期です`,
+              message: `${car.name}の${maintenance.type}まで残り${remainingKm.toLocaleString()}kmです`,
+              carName: car.name,
+              maintenanceType: maintenance.type,
+              remainingKm
+            });
+          }
+        });
+      }
+    });
+
+    return alertsList
+      .filter(alert => !dismissedAlerts.has(alert.id))
+      .sort((a, b) => {
+        const severityOrder = { high: 3, medium: 2, low: 1 };
+        return severityOrder[b.severity] - severityOrder[a.severity];
+      });
+  }, [cars, dismissedAlerts]);
+
+  return (
+    <>
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">リマインダー管理</h1>
+        <button
+          onClick={() => setShowReminderModal(true)}
+          className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
+        >
+          ＋ リマインダー追加
+        </button>
+      </div>
+
+      {/* 現在のアラート */}
+      {alerts.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">現在のアラート</h3>
+          <div className="space-y-3">
+            {alerts.map((alert) => (
+              <div key={alert.id} className={`p-4 rounded-xl border ${
+                alert.severity === 'high' ? 'border-red-200 bg-red-50' :
+                alert.severity === 'medium' ? 'border-yellow-200 bg-yellow-50' :
+                'border-blue-200 bg-blue-50'
+              }`}>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium text-gray-900">{alert.title}</h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        alert.severity === 'high' ? 'bg-red-100 text-red-800' :
+                        alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {alert.severity === 'high' ? '緊急' : alert.severity === 'medium' ? '注意' : '情報'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{alert.message}</p>
+                    {alert.daysRemaining !== undefined && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        期限: {alert.dueDate?.toLocaleDateString('ja-JP')}
+                      </p>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => dismissAlert(alert.id)}
+                    className="text-gray-400 hover:text-gray-600 ml-4"
+                    title="アラートを非表示"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 非表示にしたアラートの再表示 */}
+      {dismissedAlerts.size > 0 && (
+        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">非表示にしたアラート</h3>
+          <div className="space-y-2">
+            {Array.from(dismissedAlerts).map(alertId => {
+              // アラートIDから情報を復元
+              const isInspection = alertId.startsWith('inspection-');
+              const isMaintenance = alertId.startsWith('maintenance-');
+              
+              let alertTitle = '';
+              if (isInspection) {
+                const carId = alertId.replace('inspection-', '');
+                const car = cars.find(c => c.id === carId);
+                alertTitle = `${car?.name || '車両'}の車検期限`;
+              } else if (isMaintenance) {
+                const parts = alertId.replace('maintenance-', '').split('-');
+                const carId = parts[0];
+                const maintenanceType = parts.slice(1).join('-');
+                const car = cars.find(c => c.id === carId);
+                alertTitle = `${car?.name || '車両'}の${maintenanceType}`;
+              }
+              
+              return (
+                <div key={alertId} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm text-gray-600">{alertTitle}</span>
+                  <button
+                    onClick={() => showAlert(alertId)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    再表示
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* リマインダー一覧 */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">リマインダー一覧</h3>
+          <div className="flex gap-2">
+            <span className="text-sm text-gray-500">
+              アクティブ: {activeReminders.length}件
+            </span>
+            {overdueReminders.length > 0 && (
+              <span className="text-sm text-red-600">
+                期限切れ: {overdueReminders.length}件
+              </span>
+            )}
+          </div>
+        </div>
+
+        {activeReminders.length > 0 ? (
+          <div className="space-y-3">
+            {activeReminders
+              .sort((a, b) => {
+                const aDays = getDaysUntilDue(a) || 999;
+                const bDays = getDaysUntilDue(b) || 999;
+                return aDays - bDays;
+              })
+              .map((reminder) => {
+                const car = cars.find(c => c.id === reminder.carId);
+                const daysUntilDue = getDaysUntilDue(reminder);
+                const kmUntilDue = car?.odoKm ? getKmUntilDue(reminder, car.odoKm) : null;
+                const isOverdue = checkReminderDue(reminder, car?.odoKm);
+
+                return (
+                  <div key={reminder.id} className={`p-4 rounded-xl border ${
+                    isOverdue ? "border-red-200 bg-red-50" :
+                    daysUntilDue !== null && daysUntilDue <= 7 ? "border-yellow-200 bg-yellow-50" :
+                    "border-gray-200 bg-gray-50"
+                  }`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-gray-900">{reminder.title}</h4>
+                          {car && (
+                            <span className="text-xs text-gray-500">({car.name})</span>
+                          )}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            isOverdue ? "bg-red-100 text-red-800" :
+                            daysUntilDue !== null && daysUntilDue <= 7 ? "bg-yellow-100 text-yellow-800" :
+                            "bg-blue-100 text-blue-800"
+                          }`}>
+                            {isOverdue ? "期限切れ" : 
+                             daysUntilDue !== null && daysUntilDue <= 7 ? "今週" : 
+                             "予定"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{reminder.notes || ""}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          {daysUntilDue !== null && (
+                            <span>
+                              {isOverdue ? `期限切れ ${Math.abs(daysUntilDue)}日` : 
+                               `あと${daysUntilDue}日`}
+                            </span>
+                          )}
+                          {kmUntilDue !== null && (
+                            <span>あと{kmUntilDue.toLocaleString()}km</span>
+                          )}
+                          {reminder.dueDate && (
+                            <span>期限: {new Date(reminder.dueDate).toLocaleDateString("ja-JP")}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button
+                          onClick={() => {
+                            setEditingReminder(reminder);
+                            setShowEditReminderModal(true);
+                          }}
+                          className="text-gray-400 hover:text-gray-600"
+                          title="編集"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => reminder.id && markReminderDone(reminder.id)}
+                          className="text-green-600 hover:text-green-700"
+                          title="完了"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => reminder.id && snoozeReminder(reminder.id, 7)}
+                          className="text-blue-600 hover:text-blue-700"
+                          title="1週間延期"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 1 0-15 0v5h5l-5 5-5-5h5v-5a7.5 7.5 0 1 1 15 0v5z" />
+            </svg>
+            <p>リマインダーがありません</p>
+            <p className="text-sm mt-1">メンテナンス記録から自動生成されるか、手動で追加してください</p>
+          </div>
+        )}
+      </div>
+
+      {/* リマインダーのヒント */}
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold text-blue-900 mb-2">リマインダーについて</h3>
+        <ul className="text-blue-800 space-y-2">
+          <li>• メンテナンス記録から自動でリマインダーが生成されます</li>
+          <li>• 手動でリマインダーを追加・編集できます</li>
+          <li>• 完了したリマインダーは自動で次回予定が設定されます</li>
+          <li>• 期限切れのリマインダーは赤色で表示されます</li>
+        </ul>
+      </div>
+    </>
+  );
+}

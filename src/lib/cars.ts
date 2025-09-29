@@ -170,3 +170,19 @@ export async function removeCar(carId: string) {
   if (!u) throw new Error("not signed in");
   await deleteDoc(doc(db, "users", u.uid, "cars", carId));
 }
+
+// 車両の走行距離を更新
+export async function updateCarMileage(carId: string, newMileage: number) {
+  const u = auth.currentUser;
+  if (!u) throw new Error("not signed in");
+  
+  console.log(`Updating car ${carId} mileage to ${newMileage}`);
+  
+  const carRef = doc(db, "users", u.uid, "cars", carId);
+  await updateDoc(carRef, {
+    odoKm: newMileage,
+    updatedAt: serverTimestamp()
+  });
+  
+  console.log(`Successfully updated car ${carId} mileage to ${newMileage}`);
+}
