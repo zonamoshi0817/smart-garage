@@ -6,6 +6,7 @@ import {
   doc, updateDoc, deleteDoc
 } from "firebase/firestore";
 import { generateInitialReminders, saveAutoReminders, updateShakenReminders, type VehicleData } from "./reminders";
+import { validateOilReminderRequirements } from "@/lib/validators";
 
 export type Car = {
   id?: string;
@@ -17,8 +18,14 @@ export type Car = {
   inspectionExpiry?: string; // 車検期限 (例: "2026-04-15")
   firstRegYm?: string;     // 初度登録年月 (例: "2020-03")
   avgKmPerMonth?: number;  // 平均月間走行距離
-  createdAt?: any;
-  updatedAt?: any;
+  engineCode?: string;     // エンジンコード
+  oilSpec?: {              // オイル仕様
+    viscosity: string;     // 粘度 (例: "0W-20")
+    api: string;          // API規格 (例: "SP")
+    volumeL: number;      // 容量 (例: 4.0)
+  };
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 export type CarInput = {
@@ -30,6 +37,12 @@ export type CarInput = {
   inspectionExpiry?: string;
   firstRegYm?: string;
   avgKmPerMonth?: number;
+  engineCode?: string;
+  oilSpec?: {
+    viscosity: string;
+    api: string;
+    volumeL: number;
+  };
 };
 
 // 追加
@@ -41,6 +54,15 @@ export async function addCar(data: CarInput) {
   console.log("User ID:", u.uid);
   
   try {
+    // オイル仕様のバリデーション（オイル交換リマインダー生成に必要）
+    if (data.oilSpec) {
+      const validation = validateOilReminderRequirements(data);
+      if (!validation.isValid) {
+        console.warn("Oil spec validation warning:", validation.error);
+        // 警告は出すが、車両追加は続行（オイル仕様は任意）
+      }
+    }
+    
     const ref = collection(db, "users", u.uid, "cars");
     
     // undefined値をnullに変換（Firestoreではundefinedは保存できない）

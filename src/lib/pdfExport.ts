@@ -6,6 +6,7 @@ import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { Car } from './cars';
 import { MaintenanceRecord } from './maintenance';
+import { generateCombinedProof, ProofData } from './proof';
 
 // 日本語フォントの設定
 declare module 'jspdf' {
@@ -36,8 +37,11 @@ export async function generateMaintenancePDF(options: PDFExportOptions): Promise
     });
   }
 
+  // 証明性データを生成
+  const proof = await generateCombinedProof(car, filteredRecords, []);
+
   // HTMLコンテンツを生成
-  const htmlContent = generateHTMLContent(car, filteredRecords);
+  const htmlContent = generateHTMLContent(car, filteredRecords, proof);
   
   // 一時的なDOM要素を作成
   const tempDiv = document.createElement('div');
@@ -85,7 +89,7 @@ export async function generateMaintenancePDF(options: PDFExportOptions): Promise
   }
 }
 
-function generateHTMLContent(car: Car, records: MaintenanceRecord[]): string {
+function generateHTMLContent(car: Car, records: MaintenanceRecord[], proof?: ProofData): string {
   const totalCost = records.reduce((sum, record) => sum + (record.cost || 0), 0);
   const recordCount = records.length;
   const avgCost = recordCount > 0 ? Math.round(totalCost / recordCount) : 0;
@@ -256,7 +260,6 @@ function generateHTMLContent(car: Car, records: MaintenanceRecord[]): string {
             <thead>
               <tr>
                 <th>日付</th>
-                <th>種類</th>
                 <th>内容</th>
                 <th>費用</th>
                 <th>走行距離</th>
@@ -267,7 +270,6 @@ function generateHTMLContent(car: Car, records: MaintenanceRecord[]): string {
               ${records.map(record => `
                 <tr>
                   <td>${record.date.toLocaleDateString('ja-JP')}</td>
-                  <td>${record.type}</td>
                   <td>${record.title}</td>
                   <td>${record.cost ? `¥${record.cost.toLocaleString()}` : '-'}</td>
                   <td>${record.mileage ? `${record.mileage.toLocaleString()} km` : '-'}</td>
@@ -275,7 +277,7 @@ function generateHTMLContent(car: Car, records: MaintenanceRecord[]): string {
                 </tr>
                 ${record.description ? `
                 <tr>
-                  <td colspan="6" style="background-color: #f0f0f0; font-size: 11px; color: #666;">
+                  <td colspan="5" style="background-color: #f0f0f0; font-size: 11px; color: #666;">
                     詳細: ${record.description}
                   </td>
                 </tr>
@@ -307,6 +309,19 @@ function generateHTMLContent(car: Car, records: MaintenanceRecord[]): string {
       <div class="footer">
         <p>Smart Garage - 愛車の価値を履歴で残す</p>
         <p>Generated on ${new Date().toLocaleString('ja-JP')}</p>
+        ${proof ? `
+        <div class="proof-section" style="margin-top: 20px; padding: 15px; background: #f0f8ff; border: 1px solid #4285f4; border-radius: 8px;">
+          <h4 style="margin: 0 0 10px 0; color: #4285f4; font-size: 14px;">🔒 データの証明性</h4>
+          <div style="font-size: 12px; color: #666;">
+            <div style="margin-bottom: 5px;">生成日時: ${proof.generatedAt.toLocaleString('ja-JP')}</div>
+            <div style="margin-bottom: 5px;">整合性ハッシュ: <code style="background: #e8f0fe; padding: 2px 4px; border-radius: 3px;">${proof.hash}</code></div>
+            <div style="margin-bottom: 5px;">記録数: ${proof.recordCount}件</div>
+            <div style="font-size: 11px; color: #888; margin-top: 8px;">
+              このデータは改ざん防止ハッシュにより証明されています。第三者による検証にご利用いただけます。
+            </div>
+          </div>
+        </div>
+        ` : ''}
       </div>
     </body>
     </html>

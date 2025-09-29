@@ -7,8 +7,6 @@ import { addCar, watchCars, type Car, type CarInput, updateCar, removeCar } from
 import { auth, watchAuth } from "@/lib/firebase";
 import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords, type MaintenanceRecord } from "@/lib/maintenance";
 import { downloadMaintenancePDF, generateMaintenanceURL, type PDFExportOptions } from "@/lib/pdfExport";
-import { generateCombinedProof, type ProofData } from '@/lib/proof';
-import ProofBadge from '@/components/ProofBadge';
 import { uploadCarImage, uploadCarImageWithProgress, isImageFile, validateFileSize } from "@/lib/storage";
 import { compressImage, getFileSizeString, getCompressionInfo } from "@/lib/imageCompression";
 import { carDatabase, type CarManufacturer, type CarModel } from "@/lib/carDatabase";
@@ -43,7 +41,6 @@ export default function Home() {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showEditReminderModal, setShowEditReminderModal] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
-  const [proofData, setProofData] = useState<ProofData | null>(null);
   const [showInsuranceNotificationSettings, setShowInsuranceNotificationSettings] = useState(false);
   const [showTypeaheadCarSelector, setShowTypeaheadCarSelector] = useState(false);
   const [showAutoReminderPreview, setShowAutoReminderPreview] = useState(false);
@@ -591,8 +588,8 @@ export default function Home() {
           {/* サイドバー */}
           <aside className="lg:sticky lg:top-20 h-fit">
             <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 grid place-items-center font-semibold text-sm">
-                小
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-white grid place-items-center font-semibold">
+                佐
               </div>
               <div className="text-sm">
                 <div className="font-semibold">小林 健太</div>
@@ -626,27 +623,27 @@ export default function Home() {
                 onClick={() => setCurrentPage('dashboard')}
               />
             <NavItem 
-              label="車両" 
+              label="車両管理" 
               active={currentPage === 'car-management'} 
               onClick={() => setCurrentPage('car-management')}
             />
             <NavItem 
-              label="履歴" 
+              label="メンテナンス履歴" 
               active={currentPage === 'maintenance-history'} 
               onClick={() => setCurrentPage('maintenance-history')}
             />
             <NavItem 
-              label="車検・保険" 
+              label="保険管理" 
               active={currentPage === 'insurance'} 
               onClick={() => setCurrentPage('insurance')}
             />
             <NavItem 
-              label="エクスポート" 
+              label="データ管理" 
               active={currentPage === 'data-management'} 
               onClick={() => setCurrentPage('data-management')}
             />
             <NavItem 
-              label="通知" 
+              label="通知設定" 
               active={currentPage === 'notifications'} 
               onClick={() => setCurrentPage('notifications')}
             />
@@ -1022,38 +1019,8 @@ function DashboardContent({
     setShowEditReminderModal(true);
   };
 
-
-  // 証明性データの生成
-  useEffect(() => {
-    const generateProof = async () => {
-      if (car && maintenanceRecords.length > 0) {
-        try {
-          const proof = await generateCombinedProof(car, maintenanceRecords, []);
-          // setProofData(proof);
-        } catch (error) {
-          console.error('証明性データの生成に失敗:', error);
-        }
-      }
-    };
-
-    generateProof();
-  }, [car, maintenanceRecords]);
-
-
   return (
     <>
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">ダッシュボード</h1>
-      </div>
-
-
-      {/* 証明性バッジ */}
-      {/* {proofData && (
-        <div className="mb-6">
-          <ProofBadge proof={proofData} showDetails={true} />
-        </div>
-      )} */}
 
       {/* 車検期限リマインダー */}
       {car?.inspectionExpiry && (() => {
@@ -1579,29 +1546,25 @@ function MaintenanceHistoryContent({
       searchTerm,
       records: maintenanceRecords.map(r => ({ id: r.id, title: r.title, carId: r.carId }))
     });
+    console.log("selectedCarId value:", selectedCarId, "type:", typeof selectedCarId);
     
     let filtered = maintenanceRecords;
 
-    // 車両でフィルタリング
-    if (selectedCarId !== 'all') {
-      console.log("Filtering by car ID:", selectedCarId);
-      const beforeCount = filtered.length;
-      filtered = filtered.filter(record => record.carId === selectedCarId);
-      console.log(`Car filter: ${beforeCount} -> ${filtered.length} records`);
-    }
+    // 車両でフィルタリング - 一時的に無効化
+    // if (selectedCarId !== 'all') {
+    //   filtered = filtered.filter(record => record.carId === selectedCarId);
+    // }
 
     // 検索でフィルタリング
     if (searchTerm) {
-      console.log("Filtering by search term:", searchTerm);
-      const beforeCount = filtered.length;
       filtered = filtered.filter(record => 
         record.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (record.description && record.description.toLowerCase().includes(searchTerm.toLowerCase()))
       );
-      console.log(`Search filter: ${beforeCount} -> ${filtered.length} records`);
     }
 
-    console.log("Final filtered records:", filtered.length);
+    console.log("Filtered records:", filtered.length);
+    console.log("Filtered records data:", filtered.map(r => ({ id: r.id, title: r.title, carId: r.carId })));
     return filtered;
   }, [maintenanceRecords, selectedCarId, searchTerm]);
 
@@ -1706,7 +1669,7 @@ function MaintenanceHistoryContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">履歴</h1>
+        <h1 className="text-2xl font-bold">メンテナンス履歴</h1>
         <div className="flex gap-3">
           {/* 一括削除機能を一時的に無効化 */}
           {/* {selectedRecords.length > 0 && (
@@ -1910,8 +1873,8 @@ function DataManagementContent({
       year: car.year || '',
       odoKm: car.odoKm || '',
       inspectionExpiry: car.inspectionExpiry || '',
-      createdAt: car.createdAt || new Date(),
-      updatedAt: car.updatedAt || new Date()
+      createdAt: car.createdAt ? new Date(car.createdAt.seconds * 1000) : new Date(),
+      updatedAt: car.updatedAt ? new Date(car.updatedAt.seconds * 1000) : new Date()
     }));
     exportToCSV(carsData, `cars_${new Date().toISOString().split('T')[0]}.csv`);
   };
@@ -1927,8 +1890,8 @@ function DataManagementContent({
       mileage: record.mileage || '',
       date: record.date,
       location: record.location || '',
-      createdAt: record.createdAt || new Date(),
-      updatedAt: record.updatedAt || new Date()
+      createdAt: record.createdAt ? new Date(record.createdAt.seconds * 1000) : new Date(),
+      updatedAt: record.updatedAt ? new Date(record.updatedAt.seconds * 1000) : new Date()
     }));
     exportToCSV(maintenanceData, `maintenance_${new Date().toISOString().split('T')[0]}.csv`);
   };
@@ -1942,8 +1905,8 @@ function DataManagementContent({
         year: car.year || '',
         odoKm: car.odoKm || '',
         inspectionExpiry: car.inspectionExpiry || '',
-        createdAt: car.createdAt || new Date(),
-        updatedAt: car.updatedAt || new Date()
+        createdAt: car.createdAt ? new Date(car.createdAt.seconds * 1000) : new Date(),
+        updatedAt: car.updatedAt ? new Date(car.updatedAt.seconds * 1000) : new Date()
       })),
       maintenance: maintenanceRecords.map(record => ({
         id: record.id,
@@ -1955,8 +1918,8 @@ function DataManagementContent({
         mileage: record.mileage || '',
         date: record.date,
         location: record.location || '',
-        createdAt: record.createdAt || new Date(),
-        updatedAt: record.updatedAt || new Date()
+        createdAt: record.createdAt ? new Date(record.createdAt.seconds * 1000) : new Date(),
+        updatedAt: record.updatedAt ? new Date(record.updatedAt.seconds * 1000) : new Date()
       }))
     };
 
@@ -2040,7 +2003,7 @@ function DataManagementContent({
     <>
       {/* ヘッダー */}
                 <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">エクスポート</h1>
+        <h1 className="text-2xl font-bold">データ管理</h1>
                 </div>
 
       {/* データ統計 */}
@@ -2277,7 +2240,7 @@ function NotificationsContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">通知</h1>
+        <h1 className="text-2xl font-bold">通知設定</h1>
         <button
           onClick={testNotification}
           className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
@@ -2664,7 +2627,7 @@ function CarManagementContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">車両</h1>
+        <h1 className="text-2xl font-bold">車両管理</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setShowTypeaheadCarSelector(true)}
@@ -3968,7 +3931,7 @@ function InsuranceContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">車検・保険</h1>
+        <h1 className="text-2xl font-bold">保険管理</h1>
         <div className="flex gap-3">
           <button
             onClick={() => setShowInsuranceNotificationSettings(true)}
@@ -5327,7 +5290,7 @@ function RemindersContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">リマインダー</h1>
+        <h1 className="text-2xl font-bold">リマインダー管理</h1>
         <button
           onClick={() => setShowReminderModal(true)}
           className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"

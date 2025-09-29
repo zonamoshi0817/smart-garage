@@ -373,7 +373,7 @@ export function estimateAffiliateRevenue(
   conversionRate: number = 0.05,
   averageOrderValue: number = 3000,
   commissionRate: number = 0.03
-): number {
+): { clicks: number; purchases: number; revenue: number; commission: number } {
   const purchases = Math.floor(clicks * conversionRate);
   const revenue = purchases * averageOrderValue;
   const commission = revenue * commissionRate;

@@ -5,6 +5,8 @@ import {
   collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
   doc, updateDoc, deleteDoc, where
 } from "firebase/firestore";
+import { validateMileageConsistency } from "@/lib/validators";
+import { getDoc } from "firebase/firestore";
 
 export type MaintenanceRecord = {
   id?: string;
@@ -15,8 +17,8 @@ export type MaintenanceRecord = {
   mileage?: number; // 走行距離
   date: Date;
   location?: string; // 作業場所
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 export type MaintenanceInput = {
@@ -29,12 +31,80 @@ export type MaintenanceInput = {
   location?: string;
 };
 
+// 車両の現在走行距離を取得
+async function getCurrentCarMileage(carId: string): Promise<number> {
+  const u = auth.currentUser;
+  if (!u) throw new Error("not signed in");
+  
+  try {
+    const carDoc = await getDoc(doc(db, "users", u.uid, "cars", carId));
+    if (carDoc.exists()) {
+      const carData = carDoc.data() as { odoKm?: number };
+      return carData.odoKm || 0;
+    }
+    return 0;
+  } catch (error) {
+    console.error("Error fetching current car mileage:", error);
+    return 0;
+  }
+}
+
+// 車両の既存メンテナンス記録を取得（ODO整合チェック用）
+async function getExistingMaintenanceRecords(carId: string): Promise<Array<{ mileage: number; date: Date }>> {
+  const u = auth.currentUser;
+  if (!u) throw new Error("not signed in");
+  
+  try {
+    const q = query(
+      collection(db, "users", u.uid, "maintenance"),
+      where("carId", "==", carId),
+      orderBy("date", "desc")
+    );
+    
+    const snapshot = await new Promise((resolve, reject) => {
+      const unsubscribe = onSnapshot(q, resolve, reject);
+      // 一度だけ取得してunsubscribe
+      setTimeout(() => unsubscribe(), 100);
+    }) as any;
+    
+    const records: Array<{ mileage: number; date: Date }> = [];
+    snapshot.forEach((doc: any) => {
+      const data = doc.data() as { mileage?: number; date?: { toDate?: () => Date } | Date };
+      if (data.mileage && data.date) {
+        records.push({
+          mileage: data.mileage,
+          date: typeof data.date === 'object' && 'toDate' in data.date ? (data.date as any).toDate() : new Date(data.date as Date)
+        });
+      }
+    });
+    
+    return records;
+  } catch (error) {
+    console.error("Error fetching existing maintenance records:", error);
+    return [];
+  }
+}
+
 // メンテナンス履歴を追加
 export async function addMaintenanceRecord(data: MaintenanceInput) {
   const u = auth.currentUser;
   if (!u) throw new Error("not signed in");
   
   try {
+    // ODO整合チェック
+    const existingRecords = await getExistingMaintenanceRecords(data.carId);
+    const currentCarMileage = await getCurrentCarMileage(data.carId);
+    
+    const validation = validateMileageConsistency(
+      data.mileage,
+      currentCarMileage,
+      existingRecords
+    );
+    
+    if (!validation.isValid) {
+      throw new Error(validation.error);
+    }
+    
     const ref = collection(db, "users", u.uid, "maintenance");
     
     // データを準備（Dateオブジェクトを適切に処理）

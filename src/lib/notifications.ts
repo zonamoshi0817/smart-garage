@@ -1,6 +1,6 @@
 // src/lib/notifications.ts
 "use client";
-import { getDueOilReminders, updateOilReminderStatus } from './oilReminders';
+import { watchActiveReminders, updateReminderStatus } from './reminders';
 
 // 通知の型定義
 export interface NotificationData {
@@ -94,7 +94,7 @@ export async function sendOilReminderNotification(reminder: any): Promise<void> 
     };
 
     // アクションボタンクリック時の処理
-    notification.onactionclick = (event) => {
+    (notification as any).onactionclick = (event: any) => {
       const action = event.action;
       handleNotificationAction(action, reminder);
       notification.close();
@@ -106,7 +106,7 @@ export async function sendOilReminderNotification(reminder: any): Promise<void> 
     }, 10000);
 
     // 通知送信ステータスを更新
-    await updateOilReminderStatus(reminder.id, 'sent');
+    await updateReminderStatus(reminder.id, 'done');
     
     console.log('オイル交換リマインド通知を送信しました:', reminder.id);
   } catch (error) {
@@ -114,20 +114,34 @@ export async function sendOilReminderNotification(reminder: any): Promise<void> 
   }
 }
 
-// 期限切れのオイル交換リマインドをチェックして通知送信
-export async function checkAndSendOilReminderNotifications(): Promise<void> {
+// 期限切れのリマインドをチェックして通知送信
+export async function checkAndSendReminderNotifications(): Promise<void> {
   try {
-    const dueReminders = await getDueOilReminders();
-    
-    for (const reminder of dueReminders) {
-      await sendOilReminderNotification(reminder);
-    }
-    
-    if (dueReminders.length > 0) {
-      console.log(`${dueReminders.length}件のオイル交換リマインド通知を送信しました`);
-    }
+    // アクティブなリマインダーを監視して、期限切れのものを通知
+    watchActiveReminders((reminders) => {
+      const now = new Date();
+      const dueReminders = reminders.filter(reminder => {
+        if (reminder.dueDate) {
+          return new Date(reminder.dueDate) <= now;
+        }
+        if (reminder.dueOdoKm && reminder.carId) {
+          // 車両の現在の走行距離を取得して比較
+          // 実際の実装では、車両の現在の走行距離を取得する必要がある
+          return false; // 暫定的にfalseを返す
+        }
+        return false;
+      });
+      
+      dueReminders.forEach(reminder => {
+        sendOilReminderNotification(reminder);
+      });
+      
+      if (dueReminders.length > 0) {
+        console.log(`${dueReminders.length}件のリマインド通知を送信しました`);
+      }
+    });
   } catch (error) {
-    console.error('オイル交換リマインド通知のチェックに失敗しました:', error);
+    console.error('リマインド通知のチェックに失敗しました:', error);
   }
 }
 
@@ -170,7 +184,7 @@ function handleNotificationAction(action: string, reminder: any): void {
 // リマインドをスヌーズ
 async function snoozeReminder(reminderId: string): Promise<void> {
   try {
-    await updateOilReminderStatus(reminderId, 'snoozed');
+    await updateReminderStatus(reminderId, 'snoozed');
     console.log('リマインドをスヌーズしました:', reminderId);
   } catch (error) {
     console.error('スヌーズに失敗しました:', error);
@@ -180,11 +194,11 @@ async function snoozeReminder(reminderId: string): Promise<void> {
 // 定期的な通知チェックを開始
 export function startNotificationScheduler(): void {
   // 初回チェック
-  checkAndSendOilReminderNotifications();
+  checkAndSendReminderNotifications();
   
   // 1時間ごとにチェック
   setInterval(() => {
-    checkAndSendOilReminderNotifications();
+    checkAndSendReminderNotifications();
   }, 60 * 60 * 1000); // 1時間 = 60分 * 60秒 * 1000ms
 }
 
