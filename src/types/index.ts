@@ -147,6 +147,27 @@ export interface ModalProps {
   onClose: () => void;
 }
 
+// 給油ログ関連の型
+export interface FuelLog extends BaseEntity {
+  carId: string;
+  odoKm: number;
+  fuelAmount: number; // 給油量（L）
+  cost: number; // 金額（¥）
+  isFullTank: boolean; // 満タンかどうか
+  memo?: string;
+  date: Date;
+}
+
+export interface FuelLogInput {
+  carId: string;
+  odoKm: number;
+  fuelAmount: number;
+  cost: number;
+  isFullTank: boolean;
+  memo?: string;
+  date: Date;
+}
+
 // ナビゲーション関連の型
 export interface NavItem {
   id: string;

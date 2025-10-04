@@ -55,10 +55,10 @@ async function getExistingMaintenanceRecords(carId: string): Promise<Array<{ mil
   if (!u) throw new Error("not signed in");
   
   try {
+    // インデックスエラーを回避するため、orderByを削除してクライアント側でソート
     const q = query(
       collection(db, "users", u.uid, "maintenance"),
-      where("carId", "==", carId),
-      orderBy("date", "desc")
+      where("carId", "==", carId)
     );
     
     const snapshot = await new Promise((resolve, reject) => {
@@ -77,6 +77,9 @@ async function getExistingMaintenanceRecords(carId: string): Promise<Array<{ mil
         });
       }
     });
+    
+    // クライアント側で日付順にソート（降順）
+    records.sort((a, b) => b.date.getTime() - a.date.getTime());
     
     return records;
   } catch (error) {
@@ -147,13 +150,15 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
       const { generateReminderFromMaintenance } = await import("@/lib/reminders");
       
       // デバッグ情報を追加
-      console.log('メンテナンス記録からリマインダー生成:', {
-        title: data.title,
-        date: data.date,
-        dateType: typeof data.date,
-        parsedDate: new Date(data.date),
-        now: new Date()
-      });
+      console.log('=== メンテナンス記録からリマインダー生成 ===');
+      console.log('メンテナンスタイトル:', data.title);
+      console.log('実施日 (data.date):', data.date);
+      console.log('実施日の型:', typeof data.date);
+      console.log('Dateオブジェクトに変換:', new Date(data.date));
+      console.log('現在日時:', new Date());
+      console.log('走行距離:', data.mileage);
+      console.log('車両ID:', data.carId);
+      console.log('========================================');
       
       const reminderId = await generateReminderFromMaintenance(
         data.carId,

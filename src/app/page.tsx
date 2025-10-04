@@ -19,7 +19,11 @@ import { addInsurancePolicy, watchInsurancePolicies, updateInsurancePolicy, remo
 import { watchInsuranceNotifications, type InsuranceNotification } from "@/lib/insuranceNotifications";
 import InsuranceNotificationSettings from "@/components/InsuranceNotificationSettings";
 import { addReminder, watchReminders, updateReminder, removeReminder, markReminderDone, snoozeReminder, dismissReminder, suggestReminders, checkReminderDue, getDaysUntilDue, getKmUntilDue, getReminderPriority, generateReminderFromMaintenance, extractMaintenanceTypeFromTitle, deleteRemindersByMaintenanceRecord, generateNextReminderOnComplete, type Reminder } from "@/lib/reminders";
+import { watchFuelLogs } from "@/lib/fuelLogs";
+import type { FuelLog } from "@/types";
 import { BarChart, Bar as RechartsBar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Area, AreaChart } from 'recharts';
+import FuelLogModal from "@/components/modals/FuelLogModal";
+import FuelLogCard from "@/components/dashboard/FuelLogCard";
 
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
@@ -47,6 +51,8 @@ export default function Home() {
   const [showInsuranceNotificationSettings, setShowInsuranceNotificationSettings] = useState(false);
   const [showTypeaheadCarSelector, setShowTypeaheadCarSelector] = useState(false);
   const [showAutoReminderPreview, setShowAutoReminderPreview] = useState(false);
+  const [showFuelLogModal, setShowFuelLogModal] = useState(false);
+  const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
   const [pendingCarData, setPendingCarData] = useState<{
     manufacturer: CarManufacturer | null;
     model: CarModel | null;
@@ -83,6 +89,7 @@ export default function Home() {
         setInsurancePolicies([]);
         setInsuranceClaims([]);
         setReminders([]);
+        setFuelLogs([]);
         
         // 認証トリガーを更新してデータ取得を促す
         setAuthTrigger(prev => prev + 1);
@@ -101,6 +108,7 @@ export default function Home() {
         setInsurancePolicies([]);
         setInsuranceClaims([]);
         setReminders([]);
+        setFuelLogs([]);
         setAuthTrigger(0);
       }
     });
@@ -333,6 +341,7 @@ export default function Home() {
     if (!auth.currentUser) {
       console.log("No user authenticated, skipping reminders watch");
       setReminders([]);
+      setFuelLogs([]);
       return;
     }
     
@@ -353,8 +362,28 @@ export default function Home() {
     } catch (error) {
       console.error("Error watching reminders:", error);
       setReminders([]);
+      setFuelLogs([]);
     }
   }, [auth.currentUser, authTrigger]);
+
+  // 給油ログの監視
+  useEffect(() => {
+    if (!auth.currentUser || !activeCarId) {
+      setFuelLogs([]);
+      return;
+    }
+
+    console.log("Setting up fuel logs watcher for car:", activeCarId);
+    const unsubscribe = watchFuelLogs(activeCarId, (logs) => {
+      console.log("Fuel logs updated:", logs.length);
+      setFuelLogs(logs);
+    });
+
+    return () => {
+      console.log("Cleaning up fuel logs watcher");
+      unsubscribe();
+    };
+  }, [auth.currentUser, activeCarId, authTrigger]);
 
   const car = useMemo(
     () => cars.find((c) => c.id === activeCarId),
@@ -616,7 +645,26 @@ export default function Home() {
               }}
               className="mt-4 w-full rounded-2xl bg-blue-600 text-white py-3 font-semibold hover:bg-blue-500 transition"
             >
-              ＋ 履歴を記録
+              ＋ メンテナンスを記録
+            </button>
+
+            <button 
+              onClick={() => {
+                console.log("Sidebar fuel log button clicked, activeCarId:", activeCarId);
+                if (!activeCarId) {
+                  if (cars.length === 0) {
+                    alert("まず車を追加してください。右上の「＋ 車を追加」ボタンから車を登録できます。");
+                    setShowAddCarModal(true);
+                  } else {
+                    alert("車を選択してください。右上のドロップダウンから車を選択できます。");
+                  }
+                  return;
+                }
+                setShowFuelLogModal(true);
+              }}
+              className="mt-2 w-full rounded-2xl bg-green-600 text-white py-3 font-semibold hover:bg-green-500 transition"
+            >
+              ＋ 給油を記録
             </button>
 
             <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
@@ -631,7 +679,7 @@ export default function Home() {
               onClick={() => setCurrentPage('car-management')}
             />
             <NavItem 
-              label="履歴" 
+              label="メンテナンス履歴" 
               active={currentPage === 'maintenance-history'} 
               onClick={() => setCurrentPage('maintenance-history')}
             />
@@ -676,6 +724,7 @@ export default function Home() {
                 activeCarId={activeCarId}
                 car={car}
                 maintenanceRecords={maintenanceRecords}
+                fuelLogs={fuelLogs}
                 activeReminders={activeReminders}
                 overdueReminders={overdueReminders}
                 thisWeekReminders={thisWeekReminders}
@@ -687,6 +736,7 @@ export default function Home() {
                 setShowEditMaintenanceModal={setShowEditMaintenanceModal}
                 setEditingMaintenanceRecord={setEditingMaintenanceRecord}
                 setCurrentPage={setCurrentPage}
+                setShowFuelLogModal={setShowFuelLogModal}
               />
             ) : currentPage === 'car-management' ? (
               <CarManagementContent 
@@ -827,6 +877,18 @@ export default function Home() {
         />
       )}
 
+      {/* 給油ログモーダル */}
+      {showFuelLogModal && car && (
+        <FuelLogModal
+          isOpen={showFuelLogModal}
+          onClose={() => setShowFuelLogModal(false)}
+          car={car}
+          onSuccess={() => {
+            console.log("Fuel log added successfully");
+          }}
+        />
+      )}
+
       {/* 保険契約追加モーダル */}
       {showInsuranceModal && activeCarId && (
         <InsuranceModal
@@ -924,6 +986,7 @@ function DashboardContent({
   activeCarId, 
   car, 
   maintenanceRecords,
+  fuelLogs,
   activeReminders,
   overdueReminders,
   thisWeekReminders,
@@ -934,12 +997,14 @@ function DashboardContent({
   setEditingReminder,
   setShowEditMaintenanceModal,
   setEditingMaintenanceRecord,
-  setCurrentPage
+  setCurrentPage,
+  setShowFuelLogModal
 }: {
   cars: Car[];
   activeCarId?: string;
   car?: Car;
   maintenanceRecords: MaintenanceRecord[];
+  fuelLogs: FuelLog[];
   activeReminders: Reminder[];
   overdueReminders: Reminder[];
   thisWeekReminders: Reminder[];
@@ -951,6 +1016,7 @@ function DashboardContent({
   setShowEditMaintenanceModal: (show: boolean) => void;
   setEditingMaintenanceRecord: (record: MaintenanceRecord | null) => void;
   setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'data-management' | 'notifications' | 'insurance') => void;
+  setShowFuelLogModal: (show: boolean) => void;
 }) {
 
   // 月別費用データの計算
@@ -965,7 +1031,7 @@ function DashboardContent({
       const monthName = date.toLocaleDateString('ja-JP', { month: 'long' });
       
       // その月のメンテナンス費用を計算
-      const monthlyCost = maintenanceRecords
+      const maintenanceCost = maintenanceRecords
         .filter(record => {
           const recordDate = record.date;
           return recordDate.getFullYear() === date.getFullYear() && 
@@ -973,10 +1039,23 @@ function DashboardContent({
         })
         .reduce((sum, record) => sum + (record.cost || 0), 0);
       
+      // その月の給油費用を計算
+      const fuelCost = fuelLogs
+        .filter(log => {
+          const logDate = log.date;
+          return logDate.getFullYear() === date.getFullYear() && 
+                 logDate.getMonth() === date.getMonth();
+        })
+        .reduce((sum, log) => sum + (log.cost || 0), 0);
+      
+      const totalCost = maintenanceCost + fuelCost;
+      
       months.push({
         month: monthName,
         monthKey,
-        cost: monthlyCost,
+        maintenanceCost,
+        fuelCost,
+        cost: totalCost, // 互換性のため
         cumulativeCost: 0 // 後で計算
       });
     }
@@ -989,7 +1068,7 @@ function DashboardContent({
     });
     
     return months;
-  }, [maintenanceRecords]);
+  }, [maintenanceRecords, fuelLogs]);
 
   // リマインダー関連のハンドラー
   const handleReminderAction = async (reminder: Reminder, action: 'done' | 'snooze' | 'dismiss') => {
@@ -1157,21 +1236,47 @@ function DashboardContent({
                   {cars.length === 0 ? "まず車を追加してください" : "車を選択してください"}
                 </div>
               ) : (
-                <button 
-                  onClick={() => {
-                    console.log("Maintenance button clicked, activeCarId:", activeCarId);
-                    setShowMaintenanceModal(true);
-                  }}
-                  className="rounded-xl bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-500"
-                >
-                      ＋ 履歴を記録
-                    </button>
+                <>
+                  <button 
+                    onClick={() => {
+                      console.log("Maintenance button clicked, activeCarId:", activeCarId);
+                      setShowMaintenanceModal(true);
+                    }}
+                    className="rounded-xl bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-500"
+                  >
+                    ＋ メンテナンスを記録
+                  </button>
+                  <button 
+                    onClick={() => {
+                      console.log("Fuel log button clicked, activeCarId:", activeCarId);
+                      setShowFuelLogModal(true);
+                    }}
+                    className="rounded-xl bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-500"
+                  >
+                    ＋ 給油を記録
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!activeCarId) return;
+                      if (!confirm('オイル交換リマインダーを削除しますか？')) return;
+                      
+                      try {
+                        const { clearOilChangeReminders } = await import('@/lib/reminders');
+                        await clearOilChangeReminders(activeCarId);
+                        alert('オイル交換リマインダーを削除しました');
+                      } catch (error) {
+                        console.error('削除エラー:', error);
+                        alert('削除に失敗しました');
+                      }
+                    }}
+                    className="rounded-xl bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-500"
+                  >
+                    🗑️ オイルリマインダー削除
+                  </button>
+                </>
               )}
                     <button className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-gray-50">
                       PDFエクスポート
-                    </button>
-                    <button className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-gray-50">
-                      共有
                     </button>
                   </div>
                 </div>
@@ -1404,7 +1509,7 @@ function DashboardContent({
                     onClick={() => setShowMaintenanceModal(true)}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    ＋ 履歴を記録
+                    ＋ メンテナンスを記録
                   </button>
                   </div>
               
@@ -1477,12 +1582,19 @@ function DashboardContent({
                     onClick={() => setShowMaintenanceModal(true)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
-                    履歴を記録する
+                    メンテナンスを記録
                   </button>
                 </div>
               )}
               </div>
             </div>
+
+            {/* 給油ログカード */}
+            {car && (
+              <div className="mb-6">
+                <FuelLogCard car={car} />
+              </div>
+            )}
 
             {/* 下段：月別費用推移 */}
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1510,10 +1622,14 @@ function DashboardContent({
                         tickFormatter={(value) => `¥${(value / 1000).toFixed(0)}k`}
                       />
                       <Tooltip 
-                        formatter={(value: number, name: string) => [
-                          `¥${value.toLocaleString()}`, 
-                          name === 'cost' ? '月次費用' : '累積費用'
-                        ]}
+                        formatter={(value: number, name: string) => {
+                          const nameMap: { [key: string]: string } = {
+                            'maintenanceCost': 'メンテナンス費用',
+                            'fuelCost': '給油費用',
+                            'cumulativeCost': '累積費用'
+                          };
+                          return [`¥${value.toLocaleString()}`, nameMap[name] || name];
+                        }}
                         labelFormatter={(label) => `${label}`}
                         contentStyle={{
                           backgroundColor: 'white',
@@ -1521,12 +1637,20 @@ function DashboardContent({
                           borderRadius: '8px',
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }}
+                        // 累積費用の重複を防ぐため、Areaは非表示にする
+                        filterNull={false}
                       />
                       <RechartsBar 
-                        dataKey="cost" 
+                        dataKey="maintenanceCost" 
                         fill="#3b82f6" 
                         radius={[2, 2, 0, 0]}
-                        name="月次費用"
+                        name="maintenanceCost"
+                      />
+                      <RechartsBar 
+                        dataKey="fuelCost" 
+                        fill="#10b981" 
+                        radius={[2, 2, 0, 0]}
+                        name="fuelCost"
                       />
                       <Line 
                         type="monotone" 
@@ -1534,17 +1658,26 @@ function DashboardContent({
                         stroke="#f59e0b" 
                         strokeWidth={3}
                         dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
-                        name="累積費用"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="cumulativeCost"
-                        fill="#f59e0b"
-                        fillOpacity={0.1}
-                        stroke="none"
+                        name="cumulativeCost"
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
+                </div>
+                
+                {/* 凡例 */}
+                <div className="mt-4 flex justify-center gap-6 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <span>メンテナンス費用</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    <span>給油費用</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                    <span>累積費用</span>
+                  </div>
                 </div>
               </div>
 
@@ -1706,7 +1839,7 @@ function MaintenanceHistoryContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">履歴</h1>
+        <h1 className="text-2xl font-bold">メンテナンス履歴</h1>
         <div className="flex gap-3">
           {/* 一括削除機能を一時的に無効化 */}
           {/* {selectedRecords.length > 0 && (
@@ -1722,7 +1855,7 @@ function MaintenanceHistoryContent({
             onClick={() => setShowMaintenanceModal(true)}
             className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
           >
-            ＋ 履歴を記録
+            ＋ メンテナンスを記録
                   </button>
                 </div>
       </div>
@@ -1789,12 +1922,12 @@ function MaintenanceHistoryContent({
               </svg>
                   </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">メンテナンス履歴がありません</h3>
-            <p className="text-gray-500 mb-4">最初のメンテナンス履歴を記録しましょう。</p>
+            <p className="text-gray-500 mb-4">最初のメンテナンスメンテナンスを記録しましょう。</p>
             <button
               onClick={() => setShowMaintenanceModal(true)}
               className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
             >
-              履歴を記録
+              メンテナンスを記録
             </button>
                 </div>
         ) : (
@@ -2943,7 +3076,7 @@ function MaintenanceModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl border border-gray-200 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">履歴を記録 - {carName}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">メンテナンスを記録 - {carName}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl"

@@ -146,10 +146,23 @@ export function watchReminders(callback: (reminders: Reminder[]) => void): () =>
     const reminders: Reminder[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
+      
+      // デバッグ情報を追加
+      console.log('=== リマインダー読み込み ===');
+      console.log('Document ID:', doc.id);
+      console.log('Raw data.dueDate:', data.dueDate);
+      console.log('data.dueDate type:', typeof data.dueDate);
+      console.log('data.dueDate instanceof Timestamp:', data.dueDate instanceof Timestamp);
+      console.log('data.title:', data.title);
+      
+      const processedDueDate = safeToDate(data.dueDate);
+      console.log('Processed dueDate:', processedDueDate);
+      console.log('========================');
+      
       reminders.push({
         id: doc.id,
         ...data,
-        dueDate: safeToDate(data.dueDate),
+        dueDate: processedDueDate,
         dueOdoKm: data.dueOdoKm || null,
         lastOilChangeAt: safeToDate(data.lastOilChangeAt),
         createdAt: safeToDate(data.createdAt) || new Date(),
@@ -322,12 +335,14 @@ export function suggestReminders(
       oilDate.setMonth(oilDate.getMonth() + 6);
       
       // デバッグ情報を追加
-      console.log('オイル交換リマインダー作成:', {
-        performedAt: performedAt,
-        oilDate: oilDate,
-        now: new Date(),
-        isOverdue: oilDate <= new Date()
-      });
+      console.log('=== オイル交換リマインダー作成 ===');
+      console.log('実施日 (performedAt):', performedAt);
+      console.log('実施日 (ISO):', performedAt.toISOString());
+      console.log('6ヶ月後の日付 (oilDate):', oilDate);
+      console.log('6ヶ月後の日付 (ISO):', oilDate.toISOString());
+      console.log('現在日時:', new Date());
+      console.log('期限切れかどうか:', oilDate <= new Date());
+      console.log('===========================');
       
       suggestions.push({
         kind: 'both',
@@ -393,6 +408,7 @@ export function checkReminderDue(reminder: Reminder, currentOdoKm?: number): boo
   
   // デバッグ情報を追加
   console.log(`Checking reminder due: ${reminder.title}`, {
+    kind: reminder.kind,
     dueDate: reminder.dueDate,
     dueDateType: typeof reminder.dueDate,
     now: now,
@@ -400,20 +416,43 @@ export function checkReminderDue(reminder: Reminder, currentOdoKm?: number): boo
     currentOdoKm: currentOdoKm
   });
   
-  // 日付ベースのチェック
-  if (reminder.dueDate) {
-    // FirestoreのTimestampオブジェクトの場合はDateに変換
-    const dueDate = reminder.dueDate instanceof Date ? reminder.dueDate : new Date(reminder.dueDate);
-    console.log(`Date comparison: ${dueDate} <= ${now} = ${dueDate <= now}`);
-    if (dueDate <= now) {
+  // kindに基づいて適切にチェック
+  if (reminder.kind === 'time') {
+    // 日付ベースのみ
+    if (reminder.dueDate) {
+      const dueDate = reminder.dueDate instanceof Date ? reminder.dueDate : new Date(reminder.dueDate);
+      console.log(`Date-only comparison: ${dueDate} <= ${now} = ${dueDate <= now}`);
+      return dueDate <= now;
+    }
+    return false;
+  } else if (reminder.kind === 'distance') {
+    // 走行距離ベースのみ
+    if (reminder.dueOdoKm && currentOdoKm && currentOdoKm >= reminder.dueOdoKm) {
+      console.log(`Distance-only comparison: ${currentOdoKm} >= ${reminder.dueOdoKm} = true`);
       return true;
     }
-  }
-  
-  // 走行距離ベースのチェック
-  if (reminder.dueOdoKm && currentOdoKm && currentOdoKm >= reminder.dueOdoKm) {
-    console.log(`Distance comparison: ${currentOdoKm} >= ${reminder.dueOdoKm} = ${currentOdoKm >= reminder.dueOdoKm}`);
-    return true;
+    return false;
+  } else if (reminder.kind === 'both') {
+    // 両方チェック（どちらかが期限切れなら true）
+    let isDateDue = false;
+    let isDistanceDue = false;
+    
+    // 日付チェック（dueDateがnullでない場合のみ）
+    if (reminder.dueDate) {
+      const dueDate = reminder.dueDate instanceof Date ? reminder.dueDate : new Date(reminder.dueDate);
+      isDateDue = dueDate <= now;
+      console.log(`Both-Date comparison: ${dueDate} <= ${now} = ${isDateDue}`);
+    }
+    
+    // 走行距離チェック
+    if (reminder.dueOdoKm && currentOdoKm && currentOdoKm >= reminder.dueOdoKm) {
+      isDistanceDue = true;
+      console.log(`Both-Distance comparison: ${currentOdoKm} >= ${reminder.dueOdoKm} = true`);
+    }
+    
+    const result = isDateDue || isDistanceDue;
+    console.log(`Both result: datedue=${isDateDue}, distancedue=${isDistanceDue}, final=${result}`);
+    return result;
   }
   
   return false;
@@ -421,6 +460,8 @@ export function checkReminderDue(reminder: Reminder, currentOdoKm?: number): boo
 
 // リマインダーの期限までの日数計算
 export function getDaysUntilDue(reminder: Reminder): number | null {
+  // 日付ベースでない場合はnullを返す
+  if (reminder.kind === 'distance') return null;
   if (!reminder.dueDate) return null;
   
   const now = new Date();
@@ -432,6 +473,8 @@ export function getDaysUntilDue(reminder: Reminder): number | null {
 
 // リマインダーの期限までの走行距離計算
 export function getKmUntilDue(reminder: Reminder, currentOdoKm: number): number | null {
+  // 走行距離ベースでない場合はnullを返す
+  if (reminder.kind === 'time') return null;
   if (!reminder.dueOdoKm) return null;
   
   return Math.max(0, reminder.dueOdoKm - currentOdoKm);
@@ -796,6 +839,44 @@ export async function clearAllReminders(carId: string): Promise<void> {
   console.log(`Cleared ${snapshot.docs.length} reminders for car ${carId}`);
 }
 
+// 特定車両のオイル交換リマインダーのみを削除
+export async function clearOilChangeReminders(carId: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーが認証されていません');
+  
+  console.log('=== オイル交換リマインダー削除開始 ===');
+  console.log('車両ID:', carId);
+  
+  // 車両に関連するすべてのリマインダーを取得
+  const q = query(
+    collection(db, 'users', user.uid, 'reminders'),
+    where('carId', '==', carId)
+  );
+  
+  const snapshot = await getDocs(q);
+  console.log('取得したリマインダー数:', snapshot.docs.length);
+  
+  // オイル交換関連のリマインダーをフィルタリング
+  const oilReminders = snapshot.docs.filter(doc => {
+    const data = doc.data();
+    const title = data.title || '';
+    console.log('リマインダータイトル:', title);
+    return title.includes('オイル交換') || title.includes('エンジンオイル');
+  });
+  
+  console.log('削除対象のオイル交換リマインダー数:', oilReminders.length);
+  
+  // 削除実行
+  const deletePromises = oilReminders.map(doc => {
+    console.log('削除するリマインダー:', doc.id, doc.data().title);
+    return deleteDoc(doc.ref);
+  });
+  await Promise.all(deletePromises);
+  
+  console.log(`削除完了: ${oilReminders.length}件のオイル交換リマインダーを削除しました`);
+  console.log('================================');
+}
+
 // 車両IDから車両情報を取得
 async function getCarInfo(carId: string): Promise<{ make: string; model: string; year?: number } | null> {
   const user = auth.currentUser;
@@ -882,7 +963,15 @@ export async function generateReminderFromMaintenance(
   if (!user) throw new Error('ユーザーが認証されていません');
 
   // メンテナンスタイプに基づいてリマインダーを生成
+  console.log('=== suggestReminders呼び出し ===');
+  console.log('maintenanceType:', maintenanceType);
+  console.log('performedAt:', performedAt);
+  console.log('odoKm:', odoKm);
+  
   const suggestions = suggestReminders(maintenanceType, performedAt, odoKm);
+  
+  console.log('suggestions結果:', suggestions);
+  console.log('suggestions.length:', suggestions.length);
   
   if (suggestions.length === 0) {
     console.log('No reminder suggestions for maintenance type:', maintenanceType);
@@ -934,6 +1023,13 @@ export async function generateReminderFromMaintenance(
   });
 
   // 新しいリマインダーを作成
+  console.log('=== リマインダーデータ作成 ===');
+  console.log('suggestion.dueDate:', suggestion.dueDate);
+  console.log('suggestion.dueDate type:', typeof suggestion.dueDate);
+  console.log('suggestion.dueDate instanceof Date:', suggestion.dueDate instanceof Date);
+  console.log('suggestion.dueOdoKm:', suggestion.dueOdoKm);
+  console.log('suggestion全体:', suggestion);
+  
   const reminderData = removeUndefined({
     carId,
     kind: suggestion.kind || 'time',
@@ -947,6 +1043,10 @@ export async function generateReminderFromMaintenance(
     type: suggestion.type || undefined,
     lastOilChangeAt: performedAt,
   });
+  
+  console.log('reminderData作成後:', reminderData);
+  console.log('reminderData.dueDate:', reminderData.dueDate);
+  console.log('========================');
   
   console.log('リマインダーデータ作成後:', reminderData);
   
@@ -976,7 +1076,20 @@ export async function generateReminderFromMaintenance(
   // 最終的なクリーンアップ
   const finalReminderData = removeUndefined(reminderData);
   
-  console.log('Final reminder data:', finalReminderData);
+  // DateオブジェクトをTimestampに変換
+  if (finalReminderData.dueDate && finalReminderData.dueDate instanceof Date) {
+    finalReminderData.dueDate = Timestamp.fromDate(finalReminderData.dueDate);
+  }
+  if (finalReminderData.lastOilChangeAt && finalReminderData.lastOilChangeAt instanceof Date) {
+    finalReminderData.lastOilChangeAt = Timestamp.fromDate(finalReminderData.lastOilChangeAt);
+  }
+  
+  // createdAt, updatedAtを追加
+  finalReminderData.createdAt = Timestamp.now();
+  finalReminderData.updatedAt = Timestamp.now();
+  
+  console.log('Final reminder data (with Timestamps):', finalReminderData);
+  console.log('Final dueDate type:', typeof finalReminderData.dueDate);
   
   const docRef = await addDoc(collection(db, 'users', user.uid, 'reminders'), finalReminderData);
   console.log(`Generated reminder from maintenance: ${maintenanceType} -> ${suggestion.title}`);
@@ -1010,17 +1123,12 @@ export async function clearExistingRemindersByType(carId: string, maintenanceTyp
     return titlePatterns.some(pattern => title.includes(pattern));
   });
   
-  // 該当するリマインダーを完了状態に更新
-  const updatePromises = remindersToDelete.map(doc => 
-    updateDoc(doc.ref, {
-      status: 'done',
-      updatedAt: serverTimestamp()
-    })
-  );
-  await Promise.all(updatePromises);
+  // 該当するリマインダーを完全に削除
+  const deletePromises = remindersToDelete.map(doc => deleteDoc(doc.ref));
+  await Promise.all(deletePromises);
   
   if (remindersToDelete.length > 0) {
-    console.log(`Marked ${remindersToDelete.length} existing reminders as done for ${maintenanceType}`);
+    console.log(`Deleted ${remindersToDelete.length} existing reminders for ${maintenanceType}`);
   }
 }
 
