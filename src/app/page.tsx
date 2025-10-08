@@ -679,12 +679,17 @@ export default function Home() {
               onClick={() => setCurrentPage('car-management')}
             />
             <NavItem 
+              label="メンテナンス計画" 
+              active={currentPage === 'reminders'} 
+              onClick={() => setCurrentPage('reminders')}
+            />
+            <NavItem 
               label="メンテナンス履歴" 
               active={currentPage === 'maintenance-history'} 
               onClick={() => setCurrentPage('maintenance-history')}
             />
             <NavItem 
-              label="車検・保険" 
+              label="保険" 
               active={currentPage === 'insurance'} 
               onClick={() => setCurrentPage('insurance')}
             />
@@ -692,16 +697,6 @@ export default function Home() {
               label="エクスポート" 
               active={currentPage === 'data-management'} 
               onClick={() => setCurrentPage('data-management')}
-            />
-            <NavItem 
-              label="通知" 
-              active={currentPage === 'notifications'} 
-              onClick={() => setCurrentPage('notifications')}
-            />
-            <NavItem 
-              label="リマインダー" 
-              active={currentPage === 'reminders'} 
-              onClick={() => setCurrentPage('reminders')}
             />
             </nav>
 
@@ -1255,29 +1250,8 @@ function DashboardContent({
                   >
                     ＋ 給油を記録
                   </button>
-                  <button
-                    onClick={async () => {
-                      if (!activeCarId) return;
-                      if (!confirm('オイル交換リマインダーを削除しますか？')) return;
-                      
-                      try {
-                        const { clearOilChangeReminders } = await import('@/lib/reminders');
-                        await clearOilChangeReminders(activeCarId);
-                        alert('オイル交換リマインダーを削除しました');
-                      } catch (error) {
-                        console.error('削除エラー:', error);
-                        alert('削除に失敗しました');
-                      }
-                    }}
-                    className="rounded-xl bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-500"
-                  >
-                    🗑️ オイルリマインダー削除
-                  </button>
                 </>
               )}
-                    <button className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-gray-50">
-                      PDFエクスポート
-                    </button>
                   </div>
                 </div>
               </div>
@@ -1288,7 +1262,7 @@ function DashboardContent({
               {/* 次回リマインダー */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">次回リマインダー</h3>
+                  <h3 className="font-semibold">次のメンテナンス計画</h3>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setShowReminderModal(true)}
@@ -1489,13 +1463,13 @@ function DashboardContent({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 17h5l-5 5v-5zM9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">リマインダーがありません</h4>
-                  <p className="text-gray-500 mb-4">整備のリマインダーを設定しましょう</p>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンス計画がありません</h4>
+                  <p className="text-gray-500 mb-4">メンテナンスの計画を設定しましょう</p>
                   <button
                     onClick={() => setShowReminderModal(true)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
-                    リマインダーを追加
+                    メンテナンス計画を追加
                   </button>
                 </div>
               )}
@@ -2410,7 +2384,7 @@ function NotificationsContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">通知</h1>
+        <h1 className="text-2xl font-bold">通知設定</h1>
         <button
           onClick={testNotification}
           className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
@@ -2803,13 +2777,7 @@ function CarManagementContent({
             onClick={() => setShowTypeaheadCarSelector(true)}
             className="rounded-xl bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-500 transition"
           >
-            🚗 簡単追加（推奨）
-          </button>
-          <button
-            onClick={() => setShowAddCarModal(true)}
-            className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-          >
-            ＋ 詳細追加
+            車種から選択
           </button>
         </div>
       </div>
@@ -2830,13 +2798,7 @@ function CarManagementContent({
                 onClick={() => setShowTypeaheadCarSelector(true)}
                 className="rounded-xl bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-500 transition"
               >
-                🚗 簡単追加（推奨）
-              </button>
-              <button
-                onClick={() => setShowAddCarModal(true)}
-                className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-              >
-                ＋ 詳細追加
+                車種から選択
               </button>
             </div>
           </div>
@@ -4101,7 +4063,7 @@ function InsuranceContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">車検・保険</h1>
+        <h1 className="text-2xl font-bold">保険</h1>
         <div className="flex gap-3">
           <button
             onClick={() => setShowInsuranceNotificationSettings(true)}
@@ -4976,7 +4938,7 @@ function ReminderModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">リマインダーを追加</h2>
+          <h2 className="text-xl font-semibold text-gray-900">メンテナンス計画を追加</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -5188,7 +5150,7 @@ function EditReminderModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">リマインダーを編集</h2>
+          <h2 className="text-xl font-semibold text-gray-900">メンテナンス計画を編集</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -5363,21 +5325,21 @@ function RemindersContent({
   getKmUntilDue: (reminder: Reminder, currentOdo: number) => number | null;
   checkReminderDue: (reminder: Reminder, currentOdo?: number) => boolean;
 }) {
-  // 非表示にしたアラートの状態管理
-  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  // 削除されたアラートの状態管理
+  const [deletedAlerts, setDeletedAlerts] = useState<Set<string>>(new Set());
 
-  // アラートを非表示にする関数
-  const dismissAlert = (alertId: string) => {
-    setDismissedAlerts(prev => new Set([...prev, alertId]));
+  // アラートを完全に削除する関数
+  const deleteAlert = (alertId: string) => {
+    setDeletedAlerts(prev => new Set([...prev, alertId]));
   };
 
-  // アラートを再表示する関数
-  const showAlert = (alertId: string) => {
-    setDismissedAlerts(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(alertId);
-      return newSet;
-    });
+  // 緊急アラートを一括削除する関数
+  const deleteAllUrgentAlerts = () => {
+    const urgentAlertIds = alerts
+      .filter(alert => alert.severity === 'high')
+      .map(alert => alert.id);
+    
+    setDeletedAlerts(prev => new Set([...prev, ...urgentAlertIds]));
   };
 
   // アラートの計算
@@ -5449,30 +5411,40 @@ function RemindersContent({
     });
 
     return alertsList
-      .filter(alert => !dismissedAlerts.has(alert.id))
+      .filter(alert => !deletedAlerts.has(alert.id))
       .sort((a, b) => {
         const severityOrder = { high: 3, medium: 2, low: 1 };
         return severityOrder[b.severity] - severityOrder[a.severity];
       });
-  }, [cars, dismissedAlerts]);
+  }, [cars, deletedAlerts]);
 
   return (
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">リマインダー</h1>
+        <h1 className="text-2xl font-bold">メンテナンス計画</h1>
         <button
           onClick={() => setShowReminderModal(true)}
           className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
         >
-          ＋ リマインダー追加
+          ＋ メンテナンス計画を追加
         </button>
       </div>
 
       {/* 現在のアラート */}
       {alerts.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">現在のアラート</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">現在のアラート</h3>
+            {alerts.some(alert => alert.severity === 'high') && (
+              <button
+                onClick={deleteAllUrgentAlerts}
+                className="text-sm text-red-600 hover:text-red-700 font-medium px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50 transition"
+              >
+                緊急アラートを一括削除
+              </button>
+            )}
+          </div>
           <div className="space-y-3">
             {alerts.map((alert) => (
               <div key={alert.id} className={`p-4 rounded-xl border ${
@@ -5500,12 +5472,12 @@ function RemindersContent({
                     )}
                   </div>
                   <button 
-                    onClick={() => dismissAlert(alert.id)}
-                    className="text-gray-400 hover:text-gray-600 ml-4"
-                    title="アラートを非表示"
+                    onClick={() => deleteAlert(alert.id)}
+                    className="text-red-400 hover:text-red-600 ml-4"
+                    title="アラートを削除"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
                 </div>
@@ -5515,49 +5487,11 @@ function RemindersContent({
         </div>
       )}
 
-      {/* 非表示にしたアラートの再表示 */}
-      {dismissedAlerts.size > 0 && (
-        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">非表示にしたアラート</h3>
-          <div className="space-y-2">
-            {Array.from(dismissedAlerts).map(alertId => {
-              // アラートIDから情報を復元
-              const isInspection = alertId.startsWith('inspection-');
-              const isMaintenance = alertId.startsWith('maintenance-');
-              
-              let alertTitle = '';
-              if (isInspection) {
-                const carId = alertId.replace('inspection-', '');
-                const car = cars.find(c => c.id === carId);
-                alertTitle = `${car?.name || '車両'}の車検期限`;
-              } else if (isMaintenance) {
-                const parts = alertId.replace('maintenance-', '').split('-');
-                const carId = parts[0];
-                const maintenanceType = parts.slice(1).join('-');
-                const car = cars.find(c => c.id === carId);
-                alertTitle = `${car?.name || '車両'}の${maintenanceType}`;
-              }
-              
-              return (
-                <div key={alertId} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm text-gray-600">{alertTitle}</span>
-                  <button
-                    onClick={() => showAlert(alertId)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    再表示
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* リマインダー一覧 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">リマインダー一覧</h3>
+          <h3 className="text-lg font-semibold text-gray-900">メンテナンス計画一覧</h3>
           <div className="flex gap-2">
             <span className="text-sm text-gray-500">
               アクティブ: {activeReminders.length}件
@@ -5665,7 +5599,7 @@ function RemindersContent({
             <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 1 0-15 0v5h5l-5 5-5-5h5v-5a7.5 7.5 0 1 1 15 0v5z" />
             </svg>
-            <p>リマインダーがありません</p>
+            <p>メンテナンス計画がありません</p>
             <p className="text-sm mt-1">メンテナンス記録から自動生成されるか、手動で追加してください</p>
           </div>
         )}
@@ -5673,12 +5607,12 @@ function RemindersContent({
 
       {/* リマインダーのヒント */}
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">リマインダーについて</h3>
+        <h3 className="text-lg font-semibold text-blue-900 mb-2">メンテナンス計画について</h3>
         <ul className="text-blue-800 space-y-2">
-          <li>• メンテナンス記録から自動でリマインダーが生成されます</li>
-          <li>• 手動でリマインダーを追加・編集できます</li>
-          <li>• 完了したリマインダーは自動で次回予定が設定されます</li>
-          <li>• 期限切れのリマインダーは赤色で表示されます</li>
+          <li>• メンテナンス記録から自動でメンテナンス計画が生成されます</li>
+          <li>• 手動でメンテナンス計画を追加・編集できます</li>
+          <li>• 完了したメンテナンス計画は自動で次回予定が設定されます</li>
+          <li>• 期限切れのメンテナンス計画は赤色で表示されます</li>
         </ul>
       </div>
     </>

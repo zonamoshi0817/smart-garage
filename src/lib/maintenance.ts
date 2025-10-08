@@ -222,7 +222,7 @@ export function watchMaintenanceRecords(carId: string, cb: (records: Maintenance
         return { 
           id: d.id, 
           ...data,
-          date: data.date?.toDate() || new Date()
+          date: data.date instanceof Date ? data.date : (data.date?.toDate ? data.date.toDate() : new Date())
         } as MaintenanceRecord;
       });
       // クライアント側でソート
@@ -340,7 +340,7 @@ export function watchAllMaintenanceRecords(cb: (records: MaintenanceRecord[]) =>
         return { 
           id: d.id, 
           ...data,
-          date: data.date?.toDate() || new Date()
+          date: data.date instanceof Date ? data.date : (data.date?.toDate ? data.date.toDate() : new Date())
         } as MaintenanceRecord;
       });
       // クライアント側でソート

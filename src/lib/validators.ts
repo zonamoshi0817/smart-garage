@@ -139,18 +139,18 @@ export function validateReminder(data: unknown) {
 
 /**
  * メンテナンス記録の走行距離整合性チェック
- * 条件: 過去記録のODO ≤ 新規ODO ≤ 現在車両ODO
+ * 条件: 過去記録のODO ≤ 現在車両ODO ≤ 新規ODO
  */
 export function validateMileageConsistency(
   newMileage: number,
   currentCarMileage: number,
   existingMaintenanceRecords: Array<{ mileage: number; date: Date }>
 ): { isValid: boolean; error?: string } {
-  // 現在の車両走行距離より大きい場合はエラー
-  if (newMileage > currentCarMileage) {
+  // 現在の車両走行距離より小さい場合はエラー
+  if (newMileage < currentCarMileage) {
     return {
       isValid: false,
-      error: `走行距離は現在の車両走行距離（${currentCarMileage.toLocaleString()} km）以下である必要があります`
+      error: `走行距離は現在の車両走行距離（${currentCarMileage.toLocaleString()} km）以上である必要があります`
     };
   }
 
