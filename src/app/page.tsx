@@ -60,7 +60,7 @@ export default function Home() {
     inspectionExpiry: string;
   } | null>(null);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'data-management' | 'notifications' | 'reminders' | 'insurance'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'data-management' | 'notifications' | 'reminders' | 'insurance'>('dashboard');
 
   // テスト用の車両データ（開発時のみ）
   const testCars: Car[] = [
@@ -596,20 +596,15 @@ export default function Home() {
               </span>
             </div>
             <div className="flex items-center gap-4">
-
-              {/* ▼ Firestoreのcarsから生成されるセレクト */}
-              <CarPicker
-                cars={cars}
-                activeId={activeCarId}
-                onChange={(id) => setActiveCarId(id)}
-                onAddCar={() => setShowAddCarModal(true)}
-              />
-
               <button
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100"
-                aria-label="notifications"
+                onClick={() => {
+                  if (confirm('ログアウトしますか？')) {
+                    auth.signOut();
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
               >
-                🔔
+                ログアウト
               </button>
             </div>
           </div>
@@ -629,43 +624,17 @@ export default function Home() {
               </div>
             </div>
 
-            <button 
-              onClick={() => {
-                console.log("Sidebar maintenance button clicked, activeCarId:", activeCarId);
-                if (!activeCarId) {
-                  if (cars.length === 0) {
-                    alert("まず車を追加してください。右上の「＋ 車を追加」ボタンから車を登録できます。");
-                    setShowAddCarModal(true);
-                  } else {
-                    alert("車を選択してください。右上のドロップダウンから車を選択できます。");
-                  }
-                  return;
-                }
-                setShowMaintenanceModal(true);
-              }}
-              className="mt-4 w-full rounded-2xl bg-blue-600 text-white py-3 font-semibold hover:bg-blue-500 transition"
-            >
-              ＋ メンテナンスを記録
-            </button>
+            {/* 車両切り替え */}
+            {cars.length > 1 && (
+              <div className="mt-4">
+                <SidebarCarSwitcher
+                  cars={cars}
+                  activeCarId={activeCarId}
+                  onSelectCar={setActiveCarId}
+                />
+              </div>
+            )}
 
-            <button 
-              onClick={() => {
-                console.log("Sidebar fuel log button clicked, activeCarId:", activeCarId);
-                if (!activeCarId) {
-                  if (cars.length === 0) {
-                    alert("まず車を追加してください。右上の「＋ 車を追加」ボタンから車を登録できます。");
-                    setShowAddCarModal(true);
-                  } else {
-                    alert("車を選択してください。右上のドロップダウンから車を選択できます。");
-                  }
-                  return;
-                }
-                setShowFuelLogModal(true);
-              }}
-              className="mt-2 w-full rounded-2xl bg-green-600 text-white py-3 font-semibold hover:bg-green-500 transition"
-            >
-              ＋ 給油を記録
-            </button>
 
             <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
               <NavItem 
@@ -687,6 +656,11 @@ export default function Home() {
               label="メンテナンス履歴" 
               active={currentPage === 'maintenance-history'} 
               onClick={() => setCurrentPage('maintenance-history')}
+            />
+            <NavItem 
+              label="給油ログ" 
+              active={currentPage === 'fuel-logs'} 
+              onClick={() => setCurrentPage('fuel-logs')}
             />
             <NavItem 
               label="保険" 
@@ -732,6 +706,7 @@ export default function Home() {
                 setEditingMaintenanceRecord={setEditingMaintenanceRecord}
                 setCurrentPage={setCurrentPage}
                 setShowFuelLogModal={setShowFuelLogModal}
+                setActiveCarId={setActiveCarId}
               />
             ) : currentPage === 'car-management' ? (
               <CarManagementContent 
@@ -750,6 +725,13 @@ export default function Home() {
                 setShowMaintenanceModal={setShowMaintenanceModal}
                 setShowEditMaintenanceModal={setShowEditMaintenanceModal}
                 setEditingMaintenanceRecord={setEditingMaintenanceRecord}
+              />
+            ) : currentPage === 'fuel-logs' ? (
+              <FuelLogsContent 
+                cars={cars}
+                activeCarId={activeCarId}
+                fuelLogs={fuelLogs}
+                setShowFuelLogModal={setShowFuelLogModal}
               />
             ) : currentPage === 'insurance' ? (
             <InsuranceContent
@@ -993,7 +975,8 @@ function DashboardContent({
   setShowEditMaintenanceModal,
   setEditingMaintenanceRecord,
   setCurrentPage,
-  setShowFuelLogModal
+  setShowFuelLogModal,
+  setActiveCarId
 }: {
   cars: Car[];
   activeCarId?: string;
@@ -1010,8 +993,9 @@ function DashboardContent({
   setEditingReminder: (reminder: Reminder | null) => void;
   setShowEditMaintenanceModal: (show: boolean) => void;
   setEditingMaintenanceRecord: (record: MaintenanceRecord | null) => void;
-  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'data-management' | 'notifications' | 'insurance') => void;
+  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'data-management' | 'notifications' | 'insurance') => void;
   setShowFuelLogModal: (show: boolean) => void;
+  setActiveCarId: (id: string) => void;
 }) {
 
   // 月別費用データの計算
@@ -1120,6 +1104,7 @@ function DashboardContent({
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">ダッシュボード</h1>
       </div>
+
 
 
       {/* 証明性バッジ */}
@@ -1563,10 +1548,47 @@ function DashboardContent({
               </div>
             </div>
 
-            {/* 給油ログカード */}
-            {car && (
+            {/* 簡易給油情報 */}
+            {car && fuelLogs.length > 0 && (
               <div className="mb-6">
-                <FuelLogCard car={car} />
+                <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">最新の給油</h3>
+                    <button
+                      onClick={() => setCurrentPage('fuel-logs')}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      詳細を見る →
+                    </button>
+                  </div>
+                  
+                  {fuelLogs[0] && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">
+                            {fuelLogs[0].date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                          </div>
+                          <div className="text-xs text-gray-500">日時</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">{fuelLogs[0].fuelAmount}</div>
+                          <div className="text-xs text-gray-500">L</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">¥{fuelLogs[0].cost.toLocaleString()}</div>
+                          <div className="text-xs text-gray-500">金額</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-gray-900">
+                          ¥{Math.round(fuelLogs[0].cost / fuelLogs[0].fuelAmount).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-gray-500">/L</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -3954,56 +3976,155 @@ function EditCarModal({
   );
 }
 
-function CarPicker({
+// サイドバー用車両切り替えコンポーネント
+function SidebarCarSwitcher({ 
+  cars, 
+  activeCarId, 
+  onSelectCar 
+}: { 
+  cars: Car[]; 
+  activeCarId?: string; 
+  onSelectCar: (carId: string) => void; 
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-3">
+      <div className="text-xs font-medium text-gray-600 mb-2">現在の車両</div>
+      <div className="space-y-2">
+        {cars.map((car) => (
+          <button
+            key={car.id}
+            onClick={() => onSelectCar(car.id!)}
+            className={`w-full flex items-center space-x-2 p-2 rounded-lg transition-all text-left ${
+              car.id === activeCarId
+                ? 'bg-blue-50 border border-blue-200'
+                : 'hover:bg-gray-50'
+            }`}
+          >
+            {/* 車両画像 */}
+            {car.imagePath && (
+              <img
+                src={car.imagePath}
+                alt={car.name}
+                className="w-8 h-8 object-cover rounded"
+              />
+            )}
+            
+            {/* 車両情報 */}
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-medium truncate ${
+                car.id === activeCarId ? 'text-blue-900' : 'text-gray-900'
+              }`}>
+                {car.name}
+              </p>
+              {car.modelCode && (
+                <p className="text-xs text-gray-500 truncate">
+                  {car.modelCode}
+                </p>
+              )}
+            </div>
+            
+            {/* 選択状態インジケーター */}
+            {car.id === activeCarId && (
+              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ダッシュボード用車両切り替えコンポーネント
+function CarSwitcher({ 
+  cars, 
+  activeCarId, 
+  onSelectCar 
+}: { 
+  cars: Car[]; 
+  activeCarId?: string; 
+  onSelectCar: (carId: string) => void; 
+}) {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="flex items-center space-x-4 overflow-x-auto">
+        {cars.map((car) => (
+          <button
+            key={car.id}
+            onClick={() => onSelectCar(car.id!)}
+            className={`flex-shrink-0 flex items-center space-x-3 p-3 rounded-lg transition-all ${
+              car.id === activeCarId
+                ? 'bg-blue-50 border-2 border-blue-200'
+                : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+            }`}
+          >
+            {/* 車両画像 */}
+            {car.imagePath && (
+              <img
+                src={car.imagePath}
+                alt={car.name}
+                className="w-12 h-12 object-cover rounded-lg"
+              />
+            )}
+            
+            {/* 車両情報 */}
+            <div className="text-left">
+              <p className={`text-sm font-medium ${
+                car.id === activeCarId ? 'text-blue-900' : 'text-gray-900'
+              }`}>
+                {car.name}
+              </p>
+              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                {car.modelCode && (
+                  <span className="bg-gray-100 px-2 py-0.5 rounded">
+                    {car.modelCode}
+                  </span>
+                )}
+                {car.year && (
+                  <span>{car.year}年式</span>
+                )}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 給油ログコンテンツ
+function FuelLogsContent({
   cars,
-  activeId,
-  onChange,
-  onAddCar,
+  activeCarId,
+  fuelLogs,
+  setShowFuelLogModal
 }: {
   cars: Car[];
-  activeId?: string;
-  onChange: (id: string) => void;
-  onAddCar: () => void;
+  activeCarId?: string;
+  fuelLogs: FuelLog[];
+  setShowFuelLogModal: (show: boolean) => void;
 }) {
-  console.log("CarPicker rendered with cars:", cars.length, "activeId:", activeId);
-  
-  if (cars.length === 0) {
-  return (
-      <button
-        onClick={onAddCar}
-        className="rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition"
-      >
-        ＋ 車を追加
-      </button>
-    );
-  }
+  const activeCar = cars.find(car => car.id === activeCarId);
 
   return (
-    <div className="flex gap-2">
-    <select
-        className="rounded-xl border border-gray-300 px-3 py-2 text-sm min-w-[200px]"
-      value={activeId || ""}
-        onChange={(e) => {
-          console.log("Car selection changed to:", e.target.value);
-          if (e.target.value === "add") {
-            onAddCar();
-          } else {
-            onChange(e.target.value);
-          }
-        }}
-      >
-        <option value="">車を選択してください</option>
-      {cars.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.name}
-          {c.modelCode ? `（${c.modelCode}）` : ""}
-        </option>
-      ))}
-        <option value="add" className="text-blue-600 font-medium">
-          ＋ 車を追加
-        </option>
-    </select>
-    </div>
+    <>
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">給油ログ</h1>
+        <button
+          onClick={() => setShowFuelLogModal(true)}
+          className="rounded-xl bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-500 transition"
+        >
+          ＋ 給油を記録
+        </button>
+      </div>
+
+      {/* 給油ログカード */}
+      {activeCar && (
+        <div className="mb-6">
+          <FuelLogCard car={activeCar} />
+        </div>
+      )}
+    </>
   );
 }
 

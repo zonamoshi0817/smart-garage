@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addFuelLog, type FuelLogInput } from "@/lib/fuelLogs";
-import type { Car } from "@/types";
+import { addFuelLog, updateFuelLog, type FuelLogInput } from "@/lib/fuelLogs";
+import type { Car, FuelLog } from "@/types";
 import type { ModalProps } from "@/types";
 
 interface FuelLogModalProps extends ModalProps {
   car: Car;
+  editingFuelLog?: FuelLog | null;
   onSuccess?: () => void;
 }
 
-export default function FuelLogModal({ isOpen, onClose, car, onSuccess }: FuelLogModalProps) {
+export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onSuccess }: FuelLogModalProps) {
   const [formData, setFormData] = useState({
     odoKm: (car.odoKm || 0).toString(),
     fuelAmount: "",
@@ -22,15 +23,34 @@ export default function FuelLogModal({ isOpen, onClose, car, onSuccess }: FuelLo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // モーダルが開かれた時に車両の現在の走行距離を設定
+  const isEditing = !!editingFuelLog;
+
+  // モーダルが開かれた時にフォームデータを設定
   useEffect(() => {
-    if (isOpen && car.odoKm) {
-      setFormData(prev => ({
-        ...prev,
-        odoKm: (car.odoKm || 0).toString(),
-      }));
+    if (isOpen) {
+      if (editingFuelLog) {
+        // 編集モード：既存のデータを設定
+        setFormData({
+          odoKm: editingFuelLog.odoKm.toString(),
+          fuelAmount: editingFuelLog.fuelAmount.toString(),
+          cost: editingFuelLog.cost.toString(),
+          isFullTank: editingFuelLog.isFullTank,
+          memo: editingFuelLog.memo || "",
+          date: editingFuelLog.date.toISOString().slice(0, 16),
+        });
+      } else {
+        // 新規作成モード：車両の現在の走行距離を設定
+        setFormData({
+          odoKm: (car.odoKm || 0).toString(),
+          fuelAmount: "",
+          cost: "",
+          isFullTank: true,
+          memo: "",
+          date: new Date().toISOString().slice(0, 16),
+        });
+      }
     }
-  }, [isOpen, car.odoKm]);
+  }, [isOpen, car.odoKm, editingFuelLog]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,24 +68,34 @@ export default function FuelLogModal({ isOpen, onClose, car, onSuccess }: FuelLo
         date: new Date(formData.date),
       };
 
-      await addFuelLog(fuelLogData);
+      if (isEditing && editingFuelLog?.id) {
+        // 編集モード
+        await updateFuelLog(editingFuelLog.id, fuelLogData);
+        console.log("給油ログを更新しました");
+      } else {
+        // 新規作成モード
+        await addFuelLog(fuelLogData);
+        console.log("給油ログを追加しました");
+      }
       
       // 成功時の処理
       onSuccess?.();
       onClose();
       
-      // フォームをリセット
-      setFormData({
-        odoKm: (car.odoKm || 0).toString(),
-        fuelAmount: "",
-        cost: "",
-        isFullTank: true,
-        memo: "",
-        date: new Date().toISOString().slice(0, 16),
-      });
+      // フォームをリセット（新規作成時のみ）
+      if (!isEditing) {
+        setFormData({
+          odoKm: (car.odoKm || 0).toString(),
+          fuelAmount: "",
+          cost: "",
+          isFullTank: true,
+          memo: "",
+          date: new Date().toISOString().slice(0, 16),
+        });
+      }
     } catch (err) {
-      console.error("給油ログの追加に失敗しました:", err);
-      setError("給油ログの追加に失敗しました。もう一度お試しください。");
+      console.error("給油ログの保存に失敗しました:", err);
+      setError(`給油ログの${isEditing ? '更新' : '追加'}に失敗しました。もう一度お試しください。`);
     } finally {
       setIsSubmitting(false);
     }
@@ -86,7 +116,9 @@ export default function FuelLogModal({ isOpen, onClose, car, onSuccess }: FuelLo
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-900">給油を追加</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              {isEditing ? '給油ログを編集' : '給油を追加'}
+            </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -220,7 +252,7 @@ export default function FuelLogModal({ isOpen, onClose, car, onSuccess }: FuelLo
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "追加中..." : "追加"}
+                {isSubmitting ? (isEditing ? "更新中..." : "追加中...") : (isEditing ? "更新" : "追加")}
               </button>
             </div>
           </form>

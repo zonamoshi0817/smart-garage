@@ -55,14 +55,6 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div>
-      <div className="fixed right-4 top-4 z-50">
-        <button
-          className="rounded-xl border px-4 py-2 text-sm bg-white hover:bg-gray-50"
-          onClick={() => logout()}
-        >
-          ログアウト
-        </button>
-      </div>
       {children}
     </div>
   );
