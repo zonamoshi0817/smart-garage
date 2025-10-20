@@ -191,25 +191,46 @@ export const watchAllFuelLogs = (
 
 // 燃費計算（満タン間の燃費）
 export const calculateFuelEfficiency = (fuelLogs: FuelLog[]): number | null => {
-  if (fuelLogs.length < 2) return null;
+  console.log("calculateFuelEfficiency called with:", fuelLogs.length, "logs");
+  
+  if (fuelLogs.length < 2) {
+    console.log("Not enough fuel logs for efficiency calculation");
+    return null;
+  }
 
   // 満タンのログのみを抽出し、日付順でソート
   const fullTankLogs = fuelLogs
     .filter(log => log.isFullTank)
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  if (fullTankLogs.length < 2) return null;
+  console.log("Full tank logs:", fullTankLogs.length);
+
+  if (fullTankLogs.length < 2) {
+    console.log("Not enough full tank logs for efficiency calculation");
+    return null;
+  }
 
   // 最新の満タンログとその前の満タンログを取得
   const latest = fullTankLogs[fullTankLogs.length - 1];
   const previous = fullTankLogs[fullTankLogs.length - 2];
 
+  console.log("Latest log:", { date: latest.date, odoKm: latest.odoKm, fuelAmount: latest.fuelAmount });
+  console.log("Previous log:", { date: previous.date, odoKm: previous.odoKm, fuelAmount: previous.fuelAmount });
+
   const distance = latest.odoKm - previous.odoKm;
-  const fuelUsed = previous.fuelAmount; // 前回の給油量が今回の走行で消費した燃料
+  const fuelUsed = latest.fuelAmount; // 今回の給油量が今回の走行で消費した燃料
 
-  if (distance <= 0 || fuelUsed <= 0) return null;
+  console.log("Distance:", distance, "Fuel used:", fuelUsed);
 
-  return Math.round((distance / fuelUsed) * 10) / 10; // km/L
+  if (distance <= 0 || fuelUsed <= 0) {
+    console.log("Invalid distance or fuel amount");
+    return null;
+  }
+
+  const efficiency = Math.round((distance / fuelUsed) * 10) / 10;
+  console.log("Calculated efficiency:", efficiency, "km/L");
+  
+  return efficiency;
 };
 
 // 月間ガソリン代の計算
@@ -228,13 +249,23 @@ export const calculateMonthlyFuelCosts = (fuelLogs: FuelLog[]): { month: string;
 
 // 平均燃費の計算（全期間）
 export const calculateAverageFuelEfficiency = (fuelLogs: FuelLog[]): number | null => {
-  if (fuelLogs.length < 2) return null;
+  console.log("calculateAverageFuelEfficiency called with:", fuelLogs.length, "logs");
+  
+  if (fuelLogs.length < 2) {
+    console.log("Not enough fuel logs for average efficiency calculation");
+    return null;
+  }
 
   const fullTankLogs = fuelLogs
     .filter(log => log.isFullTank)
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  if (fullTankLogs.length < 2) return null;
+  console.log("Full tank logs for average:", fullTankLogs.length);
+
+  if (fullTankLogs.length < 2) {
+    console.log("Not enough full tank logs for average efficiency calculation");
+    return null;
+  }
 
   let totalDistance = 0;
   let totalFuel = 0;
@@ -244,7 +275,9 @@ export const calculateAverageFuelEfficiency = (fuelLogs: FuelLog[]): number | nu
     const previous = fullTankLogs[i - 1];
     
     const distance = current.odoKm - previous.odoKm;
-    const fuelUsed = previous.fuelAmount;
+    const fuelUsed = current.fuelAmount; // 今回の給油量が今回の走行で消費した燃料
+
+    console.log(`Segment ${i}: distance=${distance}, fuel=${fuelUsed}`);
 
     if (distance > 0 && fuelUsed > 0) {
       totalDistance += distance;
@@ -252,7 +285,15 @@ export const calculateAverageFuelEfficiency = (fuelLogs: FuelLog[]): number | nu
     }
   }
 
-  if (totalFuel <= 0) return null;
+  console.log("Total distance:", totalDistance, "Total fuel:", totalFuel);
 
-  return Math.round((totalDistance / totalFuel) * 10) / 10;
+  if (totalFuel <= 0) {
+    console.log("No valid fuel data for average calculation");
+    return null;
+  }
+
+  const averageEfficiency = Math.round((totalDistance / totalFuel) * 10) / 10;
+  console.log("Calculated average efficiency:", averageEfficiency, "km/L");
+  
+  return averageEfficiency;
 };

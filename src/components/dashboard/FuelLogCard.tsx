@@ -31,6 +31,20 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
   const averageFuelEfficiency = calculateAverageFuelEfficiency(fuelLogs);
   const monthlyCosts = calculateMonthlyFuelCosts(fuelLogs);
 
+  // デバッグ情報
+  console.log("FuelLogCard Debug:", {
+    fuelLogsCount: fuelLogs.length,
+    fuelLogs: fuelLogs.map(log => ({
+      id: log.id,
+      date: log.date.toLocaleDateString(),
+      odoKm: log.odoKm,
+      fuelAmount: log.fuelAmount,
+      isFullTank: log.isFullTank
+    })),
+    currentFuelEfficiency,
+    averageFuelEfficiency
+  });
+
   // 最新の給油ログ
   const latestFuelLog = fuelLogs[0];
 
@@ -190,52 +204,45 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
               </div>
             )}
 
-            {/* 月間ガソリン代グラフ */}
+            {/* 月別ガソリン代推移 */}
             {chartData.length > 0 && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-6">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+              <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">月別ガソリン代推移</h3>
+                  <div className="flex gap-2 text-sm">
+                    <button className="px-3 py-1 rounded-full bg-blue-100 text-blue-700">月次</button>
+                    <button className="px-3 py-1 rounded-full text-gray-600 hover:bg-gray-100">年次</button>
                   </div>
-                  <h4 className="text-lg font-semibold text-gray-900">月間ガソリン代</h4>
                 </div>
-                <div className="h-64">
+                <div className="mt-4 h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <defs>
-                        <linearGradient id="fuelGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#1D4ED8" stopOpacity={0.8}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis 
                         dataKey="month" 
-                        tick={{ fontSize: 12, fill: '#6B7280' }}
+                        tick={{ fontSize: 12 }}
+                        axisLine={{ stroke: '#e0e0e0' }}
                         tickFormatter={(value) => `${value}月`}
-                        axisLine={{ stroke: '#E5E7EB' }}
                       />
                       <YAxis 
-                        tick={{ fontSize: 12, fill: '#6B7280' }}
-                        tickFormatter={(value) => `¥${value}`}
-                        axisLine={{ stroke: '#E5E7EB' }}
+                        tick={{ fontSize: 12 }}
+                        axisLine={{ stroke: '#e0e0e0' }}
+                        tickFormatter={(value) => `¥${(value / 1000).toFixed(0)}k`}
                       />
                       <Tooltip 
                         formatter={(value: number) => [`¥${value.toLocaleString()}`, 'ガソリン代']}
                         labelFormatter={(label) => `${label}月`}
                         contentStyle={{
                           backgroundColor: 'white',
-                          border: '1px solid #E5E7EB',
+                          border: '1px solid #e0e0e0',
                           borderRadius: '8px',
                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }}
                       />
                       <Bar 
                         dataKey="cost" 
-                        fill="url(#fuelGradient)" 
-                        radius={[6, 6, 0, 0]}
+                        fill="#10b981" 
+                        radius={[2, 2, 0, 0]}
                       />
                     </BarChart>
                   </ResponsiveContainer>

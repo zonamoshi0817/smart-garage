@@ -590,12 +590,23 @@ export default function Home() {
         {/* ヘッダー */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <span className="text-2xl font-extrabold tracking-tight text-blue-600">
                 Smart Garage
               </span>
             </div>
             <div className="flex items-center gap-4">
+              {/* ヘッダー車両セレクター（右上に配置） */}
+              {cars.length > 0 && (
+                <div className="relative">
+                  <CarHeaderDropdown 
+                    cars={cars}
+                    activeCarId={activeCarId}
+                    onSelectCar={(id) => setActiveCarId(id)}
+                    onAddCar={() => setShowAddCarModal(true)}
+                  />
+                </div>
+              )}
               <button
                 onClick={() => {
                   if (confirm('ログアウトしますか？')) {
@@ -624,16 +635,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 車両切り替え */}
-            {cars.length > 1 && (
-              <div className="mt-4">
-                <SidebarCarSwitcher
-                  cars={cars}
-                  activeCarId={activeCarId}
-                  onSelectCar={setActiveCarId}
-                />
-              </div>
-            )}
+            {/* 車両切り替えはヘッダーのドロップダウンに統一 */}
 
 
             <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
@@ -1679,6 +1681,69 @@ function DashboardContent({
 
             </section>
     </>
+  );
+}
+
+// ヘッダー用車両ドロップダウン
+function CarHeaderDropdown({
+  cars,
+  activeCarId,
+  onSelectCar,
+  onAddCar
+}: {
+  cars: Car[];
+  activeCarId?: string;
+  onSelectCar: (id: string) => void;
+  onAddCar: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeCar = cars.find(c => c.id === activeCarId) || cars[0];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="h-10 px-3 rounded-lg border border-gray-300 bg-white flex items-center gap-2 shadow-sm hover:bg-gray-50"
+      >
+        <span className="truncate max-w-[200px] text-sm font-medium text-gray-900">
+          {activeCar?.name}
+          {activeCar?.modelCode ? ` (${activeCar.modelCode})` : ''}
+        </span>
+        <span className="text-gray-400">▾</span>
+      </button>
+      {open && (
+        <div className="absolute z-40 mt-2 w-[320px] rounded-xl border border-gray-200 bg-white shadow-lg">
+          <div className="max-h-80 overflow-auto py-2">
+            {cars.map((car) => (
+              <button
+                key={car.id}
+                onClick={() => {
+                  onSelectCar(car.id!);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-4 py-3 hover:bg-gray-50 ${car.id === activeCarId ? 'bg-gray-100' : ''}`}
+              >
+                <div className="font-medium text-gray-900">
+                  {car.name}
+                  {car.modelCode && <span className="ml-1 text-gray-500">{car.modelCode}</span>}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {car.year ? `${car.year}年式` : ''}
+                  {car.odoKm ? `${car.year ? '・' : ''}${car.odoKm.toLocaleString()}km` : ''}
+                </div>
+              </button>
+            ))}
+            <div className="my-2 mx-4 h-px bg-gray-200" />
+            <button
+              onClick={() => { setOpen(false); onAddCar(); }}
+              className="w-full text-left px-4 py-3 text-blue-600 hover:bg-blue-50 rounded-b-xl"
+            >
+              ＋ 車両を追加
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -3977,62 +4042,7 @@ function EditCarModal({
 }
 
 // サイドバー用車両切り替えコンポーネント
-function SidebarCarSwitcher({ 
-  cars, 
-  activeCarId, 
-  onSelectCar 
-}: { 
-  cars: Car[]; 
-  activeCarId?: string; 
-  onSelectCar: (carId: string) => void; 
-}) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-3">
-      <div className="text-xs font-medium text-gray-600 mb-2">現在の車両</div>
-      <div className="space-y-2">
-        {cars.map((car) => (
-          <button
-            key={car.id}
-            onClick={() => onSelectCar(car.id!)}
-            className={`w-full flex items-center space-x-2 p-2 rounded-lg transition-all text-left ${
-              car.id === activeCarId
-                ? 'bg-blue-50 border border-blue-200'
-                : 'hover:bg-gray-50'
-            }`}
-          >
-            {/* 車両画像 */}
-            {car.imagePath && (
-              <img
-                src={car.imagePath}
-                alt={car.name}
-                className="w-8 h-8 object-cover rounded"
-              />
-            )}
-            
-            {/* 車両情報 */}
-            <div className="flex-1 min-w-0">
-              <p className={`text-xs font-medium truncate ${
-                car.id === activeCarId ? 'text-blue-900' : 'text-gray-900'
-              }`}>
-                {car.name}
-              </p>
-              {car.modelCode && (
-                <p className="text-xs text-gray-500 truncate">
-                  {car.modelCode}
-                </p>
-              )}
-            </div>
-            
-            {/* 選択状態インジケーター */}
-            {car.id === activeCarId && (
-              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
+// SidebarCarSwitcher はヘッダー統一のため削除
 
 // ダッシュボード用車両切り替えコンポーネント
 function CarSwitcher({ 
