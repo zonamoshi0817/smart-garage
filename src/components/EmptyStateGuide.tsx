@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface EmptyStateGuideProps {
-  type: 'fuel' | 'maintenance' | 'insurance' | 'reminders';
+  type: 'fuel' | 'maintenance' | 'insurance';
   onAction: () => void;
   className?: string;
 }
@@ -48,18 +48,6 @@ export default function EmptyStateGuide({
             '⏰ 期限前の自動通知',
             '💰 保険料の管理',
             '📄 請求履歴の記録'
-          ]
-        };
-      case 'reminders':
-        return {
-          icon: '⏰',
-          title: 'リマインダーを設定しましょう',
-          description: '重要なメンテナンスや期限を忘れずに管理できます',
-          buttonText: 'リマインダーを追加',
-          features: [
-            '🎯 カスタムリマインダー',
-            '📱 スマート通知',
-            '🔄 繰り返し設定'
           ]
         };
       default:

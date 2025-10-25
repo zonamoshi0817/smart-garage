@@ -1,14 +1,13 @@
 // src/lib/proof.ts
 import { Car } from './cars';
 import { MaintenanceRecord } from './maintenance';
-import { Reminder } from './reminders';
 
 // 証明性データの型定義
 export interface ProofData {
   hash: string;
   generatedAt: Date;
   version: string;
-  dataType: 'car' | 'maintenance' | 'reminder' | 'combined';
+  dataType: 'car' | 'maintenance' | 'combined';
   recordCount?: number;
 }
 
@@ -96,32 +95,17 @@ export async function generateMaintenanceProof(records: MaintenanceRecord[]): Pr
   };
 }
 
-// リマインダーの証明性データを生成
-export async function generateReminderProof(reminders: Reminder[]): Promise<ProofData> {
-  const hash = await generateDataHash(reminders);
-  
-  return {
-    hash,
-    generatedAt: new Date(),
-    version: '1.0',
-    dataType: 'reminder',
-    recordCount: reminders.length
-  };
-}
-
 // 統合データの証明性データを生成
 export async function generateCombinedProof(
   car: Car,
-  maintenanceRecords: MaintenanceRecord[],
-  reminders: Reminder[]
+  maintenanceRecords: MaintenanceRecord[]
 ): Promise<ProofData> {
   const combinedData = {
     car,
     maintenanceRecords,
-    reminders,
     metadata: {
       generatedAt: new Date().toISOString(),
-      totalRecords: maintenanceRecords.length + reminders.length
+      totalRecords: maintenanceRecords.length
     }
   };
   
@@ -132,7 +116,7 @@ export async function generateCombinedProof(
     generatedAt: new Date(),
     version: '1.0',
     dataType: 'combined',
-    recordCount: maintenanceRecords.length + reminders.length
+    recordCount: maintenanceRecords.length
   };
 }
 
@@ -163,7 +147,6 @@ export function generateProofDescription(proof: ProofData): string {
   const typeMap = {
     'car': '車両情報',
     'maintenance': 'メンテナンス記録',
-    'reminder': 'リマインダー',
     'combined': '統合データ'
   };
   

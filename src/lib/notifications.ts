@@ -1,6 +1,5 @@
 // src/lib/notifications.ts
 "use client";
-import { watchActiveReminders, updateReminderStatus } from './reminders';
 
 // 通知の型定義
 export interface NotificationData {
@@ -39,8 +38,8 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return permission === 'granted';
 }
 
-// オイル交換リマインド通知を送信
-export async function sendOilReminderNotification(reminder: any): Promise<void> {
+// テスト通知を送信
+export async function sendTestNotification(): Promise<void> {
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) {
     console.log('通知許可がありません');
@@ -48,33 +47,13 @@ export async function sendOilReminderNotification(reminder: any): Promise<void> 
   }
 
   const notificationData: NotificationData = {
-    title: reminder.title,
-    body: reminder.message,
+    title: 'Smart Garage',
+    body: 'テスト通知です',
     icon: '/favicon.ico',
     badge: '/favicon.ico',
-    tag: `oil-reminder-${reminder.id}`,
-    data: {
-      reminderId: reminder.id,
-      carId: reminder.carId,
-      deeplink: reminder.deeplink
-    },
-    actions: [
-      {
-        action: 'reservation',
-        title: '予約する',
-        icon: '/icons/calendar.svg'
-      },
-      {
-        action: 'purchase',
-        title: 'オイルを買う',
-        icon: '/icons/shopping.svg'
-      },
-      {
-        action: 'snooze',
-        title: 'あとで',
-        icon: '/icons/clock.svg'
-      }
-    ]
+    tag: 'test-notification',
+    data: {},
+    actions: []
   };
 
   try {
@@ -84,131 +63,17 @@ export async function sendOilReminderNotification(reminder: any): Promise<void> 
     notification.onclick = (event) => {
       event.preventDefault();
       window.focus();
-      
-      // ディープリンクを処理（実際の実装ではルーティング処理）
-      if (reminder.deeplink) {
-        handleDeepLink(reminder.deeplink);
-      }
-      
       notification.close();
     };
 
-    // アクションボタンクリック時の処理
-    (notification as any).onactionclick = (event: any) => {
-      const action = event.action;
-      handleNotificationAction(action, reminder);
-      notification.close();
-    };
-
-    // 通知を閉じるタイマー（10秒後）
+    // 通知を閉じるタイマー（5秒後）
     setTimeout(() => {
       notification.close();
-    }, 10000);
+    }, 5000);
 
-    // 通知送信ステータスを更新
-    await updateReminderStatus(reminder.id, 'done');
-    
-    console.log('オイル交換リマインド通知を送信しました:', reminder.id);
+    console.log('テスト通知を送信しました');
   } catch (error) {
     console.error('通知送信に失敗しました:', error);
-  }
-}
-
-// 期限切れのリマインドをチェックして通知送信
-export async function checkAndSendReminderNotifications(): Promise<void> {
-  try {
-    // アクティブなリマインダーを監視して、期限切れのものを通知
-    watchActiveReminders((reminders) => {
-      const now = new Date();
-      const dueReminders = reminders.filter(reminder => {
-        if (reminder.dueDate) {
-          return new Date(reminder.dueDate) <= now;
-        }
-        if (reminder.dueOdoKm && reminder.carId) {
-          // 車両の現在の走行距離を取得して比較
-          // 実際の実装では、車両の現在の走行距離を取得する必要がある
-          return false; // 暫定的にfalseを返す
-        }
-        return false;
-      });
-      
-      dueReminders.forEach(reminder => {
-        sendOilReminderNotification(reminder);
-      });
-      
-      if (dueReminders.length > 0) {
-        console.log(`${dueReminders.length}件のリマインド通知を送信しました`);
-      }
-    });
-  } catch (error) {
-    console.error('リマインド通知のチェックに失敗しました:', error);
-  }
-}
-
-// ディープリンクを処理
-function handleDeepLink(deeplink: string): void {
-  // ディープリンクの形式: app://reminder/oil_change/{carId}
-  const match = deeplink.match(/app:\/\/reminder\/oil_change\/(.+)/);
-  if (match) {
-    const carId = match[1];
-    // 実際の実装では、ルーティング処理を行う
-    console.log('ディープリンク処理:', carId);
-    
-    // 例: リマインドモーダルを表示
-    // showOilReminderModal(carId);
-  }
-}
-
-// 通知アクションを処理
-function handleNotificationAction(action: string, reminder: any): void {
-  switch (action) {
-    case 'reservation':
-      // 予約URLを新しいタブで開く
-      window.open(reminder.reservationUrl, '_blank');
-      break;
-    case 'purchase':
-      // 購入ページを新しいタブで開く（最初の候補）
-      if (reminder.purchaseCandidates && reminder.purchaseCandidates.length > 0) {
-        window.open(reminder.purchaseCandidates[0].url, '_blank');
-      }
-      break;
-    case 'snooze':
-      // スヌーズ処理
-      snoozeReminder(reminder.id);
-      break;
-    default:
-      console.log('未知のアクション:', action);
-  }
-}
-
-// リマインドをスヌーズ
-async function snoozeReminder(reminderId: string): Promise<void> {
-  try {
-    await updateReminderStatus(reminderId, 'snoozed');
-    console.log('リマインドをスヌーズしました:', reminderId);
-  } catch (error) {
-    console.error('スヌーズに失敗しました:', error);
-  }
-}
-
-// 定期的な通知チェックを開始
-export function startNotificationScheduler(): void {
-  // 初回チェック
-  checkAndSendReminderNotifications();
-  
-  // 1時間ごとにチェック
-  setInterval(() => {
-    checkAndSendReminderNotifications();
-  }, 60 * 60 * 1000); // 1時間 = 60分 * 60秒 * 1000ms
-}
-
-// 通知スケジューラーを停止
-let notificationInterval: NodeJS.Timeout | null = null;
-
-export function stopNotificationScheduler(): void {
-  if (notificationInterval) {
-    clearInterval(notificationInterval);
-    notificationInterval = null;
   }
 }
 

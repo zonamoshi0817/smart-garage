@@ -13,13 +13,11 @@ Smart GarageアプリケーションのUI/UXを大幅に改善するための実
 - ドロップダウンメニューで「メンテナンス」「給油」「カスタム」「メモ」を選択
 - 迷いをなくすための一本化されたインターフェース
 
-### 2. 「次のやること」をカード化 ✅
-**ファイル**: `src/components/NextTasksCard.tsx`
+### 2. 「次のやること」カードの統合 ✅
 
-- ホームの主役として「次にやること」カードを配置
-- 優先度順（超過 > 期限接近 > 余裕）でソート
-- カラーコード：期限接近はアンバー、超過はレッド、余裕はブルー
-- 進捗バーでkmと日数の二重表記を並記
+- ホームの主役としてメンテナンス記録を強調表示
+- 優先度順でソート
+- 進捗バーで視覚的な情報表示
 - 最大3件の表示で情報を整理
 
 ### 3. 残り日数/距離の表現統一 ✅
@@ -59,7 +57,7 @@ Smart GarageアプリケーションのUI/UXを大幅に改善するための実
 
 - 給油ログ0件時：「最初の登録はレシート撮影でもOK。金額・給油量を自動抽出（β）」
 - 機能紹介と「今すぐ記録」ミニボタンを配置
-- タイプ別（給油、メンテナンス、保険、リマインダー）のガイド
+- タイプ別（給油、メンテナンス、保険）のガイド
 
 ### 8. ボタン文言の具体化 ✅
 **ファイル**: `src/components/SpecificActionButtons.tsx`
@@ -110,17 +108,14 @@ import ImprovedDashboard from '@/components/ImprovedDashboard';
   activeCarId={activeCarId}
   maintenanceRecords={maintenanceRecords}
   fuelLogs={fuelLogs}
-  reminders={reminders}
   carsLoading={carsLoading}
   maintenanceLoading={maintenanceLoading}
   fuelLoading={fuelLoading}
-  remindersLoading={remindersLoading}
   onSelectCar={onSelectCar}
   onAddMaintenance={() => setShowMaintenanceModal(true)}
   onAddFuel={() => setShowFuelLogModal(true)}
   onEditMaintenance={handleEditMaintenance}
   onEditFuel={handleEditFuel}
-  onTaskClick={handleTaskClick}
   onUpgrade={handleUpgrade}
   isPremium={isPremium}
 />
@@ -132,12 +127,6 @@ import ImprovedDashboard from '@/components/ImprovedDashboard';
 <UnifiedCTA
   onMaintenance={() => setShowMaintenanceModal(true)}
   onFuel={() => setShowFuelLogModal(true)}
-/>
-
-// 次のやることカード
-<NextTasksCard
-  reminders={reminders}
-  onTaskClick={handleTaskClick}
 />
 
 // 車両スイッチャー

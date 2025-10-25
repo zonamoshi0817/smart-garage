@@ -1,13 +1,11 @@
 import React from 'react';
 import { Car, MaintenanceRecord, FuelLog } from '@/types';
-import { Reminder } from '@/lib/reminders';
 import UnifiedCTA from './UnifiedCTA';
-import NextTasksCard from './NextTasksCard';
 import RemainingTimeDisplay, { CombinedRemainingDisplay } from './RemainingTimeDisplay';
 import HistoryItem, { FuelLogItem } from './HistoryItem';
 import InlineUpsell, { LockedFeature } from './InlineUpsell';
 import EmptyStateGuide from './EmptyStateGuide';
-import { CarCardSkeleton, NextTasksSkeleton, HistoryItemSkeleton, StatusCardSkeleton } from './SkeletonLoaders';
+import { CarCardSkeleton, HistoryItemSkeleton, StatusCardSkeleton } from './SkeletonLoaders';
 
 interface ImprovedDashboardProps {
   // データ
@@ -15,13 +13,11 @@ interface ImprovedDashboardProps {
   activeCarId?: string;
   maintenanceRecords: any[]; // 型の不整合を回避
   fuelLogs: FuelLog[];
-  reminders: any[]; // 型の不整合を回避
   
   // ローディング状態
   carsLoading: boolean;
   maintenanceLoading: boolean;
   fuelLoading: boolean;
-  remindersLoading: boolean;
   
   // アクション
   onSelectCar: (carId: string) => void;
@@ -29,7 +25,6 @@ interface ImprovedDashboardProps {
   onAddFuel: () => void;
   onEditMaintenance: (record: any) => void;
   onEditFuel: (fuelLog: FuelLog) => void;
-  onTaskClick: (reminder: any) => void;
   onUpgrade: () => void;
   
   // 設定
@@ -41,17 +36,14 @@ export default function ImprovedDashboard({
   activeCarId,
   maintenanceRecords,
   fuelLogs,
-  reminders,
   carsLoading,
   maintenanceLoading,
   fuelLoading,
-  remindersLoading,
   onSelectCar,
   onAddMaintenance,
   onAddFuel,
   onEditMaintenance,
   onEditFuel,
-  onTaskClick,
   onUpgrade,
   isPremium
 }: ImprovedDashboardProps) {
@@ -138,18 +130,6 @@ export default function ImprovedDashboard({
               </>
             ) : null}
           </div>
-        </div>
-
-        {/* 中段: 次にやること（主役） */}
-        <div>
-          {remindersLoading ? (
-            <NextTasksSkeleton />
-          ) : (
-            <NextTasksCard
-              reminders={reminders}
-              onTaskClick={onTaskClick}
-            />
-          )}
         </div>
 
         {/* 下段: 最近の履歴 + 給油ログ */}

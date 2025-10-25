@@ -145,37 +145,6 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
       // 走行距離更新の失敗はメンテナンス記録の作成を阻害しない
     }
 
-    // メンテナンス記録からリマインダーを自動生成（統合システム）
-    try {
-      const { generateReminderFromMaintenance } = await import("@/lib/reminders");
-      
-      // デバッグ情報を追加
-      console.log('=== メンテナンス記録からリマインダー生成 ===');
-      console.log('メンテナンスタイトル:', data.title);
-      console.log('実施日 (data.date):', data.date);
-      console.log('実施日の型:', typeof data.date);
-      console.log('Dateオブジェクトに変換:', new Date(data.date));
-      console.log('現在日時:', new Date());
-      console.log('走行距離:', data.mileage);
-      console.log('車両ID:', data.carId);
-      console.log('========================================');
-      
-      const reminderId = await generateReminderFromMaintenance(
-        data.carId,
-        data.title,
-        new Date(data.date),
-        data.mileage, // 必須項目なので必ず数値
-        docRef.id
-      );
-
-      if (reminderId) {
-        console.log("リマインダーを作成しました:", reminderId);
-      }
-    } catch (reminderError) {
-      console.error("リマインダーの作成に失敗しました:", reminderError);
-      // リマインダー作成の失敗はメンテナンス記録の作成を阻害しない
-    }
-    
     // 作成されたレコードの情報を返す
     return {
       id: docRef.id,

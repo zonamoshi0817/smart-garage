@@ -5,8 +5,6 @@ import {
   collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
   doc, updateDoc, deleteDoc
 } from "firebase/firestore";
-import { generateInitialReminders, saveAutoReminders, updateShakenReminders, type VehicleData } from "./reminders";
-import { validateOilReminderRequirements } from "@/lib/validators";
 
 export type Car = {
   id?: string;
@@ -54,15 +52,6 @@ export async function addCar(data: CarInput) {
   console.log("User ID:", u.uid);
   
   try {
-    // オイル仕様のバリデーション（オイル交換リマインダー生成に必要）
-    if (data.oilSpec) {
-      const validation = validateOilReminderRequirements(data);
-      if (!validation.isValid) {
-        console.warn("Oil spec validation warning:", validation.error);
-        // 警告は出すが、車両追加は続行（オイル仕様は任意）
-      }
-    }
-    
     const ref = collection(db, "users", u.uid, "cars");
     
     // undefined値をnullに変換（Firestoreではundefinedは保存できない）
@@ -76,26 +65,6 @@ export async function addCar(data: CarInput) {
       updatedAt: serverTimestamp(),
     });
     console.log("Car added successfully with ID:", docRef.id);
-    
-    // 自動リマインダーを生成
-    try {
-      const vehicleData: VehicleData = {
-        id: docRef.id,
-        name: data.name,
-        nextShakenDate: data.inspectionExpiry ? new Date(data.inspectionExpiry) : undefined,
-        firstRegYm: data.firstRegYm,
-        odoAtReg: data.odoKm,
-        avgKmPerMonth: data.avgKmPerMonth,
-        currentOdoKm: data.odoKm,
-      };
-      
-      const autoReminders = generateInitialReminders(vehicleData);
-      await saveAutoReminders(docRef.id, autoReminders);
-      console.log("Auto reminders generated:", autoReminders.length);
-    } catch (reminderError) {
-      console.error("Error generating auto reminders:", reminderError);
-      // リマインダー生成エラーは車両作成を阻害しない
-    }
     
     return docRef.id;
   } catch (error) {
@@ -173,18 +142,6 @@ export async function updateCar(carId: string, data: Partial<Car>) {
     ...cleanData,
     updatedAt: serverTimestamp(),
   });
-  
-  // 車検満了日が変更された場合はリマインダーを再生成
-  if (data.inspectionExpiry) {
-    try {
-      const newShakenDate = new Date(data.inspectionExpiry);
-      await updateShakenReminders(carId, newShakenDate);
-      console.log("Shaken reminders updated for car:", carId);
-    } catch (reminderError) {
-      console.error("Error updating shaken reminders:", reminderError);
-      // リマインダー更新エラーは車両更新を阻害しない
-    }
-  }
 }
 
 export async function removeCar(carId: string) {

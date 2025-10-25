@@ -91,22 +91,6 @@ export interface InsuranceClaim extends BaseEntity {
   notes?: string;
 }
 
-// リマインダー関連の型
-export interface Reminder extends BaseEntity {
-  carId: string;
-  title: string;
-  description?: string;
-  dueDate?: Date;
-  dueMileage?: number;
-  priority: 'low' | 'medium' | 'high';
-  status: 'pending' | 'done' | 'snoozed' | 'dismissed';
-  type: 'time' | 'mileage' | 'both';
-  maintenanceRecordId?: string;
-  snoozeUntil?: Date;
-  completedAt?: Date;
-  completedMileage?: number;
-}
-
 // 保険通知関連の型
 export interface InsuranceNotification extends BaseEntity {
   policyId: string;

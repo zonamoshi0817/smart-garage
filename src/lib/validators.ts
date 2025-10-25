@@ -36,41 +36,6 @@ export const MaintenanceRecordSchema = z.object({
   updatedAt: z.date().optional()
 });
 
-// リマインダースキーマ
-export const ReminderSchema = z.object({
-  id: z.string().optional(), // Firestoreで自動生成
-  carId: z.string().min(1, '車両IDは必須です'),
-  kind: z.enum(['time', 'distance']).refine(val => val !== undefined, { message: 'リマインダーの種類は必須です' }),
-  title: z.string().min(1, 'タイトルは必須です').max(100, 'タイトルは100文字以内で入力してください'),
-  dueDate: z.date().optional(),
-  dueOdoKm: z.number().int().min(0).max(999999).optional(),
-  baseEntryRef: z.string().optional(),
-  threshold: z.object({
-    months: z.number().int().min(1).max(120).optional(),
-    km: z.number().int().min(1).max(100000).optional()
-  }).default({}),
-  status: z.enum(['active', 'done', 'snoozed', 'dismissed']).default('active'),
-  notes: z.string().max(500, 'メモは500文字以内で入力してください').optional(),
-  type: z.string().max(50).optional(),
-  purchaseCandidates: z.array(z.object({
-    sku: z.string(),
-    title: z.string(),
-    store: z.string(),
-    url: z.string().url(),
-    price: z.number().optional()
-  })).optional(),
-  reservationUrl: z.string().url().optional(),
-  carName: z.string().max(100).optional(),
-  lastOilChangeAt: z.date().optional(),
-  oilSpec: z.object({
-    viscosity: z.string(),
-    api: z.string(),
-    volumeL: z.number()
-  }).optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
-});
-
 // ===== バリデーション関数 =====
 
 /**
@@ -128,11 +93,6 @@ export function validateMaintenanceRecord(data: unknown) {
  * リマインダーのバリデーション
  */
 export function validateReminder(data: unknown) {
-  const result = ReminderSchema.safeParse(data);
-  if (!result.success) {
-    throw new Error(`リマインダーのバリデーションエラー: ${result.error.issues.map(e => e.message).join(', ')}`);
-  }
-  return removeUndefined(result.data);
 }
 
 // ===== ビジネスロジックバリデーション =====
@@ -194,4 +154,3 @@ export function validateOilReminderRequirements(car: {
 // ===== 型定義のエクスポート =====
 export type Car = z.infer<typeof CarSchema>;
 export type MaintenanceRecord = z.infer<typeof MaintenanceRecordSchema>;
-export type Reminder = z.infer<typeof ReminderSchema>;

@@ -38,7 +38,7 @@ export async function generateMaintenancePDF(options: PDFExportOptions): Promise
   }
 
   // 証明性データを生成
-  const proof = await generateCombinedProof(car, filteredRecords, []);
+  const proof = await generateCombinedProof(car, filteredRecords);
 
   // HTMLコンテンツを生成
   const htmlContent = generateHTMLContent(car, filteredRecords, proof);

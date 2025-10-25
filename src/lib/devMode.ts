@@ -1,5 +1,5 @@
 // 開発モード用のダミーデータベース機能
-import { Car, MaintenanceRecord, Reminder } from './types';
+import { Car, MaintenanceRecord } from '../types';
 
 // ダミーデータ
 const dummyCars: Car[] = [
@@ -13,12 +13,6 @@ const dummyCars: Car[] = [
     inspectionExpiry: '2025-12-31',
     firstRegYm: '2020-01',
     avgKmPerMonth: 1000,
-    engineCode: '2AR-FE',
-    oilSpec: {
-      viscosity: '0W-20',
-      api: 'SP',
-      volumeL: 4.2
-    },
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -34,25 +28,6 @@ const dummyMaintenanceRecords: MaintenanceRecord[] = [
     mileage: 45000,
     date: new Date('2024-01-15'),
     location: 'デモ工場',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-];
-
-const dummyReminders: Reminder[] = [
-  {
-    id: 'demo-reminder-1',
-    carId: 'demo-car-1',
-    kind: 'both',
-    title: '次回オイル交換',
-    dueDate: new Date('2024-07-15'),
-    dueOdoKm: 50000,
-    baseEntryRef: 'demo-maintenance-1',
-    threshold: { months: 6, km: 5000 },
-    status: 'active',
-    notes: 'メンテナンス記録から自動生成: オイル交換',
-    type: 'oil_change',
-    lastOilChangeAt: new Date('2024-01-15'),
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -88,8 +63,4 @@ export function getDummyCars(): Car[] {
 
 export function getDummyMaintenanceRecords(): MaintenanceRecord[] {
   return dummyMaintenanceRecords;
-}
-
-export function getDummyReminders(): Reminder[] {
-  return dummyReminders;
 }
