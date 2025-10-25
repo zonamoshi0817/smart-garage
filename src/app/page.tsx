@@ -15,7 +15,7 @@ import TypeaheadCarSelector from "@/components/TypeaheadCarSelector";
 import { addInsurancePolicy, watchInsurancePolicies, updateInsurancePolicy, removeInsurancePolicy, watchInsuranceClaims, type InsurancePolicy, type InsuranceClaim, getDaysUntilExpiry, getExpiryStatus } from "@/lib/insurance";
 import { watchInsuranceNotifications, type InsuranceNotification } from "@/lib/insuranceNotifications";
 import InsuranceNotificationSettings from "@/components/InsuranceNotificationSettings";
-import { watchFuelLogs } from "@/lib/fuelLogs";
+import { watchFuelLogs, calculateFuelEfficiency, calculateAverageFuelEfficiency } from "@/lib/fuelLogs";
 import type { FuelLog } from "@/types";
 import { Bar as RechartsBar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart } from 'recharts';
 import FuelLogModal from "@/components/modals/FuelLogModal";
@@ -1169,7 +1169,6 @@ function DashboardContent({
 
                       {/* 給油統計 */}
                       {(() => {
-                        const { calculateFuelEfficiency, calculateAverageFuelEfficiency } = require('@/lib/fuelLogs');
                         const currentEfficiency = calculateFuelEfficiency(fuelLogs);
                         const averageEfficiency = calculateAverageFuelEfficiency(fuelLogs);
                         const totalFuelCost = fuelLogs.reduce((sum, log) => sum + log.cost, 0);
