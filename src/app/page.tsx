@@ -125,6 +125,8 @@ export default function Home() {
     const off = watchCars((list) => {
         console.log("Cars received in component:", list.length, "cars");
         console.log("Current activeCarId when cars received:", activeCarId);
+        console.log("Cars data:", list.map(car => ({ id: car.id, name: car.name, imagePath: car.imagePath })));
+        console.log("Previous cars state:", cars.map(car => ({ id: car.id, name: car.name, imagePath: car.imagePath })));
         
         
         // 実際のデータがある場合はそれを使用
@@ -690,6 +692,10 @@ export default function Home() {
           onUpdated={() => {
             setShowEditCarModal(false);
             setEditingCar(null);
+            // 車両データを再取得してUIを更新
+            console.log("Car updated, refreshing data...");
+            // 強制的に再レンダリングをトリガー
+            setAuthTrigger(prev => prev + 1);
           }}
         />
       )}
@@ -3400,7 +3406,9 @@ function EditCarModal({
         carData.avgKmPerMonth = Number(avgKmPerMonth);
       }
       
+      console.log("Updating car with data:", carData);
       await updateCar(car.id, carData);
+      console.log("Car updated successfully");
       setName(""); setModelCode(""); setYear(""); setOdoKm(""); setInspectionExpiry(""); setFirstRegYm(""); setAvgKmPerMonth(""); setSelectedFile(null); setImagePreview(null); setCompressionInfo(null);
       onUpdated?.();
     } catch (error) {

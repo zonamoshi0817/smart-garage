@@ -57,5 +57,10 @@ export const loginWithGoogle = () => signInWithPopup(auth, provider);
 export const logout = () => signOut(auth);
 
 // 認証状態の監視（ログイン/ログアウト時に反応）
-export const watchAuth = (cb: (user: User | null) => void) =>
-  onAuthStateChanged(auth, cb);
+export const watchAuth = (cb: (user: User | null) => void) => {
+  console.log("watchAuth: Setting up auth state listener");
+  return onAuthStateChanged(auth, (user) => {
+    console.log("watchAuth: Auth state changed:", user ? "logged in" : "logged out");
+    cb(user);
+  });
+};

@@ -18,36 +18,24 @@ export async function uploadCarImage(file: File, carId?: string): Promise<string
   
   console.log("User ID:", user.uid);
 
-  // Firebase Storage の料金プランアップグレードが必要な場合の警告
-  console.warn("⚠️ Firebase Storage の料金プランアップグレードが必要です");
-  console.warn("現在はデフォルト画像を返します");
-  
-  // 一時的にデフォルト画像を返す（Storage プランアップグレードまで）
-  return "/car.jpg";
-  
-  /* Storage プランアップグレード後に有効化
-  // ファイル名を生成（タイムスタンプ + 元のファイル名）
-  const timestamp = Date.now();
-  const fileName = `${timestamp}_${file.name}`;
-  
-  // ストレージパスを生成
-  const storagePath = carId 
-    ? `users/${user.uid}/cars/${carId}/${fileName}`
-    : `users/${user.uid}/temp/${fileName}`;
-  
-  console.log("Storage path:", storagePath);
-  
-  const storageRef = ref(storage, storagePath);
-  console.log("Storage ref created");
-  
   try {
-    console.log("Starting upload...");
-    // ファイルをアップロード
+    // ファイル名を生成（タイムスタンプ + 元のファイル名）
+    const timestamp = Date.now();
+    const fileName = `${timestamp}_${file.name}`;
+    
+    // ストレージパスを生成
+    const storagePath = carId 
+      ? `users/${user.uid}/cars/${carId}/${fileName}`
+      : `users/${user.uid}/temp/${fileName}`;
+    
+    console.log("Storage path:", storagePath);
+    
+    const storageRef = ref(storage, storagePath);
+    console.log("Uploading to Firebase Storage...");
+    
     const snapshot = await uploadBytes(storageRef, file);
     console.log("Upload successful:", snapshot.metadata.fullPath);
     
-    console.log("Getting download URL...");
-    // ダウンロードURLを取得
     const downloadURL = await getDownloadURL(snapshot.ref);
     console.log("Download URL:", downloadURL);
     
@@ -55,14 +43,8 @@ export async function uploadCarImage(file: File, carId?: string): Promise<string
   } catch (error) {
     console.error("Upload failed:", error);
     const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-    console.error("Error details:", {
-      code: (error as any)?.code,
-      message: errorMessage,
-      stack: (error as any)?.stack
-    });
     throw new Error(`画像のアップロードに失敗しました: ${errorMessage}`);
   }
-  */
 }
 
 /**
@@ -84,42 +66,39 @@ export async function uploadCarImageWithProgress(
   
   console.log("User ID:", user.uid);
 
-  // Firebase Storage の料金プランアップグレードが必要な場合の警告
-  console.warn("⚠️ Firebase Storage の料金プランアップグレードが必要です");
-  console.warn("現在はデフォルト画像を返します");
-  
-  // 進捗をシミュレート（100%まで）
-  if (onProgress) {
-    onProgress(100);
-  }
-  
-  // 一時的にデフォルト画像を返す（Storage プランアップグレードまで）
-  return "/car.jpg";
-  
-  /* Storage プランアップグレード後に有効化
-  // ファイル名を生成（タイムスタンプ + 元のファイル名）
-  const timestamp = Date.now();
-  const fileName = `${timestamp}_${file.name}`;
-  
-  // ストレージパスを生成
-  const storagePath = carId 
-    ? `users/${user.uid}/cars/${carId}/${fileName}`
-    : `users/${user.uid}/temp/${fileName}`;
-  
-  console.log("Storage path:", storagePath);
-  
-  const storageRef = ref(storage, storagePath);
-  console.log("Storage ref created");
-  
   try {
+    // ファイル名を生成（タイムスタンプ + 元のファイル名）
+    const timestamp = Date.now();
+    const fileName = `${timestamp}_${file.name}`;
+    
+    // ストレージパスを生成
+    const storagePath = carId 
+      ? `users/${user.uid}/cars/${carId}/${fileName}`
+      : `users/${user.uid}/temp/${fileName}`;
+    
+    console.log("Storage path:", storagePath);
+    
+    const storageRef = ref(storage, storagePath);
     console.log("Starting resumable upload...");
     
     // 進捗監視付きアップロード
     const uploadTask = uploadBytesResumable(storageRef, file);
-    
+    console.log("Upload task created");
+  
     return new Promise((resolve, reject) => {
+      // タイムアウトを設定（30秒）
+      const timeout = setTimeout(() => {
+        console.error("Upload timeout after 30 seconds");
+        uploadTask.cancel();
+        reject(new Error("アップロードがタイムアウトしました"));
+      }, 30000);
+      
       uploadTask.on('state_changed',
         (snapshot) => {
+          console.log('Upload state changed:', snapshot.state);
+          console.log('Bytes transferred:', snapshot.bytesTransferred);
+          console.log('Total bytes:', snapshot.totalBytes);
+          
           // 進捗を計算
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log('Upload progress:', progress + '%');
@@ -128,9 +107,15 @@ export async function uploadCarImageWithProgress(
           if (onProgress) {
             onProgress(progress);
           }
+          
+          // アップロードが完了したらタイムアウトをクリア
+          if (snapshot.state === 'success') {
+            clearTimeout(timeout);
+          }
         },
         (error) => {
           console.error("Upload failed:", error);
+          clearTimeout(timeout);
           reject(new Error(`画像のアップロードに失敗しました: ${error.message}`));
         },
         async () => {
@@ -138,9 +123,11 @@ export async function uploadCarImageWithProgress(
             console.log("Upload completed, getting download URL...");
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             console.log("Download URL:", downloadURL);
+            clearTimeout(timeout);
             resolve(downloadURL);
           } catch (error) {
             console.error("Failed to get download URL:", error);
+            clearTimeout(timeout);
             reject(new Error(`ダウンロードURLの取得に失敗しました: ${error}`));
           }
         }
@@ -151,7 +138,6 @@ export async function uploadCarImageWithProgress(
     const errorMessage = error instanceof Error ? error.message : '不明なエラー';
     throw new Error(`画像のアップロードに失敗しました: ${errorMessage}`);
   }
-  */
 }
 
 /**

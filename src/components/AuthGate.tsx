@@ -10,25 +10,29 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     
+    console.log("AuthGate: Initializing authentication...");
+    
     try {
       const unsub = watchAuth((u) => {
-        console.log("Auth state changed:", u ? "logged in" : "logged out");
+        console.log("AuthGate: Auth state changed:", u ? "logged in" : "logged out");
         setUser(u);
         setReady(true);
+        clearTimeout(timeoutId);
       });
       
-      // 2秒後にタイムアウトして強制的にreadyにする
+      // 1秒後にタイムアウトして強制的にreadyにする
       timeoutId = setTimeout(() => {
-        console.warn("Auth state check timed out, proceeding without authentication");
+        console.warn("AuthGate: Auth state check timed out, proceeding without authentication");
         setReady(true);
-      }, 2000);
+      }, 1000);
       
       return () => {
+        console.log("AuthGate: Cleaning up auth listener");
         unsub(); // cleanup
         clearTimeout(timeoutId);
       };
     } catch (error) {
-      console.error("Auth initialization failed:", error);
+      console.error("AuthGate: Auth initialization failed:", error);
       // エラーの場合もreadyにする
       setReady(true);
     }
