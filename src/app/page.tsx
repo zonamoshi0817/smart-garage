@@ -2436,6 +2436,8 @@ function CarManagementContent({
   setEditingCar: (car: Car | null) => void;
   setShowTypeaheadCarSelector: (show: boolean) => void;
 }) {
+  const [showAddMethodModal, setShowAddMethodModal] = useState(false);
+
   const handleDeleteCar = async (carId: string, carName: string) => {
     if (!confirm(`「${carName}」を削除しますか？この操作は取り消せません。`)) {
       return;
@@ -2467,10 +2469,10 @@ function CarManagementContent({
         <h1 className="text-2xl font-bold">車両</h1>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowTypeaheadCarSelector(true)}
-            className="rounded-xl bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-500 transition"
+            onClick={() => setShowAddMethodModal(true)}
+            className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
           >
-            車種から選択
+            車を追加
           </button>
         </div>
       </div>
@@ -2488,10 +2490,10 @@ function CarManagementContent({
             <p className="text-gray-500 mb-4">まず車を追加して、メンテナンス履歴を管理しましょう。</p>
             <div className="flex gap-2 justify-center">
               <button
-                onClick={() => setShowTypeaheadCarSelector(true)}
-                className="rounded-xl bg-green-600 text-white px-4 py-2 font-medium hover:bg-green-500 transition"
+                onClick={() => setShowAddMethodModal(true)}
+                className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
               >
-                車種から選択
+                車を追加
               </button>
             </div>
           </div>
@@ -2508,6 +2510,65 @@ function CarManagementContent({
           ))
         )}
       </div>
+
+      {/* 追加方法選択モーダル */}
+      {showAddMethodModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">車を追加</h2>
+              <button
+                onClick={() => setShowAddMethodModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* かんたん追加 */}
+              <button
+                onClick={() => {
+                  setShowAddMethodModal(false);
+                  setShowAddCarModal(true);
+                }}
+                className="w-full p-4 text-left border-2 border-blue-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">⚡</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900 mb-1">かんたん追加</div>
+                    <div className="text-sm text-gray-600">
+                      最小2項目で登録<br />
+                      （車種＋年式）
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {/* くわしく追加 */}
+              <button
+                onClick={() => {
+                  setShowAddMethodModal(false);
+                  setShowTypeaheadCarSelector(true);
+                }}
+                className="w-full p-4 text-left border-2 border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">🔍</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900 mb-1">くわしく追加</div>
+                    <div className="text-sm text-gray-600">
+                      ウィザードで入力<br />
+                      詳細情報まで登録
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -3028,7 +3089,7 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
   return (
     <>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 w-full max-w-2xl relative">
+        <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-4xl max-h-[90vh] flex flex-col">
           {/* アップロード中のオーバーレイ */}
           {isUploading && (
             <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center z-10">
@@ -3039,7 +3100,7 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
             </div>
           )}
           
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between p-6 pb-4">
             <h2 className="text-xl font-semibold text-gray-900">車を追加</h2>
             <button
               onClick={onClose}
@@ -3050,31 +3111,40 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
             </button>
           </div>
           
+          <div className="flex-1 overflow-y-auto px-6">
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex gap-2">
-        <input
-                  className="flex-1 rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
+            {/* 車名・型式 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <input
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
                   placeholder="車名（例：シビック Type R）"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-                <button
-                  type="button"
-                  onClick={() => setShowCarModelSelector(true)}
-                  className="px-3 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm"
-                >
-                  車種選択
-                </button>
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
-        <input
-                className="rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
-          placeholder="型式（例：FL5）"
-          value={modelCode}
-          onChange={(e) => setModel(e.target.value)}
-        />
+              <div>
+                <input
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
+                  placeholder="型式（例：FL5）"
+                  value={modelCode}
+                  onChange={(e) => setModel(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* 車種選択ボタン */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowCarModelSelector(true)}
+                className="w-full px-3 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm font-medium"
+              >
+                車種を選択して自動入力
+              </button>
             </div>
             
+            {/* 選択された車種の表示 */}
             {selectedManufacturer && selectedModel && (
               <div className="bg-green-50 p-3 rounded-lg border border-green-200">
                 <div className="flex items-center gap-2">
@@ -3092,21 +3162,29 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
                 </div>
               </div>
             )}
-        <input
-              className="rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
-          placeholder="年式（例：2023）"
-          inputMode="numeric"
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-        />
-        <input
-              className="rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
-          placeholder="走行距離 km"
-          inputMode="numeric"
-          value={odoKm}
-          onChange={(e) => setOdo(e.target.value)}
-        />
-      </div>
+
+            {/* 年式・走行距離 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <input
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
+                  placeholder="年式（例：2023）"
+                  inputMode="numeric"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
+                  placeholder="走行距離 km"
+                  inputMode="numeric"
+                  value={odoKm}
+                  onChange={(e) => setOdo(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
           
           {/* 画像アップロード */}
           <div>
@@ -3228,8 +3306,12 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
           </select>
         </div>
           </div>
+          </div>
           
-          <div className="flex gap-3 mt-6">
+          {/* ボタンエリアとの間隔 */}
+          <div className="pb-4"></div>
+          
+          <div className="flex gap-3 p-6 pt-4">
             <button
               onClick={onClose}
               className="flex-1 rounded-xl border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 transition text-gray-900"

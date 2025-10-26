@@ -107,7 +107,7 @@ export default function TypeaheadCarSelector({
       case 'year':
         return selectedYear;
       case 'inspection':
-        return inspectionExpiry.trim();
+        return true; // 任意項目に変更
       default:
         return false;
     }
