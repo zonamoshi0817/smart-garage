@@ -46,6 +46,19 @@ console.log("Firebase initialized with config:", {
   appId: firebaseConfig.appId ? "***" : "MISSING"
 });
 
+// 本番環境でのデバッグ用
+if (typeof window !== 'undefined') {
+  console.log("Environment:", process.env.NODE_ENV);
+  console.log("Firebase config values:", {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "SET" : "NOT SET",
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? "SET" : "NOT SET",
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? "SET" : "NOT SET",
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ? "SET" : "NOT SET",
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ? "SET" : "NOT SET",
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ? "SET" : "NOT SET"
+  });
+}
+
 // 認証とDBのインスタンスをexport
 export const auth = getAuth(app);
 export const db = getFirestore(app);
@@ -53,8 +66,27 @@ export const storage = getStorage(app);
 
 // Googleログイン用
 const provider = new GoogleAuthProvider();
-export const loginWithGoogle = () => signInWithPopup(auth, provider);
-export const logout = () => signOut(auth);
+export const loginWithGoogle = async () => {
+  try {
+    console.log("Attempting Google login...");
+    const result = await signInWithPopup(auth, provider);
+    console.log("Google login successful:", result.user.uid);
+    return result;
+  } catch (error) {
+    console.error("Google login failed:", error);
+    throw error;
+  }
+};
+export const logout = async () => {
+  try {
+    console.log("Attempting logout...");
+    await signOut(auth);
+    console.log("Logout successful");
+  } catch (error) {
+    console.error("Logout failed:", error);
+    throw error;
+  }
+};
 
 // 認証状態の監視（ログイン/ログアウト時に反応）
 export const watchAuth = (cb: (user: User | null) => void) => {
