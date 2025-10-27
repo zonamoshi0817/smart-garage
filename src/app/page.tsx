@@ -558,32 +558,32 @@ export default function Home() {
 
             <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
               <NavItem 
-                label="ダッシュボード" 
+                label="ガレージ" 
                 active={currentPage === 'dashboard'} 
                 onClick={() => setCurrentPage('dashboard')}
               />
             <NavItem 
-              label="車両" 
+              label="マイカー" 
               active={currentPage === 'car-management'} 
               onClick={() => setCurrentPage('car-management')}
             />
             <NavItem 
-              label="メンテナンス履歴" 
+              label="履歴" 
               active={currentPage === 'maintenance-history'} 
               onClick={() => setCurrentPage('maintenance-history')}
             />
             <NavItem 
-              label="給油ログ" 
+              label="燃費" 
               active={currentPage === 'fuel-logs'} 
               onClick={() => setCurrentPage('fuel-logs')}
             />
             <NavItem 
-              label="保険" 
+              label="自動車保険" 
               active={currentPage === 'insurance'} 
               onClick={() => setCurrentPage('insurance')}
             />
             <NavItem 
-              label="エクスポート" 
+              label="データ" 
               active={currentPage === 'data-management'} 
               onClick={() => setCurrentPage('data-management')}
             />
