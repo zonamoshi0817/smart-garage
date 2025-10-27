@@ -185,7 +185,7 @@ export default function Home() {
     }
   }, [cars, activeCarId]);
 
-  // メンテナンス履歴の監視（認証状態とactiveCarIdに依存）
+  // メンテナンスの監視（認証状態とactiveCarIdに依存）
   useEffect(() => {
     // 認証されていない場合は何もしない
     if (!auth.currentUser) {
@@ -219,7 +219,7 @@ export default function Home() {
     }
   }, [auth.currentUser, activeCarId, authTrigger]);
 
-  // 全メンテナンス履歴を監視（履歴ページ用）
+  // 全メンテナンスを監視（メンテナンスページ用）
   useEffect(() => {
     // 認証されていない場合は何もしない
     if (!auth.currentUser) {
@@ -611,17 +611,17 @@ export default function Home() {
               onClick={() => setCurrentPage('car-management')}
             />
             <NavItem 
-              label="履歴" 
-              active={currentPage === 'maintenance-history'} 
-              onClick={() => setCurrentPage('maintenance-history')}
-            />
-            <NavItem 
               label="燃費" 
               active={currentPage === 'fuel-logs'} 
               onClick={() => setCurrentPage('fuel-logs')}
             />
             <NavItem 
-              label="カスタム" 
+              label="メンテナンス" 
+              active={currentPage === 'maintenance-history'} 
+              onClick={() => setCurrentPage('maintenance-history')}
+            />
+            <NavItem 
+              label="カスタマイズ" 
               active={currentPage === 'customizations'} 
               onClick={() => setCurrentPage('customizations')}
             />
@@ -759,7 +759,7 @@ export default function Home() {
         />
       )}
 
-      {/* メンテナンス履歴記録モーダル */}
+      {/* メンテナンス記録モーダル */}
       {showMaintenanceModal && activeCarId && (
         <MaintenanceModal
           carId={activeCarId}
@@ -779,7 +779,7 @@ export default function Home() {
         />
       )}
 
-      {/* メンテナンス履歴編集モーダル */}
+      {/* メンテナンス編集モーダル */}
       {showEditMaintenanceModal && editingMaintenanceRecord && (
         <EditMaintenanceModal
           record={editingMaintenanceRecord}
@@ -1146,12 +1146,12 @@ function DashboardContent({
               </div>
             </section>
 
-            {/* メンテナンス履歴、給油情報、カスタム情報を3列に配置 */}
+            {/* メンテナンス、給油情報、カスタマイズ情報を3列に配置 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              {/* メンテナンス履歴 */}
+              {/* メンテナンス */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">最近のメンテナンス履歴</h3>
+                  <h3 className="font-semibold">最近のメンテナンス</h3>
                   <button
                     onClick={() => setShowMaintenanceModal(true)}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -1209,7 +1209,7 @@ function DashboardContent({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンス履歴がありません</h4>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h4>
                   <p className="text-gray-500 mb-4">最初のメンテナンス記録を追加しましょう</p>
                   <button
                     onClick={() => setShowMaintenanceModal(true)}
@@ -1620,7 +1620,7 @@ function MaintenanceHistoryContent({
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // フィルタリングされたメンテナンス履歴
+  // フィルタリングされたメンテナンス
   const filteredRecords = useMemo(() => {
     console.log("Filtering maintenance records:", {
       totalRecords: maintenanceRecords.length,
@@ -1730,7 +1730,7 @@ function MaintenanceHistoryContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">メンテナンス履歴</h1>
+        <h1 className="text-2xl font-bold">メンテナンス</h1>
         <div className="flex gap-3">
           {/* 一括削除機能を一時的に無効化 */}
           {/* {selectedRecords.length > 0 && (
@@ -1812,7 +1812,7 @@ function MaintenanceHistoryContent({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
                   </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">メンテナンス履歴がありません</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h3>
             <p className="text-gray-500 mb-4">最初のメンテナンスメンテナンスを記録しましょう。</p>
             <button
               onClick={() => setShowMaintenanceModal(true)}
@@ -2139,7 +2139,7 @@ function DataManagementContent({
               <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span className="font-medium">メンテナンス履歴 (CSV)</span>
+              <span className="font-medium">メンテナンス (CSV)</span>
             </button>
 
             <button
@@ -2439,7 +2439,7 @@ function EditMaintenanceModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">メンテナンス履歴を編集</h2>
+          <h2 className="text-xl font-semibold text-gray-900">メンテナンスを編集</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -2666,7 +2666,7 @@ function CarManagementContent({
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">車が登録されていません</h3>
-            <p className="text-gray-500 mb-4">まず車を追加して、メンテナンス履歴を管理しましょう。</p>
+            <p className="text-gray-500 mb-4">まず車を追加して、メンテナンスを管理しましょう。</p>
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() => setShowAddMethodModal(true)}
@@ -4912,7 +4912,7 @@ function CustomizationsContent({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">カスタム</h1>
+          <h1 className="text-2xl font-bold text-gray-900">カスタマイズ</h1>
           <p className="text-gray-600 mt-1">
             {activeCar ? `${activeCar.name}のカスタマイズ履歴` : '車両を選択してください'}
           </p>
