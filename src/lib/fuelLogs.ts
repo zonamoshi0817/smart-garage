@@ -228,6 +228,12 @@ export const watchAllFuelLogs = (
 // 燃費計算（満タン間の燃費）
 export const calculateFuelEfficiency = (fuelLogs: FuelLog[]): number | null => {
   console.log("calculateFuelEfficiency called with:", fuelLogs.length, "logs");
+  console.log("All fuel logs:", fuelLogs.map(log => ({
+    date: log.date.toLocaleDateString(),
+    odoKm: log.odoKm,
+    fuelAmount: log.fuelAmount,
+    isFullTank: log.isFullTank
+  })));
   
   if (fuelLogs.length < 2) {
     console.log("Not enough fuel logs for efficiency calculation");
@@ -240,6 +246,11 @@ export const calculateFuelEfficiency = (fuelLogs: FuelLog[]): number | null => {
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 
   console.log("Full tank logs:", fullTankLogs.length);
+  console.log("Full tank logs details:", fullTankLogs.map(log => ({
+    date: log.date.toLocaleDateString(),
+    odoKm: log.odoKm,
+    fuelAmount: log.fuelAmount
+  })));
 
   if (fullTankLogs.length < 2) {
     console.log("Not enough full tank logs for efficiency calculation");
@@ -258,8 +269,13 @@ export const calculateFuelEfficiency = (fuelLogs: FuelLog[]): number | null => {
 
   console.log("Distance:", distance, "Fuel used:", fuelUsed);
 
-  if (distance <= 0 || fuelUsed <= 0) {
-    console.log("Invalid distance or fuel amount");
+  if (distance <= 0) {
+    console.log("Invalid distance: ODO distance decreased or same. Latest:", latest.odoKm, "Previous:", previous.odoKm);
+    return null;
+  }
+
+  if (fuelUsed <= 0) {
+    console.log("Invalid fuel amount:", fuelUsed);
     return null;
   }
 
