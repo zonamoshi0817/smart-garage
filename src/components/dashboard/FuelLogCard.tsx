@@ -31,6 +31,21 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
   const averageFuelEfficiency = calculateAverageFuelEfficiency(fuelLogs);
   const monthlyCosts = calculateMonthlyFuelCosts(fuelLogs);
 
+  // 個別の給油ログの燃費を計算する関数
+  const calculateIndividualFuelEfficiency = (log: FuelLog, index: number) => {
+    if (index === 0) return null; // 最新のログは燃費計算できない
+    
+    const previousLog = fuelLogs[index - 1];
+    if (!previousLog || !log.isFullTank || !previousLog.isFullTank) return null;
+    
+    const distance = log.odoKm - previousLog.odoKm;
+    const fuelUsed = log.fuelAmount;
+    
+    if (distance <= 0 || fuelUsed <= 0) return null;
+    
+    return Math.round((distance / fuelUsed) * 10) / 10;
+  };
+
   // デバッグ情報
   console.log("FuelLogCard Debug:", {
     fuelLogsCount: fuelLogs.length,
@@ -262,58 +277,66 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                   <h4 className="text-lg font-semibold text-gray-900">最近の給油履歴</h4>
                 </div>
                 <div className="space-y-3">
-                  {fuelLogs.slice(0, 5).map((log, index) => (
-                    <div key={log.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-sm font-semibold text-gray-600">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-sm font-semibold text-gray-900">
-                              {log.date.toLocaleDateString('ja-JP')}
-                            </span>
-                            {log.isFullTank && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                                満タン
+                  {fuelLogs.slice(0, 5).map((log, index) => {
+                    const individualEfficiency = calculateIndividualFuelEfficiency(log, index);
+                    return (
+                      <div key={log.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-sm font-semibold text-gray-600">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-sm font-semibold text-gray-900">
+                                {log.date.toLocaleDateString('ja-JP')}
                               </span>
-                            )}
+                              {log.isFullTank && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                  満タン
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {log.odoKm.toLocaleString()} km • {log.fuelAmount}L • ¥{log.cost.toLocaleString()}
+                              {individualEfficiency && (
+                                <span className="ml-2 text-green-600 font-medium">
+                                  • {individualEfficiency} km/L
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            {log.odoKm.toLocaleString()} km • {log.fuelAmount}L • ¥{log.cost.toLocaleString()}
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-gray-900">
+                              ¥{Math.round(log.cost / log.fuelAmount).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-500">/L</div>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleEdit(log)}
+                              className="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-600 transition-colors"
+                              title="編集"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(log)}
+                              className="p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-colors"
+                              title="削除"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-gray-900">
-                            ¥{Math.round(log.cost / log.fuelAmount).toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-500">/L</div>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleEdit(log)}
-                            className="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-600 transition-colors"
-                            title="編集"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDelete(log)}
-                            className="p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition-colors"
-                            title="削除"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
