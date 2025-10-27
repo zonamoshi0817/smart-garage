@@ -13,6 +13,8 @@ import { type CarManufacturer, type CarModel } from "@/lib/carDatabase";
 import CarModelSelector from "@/components/CarModelSelector";
 import TypeaheadCarSelector from "@/components/TypeaheadCarSelector";
 import { addInsurancePolicy, watchInsurancePolicies, updateInsurancePolicy, removeInsurancePolicy, watchInsuranceClaims, type InsurancePolicy, type InsuranceClaim, getDaysUntilExpiry, getExpiryStatus } from "@/lib/insurance";
+import { addCustomization, getCustomizations, updateCustomization, deleteCustomization, CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/customizations";
+import type { Customization } from "@/types";
 import { watchInsuranceNotifications, type InsuranceNotification } from "@/lib/insuranceNotifications";
 import InsuranceNotificationSettings from "@/components/InsuranceNotificationSettings";
 import { watchFuelLogs, calculateFuelEfficiency, calculateAverageFuelEfficiency } from "@/lib/fuelLogs";
@@ -20,6 +22,7 @@ import type { FuelLog } from "@/types";
 import { Bar as RechartsBar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart } from 'recharts';
 import FuelLogModal from "@/components/modals/FuelLogModal";
 import FuelLogCard from "@/components/dashboard/FuelLogCard";
+import CustomizationModal from "@/components/modals/CustomizationModal";
 
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
@@ -37,6 +40,9 @@ export default function Home() {
   const [insuranceClaims, setInsuranceClaims] = useState<InsuranceClaim[]>([]);
   const [insuranceNotifications, setInsuranceNotifications] = useState<InsuranceNotification[]>([]);
   const [showInsuranceModal, setShowInsuranceModal] = useState(false);
+  const [customizations, setCustomizations] = useState<Customization[]>([]);
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false);
+  const [editingCustomization, setEditingCustomization] = useState<Customization | null>(null);
   const [showEditInsuranceModal, setShowEditInsuranceModal] = useState(false);
   const [editingInsurancePolicy, setEditingInsurancePolicy] = useState<InsurancePolicy | null>(null);
   const [showInsuranceNotificationSettings, setShowInsuranceNotificationSettings] = useState(false);
@@ -51,7 +57,7 @@ export default function Home() {
     inspectionExpiry: string;
   } | null>(null);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
 
   // テスト用の車両データ（開発時のみ）
   const testCars: Car[] = [
@@ -346,6 +352,43 @@ export default function Home() {
     };
   }, [auth.currentUser, activeCarId, authTrigger]);
 
+  // カスタマイズデータの監視
+  useEffect(() => {
+    if (!auth.currentUser || !activeCarId) {
+      console.log("No user or active car, skipping customizations watch");
+      setCustomizations([]);
+      return;
+    }
+
+    console.log("Setting up customizations watcher for car:", activeCarId);
+    const loadCustomizations = async () => {
+      try {
+        console.log("Loading customizations...");
+        const customizations = await getCustomizations(auth.currentUser!.uid, activeCarId);
+        console.log("Customizations loaded successfully:", customizations.length);
+        setCustomizations(customizations);
+      } catch (error) {
+        console.error("Error loading customizations:", error);
+        console.error("Error details:", {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: (error as any)?.code,
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        setCustomizations([]);
+      }
+    };
+
+    // タイムアウトを設定して無限読み込みを防ぐ
+    const timeoutId = setTimeout(() => {
+      console.warn("Customizations loading timeout, setting empty array");
+      setCustomizations([]);
+    }, 10000); // 10秒でタイムアウト
+
+    loadCustomizations().finally(() => {
+      clearTimeout(timeoutId);
+    });
+  }, [auth.currentUser, activeCarId, authTrigger]);
+
   const car = useMemo(
     () => cars.find((c) => c.id === activeCarId),
     [cars, activeCarId]
@@ -578,6 +621,11 @@ export default function Home() {
               onClick={() => setCurrentPage('fuel-logs')}
             />
             <NavItem 
+              label="カスタム" 
+              active={currentPage === 'customizations'} 
+              onClick={() => setCurrentPage('customizations')}
+            />
+            <NavItem 
               label="自動車保険" 
               active={currentPage === 'insurance'} 
               onClick={() => setCurrentPage('insurance')}
@@ -609,12 +657,14 @@ export default function Home() {
                 car={car}
                 maintenanceRecords={maintenanceRecords}
                 fuelLogs={fuelLogs}
+                customizations={customizations}
                 setShowMaintenanceModal={setShowMaintenanceModal}
                 setShowAddCarModal={setShowAddCarModal}
                 setShowEditMaintenanceModal={setShowEditMaintenanceModal}
                 setEditingMaintenanceRecord={setEditingMaintenanceRecord}
                 setCurrentPage={setCurrentPage}
                 setShowFuelLogModal={setShowFuelLogModal}
+                setShowCustomizationModal={setShowCustomizationModal}
                 setActiveCarId={setActiveCarId}
               />
             ) : currentPage === 'car-management' ? (
@@ -641,6 +691,15 @@ export default function Home() {
                 activeCarId={activeCarId}
                 fuelLogs={fuelLogs}
                 setShowFuelLogModal={setShowFuelLogModal}
+              />
+            ) : currentPage === 'customizations' ? (
+              <CustomizationsContent 
+                cars={cars}
+                activeCarId={activeCarId}
+                customizations={customizations}
+                setShowCustomizationModal={setShowCustomizationModal}
+                setEditingCustomization={setEditingCustomization}
+                setCustomizations={setCustomizations}
               />
             ) : currentPage === 'insurance' ? (
             <InsuranceContent
@@ -748,6 +807,26 @@ export default function Home() {
         />
       )}
 
+      {/* カスタマイズモーダル */}
+      {showCustomizationModal && activeCarId && auth.currentUser && (
+        <CustomizationModal
+          isOpen={showCustomizationModal}
+          onClose={() => {
+            setShowCustomizationModal(false);
+            setEditingCustomization(null);
+          }}
+          carId={`${auth.currentUser.uid}/cars/${activeCarId}`}
+          editingCustomization={editingCustomization}
+          onSave={async () => {
+            // カスタマイズ一覧を再取得
+            if (auth.currentUser && activeCarId) {
+              const updatedCustomizations = await getCustomizations(auth.currentUser.uid, activeCarId);
+              setCustomizations(updatedCustomizations);
+            }
+          }}
+        />
+      )}
+
       {/* 保険契約追加モーダル */}
       {showInsuranceModal && activeCarId && (
         <InsuranceModal
@@ -833,12 +912,14 @@ function DashboardContent({
   car, 
   maintenanceRecords,
   fuelLogs,
+  customizations,
   setShowMaintenanceModal, 
   setShowAddCarModal,
   setShowEditMaintenanceModal,
   setEditingMaintenanceRecord,
   setCurrentPage,
   setShowFuelLogModal,
+  setShowCustomizationModal,
   setActiveCarId
 }: {
   cars: Car[];
@@ -846,12 +927,14 @@ function DashboardContent({
   car?: Car;
   maintenanceRecords: MaintenanceRecord[];
   fuelLogs: FuelLog[];
+  customizations: Customization[];
   setShowMaintenanceModal: (show: boolean) => void;
   setShowAddCarModal: (show: boolean) => void;
   setShowEditMaintenanceModal: (show: boolean) => void;
   setEditingMaintenanceRecord: (record: MaintenanceRecord | null) => void;
-  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'data-management' | 'notifications' | 'insurance') => void;
+  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance') => void;
   setShowFuelLogModal: (show: boolean) => void;
+  setShowCustomizationModal: (show: boolean) => void;
   setActiveCarId: (id: string) => void;
 }) {
 
@@ -1022,7 +1105,7 @@ function DashboardContent({
                       />
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-2">
               {!activeCarId ? (
                 <div className="text-sm text-gray-500 px-4 py-2">
                   {cars.length === 0 ? "まず車を追加してください" : "車を選択してください"}
@@ -1034,7 +1117,7 @@ function DashboardContent({
                       console.log("Maintenance button clicked, activeCarId:", activeCarId);
                       setShowMaintenanceModal(true);
                     }}
-                    className="rounded-xl bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-500"
+                    className="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-500"
                   >
                     ＋ メンテナンスを記録
                   </button>
@@ -1043,9 +1126,18 @@ function DashboardContent({
                       console.log("Fuel log button clicked, activeCarId:", activeCarId);
                       setShowFuelLogModal(true);
                     }}
-                    className="rounded-xl bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-500"
+                    className="rounded-xl bg-green-600 text-white px-3 py-2 text-sm font-medium hover:bg-green-500"
                   >
                     ＋ 給油を記録
+                  </button>
+                  <button 
+                    onClick={() => {
+                      console.log("Customization button clicked, activeCarId:", activeCarId);
+                      setShowCustomizationModal(true);
+                    }}
+                    className="rounded-xl bg-purple-600 text-white px-3 py-2 text-sm font-medium hover:bg-purple-500"
+                  >
+                    ＋ カスタマイズを記録
                   </button>
                 </>
               )}
@@ -1054,8 +1146,8 @@ function DashboardContent({
               </div>
             </section>
 
-            {/* メンテナンス履歴と給油情報を同列に配置 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* メンテナンス履歴、給油情報、カスタム情報を3列に配置 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               {/* メンテナンス履歴 */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1274,6 +1366,87 @@ function DashboardContent({
             )}
                 </div>
               )}
+
+              {/* カスタマイズ履歴 */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold">最近のカスタマイズ</h3>
+                  <button
+                    onClick={() => setShowCustomizationModal(true)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    ＋ カスタマイズを記録
+                  </button>
+                </div>
+                
+                {customizations.length > 0 ? (
+                  <div className="space-y-3">
+                    {customizations
+                      .sort((a, b) => b.date.getTime() - a.date.getTime())
+                      .slice(0, 3)
+                      .map((customization) => (
+                      <div key={customization.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium text-gray-900">{customization.title}</h4>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[customization.status]}`}>
+                                {STATUS_LABELS[customization.status]}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {customization.categories.slice(0, 2).map((category) => (
+                                <span key={category} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                  {CATEGORY_LABELS[category]}
+                                </span>
+                              ))}
+                              {customization.categories.length > 2 && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                  +{customization.categories.length - 2}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <span>{customization.date.toLocaleDateString('ja-JP')}</span>
+                              {(customization.partsCostJpy || customization.laborCostJpy || customization.otherCostJpy) && (
+                                <span className="font-medium text-green-600">
+                                  ¥{((customization.partsCostJpy || 0) + (customization.laborCostJpy || 0) + (customization.otherCostJpy || 0)).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {customizations.length > 3 && (
+                      <div className="text-center">
+                        <button
+                          onClick={() => setCurrentPage('customizations')}
+                          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          すべてのカスタマイズを見る ({customizations.length}件)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-4">
+                      <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">カスタマイズ記録がありません</h4>
+                    <p className="text-gray-500 mb-4">最初のカスタマイズ記録を追加しましょう</p>
+                    <button
+                      onClick={() => setShowCustomizationModal(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      カスタマイズを記録
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 下段：月別費用推移 */}
@@ -4685,3 +4858,203 @@ const MAINTENANCE_TITLE_OPTIONS = [
   { value: 'エアコン点検', label: 'エアコン点検', category: 'メンテナンス' },
   { value: 'その他', label: 'その他', category: 'その他' }
 ];
+
+// カスタマイズ一覧コンポーネント
+function CustomizationsContent({ 
+  cars, 
+  activeCarId, 
+  customizations, 
+  setShowCustomizationModal, 
+  setEditingCustomization,
+  setCustomizations
+}: {
+  cars: Car[];
+  activeCarId: string | undefined;
+  customizations: Customization[];
+  setShowCustomizationModal: (show: boolean) => void;
+  setEditingCustomization: (customization: Customization | null) => void;
+  setCustomizations: (customizations: Customization[]) => void;
+}) {
+  const activeCar = cars.find(car => car.id === activeCarId);
+
+  const handleEdit = (customization: Customization) => {
+    setEditingCustomization(customization);
+    setShowCustomizationModal(true);
+  };
+
+  const handleDelete = async (customizationId: string) => {
+    if (!activeCarId || !auth.currentUser) return;
+    
+    if (confirm('このカスタマイズ記録を削除しますか？')) {
+      try {
+        console.log('Deleting customization:', customizationId);
+        await deleteCustomization(auth.currentUser.uid, activeCarId, customizationId);
+        console.log('Customization deleted successfully');
+        
+        // カスタマイズ一覧を再取得
+        console.log('Reloading customizations...');
+        const updatedCustomizations = await getCustomizations(auth.currentUser.uid, activeCarId);
+        console.log('Customizations reloaded:', updatedCustomizations.length);
+        setCustomizations(updatedCustomizations);
+      } catch (error) {
+        console.error('Error deleting customization:', error);
+        console.error('Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          code: (error as any)?.code,
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        alert(`削除に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">カスタム</h1>
+          <p className="text-gray-600 mt-1">
+            {activeCar ? `${activeCar.name}のカスタマイズ履歴` : '車両を選択してください'}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              // CSVエクスポート機能
+              const csvData = customizations.map(c => ({
+                'タイトル': c.title,
+                'ブランド': c.brand || '',
+                '型番': c.modelCode || '',
+                'カテゴリ': c.categories.map(cat => CATEGORY_LABELS[cat]).join(', '),
+                'ステータス': STATUS_LABELS[c.status],
+                '実施日': c.date.toLocaleDateString('ja-JP'),
+                '走行距離': c.odoKm || '',
+                '実施場所': c.vendorName || '',
+                '部品代': c.partsCostJpy || 0,
+                '工賃': c.laborCostJpy || 0,
+                'その他費用': c.otherCostJpy || 0,
+                '総費用': (c.partsCostJpy || 0) + (c.laborCostJpy || 0) + (c.otherCostJpy || 0),
+                'メモ': c.memo || '',
+                'リンク': c.link || '',
+                '公開': c.isPublic ? 'はい' : 'いいえ'
+              }));
+              
+              const headers = Object.keys(csvData[0] || {});
+              const csvContent = [
+                headers.join(','),
+                ...csvData.map(row => headers.map(header => `"${(row as any)[header]}"`).join(','))
+              ].join('\n');
+              
+              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = `カスタマイズ履歴_${new Date().toISOString().split('T')[0]}.csv`;
+              link.click();
+            }}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            CSV出力
+          </button>
+          <button
+            onClick={() => setShowCustomizationModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            + カスタマイズを追加
+          </button>
+        </div>
+      </div>
+
+      {!activeCarId ? (
+        <div className="text-center py-12">
+          <div className="text-gray-500 mb-4">
+            {cars.length === 0 ? "まず車を追加してください" : "車を選択してください"}
+          </div>
+        </div>
+      ) : customizations.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-gray-500 mb-4">カスタマイズ記録がありません</div>
+          <button
+            onClick={() => setShowCustomizationModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            最初のカスタマイズを追加
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {customizations.map((customization) => (
+            <div key={customization.id} className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-semibold">{customization.title}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[customization.status]}`}>
+                      {STATUS_LABELS[customization.status]}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {customization.categories.map((category) => (
+                      <span key={category} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                        {CATEGORY_LABELS[category]}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                    <div>
+                      <span className="font-medium">実施日:</span>
+                      <div>{customization.date.toLocaleDateString('ja-JP')}</div>
+                    </div>
+                    {customization.odoKm && (
+                      <div>
+                        <span className="font-medium">走行距離:</span>
+                        <div>{customization.odoKm.toLocaleString()} km</div>
+                      </div>
+                    )}
+                    {customization.brand && (
+                      <div>
+                        <span className="font-medium">ブランド:</span>
+                        <div>{customization.brand}</div>
+                      </div>
+                    )}
+                    {(customization.partsCostJpy || customization.laborCostJpy || customization.otherCostJpy) && (
+                      <div>
+                        <span className="font-medium">総費用:</span>
+                        <div className="font-semibold text-green-600">
+                          ¥{((customization.partsCostJpy || 0) + (customization.laborCostJpy || 0) + (customization.otherCostJpy || 0)).toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {customization.memo && (
+                    <div className="mt-3">
+                      <span className="font-medium text-sm">メモ:</span>
+                      <p className="text-sm text-gray-600 mt-1">{customization.memo}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 ml-4">
+                  <button
+                    onClick={() => handleEdit(customization)}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    編集
+                  </button>
+                  <button
+                    onClick={() => customization.id && handleDelete(customization.id)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    削除
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -154,6 +154,71 @@ export interface FuelLogInput {
   date: Date;
 }
 
+// カスタマイズ関連の型
+export type CustomStatus = 'planned' | 'ordered' | 'installed' | 'removed_temp' | 'removed';
+export type CustomCategory = 
+  | 'exterior' | 'interior' | 'intake' | 'exhaust' | 'ecu' | 'suspension' 
+  | 'brake' | 'reinforcement' | 'drivetrain' | 'tire_wheel' | 'electrical' 
+  | 'audio' | 'safety' | 'other';
+
+export interface Customization extends BaseEntity {
+  carId: string;
+  title: string;
+  brand?: string;
+  modelCode?: string;
+  categories: CustomCategory[];
+  status: CustomStatus;
+  date: Date;
+  odoKm?: number;
+  vendorType?: 'self' | 'shop' | 'dealer';
+  vendorName?: string;
+  partsCostJpy?: number;
+  laborCostJpy?: number;
+  otherCostJpy?: number;
+  currency: 'JPY';
+  link?: string;
+  memo?: string;
+  isPublic: boolean;
+}
+
+export interface CustomizationInput {
+  carId: string;
+  title: string;
+  brand?: string;
+  modelCode?: string;
+  categories: CustomCategory[];
+  status: CustomStatus;
+  date: Date;
+  odoKm?: number;
+  vendorType?: 'self' | 'shop' | 'dealer';
+  vendorName?: string;
+  partsCostJpy?: number;
+  laborCostJpy?: number;
+  otherCostJpy?: number;
+  currency: 'JPY';
+  link?: string;
+  memo?: string;
+  isPublic: boolean;
+}
+
+export interface CustomizationMedia extends BaseEntity {
+  customizationId: string;
+  carId: string;
+  type: 'photo' | 'receipt' | 'video';
+  storagePath: string;
+  thumbPath?: string;
+  note?: string;
+  takenAt?: Date;
+}
+
+export interface CustomizationMeta {
+  carId: string;
+  totalCostJpy: number;
+  yearToDateCostJpy: number;
+  countInstalled: number;
+  topCategories: { key: string; cost: number }[];
+}
+
 // ナビゲーション関連の型
 export interface NavItem {
   id: string;

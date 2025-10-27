@@ -1,0 +1,428 @@
+import React, { useState, useEffect } from 'react';
+import { ModalProps } from '@/types';
+import { Customization, CustomizationInput, CustomStatus, CustomCategory } from '@/types';
+import { CATEGORY_LABELS, STATUS_LABELS } from '@/lib/customizations';
+import { addCustomization, updateCustomization } from '@/lib/customizations';
+import { auth } from '@/lib/firebase';
+
+interface CustomizationModalProps extends ModalProps {
+  carId: string;
+  editingCustomization?: Customization | null;
+  onSave: () => void;
+}
+
+export default function CustomizationModal({ 
+  isOpen, 
+  onClose, 
+  carId, 
+  editingCustomization, 
+  onSave 
+}: CustomizationModalProps) {
+  const [formData, setFormData] = useState<Omit<CustomizationInput, 'carId'>>({
+    title: '',
+    brand: '',
+    modelCode: '',
+    categories: [],
+    status: 'planned',
+    date: new Date(),
+    odoKm: null,
+    vendorType: null,
+    vendorName: '',
+    partsCostJpy: null,
+    laborCostJpy: null,
+    otherCostJpy: null,
+    currency: 'JPY',
+    link: '',
+    memo: '',
+    isPublic: false,
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (editingCustomization) {
+      setFormData({
+        title: editingCustomization.title,
+        brand: editingCustomization.brand || '',
+        modelCode: editingCustomization.modelCode || '',
+        categories: editingCustomization.categories,
+        status: editingCustomization.status,
+        date: editingCustomization.date,
+        odoKm: editingCustomization.odoKm ?? null,
+        vendorType: editingCustomization.vendorType ?? null,
+        vendorName: editingCustomization.vendorName || '',
+        partsCostJpy: editingCustomization.partsCostJpy ?? null,
+        laborCostJpy: editingCustomization.laborCostJpy ?? null,
+        otherCostJpy: editingCustomization.otherCostJpy ?? null,
+        currency: editingCustomization.currency,
+        link: editingCustomization.link || '',
+        memo: editingCustomization.memo || '',
+        isPublic: editingCustomization.isPublic,
+      });
+    } else {
+      // 新規作成時はフォームをリセット
+      setFormData({
+        title: '',
+        brand: '',
+        modelCode: '',
+        categories: [],
+        status: 'planned',
+        date: new Date(),
+        odoKm: null,
+        vendorType: null,
+        vendorName: '',
+        partsCostJpy: null,
+        laborCostJpy: null,
+        otherCostJpy: null,
+        currency: 'JPY',
+        link: '',
+        memo: '',
+        isPublic: false,
+      });
+    }
+  }, [editingCustomization, isOpen]);
+
+  const handleInputChange = (field: keyof typeof formData, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value === '' ? null : value
+    }));
+  };
+
+  const handleCategoryToggle = (category: CustomCategory) => {
+    setFormData(prev => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter(c => c !== category)
+        : [...prev.categories, category]
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.title.trim()) {
+      alert('タイトルを入力してください');
+      return;
+    }
+
+    if (formData.categories.length === 0) {
+      alert('カテゴリを1つ以上選択してください');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      console.log('Saving customization with form data:', formData);
+      console.log('CarId:', carId);
+      console.log('Current user:', auth.currentUser);
+      console.log('User ID:', auth.currentUser?.uid);
+      console.log('Parsed userId:', carId.split('/')[0]);
+      console.log('Parsed carId:', carId.split('/')[2]);
+      
+      if (!auth.currentUser) {
+        throw new Error('ユーザーが認証されていません');
+      }
+      
+      if (editingCustomization) {
+        console.log('Updating existing customization:', editingCustomization.id);
+        await updateCustomization(
+          carId.split('/')[0], // userId
+          carId.split('/')[2], // carId
+          editingCustomization.id!,
+          formData
+        );
+      } else {
+        console.log('Adding new customization');
+        await addCustomization(
+          carId.split('/')[0], // userId
+          carId.split('/')[2], // carId
+          formData
+        );
+      }
+      
+      console.log('Customization saved successfully');
+      onSave();
+      onClose();
+    } catch (error) {
+      console.error('Error saving customization:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: (error as any)?.code,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      const errorCode = (error as any)?.code || 'unknown';
+      alert(`保存に失敗しました\nエラー: ${errorMessage}\nコード: ${errorCode}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const statusOptions: CustomStatus[] = ['planned', 'ordered', 'installed', 'removed_temp', 'removed'];
+  const categoryOptions: CustomCategory[] = [
+    'exterior', 'interior', 'intake', 'exhaust', 'ecu', 'suspension',
+    'brake', 'reinforcement', 'drivetrain', 'tire_wheel', 'electrical',
+    'audio', 'safety', 'other'
+  ];
+
+  return (
+    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${isOpen ? 'block' : 'hidden'}`}>
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {editingCustomization ? 'カスタマイズを編集' : 'カスタマイズを追加'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* タイトル */}
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              タイトル <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+              placeholder="例: HKS Hi-Power マフラー"
+              required
+            />
+          </div>
+
+          {/* ブランド・型番 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                ブランド
+              </label>
+              <input
+                type="text"
+                value={formData.brand}
+                onChange={(e) => handleInputChange('brand', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                placeholder="例: HKS"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                型番
+              </label>
+              <input
+                type="text"
+                value={formData.modelCode}
+                onChange={(e) => handleInputChange('modelCode', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                placeholder="例: Hi-Power"
+              />
+            </div>
+          </div>
+
+          {/* カテゴリ */}
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              カテゴリ <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {categoryOptions.map((category) => (
+                <label key={category} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.categories.includes(category)}
+                    onChange={() => handleCategoryToggle(category)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-gray-800">{CATEGORY_LABELS[category]}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* ステータス・実施日 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                ステータス
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value as CustomStatus)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              >
+                {statusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {STATUS_LABELS[status]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                実施日
+              </label>
+              <input
+                type="date"
+                value={formData.date.toISOString().split('T')[0]}
+                onChange={(e) => handleInputChange('date', new Date(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
+              />
+            </div>
+          </div>
+
+          {/* 走行距離・実施場所 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                走行距離 (km)
+              </label>
+              <input
+                type="number"
+                value={formData.odoKm || ''}
+                onChange={(e) => handleInputChange('odoKm', e.target.value ? Number(e.target.value) : undefined)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                placeholder="例: 50000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                実施場所
+              </label>
+              <select
+                value={formData.vendorType || ''}
+                onChange={(e) => handleInputChange('vendorType', e.target.value || undefined)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              >
+                <option value="">選択してください</option>
+                <option value="self">自分で実施</option>
+                <option value="shop">整備工場</option>
+                <option value="dealer">ディーラー</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 実施場所名 */}
+          {formData.vendorType && (
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                実施場所名
+              </label>
+              <input
+                type="text"
+                value={formData.vendorName}
+                onChange={(e) => handleInputChange('vendorName', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                placeholder="例: 〇〇整備工場"
+              />
+            </div>
+          )}
+
+          {/* 費用 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              費用 (円)
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-gray-700 mb-1">部品代</label>
+                  <input
+                    type="number"
+                    value={formData.partsCostJpy || ''}
+                    onChange={(e) => handleInputChange('partsCostJpy', e.target.value ? Number(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                    placeholder="0"
+                  />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-700 mb-1">工賃</label>
+                <input
+                  type="number"
+                  value={formData.laborCostJpy || ''}
+                  onChange={(e) => handleInputChange('laborCostJpy', e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-700 mb-1">その他</label>
+                <input
+                  type="number"
+                  value={formData.otherCostJpy || ''}
+                  onChange={(e) => handleInputChange('otherCostJpy', e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* リンク・メモ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                商品リンク
+              </label>
+              <input
+                type="url"
+                value={formData.link}
+                onChange={(e) => handleInputChange('link', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                placeholder="https://..."
+              />
+            </div>
+            <div className="flex items-center">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={(e) => handleInputChange('isPublic', e.target.checked)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-800">公開する</span>
+              </label>
+            </div>
+          </div>
+
+          {/* メモ */}
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              メモ
+            </label>
+            <textarea
+              value={formData.memo}
+              onChange={(e) => handleInputChange('memo', e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+              placeholder="カスタマイズの詳細や感想など..."
+            />
+          </div>
+
+          {/* ボタン */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSubmitting ? '保存中...' : (editingCustomization ? '更新' : '追加')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
