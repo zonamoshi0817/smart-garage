@@ -715,6 +715,8 @@ export default function Home() {
               <DataManagementContent 
                 cars={cars}
                 maintenanceRecords={allMaintenanceRecords}
+                customizations={customizations}
+                activeCarId={activeCarId}
               />
             ) : (
               <NotificationsContent 
@@ -1915,10 +1917,14 @@ function MaintenanceHistoryContent({
 
 function DataManagementContent({
   cars,
-  maintenanceRecords
+  maintenanceRecords,
+  customizations,
+  activeCarId
 }: {
   cars: Car[];
   maintenanceRecords: MaintenanceRecord[];
+  customizations: Customization[];
+  activeCarId: string | undefined;
 }) {
   // CSVエクスポート機能
   const exportToCSV = (data: any[], filename: string) => {
@@ -1983,6 +1989,39 @@ function DataManagementContent({
     exportToCSV(maintenanceData, `maintenance_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
+  const handleExportCustomizations = () => {
+    if (!activeCarId) {
+      alert('車両を選択してください。');
+      return;
+    }
+    
+    const customizationData = customizations.map((custom: Customization) => ({
+      id: custom.id,
+      carId: activeCarId,
+      carName: cars.find(c => c.id === activeCarId)?.name || '不明',
+      title: custom.title,
+      brand: custom.brand || '',
+      modelCode: custom.modelCode || '',
+      categories: custom.categories.join(', '),
+      status: custom.status,
+      date: custom.date,
+      odoKm: custom.odoKm || '',
+      vendorType: custom.vendorType || '',
+      vendorName: custom.vendorName || '',
+      partsCostJpy: custom.partsCostJpy || '',
+      laborCostJpy: custom.laborCostJpy || '',
+      otherCostJpy: custom.otherCostJpy || '',
+      totalCost: (custom.partsCostJpy || 0) + (custom.laborCostJpy || 0) + (custom.otherCostJpy || 0),
+      currency: custom.currency,
+      link: custom.link || '',
+      memo: custom.memo || '',
+      isPublic: custom.isPublic,
+      createdAt: custom.createdAt,
+      updatedAt: custom.updatedAt
+    }));
+    exportToCSV(customizationData, `customizations_${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
   const handleExportAll = () => {
     const allData = {
       cars: cars.map(car => ({
@@ -2007,6 +2046,29 @@ function DataManagementContent({
         location: record.location || '',
         createdAt: record.createdAt || new Date(),
         updatedAt: record.updatedAt || new Date()
+      })),
+      customizations: customizations.map((custom: Customization) => ({
+        id: custom.id,
+        carId: activeCarId || '',
+        carName: cars.find(c => c.id === activeCarId)?.name || '不明',
+        title: custom.title,
+        brand: custom.brand || '',
+        modelCode: custom.modelCode || '',
+        categories: custom.categories,
+        status: custom.status,
+        date: custom.date,
+        odoKm: custom.odoKm || '',
+        vendorType: custom.vendorType || '',
+        vendorName: custom.vendorName || '',
+        partsCostJpy: custom.partsCostJpy || '',
+        laborCostJpy: custom.laborCostJpy || '',
+        otherCostJpy: custom.otherCostJpy || '',
+        currency: custom.currency,
+        link: custom.link || '',
+        memo: custom.memo || '',
+        isPublic: custom.isPublic,
+        createdAt: custom.createdAt,
+        updatedAt: custom.updatedAt
       }))
     };
 
@@ -2169,10 +2231,20 @@ function DataManagementContent({
             </button>
 
             <button
-              onClick={handleExportAll}
+              onClick={handleExportCustomizations}
               className="flex items-center justify-center gap-2 p-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition"
             >
               <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span className="font-medium">カスタマイズ (CSV)</span>
+            </button>
+
+            <button
+              onClick={handleExportAll}
+              className="flex items-center justify-center gap-2 p-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition"
+            >
+              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <span className="font-medium">全データ (JSON)</span>
