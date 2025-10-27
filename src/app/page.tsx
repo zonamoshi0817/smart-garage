@@ -980,6 +980,12 @@ function DashboardContent({
                     src={car?.imagePath || "/car.jpg"}
                     alt={car?.name || "My Car"}
                     className="w-full h-44 md:h-full object-cover rounded-xl"
+                    onLoad={() => {
+                      // 画像読み込み完了時の処理
+                    }}
+                    onError={() => {
+                      // 画像読み込みエラー時の処理
+                    }}
                   />
                 </div>
                 <div className="flex flex-col justify-between gap-4">
@@ -2634,6 +2640,12 @@ function CarCard({
             src={car.imagePath || "/car.jpg"}
             alt={car.name}
             className="w-full h-full object-cover"
+            onLoad={() => {
+              // 画像読み込み完了時の処理（必要に応じて）
+            }}
+            onError={() => {
+              // 画像読み込みエラー時の処理（必要に応じて）
+            }}
           />
         </div>
         
@@ -3720,12 +3732,24 @@ function CarSwitcher({
             }`}
           >
             {/* 車両画像 */}
-            {car.imagePath && (
+            {car.imagePath ? (
               <img
                 src={car.imagePath}
                 alt={car.name}
                 className="w-12 h-12 object-cover rounded-lg"
+                onLoad={() => {
+                  // 画像読み込み完了時の処理
+                }}
+                onError={() => {
+                  // 画像読み込みエラー時の処理
+                }}
               />
+            ) : (
+              <div className="w-12 h-12 bg-gray-200 rounded-lg animate-pulse flex items-center justify-center">
+                <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              </div>
             )}
             
             {/* 車両情報 */}
