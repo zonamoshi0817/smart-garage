@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addFuelLog, updateFuelLog, type FuelLogInput } from "@/lib/fuelLogs";
+import { addFuelLog, updateFuelLog, getFuelLogs, type FuelLogInput } from "@/lib/fuelLogs";
+import { updateCar } from "@/lib/cars";
 import type { Car, FuelLog } from "@/types";
 import type { ModalProps } from "@/types";
 
@@ -13,7 +14,9 @@ interface FuelLogModalProps extends ModalProps {
 
 export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onSuccess }: FuelLogModalProps) {
   const [formData, setFormData] = useState({
+    meterType: "odo" as "odo" | "trip",
     odoKm: (car.odoKm || 0).toString(),
+    tripKm: "",
     fuelAmount: "",
     cost: "",
     pricePerLiter: "",
@@ -21,10 +24,27 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
     memo: "",
     date: new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:MM形式
   });
+  const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = !!editingFuelLog;
+
+  // 給油ログの履歴を取得
+  const loadFuelLogs = async () => {
+    if (!car.id) return;
+    
+    setIsLoadingLogs(true);
+    try {
+      const logs = await getFuelLogs(car.id);
+      setFuelLogs(logs);
+    } catch (error) {
+      console.error("給油ログの取得に失敗しました:", error);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
 
   // モーダルが開かれた時にフォームデータを設定
   useEffect(() => {
@@ -32,7 +52,9 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
       if (editingFuelLog) {
         // 編集モード：既存のデータを設定
         setFormData({
+          meterType: "odo",
           odoKm: editingFuelLog.odoKm.toString(),
+          tripKm: "",
           fuelAmount: editingFuelLog.fuelAmount.toString(),
           cost: editingFuelLog.cost.toString(),
           pricePerLiter: editingFuelLog.pricePerLiter?.toString() || "",
@@ -41,9 +63,17 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           date: editingFuelLog.date.toISOString().slice(0, 16),
         });
       } else {
-        // 新規作成モード：車両の現在の走行距離を設定
+        // 新規作成モード：給油ログの履歴を取得して推奨メーターを決定
+        loadFuelLogs();
+        
+        // 初回はODO、2回目以降はトリップを推奨
+        const isFirstTime = fuelLogs.length === 0;
+        const recommendedMeterType = isFirstTime ? "odo" : "trip";
+        
         setFormData({
+          meterType: recommendedMeterType,
           odoKm: (car.odoKm || 0).toString(),
+          tripKm: "",
           fuelAmount: "",
           cost: "",
           pricePerLiter: "",
@@ -53,7 +83,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
         });
       }
     }
-  }, [isOpen, car.odoKm, editingFuelLog]);
+  }, [isOpen, car.odoKm, editingFuelLog, fuelLogs.length]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,9 +91,20 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
     setIsSubmitting(true);
 
     try {
+      // メーター種別に応じてODO距離を計算
+      let finalOdoKm: number;
+      if (formData.meterType === "odo") {
+        finalOdoKm = parseInt(formData.odoKm) || 0;
+      } else {
+        // トリップメーターの場合、前回のODO距離にトリップ距離を加算
+        const lastFuelLog = fuelLogs[0]; // 最新の給油ログ
+        const tripKm = parseInt(formData.tripKm) || 0;
+        finalOdoKm = lastFuelLog ? lastFuelLog.odoKm + tripKm : (car.odoKm || 0) + tripKm;
+      }
+
       const fuelLogData: FuelLogInput = {
         carId: car.id!,
-        odoKm: parseInt(formData.odoKm) || 0,
+        odoKm: finalOdoKm,
         fuelAmount: parseFloat(formData.fuelAmount) || 0,
         cost: parseInt(formData.cost) || 0,
         pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : undefined,
@@ -80,6 +121,18 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
         // 新規作成モード
         await addFuelLog(fuelLogData);
         console.log("給油ログを追加しました");
+        
+        // 車両データの走行距離を更新（新規作成時のみ）
+        if (car.id && finalOdoKm > (car.odoKm || 0)) {
+          try {
+            await updateCar(car.id, { odoKm: finalOdoKm });
+            console.log(`車両の走行距離を更新しました: ${finalOdoKm}km`);
+          } catch (error) {
+            console.error("車両データの更新に失敗しました:", error);
+            // エラーが発生しても給油ログの保存は成功しているので、警告のみ
+            console.warn("給油ログは保存されましたが、車両データの更新に失敗しました");
+          }
+        }
       }
       
       // 成功時の処理
@@ -89,7 +142,9 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
       // フォームをリセット（新規作成時のみ）
       if (!isEditing) {
         setFormData({
+          meterType: "trip", // 次回はトリップを推奨
           odoKm: (car.odoKm || 0).toString(),
+          tripKm: "",
           fuelAmount: "",
           cost: "",
           pricePerLiter: "",
@@ -139,21 +194,77 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
               <p className="font-medium text-gray-900">{car.name}</p>
             </div>
 
-            {/* 走行距離 */}
+            {/* メーター種別選択 */}
             <div>
-              <label htmlFor="odoKm" className="block text-sm font-medium text-gray-700 mb-1">
-                走行距離 (ODO) <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                走行距離の入力方法
               </label>
-              <input
-                type="number"
-                id="odoKm"
-                value={formData.odoKm}
-                onChange={(e) => handleInputChange("odoKm", e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                placeholder="例: 50000"
-                required
-                min="0"
-              />
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="meterType"
+                    value="odo"
+                    checked={formData.meterType === "odo"}
+                    onChange={(e) => handleInputChange("meterType", e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">ODOメーター</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="meterType"
+                    value="trip"
+                    checked={formData.meterType === "trip"}
+                    onChange={(e) => handleInputChange("meterType", e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">トリップメーター</span>
+                </label>
+              </div>
+            </div>
+
+            {/* 走行距離入力 */}
+            <div>
+              {formData.meterType === "odo" ? (
+                <>
+                  <label htmlFor="odoKm" className="block text-sm font-medium text-gray-700 mb-1">
+                    ODOメーター (km) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="odoKm"
+                    value={formData.odoKm}
+                    onChange={(e) => handleInputChange("odoKm", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder="例: 50000"
+                    required
+                    min="0"
+                  />
+                </>
+              ) : (
+                <>
+                  <label htmlFor="tripKm" className="block text-sm font-medium text-gray-700 mb-1">
+                    トリップメーター (km) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    id="tripKm"
+                    value={formData.tripKm}
+                    onChange={(e) => handleInputChange("tripKm", e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    placeholder="例: 350"
+                    required
+                    min="0"
+                  />
+                  {fuelLogs.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      前回のODO: {fuelLogs[0].odoKm.toLocaleString()}km + トリップ = {((fuelLogs[0].odoKm + (parseInt(formData.tripKm) || 0))).toLocaleString()}km
+                    </p>
+                  )}
+                </>
+              )}
             </div>
 
             {/* 給油量 */}

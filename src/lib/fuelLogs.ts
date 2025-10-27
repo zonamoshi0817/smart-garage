@@ -98,6 +98,42 @@ export const deleteFuelLog = async (id: string): Promise<void> => {
   }
 };
 
+// 特定の車両の給油ログを取得
+export const getFuelLogs = async (carId: string): Promise<FuelLog[]> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ユーザーがログインしていません");
+  }
+
+  try {
+    // インデックスエラーを回避するため、carIdでフィルタリングしてからクライアント側でソート
+    const q = query(
+      collection(db, "users", user.uid, "fuelLogs"),
+      where("carId", "==", carId)
+    );
+
+    const snapshot = await getDocs(q);
+    const fuelLogs: FuelLog[] = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        date: data.date?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      } as FuelLog;
+    });
+    
+    // クライアント側で日付順にソート（新しい順）
+    fuelLogs.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    return fuelLogs;
+  } catch (error) {
+    console.error("給油ログの取得に失敗しました:", error);
+    throw error;
+  }
+};
+
 // 特定の車両の給油ログを監視
 export const watchFuelLogs = (
   carId: string,
