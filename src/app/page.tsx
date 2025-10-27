@@ -967,13 +967,28 @@ function DashboardContent({
         })
         .reduce((sum, log) => sum + (log.cost || 0), 0);
       
-      const totalCost = maintenanceCost + fuelCost;
+      // その月のカスタマイズ費用を計算
+      const customizationCost = customizations
+        .filter(custom => {
+          const customDate = custom.date;
+          return customDate.getFullYear() === date.getFullYear() && 
+                 customDate.getMonth() === date.getMonth();
+        })
+        .reduce((sum, custom) => {
+          const partsCost = custom.partsCostJpy || 0;
+          const laborCost = custom.laborCostJpy || 0;
+          const otherCost = custom.otherCostJpy || 0;
+          return sum + partsCost + laborCost + otherCost;
+        }, 0);
+      
+      const totalCost = maintenanceCost + fuelCost + customizationCost;
       
       months.push({
         month: monthName,
         monthKey,
         maintenanceCost,
         fuelCost,
+        customizationCost,
         cost: totalCost, // 互換性のため
         cumulativeCost: 0 // 後で計算
       });
@@ -1479,6 +1494,7 @@ function DashboardContent({
                           const nameMap: { [key: string]: string } = {
                             'maintenanceCost': 'メンテナンス費用',
                             'fuelCost': '給油費用',
+                            'customizationCost': 'カスタマイズ費用',
                             'cumulativeCost': '累積費用'
                           };
                           return [`¥${value.toLocaleString()}`, nameMap[name] || name];
@@ -1505,6 +1521,12 @@ function DashboardContent({
                         radius={[2, 2, 0, 0]}
                         name="fuelCost"
                       />
+                      <RechartsBar 
+                        dataKey="customizationCost" 
+                        fill="#8b5cf6" 
+                        radius={[2, 2, 0, 0]}
+                        name="customizationCost"
+                      />
                       <Line 
                         type="monotone" 
                         dataKey="cumulativeCost" 
@@ -1526,6 +1548,10 @@ function DashboardContent({
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded"></div>
                     <span>給油費用</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded"></div>
+                    <span>カスタマイズ費用</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-yellow-500 rounded"></div>
