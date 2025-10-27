@@ -137,6 +137,7 @@ export interface FuelLog extends BaseEntity {
   odoKm: number;
   fuelAmount: number; // 給油量（L）
   cost: number; // 金額（¥）
+  pricePerLiter?: number; // L価格（¥/L）
   isFullTank: boolean; // 満タンかどうか
   memo?: string;
   date: Date;
@@ -147,6 +148,7 @@ export interface FuelLogInput {
   odoKm: number;
   fuelAmount: number;
   cost: number;
+  pricePerLiter?: number; // L価格（¥/L）
   isFullTank: boolean;
   memo?: string;
   date: Date;

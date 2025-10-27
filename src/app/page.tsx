@@ -2909,6 +2909,7 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
   const [modelCode, setModel] = useState("");
   const [year, setYear] = useState<string>("");
   const [odoKm, setOdo] = useState<string>("");
+  const [yearError, setYearError] = useState("");
   const [inspectionExpiry, setInspectionExpiry] = useState("");
   const [firstRegYm, setFirstRegYm] = useState("");
   const [avgKmPerMonth, setAvgKmPerMonth] = useState<string>("");
@@ -2921,9 +2922,7 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
     compressedSize: string;
     compressionRatio: string;
   } | null>(null);
-  const [showCarModelSelector, setShowCarModelSelector] = useState(false);
-  const [selectedManufacturer, setSelectedManufacturer] = useState<CarManufacturer | null>(null);
-  const [selectedModel, setSelectedModel] = useState<CarModel | null>(null);
+
 
   // ファイル選択ハンドラー
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2978,16 +2977,23 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
   };
 
 
-  // 車種選択処理
-  const handleCarModelSelect = (manufacturer: CarManufacturer, model: CarModel) => {
-    setSelectedManufacturer(manufacturer);
-    setSelectedModel(model);
-    // 車種名と型式を自動入力
-    setName(`${manufacturer.name} ${model.name}`);
-    if (model.modelCode) {
-      setModel(model.modelCode);
+  // 年式バリデーション
+  const handleYearChange = (value: string) => {
+    setYear(value);
+    if (value && value.trim()) {
+      const yearNum = Number(value);
+      const currentYear = new Date().getFullYear();
+      if (isNaN(yearNum) || yearNum < 1990 || yearNum > currentYear) {
+        setYearError(`年式は1990～${currentYear}年の範囲で入力してください`);
+      } else {
+        setYearError("");
+      }
+    } else {
+      setYearError("");
     }
   };
+
+
 
   // 画像アップロード処理
   const handleImageUpload = async (): Promise<string> => {
@@ -3074,9 +3080,18 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
         carData.avgKmPerMonth = Number(avgKmPerMonth);
       }
       
-      console.log("Car data to be added:", carData);
-      await addCar(carData);
+      // undefined を null に正規化（Firestore 対策）
+      const clean = <T extends object>(o: T): T => {
+        return JSON.parse(JSON.stringify(o, (_, v) => v === undefined ? null : v));
+      };
+      
+      const cleanedData = clean(carData);
+      console.log("Car data to be added (cleaned):", cleanedData);
+      await addCar(cleanedData);
       console.log("Car added successfully");
+      
+      // 完了トースト（将来的に実装）
+      console.log(`✅ ${name} を追加しました`);
       
     setName(""); setModel(""); setYear(""); setOdo(""); setInspectionExpiry(""); setFirstRegYm(""); setAvgKmPerMonth(""); setSelectedFile(null); setImagePreview(null); setCompressionInfo(null);
     onAdded?.();
@@ -3133,46 +3148,23 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
               </div>
             </div>
 
-            {/* 車種選択ボタン */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowCarModelSelector(true)}
-                className="w-full px-3 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm font-medium"
-              >
-                車種を選択して自動入力
-              </button>
-            </div>
-            
-            {/* 選択された車種の表示 */}
-            {selectedManufacturer && selectedModel && (
-              <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-600">✓</span>
-                  <div>
-                    <p className="font-medium text-green-900">
-                      {selectedManufacturer.name} {selectedModel.name}
-                    </p>
-                    <p className="text-sm text-green-700">
-                      {selectedModel.modelCode && `型式: ${selectedModel.modelCode}`}
-                      {selectedModel.displacement && ` • 排気量: ${selectedModel.displacement}cc`}
-                      {selectedModel.generation && ` • ${selectedModel.generation}`}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* 年式・走行距離 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <input
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
+                  className={`w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 placeholder:text-gray-600 ${
+                    yearError 
+                      ? 'border-red-300 focus:ring-red-100' 
+                      : 'border-gray-300 focus:ring-blue-100'
+                  }`}
                   placeholder="年式（例：2023）"
                   inputMode="numeric"
                   value={year}
-                  onChange={(e) => setYear(e.target.value)}
+                  onChange={(e) => handleYearChange(e.target.value)}
                 />
+                {yearError && (
+                  <p className="text-xs text-red-600 mt-1">{yearError}</p>
+                )}
               </div>
               <div>
                 <input
@@ -3331,17 +3323,6 @@ function AddCarModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =>
             </button>
           </div>
         </div>
-      
-      
-      {/* 車種セレクター */}
-      {showCarModelSelector && (
-        <CarModelSelector
-          onSelect={handleCarModelSelect}
-          onClose={() => setShowCarModelSelector(false)}
-          currentManufacturer={selectedManufacturer?.id}
-          currentModel={selectedModel?.id}
-        />
-      )}
     </>
   );
 }

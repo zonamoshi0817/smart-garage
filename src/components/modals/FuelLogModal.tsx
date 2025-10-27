@@ -16,6 +16,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
     odoKm: (car.odoKm || 0).toString(),
     fuelAmount: "",
     cost: "",
+    pricePerLiter: "",
     isFullTank: true,
     memo: "",
     date: new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:MM形式
@@ -34,6 +35,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           odoKm: editingFuelLog.odoKm.toString(),
           fuelAmount: editingFuelLog.fuelAmount.toString(),
           cost: editingFuelLog.cost.toString(),
+          pricePerLiter: editingFuelLog.pricePerLiter?.toString() || "",
           isFullTank: editingFuelLog.isFullTank,
           memo: editingFuelLog.memo || "",
           date: editingFuelLog.date.toISOString().slice(0, 16),
@@ -44,6 +46,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           odoKm: (car.odoKm || 0).toString(),
           fuelAmount: "",
           cost: "",
+          pricePerLiter: "",
           isFullTank: true,
           memo: "",
           date: new Date().toISOString().slice(0, 16),
@@ -63,6 +66,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
         odoKm: parseInt(formData.odoKm) || 0,
         fuelAmount: parseFloat(formData.fuelAmount) || 0,
         cost: parseInt(formData.cost) || 0,
+        pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : undefined,
         isFullTank: formData.isFullTank,
         memo: formData.memo.trim() || undefined,
         date: new Date(formData.date),
@@ -88,6 +92,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           odoKm: (car.odoKm || 0).toString(),
           fuelAmount: "",
           cost: "",
+          pricePerLiter: "",
           isFullTank: true,
           memo: "",
           date: new Date().toISOString().slice(0, 16),
@@ -183,6 +188,23 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                 placeholder="例: 6500"
                 required
                 min="0"
+              />
+            </div>
+
+            {/* L価格 */}
+            <div>
+              <label htmlFor="pricePerLiter" className="block text-sm font-medium text-gray-700 mb-1">
+                L価格 (¥/L)
+              </label>
+              <input
+                type="number"
+                id="pricePerLiter"
+                value={formData.pricePerLiter}
+                onChange={(e) => handleInputChange("pricePerLiter", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                placeholder="例: 143.8"
+                min="0"
+                step="0.1"
               />
             </div>
 
