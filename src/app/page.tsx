@@ -589,6 +589,13 @@ export default function Home() {
                 setShowAddCarModal={setShowAddCarModal}
                 setShowEditCarModal={setShowEditCarModal}
                 setEditingCar={setEditingCar}
+                maintenanceRecords={maintenanceRecords}
+                fuelLogs={fuelLogs}
+                customizations={customizations}
+                setCurrentPage={setCurrentPage}
+                setShowFuelLogModal={setShowFuelLogModal}
+                setShowMaintenanceModal={setShowMaintenanceModal}
+                setShowCustomizationModal={setShowCustomizationModal}
               />
             ) : currentPage === 'maintenance-history' ? (
               <MaintenanceHistoryContent 
@@ -2579,7 +2586,14 @@ function CarManagementContent({
   setActiveCarId, 
   setShowAddCarModal,
   setShowEditCarModal,
-  setEditingCar
+  setEditingCar,
+  maintenanceRecords,
+  fuelLogs,
+  customizations,
+  setCurrentPage,
+  setShowFuelLogModal,
+  setShowMaintenanceModal,
+  setShowCustomizationModal
 }: {
   cars: Car[];
   activeCarId?: string;
@@ -2587,6 +2601,13 @@ function CarManagementContent({
   setShowAddCarModal: (show: boolean) => void;
   setShowEditCarModal: (show: boolean) => void;
   setEditingCar: (car: Car | null) => void;
+  maintenanceRecords: MaintenanceRecord[];
+  fuelLogs: FuelLog[];
+  customizations: Customization[];
+  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance') => void;
+  setShowFuelLogModal: (show: boolean) => void;
+  setShowMaintenanceModal: (show: boolean) => void;
+  setShowCustomizationModal: (show: boolean) => void;
 }) {
 
   const handleDeleteCar = async (carId: string, carName: string) => {
@@ -2613,8 +2634,129 @@ function CarManagementContent({
     setEditingCar(car);
     setShowEditCarModal(true);
   };
+
+  // クイックアクションハンドラー
+  const handleAddFuel = (carId: string) => {
+    setActiveCarId(carId);
+    setShowFuelLogModal(true);
+  };
+
+  const handleAddMaintenance = (carId: string) => {
+    setActiveCarId(carId);
+    setShowMaintenanceModal(true);
+  };
+
+  const handleAddCustomization = (carId: string) => {
+    setActiveCarId(carId);
+    setShowCustomizationModal(true);
+  };
+  // ガレージ統計の計算
+  const totalCars = cars.length;
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  // 今月の総費用を計算（メンテナンス + 給油 + カスタム）
+  const monthlyCost = cars.reduce((total, car) => {
+    // メンテナンス費用
+    const carMaintenanceCost = maintenanceRecords
+      .filter(record => record.carId === car.id)
+      .filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+      })
+      .reduce((sum, record) => sum + (record.cost || 0), 0);
+    
+    // 給油費用（fuelLogsから計算）
+    const carFuelCost = fuelLogs
+      .filter(log => log.carId === car.id)
+      .filter(log => {
+        const logDate = new Date(log.date);
+        return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
+      })
+      .reduce((sum, log) => sum + (log.cost || 0), 0);
+    
+    // カスタム費用
+    const carCustomCost = customizations
+      .filter(custom => custom.carId === car.id)
+      .filter(custom => {
+        const customDate = new Date(custom.date);
+        return customDate.getMonth() === currentMonth && customDate.getFullYear() === currentYear;
+      })
+      .reduce((sum, custom) => sum + ((custom as any).cost || 0), 0);
+    
+    return total + carMaintenanceCost + carFuelCost + carCustomCost;
+  }, 0);
+
+  // 直近のタスク数（今月のメンテナンス記録数）
+  const recentTasks = maintenanceRecords.filter(record => {
+    const recordDate = new Date(record.date);
+    return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+  }).length;
+
   return (
     <>
+      {/* ガレージ統計チップ */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div 
+          className="bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition"
+          onClick={() => {
+            // 車両フィルタ適用（現在は全車両表示なので何もしない）
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">{totalCars}台</div>
+              <div className="text-sm text-gray-600">所有中</div>
+            </div>
+          </div>
+        </div>
+
+        <div 
+          className="bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition"
+          onClick={() => {
+            // 費用タブに遷移（現在は未実装）
+            console.log("Navigate to cost tab");
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">¥{monthlyCost.toLocaleString()}</div>
+              <div className="text-sm text-gray-600">今月の総費用</div>
+            </div>
+          </div>
+        </div>
+
+        <div 
+          className="bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition"
+          onClick={() => {
+            // メンテ一覧に遷移
+            setCurrentPage('maintenance-history');
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">{recentTasks}件</div>
+              <div className="text-sm text-gray-600">直近のタスク</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">車両</h1>
@@ -2657,6 +2799,11 @@ function CarManagementContent({
               onSelect={() => car.id && setActiveCarId(car.id)}
               onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
               onEdit={() => handleEditCar(car)}
+              maintenanceRecords={maintenanceRecords}
+              fuelLogs={fuelLogs}
+              onAddFuel={handleAddFuel}
+              onAddMaintenance={handleAddMaintenance}
+              onAddCustomization={handleAddCustomization}
             />
           ))
         )}
@@ -2671,16 +2818,124 @@ function CarCard({
   isActive, 
   onSelect,
   onDelete,
-  onEdit
+  onEdit,
+  maintenanceRecords,
+  fuelLogs,
+  onAddFuel,
+  onAddMaintenance,
+  onAddCustomization
 }: { 
   car: Car; 
   isActive: boolean; 
   onSelect: () => void;
   onDelete: () => void;
   onEdit: () => void;
+  maintenanceRecords: MaintenanceRecord[];
+  fuelLogs: FuelLog[];
+  onAddFuel: (carId: string) => void;
+  onAddMaintenance: (carId: string) => void;
+  onAddCustomization: (carId: string) => void;
 }) {
   // テスト車両でも編集・削除を許可（デバッグ用）
   const isTestCar = false; // car.id?.startsWith('test');
+  
+  // ドロップダウンメニューの状態
+  const [showDropdown, setShowDropdown] = useState(false);
+  
+  // ドロップダウンメニューを閉じる
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDropdown(false);
+    };
+    
+    if (showDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showDropdown]);
+  
+  // 次のメンテナンスタスクを計算
+  const getNextMaintenanceTask = () => {
+    if (!car.id) return null;
+    
+    // この車のメンテナンス記録を取得
+    const carMaintenanceRecords = maintenanceRecords
+      .filter(record => record.carId === car.id)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+    
+    if (carMaintenanceRecords.length === 0) return null;
+    
+    // 最新のメンテナンス記録を取得
+    const latestRecord = carMaintenanceRecords[0];
+    
+    // オイル交換の場合は5,000km後を想定
+    if (latestRecord.title.includes('オイル') || latestRecord.title.includes('オイル交換')) {
+      const nextMileage = (latestRecord.mileage || 0) + 5000;
+      const remainingKm = nextMileage - (car.odoKm || 0);
+      
+      if (remainingKm > 0) {
+        return {
+          title: 'オイル交換',
+          remainingKm,
+          nextMileage,
+          type: 'mileage'
+        };
+      }
+    }
+    
+    // その他のメンテナンスの場合は3ヶ月後を想定
+    const nextDate = new Date(latestRecord.date);
+    nextDate.setMonth(nextDate.getMonth() + 3);
+    const today = new Date();
+    const daysUntilNext = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilNext > 0) {
+      return {
+        title: latestRecord.title,
+        daysUntilNext,
+        nextDate,
+        type: 'date'
+      };
+    }
+    
+    return null;
+  };
+  
+  const nextTask = getNextMaintenanceTask();
+  
+  // 期限バッジの計算
+  const getDeadlineBadges = () => {
+    const badges = [];
+    
+    // 車検期限
+    if (car.inspectionExpiry) {
+      const expiryDate = new Date(car.inspectionExpiry);
+      const today = new Date();
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntilExpiry > 0) {
+        let badgeColor = 'bg-gray-100 text-gray-700';
+        if (daysUntilExpiry <= 30) {
+          badgeColor = 'bg-red-100 text-red-700';
+        } else if (daysUntilExpiry <= 60) {
+          badgeColor = 'bg-yellow-100 text-yellow-700';
+        }
+        
+        badges.push({
+          type: 'inspection',
+          text: `車検 ${daysUntilExpiry}日`,
+          color: badgeColor
+        });
+      }
+    }
+    
+    // 保険期限（現在は未実装のため、ダミーデータ）
+    // TODO: 保険データが実装されたら実際の期限を計算
+    
+    return badges;
+  };
+  
+  const deadlineBadges = getDeadlineBadges();
   
   return (
     <div 
@@ -2688,29 +2943,47 @@ function CarCard({
         isActive ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
       }`}
     >
-      {/* 編集・削除ボタン（テスト車両以外） */}
+      {/* 編集・削除ボタン（テスト車両以外） - 右上に1つだけ */}
       {!isTestCar && (
-        <div className="absolute top-2 right-2 flex gap-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs hover:bg-blue-600 transition flex items-center justify-center"
-            title="車両情報を編集"
-          >
-            ✏️
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="w-6 h-6 rounded-full bg-red-500 text-white text-xs hover:bg-red-600 transition flex items-center justify-center"
-            title="車両を削除"
-          >
-            ×
-          </button>
+        <div className="absolute top-2 right-2">
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDropdown(!showDropdown);
+              }}
+              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm text-gray-600 text-sm hover:bg-white hover:text-gray-800 transition flex items-center justify-center shadow-sm border border-gray-200"
+              title="車両設定"
+            >
+              ⚙️
+            </button>
+            
+            {/* ドロップダウンメニュー */}
+            {showDropdown && (
+              <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                    setShowDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  ✏️ 編集
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                    setShowDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                >
+                  🗑️ 削除
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
       
@@ -2757,12 +3030,83 @@ function CarCard({
             )}
           </div>
           
+          {/* 次にやること */}
+          {nextTask && (
+            <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-xs text-blue-700 font-medium">
+                次: {nextTask.title}
+                {nextTask.type === 'mileage' ? (
+                  <span className="ml-1">
+                    {nextTask.remainingKm?.toLocaleString()}km後
+                  </span>
+                ) : (
+                  <span className="ml-1">
+                    {nextTask.daysUntilNext}日後
+                  </span>
+                )}
+              </div>
+              {nextTask.type === 'date' && nextTask.nextDate && (
+                <div className="text-xs text-blue-600 mt-1">
+                  {nextTask.nextDate.toLocaleDateString('ja-JP')}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* 期限バッジ */}
+          {deadlineBadges.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {deadlineBadges.map((badge, index) => (
+                <span
+                  key={index}
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}
+                >
+                  {badge.text}
+                </span>
+              ))}
+            </div>
+          )}
+          
           {isActive && (
             <div className="text-xs text-blue-600 font-medium">
               現在選択中
             </div>
           )}
         </div>
+      </div>
+
+      {/* クイックアクションボタン - カード下部に配置 */}
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (car.id) onAddFuel(car.id);
+          }}
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 transition"
+          title="給油を記録"
+        >
+          ⛽ 給油
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (car.id) onAddMaintenance(car.id);
+          }}
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-orange-50 text-orange-700 text-xs font-medium hover:bg-orange-100 transition"
+          title="メンテナンスを記録"
+        >
+          🔧 メンテ
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (car.id) onAddCustomization(car.id);
+          }}
+          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-purple-50 text-purple-700 text-xs font-medium hover:bg-purple-100 transition"
+          title="カスタマイズを記録"
+        >
+          ✨ カスタム
+        </button>
       </div>
     </div>
   );
@@ -4367,6 +4711,71 @@ function CustomizationsContent({
   setCustomizations: (customizations: Customization[]) => void;
 }) {
   const activeCar = cars.find(car => car.id === activeCarId);
+  
+  // フィルタリングと検索の状態
+  const [selectedCarId, setSelectedCarId] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'title' | 'cost'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // フィルタリングとソートのロジック
+  const filteredCustomizations = useMemo(() => {
+    let filtered = customizations;
+
+    // 車両でフィルタ
+    if (selectedCarId !== 'all') {
+      filtered = filtered.filter(customization => customization.carId === selectedCarId);
+    }
+
+    // 検索語でフィルタ
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(customization => 
+        customization.title.toLowerCase().includes(term) ||
+        customization.brand?.toLowerCase().includes(term) ||
+        customization.modelCode?.toLowerCase().includes(term) ||
+        customization.memo?.toLowerCase().includes(term) ||
+        customization.vendorName?.toLowerCase().includes(term)
+      );
+    }
+
+    // カテゴリでフィルタ
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(customization => 
+        customization.categories.includes(selectedCategory as any)
+      );
+    }
+
+    // ステータスでフィルタ
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(customization => customization.status === selectedStatus);
+    }
+
+    // ソート
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'date':
+          comparison = a.date.getTime() - b.date.getTime();
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'cost':
+          const costA = (a.partsCostJpy || 0) + (a.laborCostJpy || 0) + (a.otherCostJpy || 0);
+          const costB = (b.partsCostJpy || 0) + (b.laborCostJpy || 0) + (b.otherCostJpy || 0);
+          comparison = costA - costB;
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [customizations, selectedCarId, searchTerm, selectedCategory, selectedStatus, sortBy, sortOrder]);
 
   const handleEdit = (customization: Customization) => {
     setEditingCustomization(customization);
@@ -4404,9 +4813,6 @@ function CustomizationsContent({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">カスタマイズ</h1>
-          <p className="text-gray-600 mt-1">
-            {activeCar ? `${activeCar.name}のカスタマイズ履歴` : '車両を選択してください'}
-          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -4461,19 +4867,134 @@ function CustomizationsContent({
             {cars.length === 0 ? "まず車を追加してください" : "車を選択してください"}
           </div>
         </div>
-      ) : customizations.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-gray-500 mb-4">カスタマイズ記録がありません</div>
-          <button
-            onClick={() => setShowCustomizationModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            最初のカスタマイズを追加
-          </button>
-        </div>
       ) : (
-        <div className="grid gap-4">
-          {customizations.map((customization) => (
+        <>
+          {/* フィルター・検索 */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 車両選択 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  車両でフィルター
+                </label>
+                <select
+                  value={selectedCarId}
+                  onChange={(e) => setSelectedCarId(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                >
+                  <option value="all">すべての車両</option>
+                  {cars.map((car) => (
+                    <option key={car.id} value={car.id}>
+                      {car.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 検索 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  検索
+                </label>
+                <input
+                  type="text"
+                  placeholder="タイトル、ブランド、メモで検索..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                />
+              </div>
+
+              {/* カテゴリフィルター */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  カテゴリ
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                >
+                  <option value="all">すべてのカテゴリ</option>
+                  <option value="エンジン">エンジン</option>
+                  <option value="サスペンション">サスペンション</option>
+                  <option value="ブレーキ">ブレーキ</option>
+                  <option value="ホイール・タイヤ">ホイール・タイヤ</option>
+                  <option value="エクステリア">エクステリア</option>
+                  <option value="インテリア">インテリア</option>
+                  <option value="電装">電装</option>
+                  <option value="その他">その他</option>
+                </select>
+              </div>
+
+              {/* ステータスフィルター */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ステータス
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                >
+                  <option value="all">すべてのステータス</option>
+                  <option value="planning">計画中</option>
+                  <option value="in_progress">進行中</option>
+                  <option value="completed">完了</option>
+                  <option value="cancelled">キャンセル</option>
+                </select>
+              </div>
+            </div>
+
+            {/* ソートオプション */}
+            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">並び順:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'date' | 'title' | 'cost')}
+                  className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="date">実施日</option>
+                  <option value="title">タイトル</option>
+                  <option value="cost">費用</option>
+                </select>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="p-1 rounded hover:bg-gray-100 transition"
+                  title={sortOrder === 'asc' ? '昇順' : '降順'}
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                {filteredCustomizations.length}件のカスタマイズ記録
+              </div>
+            </div>
+          </div>
+
+          {/* カスタマイズ一覧 */}
+          {filteredCustomizations.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                {customizations.length === 0 
+                  ? "カスタマイズ記録がありません" 
+                  : "フィルター条件に一致するカスタマイズ記録がありません"
+                }
+              </div>
+              {customizations.length === 0 && (
+                <button
+                  onClick={() => setShowCustomizationModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  最初のカスタマイズを追加
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredCustomizations.map((customization) => (
             <div key={customization.id} className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -4544,7 +5065,9 @@ function CustomizationsContent({
               </div>
             </div>
           ))}
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
