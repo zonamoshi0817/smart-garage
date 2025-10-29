@@ -139,6 +139,179 @@ export const carDatabase: CarManufacturer[] = [
         displacement: 2494,
         yearFrom: 2015,
         yearTo: 2023
+      },
+      {
+        id: 'prius-c',
+        name: 'プリウスc',
+        modelCode: 'NHP10',
+        bodyType: 'hatchback',
+        fuelType: 'hybrid',
+        displacement: 1496,
+        yearFrom: 2011,
+        yearTo: 2019,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'prius-alpha',
+        name: 'プリウスα',
+        modelCode: 'ZVW40',
+        bodyType: 'minivan',
+        fuelType: 'hybrid',
+        displacement: 1798,
+        yearFrom: 2011,
+        yearTo: 2021
+      },
+      {
+        id: 'c-hr',
+        name: 'C-HR',
+        modelCode: 'AX10',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 1798,
+        yearFrom: 2016,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'rav4',
+        name: 'RAV4',
+        modelCode: 'XA50',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 2487,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'highlander',
+        name: 'ハイランダー',
+        modelCode: 'XU70',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 2487,
+        yearFrom: 2019,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'sienna',
+        name: 'シエナ',
+        modelCode: 'XL40',
+        bodyType: 'minivan',
+        fuelType: 'hybrid',
+        displacement: 2487,
+        yearFrom: 2020,
+        yearTo: 2024
+      },
+      {
+        id: 'tacoma',
+        name: 'タコマ',
+        modelCode: 'N300',
+        bodyType: 'pickup',
+        fuelType: 'gasoline',
+        displacement: 3598,
+        yearFrom: 2015,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/truck-gray.jpg'
+      },
+      {
+        id: 'tundra',
+        name: 'タンドラ',
+        modelCode: 'XK70',
+        bodyType: 'pickup',
+        fuelType: 'gasoline',
+        displacement: 3598,
+        yearFrom: 2021,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/truck-gray.jpg'
+      },
+      {
+        id: 'supra',
+        name: 'スープラ',
+        modelCode: 'A90',
+        bodyType: 'sports',
+        fuelType: 'gasoline',
+        displacement: 2998,
+        yearFrom: 2019,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sports-red.jpg'
+      },
+      {
+        id: '86',
+        name: '86',
+        modelCode: 'ZN6',
+        bodyType: 'sports',
+        fuelType: 'gasoline',
+        displacement: 1998,
+        yearFrom: 2012,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/sports-red.jpg'
+      },
+      {
+        id: 'gr86',
+        name: 'GR86',
+        modelCode: 'ZN8',
+        bodyType: 'sports',
+        fuelType: 'gasoline',
+        displacement: 2387,
+        yearFrom: 2021,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sports-red.jpg'
+      },
+      {
+        id: 'yaris',
+        name: 'ヤリス',
+        modelCode: 'XP210',
+        bodyType: 'hatchback',
+        fuelType: 'hybrid',
+        displacement: 1496,
+        yearFrom: 2020,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'yaris-cross',
+        name: 'ヤリスクロス',
+        modelCode: 'XP210',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 1496,
+        yearFrom: 2020,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'corolla-cross',
+        name: 'カローラクロス',
+        modelCode: 'E210',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 1798,
+        yearFrom: 2020,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'crown',
+        name: 'クラウン',
+        modelCode: 'S235',
+        bodyType: 'sedan',
+        fuelType: 'hybrid',
+        displacement: 2487,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'mirai',
+        name: 'ミライ',
+        modelCode: 'JPD20',
+        bodyType: 'sedan',
+        fuelType: 'electric',
+        yearFrom: 2020,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
       }
     ]
   },
@@ -230,6 +403,146 @@ export const carDatabase: CarManufacturer[] = [
         yearFrom: 2016,
         yearTo: 2022,
         defaultImagePath: '/default-images/sports-red.jpg'
+      },
+      {
+        id: 'civic-type-r',
+        name: 'シビック Type R',
+        modelCode: 'FL5',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 1996,
+        yearFrom: 2022,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sports-red.jpg'
+      },
+      {
+        id: 'civic-hatchback',
+        name: 'シビック ハッチバック',
+        modelCode: 'FC1',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 1496,
+        yearFrom: 2017,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'insight',
+        name: 'インサイト',
+        modelCode: 'ZE2',
+        bodyType: 'sedan',
+        fuelType: 'hybrid',
+        displacement: 1496,
+        yearFrom: 2018,
+        yearTo: 2022,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      },
+      {
+        id: 'freed',
+        name: 'フリード',
+        modelCode: 'GB7',
+        bodyType: 'minivan',
+        fuelType: 'hybrid',
+        displacement: 1496,
+        yearFrom: 2016,
+        yearTo: 2024
+      },
+      {
+        id: 'freed-spike',
+        name: 'フリード スパイク',
+        modelCode: 'GB7',
+        bodyType: 'minivan',
+        fuelType: 'hybrid',
+        displacement: 1496,
+        yearFrom: 2016,
+        yearTo: 2024
+      },
+      {
+        id: 'n-box',
+        name: 'N-BOX',
+        modelCode: 'JG3',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 658,
+        yearFrom: 2017,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'n-wgn',
+        name: 'N-WGN',
+        modelCode: 'JG3',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 658,
+        yearFrom: 2017,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'vezel',
+        name: 'ヴェゼル',
+        modelCode: 'RU1',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 1496,
+        yearFrom: 2013,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'hr-v',
+        name: 'HR-V',
+        modelCode: 'RU3',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 1496,
+        yearFrom: 2021,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'pilot',
+        name: 'パイロット',
+        modelCode: '3Y',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 3471,
+        yearFrom: 2015,
+        yearTo: 2022,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'ridgeline',
+        name: 'リッジライン',
+        modelCode: '2G',
+        bodyType: 'pickup',
+        fuelType: 'gasoline',
+        displacement: 3471,
+        yearFrom: 2016,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/truck-gray.jpg'
+      },
+      {
+        id: 's660',
+        name: 'S660',
+        modelCode: 'JG1',
+        bodyType: 'convertible',
+        fuelType: 'gasoline',
+        displacement: 658,
+        yearFrom: 2015,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/sports-red.jpg'
+      },
+      {
+        id: 'e',
+        name: 'Honda e',
+        modelCode: 'JE1',
+        bodyType: 'hatchback',
+        fuelType: 'electric',
+        yearFrom: 2020,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
       }
     ]
   },
@@ -582,6 +895,621 @@ export const carDatabase: CarManufacturer[] = [
         yearTo: 2022
       }
     ]
+  },
+  // 輸入車ブランド
+  {
+    id: 'bmw',
+    name: 'BMW',
+    nameKana: 'ビーエムダブリュー',
+    country: 'germany',
+    models: [
+      {
+        id: '3-series',
+        name: '3シリーズ',
+        modelCode: 'G20',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1998,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      },
+      {
+        id: '5-series',
+        name: '5シリーズ',
+        modelCode: 'G30',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1998,
+        yearFrom: 2017,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'x3',
+        name: 'X3',
+        modelCode: 'G01',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1998,
+        yearFrom: 2017,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'x5',
+        name: 'X5',
+        modelCode: 'G05',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 2998,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'i3',
+        name: 'i3',
+        modelCode: 'I01',
+        bodyType: 'hatchback',
+        fuelType: 'electric',
+        yearFrom: 2013,
+        yearTo: 2022,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      }
+    ]
+  },
+  {
+    id: 'mercedes',
+    name: 'メルセデス・ベンツ',
+    nameKana: 'メルセデスベンツ',
+    country: 'germany',
+    models: [
+      {
+        id: 'c-class',
+        name: 'Cクラス',
+        modelCode: 'W205',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1991,
+        yearFrom: 2014,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'e-class',
+        name: 'Eクラス',
+        modelCode: 'W213',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1991,
+        yearFrom: 2016,
+        yearTo: 2023,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      },
+      {
+        id: 's-class',
+        name: 'Sクラス',
+        modelCode: 'W223',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 2999,
+        yearFrom: 2020,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'glc',
+        name: 'GLC',
+        modelCode: 'X253',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1991,
+        yearFrom: 2015,
+        yearTo: 2023,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'gle',
+        name: 'GLE',
+        modelCode: 'W167',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 2999,
+        yearFrom: 2019,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      }
+    ]
+  },
+  {
+    id: 'audi',
+    name: 'アウディ',
+    nameKana: 'アウディ',
+    country: 'germany',
+    models: [
+      {
+        id: 'a3',
+        name: 'A3',
+        modelCode: '8Y',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 1498,
+        yearFrom: 2020,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'a4',
+        name: 'A4',
+        modelCode: 'B9',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1984,
+        yearFrom: 2016,
+        yearTo: 2023,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      },
+      {
+        id: 'a6',
+        name: 'A6',
+        modelCode: 'C8',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1984,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'q3',
+        name: 'Q3',
+        modelCode: 'F3',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1984,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'q5',
+        name: 'Q5',
+        modelCode: 'FY',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1984,
+        yearFrom: 2017,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'e-tron',
+        name: 'e-tron',
+        modelCode: 'GE',
+        bodyType: 'suv',
+        fuelType: 'electric',
+        yearFrom: 2019,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      }
+    ]
+  },
+  {
+    id: 'volkswagen',
+    name: 'フォルクスワーゲン',
+    nameKana: 'フォルクスワーゲン',
+    country: 'germany',
+    models: [
+      {
+        id: 'golf',
+        name: 'ゴルフ',
+        modelCode: '8G',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 1498,
+        yearFrom: 2019,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'polo',
+        name: 'ポロ',
+        modelCode: '6R',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 999,
+        yearFrom: 2017,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'passat',
+        name: 'パサート',
+        modelCode: 'B8',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1984,
+        yearFrom: 2014,
+        yearTo: 2022,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'tiguan',
+        name: 'ティグアン',
+        modelCode: '5N',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1984,
+        yearFrom: 2016,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'touareg',
+        name: 'トゥアレグ',
+        modelCode: '7P',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 2995,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      }
+    ]
+  },
+  {
+    id: 'porsche',
+    name: 'ポルシェ',
+    nameKana: 'ポルシェ',
+    country: 'germany',
+    models: [
+      {
+        id: '911',
+        name: '911',
+        modelCode: '992',
+        bodyType: 'sports',
+        fuelType: 'gasoline',
+        displacement: 2981,
+        yearFrom: 2019,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sports-red.jpg'
+      },
+      {
+        id: 'cayenne',
+        name: 'カイエン',
+        modelCode: '9YA',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 2995,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'macan',
+        name: 'マカン',
+        modelCode: '95B',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1984,
+        yearFrom: 2014,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'taycan',
+        name: 'タイカン',
+        modelCode: '9JA',
+        bodyType: 'sedan',
+        fuelType: 'electric',
+        yearFrom: 2019,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      }
+    ]
+  },
+  {
+    id: 'lexus',
+    name: 'レクサス',
+    nameKana: 'レクサス',
+    country: 'japan',
+    models: [
+      {
+        id: 'is',
+        name: 'IS',
+        modelCode: 'XE30',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 2494,
+        yearFrom: 2020,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'es',
+        name: 'ES',
+        modelCode: 'XV70',
+        bodyType: 'sedan',
+        fuelType: 'hybrid',
+        displacement: 2487,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      },
+      {
+        id: 'gs',
+        name: 'GS',
+        modelCode: 'L10',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 2494,
+        yearFrom: 2012,
+        yearTo: 2020,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'nx',
+        name: 'NX',
+        modelCode: 'AZ10',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 2487,
+        yearFrom: 2021,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'rx',
+        name: 'RX',
+        modelCode: 'AL20',
+        bodyType: 'suv',
+        fuelType: 'hybrid',
+        displacement: 2487,
+        yearFrom: 2015,
+        yearTo: 2022,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'gx',
+        name: 'GX',
+        modelCode: 'J150',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 4608,
+        yearFrom: 2009,
+        yearTo: 2023,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      }
+    ]
+  },
+  {
+    id: 'infiniti',
+    name: 'インフィニティ',
+    nameKana: 'インフィニティ',
+    country: 'japan',
+    models: [
+      {
+        id: 'q50',
+        name: 'Q50',
+        modelCode: 'V37',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1997,
+        yearFrom: 2013,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      },
+      {
+        id: 'q60',
+        name: 'Q60',
+        modelCode: 'V37',
+        bodyType: 'coupe',
+        fuelType: 'gasoline',
+        displacement: 1997,
+        yearFrom: 2016,
+        yearTo: 2023,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      },
+      {
+        id: 'qx50',
+        name: 'QX50',
+        modelCode: 'J55',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1997,
+        yearFrom: 2017,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'qx60',
+        name: 'QX60',
+        modelCode: 'L50',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 3498,
+        yearFrom: 2013,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      }
+    ]
+  },
+  {
+    id: 'acura',
+    name: 'アキュラ',
+    nameKana: 'アキュラ',
+    country: 'japan',
+    models: [
+      {
+        id: 'ilx',
+        name: 'ILX',
+        modelCode: 'DE1',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 2356,
+        yearFrom: 2013,
+        yearTo: 2022,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'tlx',
+        name: 'TLX',
+        modelCode: 'UA1',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1996,
+        yearFrom: 2014,
+        yearTo: 2020,
+        defaultImagePath: '/default-images/sedan-blue.jpg'
+      },
+      {
+        id: 'rdx',
+        name: 'RDX',
+        modelCode: 'YC3',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1996,
+        yearFrom: 2018,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'mdx',
+        name: 'MDX',
+        modelCode: 'YD3',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 3471,
+        yearFrom: 2014,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      }
+    ]
+  },
+  // 日本のその他のメーカー
+  {
+    id: 'mitsubishi',
+    name: '三菱',
+    nameKana: 'ミツビシ',
+    country: 'japan',
+    models: [
+      {
+        id: 'mirage',
+        name: 'ミラージュ',
+        modelCode: 'GA3W',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 1193,
+        yearFrom: 2012,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      },
+      {
+        id: 'outlander',
+        name: 'アウトランダー',
+        modelCode: 'ZJ',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1998,
+        yearFrom: 2014,
+        yearTo: 2022,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'eclipse-cross',
+        name: 'エクリプスクロス',
+        modelCode: 'GA4W',
+        bodyType: 'suv',
+        fuelType: 'gasoline',
+        displacement: 1499,
+        yearFrom: 2017,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'delica',
+        name: 'デリカ',
+        modelCode: 'D5',
+        bodyType: 'minivan',
+        fuelType: 'gasoline',
+        displacement: 1998,
+        yearFrom: 2007,
+        yearTo: 2021,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      }
+    ]
+  },
+  {
+    id: 'isuzu',
+    name: 'いすゞ',
+    nameKana: 'イスズ',
+    country: 'japan',
+    models: [
+      {
+        id: 'd-max',
+        name: 'D-MAX',
+        modelCode: 'RT50',
+        bodyType: 'pickup',
+        fuelType: 'diesel',
+        displacement: 1898,
+        yearFrom: 2012,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/truck-gray.jpg'
+      },
+      {
+        id: 'mu-x',
+        name: 'MU-X',
+        modelCode: 'RT50',
+        bodyType: 'suv',
+        fuelType: 'diesel',
+        displacement: 1898,
+        yearFrom: 2012,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/suv-black.jpg'
+      },
+      {
+        id: 'elf',
+        name: 'エルフ',
+        modelCode: 'NKR',
+        bodyType: 'pickup',
+        fuelType: 'diesel',
+        displacement: 2999,
+        yearFrom: 2015,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/truck-gray.jpg'
+      }
+    ]
+  },
+  {
+    id: 'mitsuoka',
+    name: '光岡',
+    nameKana: 'ミツオカ',
+    country: 'japan',
+    models: [
+      {
+        id: 'himiiko',
+        name: 'ヒミコ',
+        modelCode: 'HIM',
+        bodyType: 'sedan',
+        fuelType: 'gasoline',
+        displacement: 1998,
+        yearFrom: 2014,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/sedan-silver.jpg'
+      },
+      {
+        id: 'buddy',
+        name: 'バディ',
+        modelCode: 'BUD',
+        bodyType: 'hatchback',
+        fuelType: 'gasoline',
+        displacement: 1496,
+        yearFrom: 2016,
+        yearTo: 2024,
+        defaultImagePath: '/default-images/hatchback-white.jpg'
+      }
+    ]
   }
 ];
 
@@ -627,6 +1555,9 @@ export function fuzzySearchModels(query: string): { manufacturer: CarManufacture
   const normalizedQuery = normalizeText(query);
   
   carDatabase.forEach(manufacturer => {
+    const manufacturerName = normalizeText(manufacturer.name);
+    const manufacturerNameKana = normalizeText(manufacturer.nameKana);
+    
     manufacturer.models.forEach(model => {
       const modelName = normalizeText(model.name);
       const modelCode = model.modelCode ? normalizeText(model.modelCode) : '';
@@ -637,22 +1568,46 @@ export function fuzzySearchModels(query: string): { manufacturer: CarManufacture
         return;
       }
       
-      // 部分一致
-      if (modelName.includes(normalizedQuery) || modelCode.includes(normalizedQuery)) {
-        const score = Math.max(
-          modelName.includes(normalizedQuery) ? normalizedQuery.length / modelName.length : 0,
-          modelCode.includes(normalizedQuery) ? normalizedQuery.length / modelCode.length : 0
-        );
+      // メーカー名 + 車種名の組み合わせ検索
+      const fullName = `${manufacturerName} ${modelName}`;
+      const fullNameKana = `${manufacturerNameKana} ${modelName}`;
+      
+      if (fullName.includes(normalizedQuery) || fullNameKana.includes(normalizedQuery)) {
+        results.push({ manufacturer, model, score: 0.95 });
+        return;
+      }
+      
+      // 部分一致（車種名）
+      if (modelName.includes(normalizedQuery)) {
+        const score = Math.min(0.9, normalizedQuery.length / modelName.length + 0.3);
         results.push({ manufacturer, model, score });
+        return;
+      }
+      
+      // 部分一致（型式）
+      if (modelCode.includes(normalizedQuery)) {
+        const score = Math.min(0.85, normalizedQuery.length / modelCode.length + 0.2);
+        results.push({ manufacturer, model, score });
+        return;
+      }
+      
+      // メーカー名の部分一致
+      if (manufacturerName.includes(normalizedQuery) || manufacturerNameKana.includes(normalizedQuery)) {
+        results.push({ manufacturer, model, score: 0.7 });
         return;
       }
       
       // ファジー一致（レーベンシュタイン距離ベース）
       const modelScore = calculateSimilarity(normalizedQuery, modelName);
       const codeScore = modelCode ? calculateSimilarity(normalizedQuery, modelCode) : 0;
-      const maxScore = Math.max(modelScore, codeScore);
+      const manufacturerScore = Math.max(
+        calculateSimilarity(normalizedQuery, manufacturerName),
+        calculateSimilarity(normalizedQuery, manufacturerNameKana)
+      );
       
-      if (maxScore > 0.6) { // 閾値60%
+      const maxScore = Math.max(modelScore, codeScore, manufacturerScore * 0.8);
+      
+      if (maxScore > 0.5) { // 閾値を50%に下げてより多くの結果を取得
         results.push({ manufacturer, model, score: maxScore });
       }
     });
@@ -672,6 +1627,14 @@ function normalizeText(text: string): string {
     .replace(/\s+/g, '') // 空白を削除
     .replace(/type/g, '') // Typeを削除
     .replace(/r/g, '') // Rを削除
+    .replace(/cross/g, '') // Crossを削除
+    .replace(/wagon/g, '') // Wagonを削除
+    .replace(/series/g, '') // Seriesを削除
+    .replace(/class/g, '') // Classを削除
+    .replace(/シリーズ/g, '') // シリーズを削除
+    .replace(/クラス/g, '') // クラスを削除
+    .replace(/クロス/g, '') // クロスを削除
+    .replace(/ワゴン/g, '') // ワゴンを削除
     .trim();
 }
 
