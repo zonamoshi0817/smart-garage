@@ -1529,8 +1529,38 @@ function MaintenanceHistoryContent({
 }) {
   const [selectedCarId, setSelectedCarId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // メンテナンスカテゴリの定義
+  const MAINTENANCE_CATEGORIES = {
+    'all': 'すべてのカテゴリ',
+    'engine': 'エンジン',
+    'transmission': 'トランスミッション',
+    'brake': 'ブレーキ',
+    'suspension': 'サスペンション',
+    'exhaust': '排気系',
+    'electrical': '電気系',
+    'body': 'ボディ',
+    'interior': '内装',
+    'tire': 'タイヤ',
+    'battery': 'バッテリー',
+    'air_conditioner': 'エアコン',
+    'other': 'その他'
+  };
+
+  // メンテナンスステータスの定義
+  const MAINTENANCE_STATUS = {
+    'all': 'すべてのステータス',
+    'completed': '完了',
+    'scheduled': '予定',
+    'in_progress': '進行中',
+    'cancelled': 'キャンセル'
+  };
 
   // フィルタリングされたメンテナンス
   const filteredRecords = useMemo(() => {
@@ -1538,6 +1568,10 @@ function MaintenanceHistoryContent({
       totalRecords: maintenanceRecords.length,
       selectedCarId,
       searchTerm,
+      selectedCategory,
+      selectedStatus,
+      sortBy,
+      sortOrder,
       records: maintenanceRecords.map(r => ({ id: r.id, title: r.title, carId: r.carId }))
     });
     
@@ -1557,14 +1591,87 @@ function MaintenanceHistoryContent({
       const beforeCount = filtered.length;
       filtered = filtered.filter(record => 
         record.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (record.description && record.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        (record.description && record.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (record.location && record.location.toLowerCase().includes(searchTerm.toLowerCase()))
       );
       console.log(`Search filter: ${beforeCount} -> ${filtered.length} records`);
     }
 
+    // カテゴリでフィルタリング（タイトルから推測）
+    if (selectedCategory !== 'all') {
+      console.log("Filtering by category:", selectedCategory);
+      const beforeCount = filtered.length;
+      filtered = filtered.filter(record => {
+        const title = record.title.toLowerCase();
+        switch (selectedCategory) {
+          case 'engine':
+            return title.includes('エンジン') || title.includes('オイル') || title.includes('オイル交換') || title.includes('エンジンオイル');
+          case 'brake':
+            return title.includes('ブレーキ') || title.includes('ブレーキパッド') || title.includes('ブレーキフルード');
+          case 'tire':
+            return title.includes('タイヤ') || title.includes('ホイール') || title.includes('バランス');
+          case 'battery':
+            return title.includes('バッテリー') || title.includes('バッテリ');
+          case 'air_conditioner':
+            return title.includes('エアコン') || title.includes('冷媒') || title.includes('ガス');
+          case 'electrical':
+            return title.includes('電気') || title.includes('配線') || title.includes('ランプ') || title.includes('バルブ');
+          case 'suspension':
+            return title.includes('サスペンション') || title.includes('ショック') || title.includes('ストラット');
+          case 'transmission':
+            return title.includes('トランスミッション') || title.includes('ATF') || title.includes('MTF');
+          case 'exhaust':
+            return title.includes('排気') || title.includes('マフラー') || title.includes('触媒');
+          case 'body':
+            return title.includes('ボディ') || title.includes('塗装') || title.includes('板金');
+          case 'interior':
+            return title.includes('内装') || title.includes('シート') || title.includes('ダッシュボード');
+          default:
+            return true;
+        }
+      });
+      console.log(`Category filter: ${beforeCount} -> ${filtered.length} records`);
+    }
+
+    // ステータスでフィルタリング（現在はすべて完了として扱う）
+    if (selectedStatus !== 'all') {
+      console.log("Filtering by status:", selectedStatus);
+      const beforeCount = filtered.length;
+      // 現在の実装ではすべてのメンテナンス記録は完了済みとして扱う
+      if (selectedStatus === 'completed') {
+        // すべての記録を表示
+      } else {
+        // 他のステータスは現在未実装
+        filtered = [];
+      }
+      console.log(`Status filter: ${beforeCount} -> ${filtered.length} records`);
+    }
+
+    // 並び替え
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'date':
+          comparison = a.date.getTime() - b.date.getTime();
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'cost':
+          comparison = (a.cost || 0) - (b.cost || 0);
+          break;
+        case 'mileage':
+          comparison = (a.mileage || 0) - (b.mileage || 0);
+          break;
+        default:
+          comparison = 0;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
     console.log("Final filtered records:", filtered.length);
     return filtered;
-  }, [maintenanceRecords, selectedCarId, searchTerm]);
+  }, [maintenanceRecords, selectedCarId, searchTerm, selectedCategory, selectedStatus, sortBy, sortOrder]);
 
   // 車両名を取得する関数
   const getCarName = (carId: string) => {
@@ -1665,23 +1772,9 @@ function MaintenanceHistoryContent({
 
       {/* フィルター・検索 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          {/* 全選択チェックボックス - 一時的に無効化 */}
-          {/* {filteredRecords.length > 0 && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={selectedRecords.length === filteredRecords.length && filteredRecords.length > 0}
-                onChange={handleSelectAll}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label className="text-sm font-medium text-gray-700">
-                全選択 ({selectedRecords.length}/{filteredRecords.length})
-              </label>
-            </div>
-          )} */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 車両選択 */}
-          <div className="flex-1">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               車両でフィルター
             </label>
@@ -1697,23 +1790,87 @@ function MaintenanceHistoryContent({
                 </option>
               ))}
             </select>
-      </div>
+          </div>
 
           {/* 検索 */}
-          <div className="flex-1">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               検索
             </label>
             <input
               type="text"
-              placeholder="タイトル、種類、説明で検索..."
+              placeholder="タイトル、説明、場所で検索..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
             />
           </div>
-                </div>
-              </div>
+
+          {/* カテゴリフィルター */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              カテゴリ
+            </label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+            >
+              {Object.entries(MAINTENANCE_CATEGORIES).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* ステータスフィルター */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              ステータス
+            </label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+            >
+              {Object.entries(MAINTENANCE_STATUS).map(([key, value]) => (
+                <option key={key} value={key}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* ソートオプション */}
+        <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">並び順:</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="date">実施日</option>
+              <option value="title">タイトル</option>
+              <option value="cost">費用</option>
+              <option value="mileage">走行距離</option>
+            </select>
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="p-1 rounded hover:bg-gray-100 transition"
+              title={sortOrder === 'asc' ? '昇順' : '降順'}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+          
+          <div className="text-sm text-gray-600">
+            {filteredRecords.length}件のメンテナンス記録
+          </div>
+        </div>
+      </div>
 
       {/* 履歴一覧 */}
       <div className="bg-white rounded-2xl border border-gray-200">
@@ -1723,16 +1880,28 @@ function MaintenanceHistoryContent({
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-                  </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h3>
-            <p className="text-gray-500 mb-4">最初のメンテナンスメンテナンスを記録しましょう。</p>
-            <button
-              onClick={() => setShowMaintenanceModal(true)}
-              className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-            >
-              メンテナンスを記録
-            </button>
-                </div>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {maintenanceRecords.length === 0 
+                ? "メンテナンス記録がありません" 
+                : "フィルター条件に一致するメンテナンス記録がありません"
+              }
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {maintenanceRecords.length === 0 
+                ? "最初のメンテナンスを記録しましょう。" 
+                : "フィルター条件を変更して再度お試しください。"
+              }
+            </p>
+            {maintenanceRecords.length === 0 && (
+              <button
+                onClick={() => setShowMaintenanceModal(true)}
+                className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
+              >
+                メンテナンスを記録
+              </button>
+            )}
+          </div>
         ) : (
           <div className="divide-y divide-gray-200">
             {filteredRecords.map((record) => (
