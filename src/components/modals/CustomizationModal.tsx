@@ -83,10 +83,21 @@ export default function CustomizationModal({
   }, [editingCustomization, isOpen]);
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value === '' ? undefined : value
-    }));
+    setFormData(prev => {
+      // 文字列フィールドは常に文字列（空文字列でも）を保持
+      const stringFields: (keyof typeof formData)[] = ['title', 'brand', 'modelCode', 'vendorName', 'link', 'memo'];
+      if (stringFields.includes(field)) {
+        return {
+          ...prev,
+          [field]: value || ''
+        };
+      }
+      // 数値フィールドは空文字列の場合undefined
+      return {
+        ...prev,
+        [field]: value === '' ? undefined : value
+      };
+    });
   };
 
   const handleCategoryToggle = (category: CustomCategory) => {
@@ -190,7 +201,7 @@ export default function CustomizationModal({
             </label>
             <input
               type="text"
-              value={formData.title}
+              value={formData.title || ''}
               onChange={(e) => handleInputChange('title', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
               placeholder="例: HKS Hi-Power マフラー"
@@ -206,7 +217,7 @@ export default function CustomizationModal({
               </label>
               <input
                 type="text"
-                value={formData.brand}
+                value={formData.brand || ''}
                 onChange={(e) => handleInputChange('brand', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
                 placeholder="例: HKS"
@@ -218,7 +229,7 @@ export default function CustomizationModal({
               </label>
               <input
                 type="text"
-                value={formData.modelCode}
+                value={formData.modelCode || ''}
                 onChange={(e) => handleInputChange('modelCode', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
                 placeholder="例: Hi-Power"
@@ -316,7 +327,7 @@ export default function CustomizationModal({
               </label>
               <input
                 type="text"
-                value={formData.vendorName}
+                value={formData.vendorName || ''}
                 onChange={(e) => handleInputChange('vendorName', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
                 placeholder="例: 〇〇整備工場"
@@ -371,7 +382,7 @@ export default function CustomizationModal({
               </label>
               <input
                 type="url"
-                value={formData.link}
+                value={formData.link || ''}
                 onChange={(e) => handleInputChange('link', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
                 placeholder="https://..."
@@ -396,7 +407,7 @@ export default function CustomizationModal({
               メモ
             </label>
             <textarea
-              value={formData.memo}
+              value={formData.memo || ''}
               onChange={(e) => handleInputChange('memo', e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
