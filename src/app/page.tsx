@@ -2934,7 +2934,7 @@ function CarManagementContent({
             onClick={() => setShowAddCarModal(true)}
             className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
           >
-            車を追加
+            + 車を追加
           </button>
         </div>
       </div>
@@ -4984,43 +4984,6 @@ function CustomizationsContent({
           <h1 className="text-2xl font-bold text-gray-900">カスタマイズ</h1>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => {
-              // CSVエクスポート機能
-              const csvData = customizations.map(c => ({
-                'タイトル': c.title,
-                'ブランド': c.brand || '',
-                '型番': c.modelCode || '',
-                'カテゴリ': c.categories.map(cat => CATEGORY_LABELS[cat]).join(', '),
-                'ステータス': STATUS_LABELS[c.status],
-                '実施日': c.date.toLocaleDateString('ja-JP'),
-                '走行距離': c.odoKm || '',
-                '実施場所': c.vendorName || '',
-                '部品代': c.partsCostJpy || 0,
-                '工賃': c.laborCostJpy || 0,
-                'その他費用': c.otherCostJpy || 0,
-                '総費用': (c.partsCostJpy || 0) + (c.laborCostJpy || 0) + (c.otherCostJpy || 0),
-                'メモ': c.memo || '',
-                'リンク': c.link || '',
-                '公開': c.isPublic ? 'はい' : 'いいえ'
-              }));
-              
-              const headers = Object.keys(csvData[0] || {});
-              const csvContent = [
-                headers.join(','),
-                ...csvData.map(row => headers.map(header => `"${(row as any)[header]}"`).join(','))
-              ].join('\n');
-              
-              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(blob);
-              link.download = `カスタマイズ履歴_${new Date().toISOString().split('T')[0]}.csv`;
-              link.click();
-            }}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            CSV出力
-          </button>
           <button
             onClick={() => setShowCustomizationModal(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
