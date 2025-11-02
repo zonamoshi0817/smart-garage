@@ -2936,48 +2936,6 @@ function CarManagementContent({
     setActiveCarId(carId);
     setShowCustomizationModal(true);
   };
-  // ガレージ統計の計算
-  const totalCars = cars.length;
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  
-  // 今月の総費用を計算（メンテナンス + 給油 + カスタム）
-  const monthlyCost = cars.reduce((total, car) => {
-    // メンテナンス費用
-    const carMaintenanceCost = maintenanceRecords
-      .filter(record => record.carId === car.id)
-      .filter(record => {
-        const recordDate = record.date?.toDate ? record.date.toDate() : new Date();
-        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-      })
-      .reduce((sum, record) => sum + (record.cost || 0), 0);
-    
-    // 給油費用（fuelLogsから計算）
-    const carFuelCost = fuelLogs
-      .filter(log => log.carId === car.id)
-      .filter(log => {
-        const logDate = log.date?.toDate ? log.date.toDate() : new Date();
-        return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
-      })
-      .reduce((sum, log) => sum + (log.cost || 0), 0);
-    
-    // カスタム費用
-    const carCustomCost = customizations
-      .filter(custom => custom.carId === car.id)
-      .filter(custom => {
-        const customDate = custom.date?.toDate ? custom.date.toDate() : new Date();
-        return customDate.getMonth() === currentMonth && customDate.getFullYear() === currentYear;
-      })
-      .reduce((sum, custom) => sum + ((custom as any).cost || 0), 0);
-    
-    return total + carMaintenanceCost + carFuelCost + carCustomCost;
-  }, 0);
-
-  // 直近のタスク数（今月のメンテナンス記録数）
-  const recentTasks = maintenanceRecords.filter(record => {
-    const recordDate = record.date?.toDate ? record.date.toDate() : new Date();
-    return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-  }).length;
 
   return (
     <>
