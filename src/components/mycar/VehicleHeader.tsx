@@ -64,7 +64,7 @@ export default function VehicleHeader({
                   src={car.imagePath}
                   alt={car.name}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   onError={() => setImageError(true)}
                 />
               ) : (
@@ -141,13 +141,6 @@ export default function VehicleHeader({
                     ? ` 期限切れ (${Math.abs(insuranceDaysLeft)}日超過)` 
                     : ` あと${insuranceDaysLeft}日`
                   }
-                </span>
-              )}
-
-              {/* プレミアムバッジ */}
-              {isPremium && (
-                <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-400 to-yellow-300 text-amber-900 border border-amber-400 shadow-sm">
-                  ⭐ プレミアム
                 </span>
               )}
             </div>
