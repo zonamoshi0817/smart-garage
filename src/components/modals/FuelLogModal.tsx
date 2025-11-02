@@ -6,7 +6,7 @@ import { updateCar } from "@/lib/cars";
 import type { Car, FuelLog } from "@/types";
 import type { ModalProps } from "@/types";
 import Tesseract from 'tesseract.js';
-import { logOcrUsed, logFuelCreated } from '@/lib/analytics';
+import { logOcrUsed, logOcrStarted, logOcrAutofillDone, logFuelCreated } from '@/lib/analytics';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import PaywallModal from './PaywallModal';
 
@@ -228,6 +228,9 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
     setError(null);
     setOcrResult(null);
 
+    // OCRファネル: スキャン開始イベント
+    logOcrStarted('fuel', file.size);
+
     try {
       console.log("Starting OCR processing...");
       
@@ -250,19 +253,27 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
       const parsedData = parseReceiptText(text);
       
       if (parsedData) {
+        const fieldsPopulated: string[] = [];
+        
         // フォームに自動入力（給油量は小数点第1位まで）
         if (parsedData.fuelAmount) {
           const roundedFuelAmount = Math.round(parsedData.fuelAmount * 10) / 10;
           handleInputChange('fuelAmount', roundedFuelAmount.toString());
+          fieldsPopulated.push('fuelAmount');
         }
         if (parsedData.cost) {
           handleInputChange('cost', parsedData.cost.toString());
+          fieldsPopulated.push('cost');
         }
         if (parsedData.pricePerLiter) {
           handleInputChange('pricePerLiter', parsedData.pricePerLiter.toString());
+          fieldsPopulated.push('pricePerLiter');
         }
         
-        // アナリティクスイベントを記録
+        // OCRファネル: 自動入力完了イベント
+        logOcrAutofillDone('fuel', fieldsPopulated);
+        
+        // 既存のアナリティクスイベント
         logOcrUsed('fuel', true);
         
         alert('レシートから給油データを読み取りました！\n内容を確認して必要に応じて修正してください。');

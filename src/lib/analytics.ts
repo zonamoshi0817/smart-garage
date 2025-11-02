@@ -21,6 +21,11 @@ export type AnalyticsEventType =
   | 'share_link_created'
   | 'csv_exported'
   
+  // OCRファネル（精度と体験のボトルネック可視化）
+  | 'ocr_started'           // OCRスキャン開始
+  | 'ocr_autofill_done'     // 自動入力完了
+  | 'ocr_field_edited'      // ユーザーがフィールドを手動編集
+  
   // 課金フロー
   | 'paywall_shown'
   | 'paywall_click'
@@ -93,6 +98,48 @@ export async function logAnalyticsEvent(
  */
 export function logOcrUsed(type: 'fuel' | 'maintenance' | 'insurance', success: boolean): void {
   logAnalyticsEvent('ocr_used', { type, success });
+}
+
+/**
+ * OCRスキャン開始イベント（ファネル開始地点）
+ */
+export function logOcrStarted(type: 'fuel' | 'maintenance' | 'insurance', imageSize: number): void {
+  logAnalyticsEvent('ocr_started', { type, imageSize });
+}
+
+/**
+ * OCR自動入力完了イベント（成功時のみ）
+ */
+export function logOcrAutofillDone(
+  type: 'fuel' | 'maintenance' | 'insurance',
+  fieldsPopulated: string[],
+  confidenceScores?: Record<string, number>
+): void {
+  logAnalyticsEvent('ocr_autofill_done', { 
+    type, 
+    fieldsPopulated,
+    fieldCount: fieldsPopulated.length,
+    avgConfidence: confidenceScores 
+      ? Object.values(confidenceScores).reduce((a, b) => a + b, 0) / Object.values(confidenceScores).length
+      : undefined
+  });
+}
+
+/**
+ * OCRフィールド手動編集イベント（精度問題の指標）
+ */
+export function logOcrFieldEdited(
+  type: 'fuel' | 'maintenance' | 'insurance',
+  fieldName: string,
+  originalValue: string,
+  newValue: string
+): void {
+  logAnalyticsEvent('ocr_field_edited', { 
+    type, 
+    fieldName,
+    wasEmpty: !originalValue,
+    lengthDiff: Math.abs(newValue.length - originalValue.length)
+  });
 }
 
 /**

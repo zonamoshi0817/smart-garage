@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { addInsurancePolicy } from '@/lib/insurance';
 import Tesseract from 'tesseract.js';
-import { logOcrUsed } from '@/lib/analytics';
+import { logOcrUsed, logOcrStarted, logOcrAutofillDone } from '@/lib/analytics';
 import { enhanceInsuranceDocument } from '@/lib/imageEnhancer';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import PaywallModal from './PaywallModal';
