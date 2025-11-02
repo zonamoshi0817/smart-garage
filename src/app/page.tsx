@@ -4,9 +4,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Timestamp } from "firebase/firestore";
 import AuthGate from "@/components/AuthGate";
-import { addCar, watchCars, type Car, type CarInput, updateCar } from "@/lib/cars";
+import { addCar, watchCars, updateCar } from "@/lib/cars";
+import type { Car, CarInput } from "@/types";
 import { auth, watchAuth } from "@/lib/firebase";
-import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords, type MaintenanceRecord } from "@/lib/maintenance";
+import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords } from "@/lib/maintenance";
+import type { MaintenanceRecord } from "@/types";
 import { downloadMaintenancePDF, generateMaintenanceURL, type PDFExportOptions } from "@/lib/pdfExport";
 import { uploadCarImageWithProgress, isImageFile } from "@/lib/storage";
 import { compressImage, getCompressionInfo } from "@/lib/imageCompression";
@@ -2019,6 +2021,9 @@ function DataManagementContent({
   customizations: Customization[];
   activeCarId: string | undefined;
 }) {
+  // プレミアムガード（このコンポーネント内で使用）
+  const { checkFeature } = usePremiumGuard();
+  
   // CSVエクスポート機能
   const exportToCSV = (data: any[], filename: string) => {
     if (data.length === 0) {
