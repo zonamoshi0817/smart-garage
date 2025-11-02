@@ -128,12 +128,20 @@ export default function Home() {
       return;
     }
 
-    // activeCarIdが未設定、または選択されている車両が存在しない場合は最初の車両を選択
-    const currentCarExists = activeCarId ? cars.some(car => car.id === activeCarId) : false;
+    // アクティブな車両のみを取得
+    const activeCarsList = cars.filter((c) => !c.status || c.status === 'active');
+    
+    if (activeCarsList.length === 0) {
+      console.log("No active cars available");
+      return;
+    }
+
+    // activeCarIdが未設定、または選択されている車両が存在しない、またはアクティブでない場合は最初のアクティブ車両を選択
+    const currentCarExists = activeCarId ? activeCarsList.some(car => car.id === activeCarId) : false;
     
     if (!activeCarId || !currentCarExists) {
-      console.log("Auto-selecting first car from cars list:", cars[0].id, cars[0].name);
-      setActiveCarId(cars[0].id);
+      console.log("Auto-selecting first active car:", activeCarsList[0].id, activeCarsList[0].name);
+      setActiveCarId(activeCarsList[0].id);
     }
   }, [cars, activeCarId]);
 
