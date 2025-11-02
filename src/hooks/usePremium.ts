@@ -4,6 +4,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { auth } from '@/lib/firebase';
 import { UserPlan, canUseFeature, PremiumFeature } from '@/lib/premium';
 
+// 開発者アカウント（プレミアムプラン）
+// 環境変数またはハードコードで設定
+const DEVELOPER_EMAILS = (
+  process.env.NEXT_PUBLIC_DEVELOPER_EMAILS?.split(',').map(e => e.trim()) || [
+    'kentakobayashi@example.com',
+    'kentakobayashi@gmail.com',
+    // 他の開発者メールアドレスをここに追加
+  ]
+);
+
 /**
  * プレミアムプランの状態を管理するフック
  */
@@ -15,6 +25,22 @@ export function usePremium() {
     const user = auth.currentUser;
     if (!user) {
       setUserPlan('free');
+      setIsLoading(false);
+      return;
+    }
+
+    // 開発モードで全員プレミアムにする場合（環境変数で制御）
+    if (process.env.NEXT_PUBLIC_DEV_ALL_PREMIUM === 'true') {
+      console.log('[Premium] Dev mode: All users are premium');
+      setUserPlan('premium');
+      setIsLoading(false);
+      return;
+    }
+
+    // 開発者アカウントは自動的にプレミアムプラン
+    if (user.email && DEVELOPER_EMAILS.includes(user.email.toLowerCase())) {
+      console.log('[Premium] Developer account detected:', user.email);
+      setUserPlan('premium');
       setIsLoading(false);
       return;
     }
