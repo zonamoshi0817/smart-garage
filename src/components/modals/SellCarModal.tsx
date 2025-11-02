@@ -86,7 +86,7 @@ export default function SellCarModal({ car, onClose, onSave }: SellCarModalProps
               onChange={(e) => setSoldDate(e.target.value)}
               max={new Date().toISOString().split('T')[0]}
               required
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 font-medium"
             />
           </div>
 
@@ -96,7 +96,7 @@ export default function SellCarModal({ car, onClose, onSave }: SellCarModalProps
               売却価格（円）
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">¥</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 font-semibold">¥</span>
               <input
                 type="number"
                 value={soldPrice}
@@ -104,7 +104,7 @@ export default function SellCarModal({ car, onClose, onSave }: SellCarModalProps
                 placeholder="例: 1500000"
                 min="0"
                 step="10000"
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal"
               />
             </div>
             {soldPrice && (
@@ -125,7 +125,7 @@ export default function SellCarModal({ car, onClose, onSave }: SellCarModalProps
               onChange={(e) => setSoldTo(e.target.value)}
               placeholder="例: ○○中古車センター、個人売買、下取り"
               maxLength={100}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal"
             />
           </div>
 
@@ -140,7 +140,7 @@ export default function SellCarModal({ car, onClose, onSave }: SellCarModalProps
               placeholder="売却時の状況や備考を記録できます"
               rows={4}
               maxLength={500}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal"
             />
             <p className="text-xs text-gray-500 mt-1">
               {soldNotes.length} / 500文字
