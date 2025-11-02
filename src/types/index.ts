@@ -34,6 +34,21 @@ export interface CarInput {
 }
 
 // メンテナンス関連の型
+export interface MaintenanceItem {
+  type: 'part' | 'labor' | 'other';
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface MaintenanceAttachment {
+  type: 'photo' | 'pdf' | 'receipt';
+  url: string;
+  fileName: string;
+  uploadedAt: Date;
+}
+
 export interface MaintenanceRecord extends BaseEntity {
   carId: string;
   title: string;
@@ -42,6 +57,8 @@ export interface MaintenanceRecord extends BaseEntity {
   mileage?: number;
   date: Date;
   location?: string;
+  items?: MaintenanceItem[];        // 明細行（将来対応）
+  attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
 }
 
 export interface MaintenanceInput {
@@ -52,6 +69,8 @@ export interface MaintenanceInput {
   mileage: number;
   date: Date;
   location?: string;
+  items?: MaintenanceItem[];        // 明細行（将来対応）
+  attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
 }
 
 // 保険関連の型
@@ -136,6 +155,8 @@ export interface ModalProps {
 }
 
 // 給油ログ関連の型
+export type FuelType = 'regular' | 'premium' | 'diesel' | 'ev';
+
 export interface FuelLog extends BaseEntity {
   carId: string;
   odoKm: number;
@@ -143,6 +164,9 @@ export interface FuelLog extends BaseEntity {
   cost: number; // 金額（¥）
   pricePerLiter?: number; // L価格（¥/L）
   isFullTank: boolean; // 満タンかどうか
+  fuelType?: FuelType; // 燃料種別
+  stationName?: string; // スタンド名
+  unit: string; // 単位（デフォルト: 'JPY/L'、将来の外貨対応）
   memo?: string;
   date: Date;
 }
@@ -154,6 +178,9 @@ export interface FuelLogInput {
   cost: number;
   pricePerLiter?: number; // L価格（¥/L）
   isFullTank: boolean;
+  fuelType?: FuelType; // 燃料種別
+  stationName?: string; // スタンド名
+  unit?: string; // 単位（デフォルト: 'JPY/L'）
   memo?: string;
   date: Date;
 }

@@ -910,6 +910,12 @@ function DashboardContent({
         const today = new Date();
         const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
+        // 走行ペースから推定走行距離を計算
+        let estimatedKmUntilExpiry: number | null = null;
+        if (car.avgKmPerMonth && car.avgKmPerMonth > 0) {
+          estimatedKmUntilExpiry = Math.round((daysUntilExpiry / 30) * car.avgKmPerMonth);
+        }
+        
         if (daysUntilExpiry <= 30) {
           return (
             <div className={`rounded-2xl border p-6 mb-6 ${
@@ -922,6 +928,11 @@ function DashboardContent({
                   <h3 className="text-lg font-semibold text-gray-900">車検期限リマインダー</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     {car.name}の車検期限まで <span className="font-bold">{daysUntilExpiry}日</span> です
+                    {estimatedKmUntilExpiry && (
+                      <span className="ml-1 text-sm">
+                        （概ね{estimatedKmUntilExpiry.toLocaleString()}km）
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     期限: {expiryDate.toLocaleDateString('ja-JP')}
@@ -3045,10 +3056,17 @@ function CarCard({
       const remainingKm = nextMileage - (car.odoKm || 0);
       
       if (remainingKm > 0) {
+        // avgKmPerMonthを使って期限日を推定
+        let estimatedDays: number | null = null;
+        if (car.avgKmPerMonth && car.avgKmPerMonth > 0) {
+          estimatedDays = Math.round((remainingKm / car.avgKmPerMonth) * 30);
+        }
+        
         return {
           title: 'オイル交換',
           remainingKm,
           nextMileage,
+          estimatedDays,
           type: 'mileage'
         };
       }
@@ -3207,9 +3225,16 @@ function CarCard({
               <div className="text-xs text-blue-700 font-medium">
                 次: {nextTask.title}
                 {nextTask.type === 'mileage' ? (
-                  <span className="ml-1">
-                    {nextTask.remainingKm?.toLocaleString()}km後
-                  </span>
+                  <>
+                    <span className="ml-1">
+                      {nextTask.remainingKm?.toLocaleString()}km後
+                    </span>
+                    {nextTask.estimatedDays && (
+                      <span className="ml-1 text-blue-600">
+                        （概ね{nextTask.estimatedDays}日後）
+                      </span>
+                    )}
+                  </>
                 ) : (
                   <span className="ml-1">
                     {nextTask.daysUntilNext}日後

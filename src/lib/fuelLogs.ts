@@ -40,6 +40,7 @@ export const addFuelLog = async (fuelLogData: FuelLogInput): Promise<string> => 
     
     const docRef = await addDoc(collection(db, "users", user.uid, "fuelLogs"), {
       ...cleanData,
+      unit: cleanData.unit || 'JPY/L', // デフォルト単位
       ownerUid: user.uid,
       createdBy: user.uid,
       updatedBy: user.uid,

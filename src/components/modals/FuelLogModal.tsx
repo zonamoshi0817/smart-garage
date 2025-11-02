@@ -22,6 +22,8 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
     cost: "",
     pricePerLiter: "",
     isFullTank: true,
+    fuelType: "regular" as "regular" | "premium" | "diesel" | "ev",
+    stationName: "",
     memo: "",
     date: new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:MM形式
   });
@@ -77,6 +79,8 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           cost: editingFuelLog.cost.toString(),
           pricePerLiter: editingFuelLog.pricePerLiter?.toString() || "",
           isFullTank: editingFuelLog.isFullTank,
+          fuelType: (editingFuelLog.fuelType as any) || "regular",
+          stationName: editingFuelLog.stationName || "",
           memo: editingFuelLog.memo || "",
           date: editingFuelLog.date.toISOString().slice(0, 16),
         });
@@ -96,6 +100,8 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           cost: "",
           pricePerLiter: "",
           isFullTank: true,
+          fuelType: "regular",
+          stationName: "",
           memo: "",
           date: new Date().toISOString().slice(0, 16),
         });
@@ -127,6 +133,9 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
         cost: parseInt(formData.cost) || 0,
         pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : undefined,
         isFullTank: formData.isFullTank,
+        fuelType: formData.fuelType as any,
+        stationName: formData.stationName.trim() || undefined,
+        unit: 'JPY/L',
         memo: formData.memo.trim() || undefined,
         date: new Date(formData.date),
       };
@@ -167,6 +176,8 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           cost: "",
           pricePerLiter: "",
           isFullTank: true,
+          fuelType: "regular",
+          stationName: "",
           memo: "",
           date: new Date().toISOString().slice(0, 16),
         });
@@ -563,6 +574,39 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                 placeholder="例: 143.8"
                 min="0"
                 step="0.1"
+              />
+            </div>
+
+            {/* 燃料種別 */}
+            <div>
+              <label htmlFor="fuelType" className="block text-sm font-medium text-gray-700 mb-1">
+                燃料種別
+              </label>
+              <select
+                id="fuelType"
+                value={formData.fuelType}
+                onChange={(e) => handleInputChange("fuelType", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              >
+                <option value="regular">レギュラー</option>
+                <option value="premium">ハイオク</option>
+                <option value="diesel">軽油</option>
+                <option value="ev">EV充電</option>
+              </select>
+            </div>
+
+            {/* スタンド名 */}
+            <div>
+              <label htmlFor="stationName" className="block text-sm font-medium text-gray-700 mb-1">
+                スタンド名
+              </label>
+              <input
+                type="text"
+                id="stationName"
+                value={formData.stationName}
+                onChange={(e) => handleInputChange("stationName", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                placeholder="例: ENEOS 〇〇店"
               />
             </div>
 
