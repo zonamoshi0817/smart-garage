@@ -12,11 +12,115 @@
  */
 
 /**
- * 画像を前処理してOCR精度を向上
+ * 領域候補を検出（アンカーベース）
+ * 低解像度で重要なラベル（キーワード）を検出し、その近傍矩形を特定
+ */
+export interface TextRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label: string;  // 検出されたラベル（例: "金額", "数量"）
+}
+
+/**
+ * 罫線を薄化（テーブル構造のOCRノイズ除去）
+ */
+function thinLines(imageData: ImageData): void {
+  const data = imageData.data;
+  const width = imageData.width;
+  const height = imageData.height;
+  
+  // 縦線・横線を検出して薄くする（簡易実装）
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = (y * width + x) * 4;
+      const current = data[idx];
+      
+      // 黒い線（閾値50以下）を検出
+      if (current < 50) {
+        // 上下左右をチェック
+        const top = data[((y - 1) * width + x) * 4];
+        const bottom = data[((y + 1) * width + x) * 4];
+        const left = data[(y * width + (x - 1)) * 4];
+        const right = data[(y * width + (x + 1)) * 4];
+        
+        // 罫線パターン（両端が白）なら薄くする
+        if ((top > 200 && bottom > 200) || (left > 200 && right > 200)) {
+          data[idx] = data[idx + 1] = data[idx + 2] = 180;  // グレーに薄化
+        }
+      }
+    }
+  }
+}
+
+/**
+ * 台形補正（射影変換の簡易版）
+ * ※完全な実装はOpenCV.js等が必要、ここでは回転補正のみ
+ */
+function correctPerspective(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
+  // 簡易的な回転補正のみ実装
+  // 本格的な台形補正は別ライブラリが必要
+  // 今回はスキップ（将来拡張）
+}
+
+/**
+ * 適応二値化（Otsu法ベース、局所的に適用）
+ */
+function applyAdaptiveBinarization(imageData: ImageData, blockSize: number = 16): void {
+  const data = imageData.data;
+  const width = imageData.width;
+  const height = imageData.height;
+  
+  // ブロック単位で二値化
+  for (let by = 0; by < height; by += blockSize) {
+    for (let bx = 0; bx < width; bx += blockSize) {
+      const blockData: number[] = [];
+      
+      // ブロック内のピクセルを取得
+      for (let y = by; y < Math.min(by + blockSize, height); y++) {
+        for (let x = bx; x < Math.min(bx + blockSize, width); x++) {
+          const idx = (y * width + x) * 4;
+          blockData.push(data[idx]);
+        }
+      }
+      
+      // ブロック内の平均値を閾値として使用
+      const threshold = blockData.reduce((a, b) => a + b, 0) / blockData.length;
+      
+      // 二値化適用
+      for (let y = by; y < Math.min(by + blockSize, height); y++) {
+        for (let x = bx; x < Math.min(bx + blockSize, width); x++) {
+          const idx = (y * width + x) * 4;
+          const value = data[idx] > threshold ? 255 : 0;
+          data[idx] = data[idx + 1] = data[idx + 2] = value;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * 画像を前処理してOCR精度を向上（拡張版）
+ * 
+ * 改善ポイント:
+ * - 罫線薄化: テーブル構造のノイズ除去
+ * - 適応二値化: 局所的な明度変化に対応
+ * - 台形補正: 撮影角度の補正（将来拡張）
+ * 
  * @param file 元の画像ファイル
+ * @param options.useLineThinning 罫線薄化を使用（デフォルト: true）
+ * @param options.useAdaptiveBinarization 適応二値化を使用（デフォルト: false、保険証券向け）
  * @returns 前処理済み画像のBlob
  */
-export async function preprocessImageForOCR(file: File): Promise<Blob> {
+export async function preprocessImageForOCR(
+  file: File, 
+  options: {
+    useLineThinning?: boolean;
+    useAdaptiveBinarization?: boolean;
+  } = {}
+): Promise<Blob> {
+  const { useLineThinning = true, useAdaptiveBinarization = false } = options;
   return new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
@@ -57,21 +161,24 @@ export async function preprocessImageForOCR(file: File): Promise<Blob> {
             data[i + 2] = gray; // B
           }
 
-          // 2. コントラスト強化（適応的処理 - 二値化は控えめに）
-          // より緩やかな処理で元画像の情報を保持
-          for (let i = 0; i < data.length; i += 4) {
-            const value = data[i]; // グレースケール値
-            
-            // コントラスト強化（線形変換）
-            // 中間値（128）を基準に拡大
-            const enhanced = ((value - 128) * 1.5) + 128;
-            
-            // クリッピング
-            const clipped = Math.max(0, Math.min(255, enhanced));
-            
-            data[i] = clipped;
-            data[i + 1] = clipped;
-            data[i + 2] = clipped;
+          // 2. 罫線薄化（オプション）
+          if (useLineThinning) {
+            thinLines(imageData);
+          }
+
+          // 3. 適応二値化（オプション、保険証券など表形式に有効）
+          if (useAdaptiveBinarization) {
+            applyAdaptiveBinarization(imageData);
+          } else {
+            // 通常のコントラスト強化
+            for (let i = 0; i < data.length; i += 4) {
+              const value = data[i];
+              const enhanced = ((value - 128) * 1.5) + 128;
+              const clipped = Math.max(0, Math.min(255, enhanced));
+              data[i] = clipped;
+              data[i + 1] = clipped;
+              data[i + 2] = clipped;
+            }
           }
 
           // 処理済み画像をCanvasに戻す
