@@ -255,7 +255,20 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
       if (parsedData) {
         const fieldsPopulated: string[] = [];
         
-        // フォームに自動入力（給油量は小数点第1位まで）
+        // ペイウォールチェック: 自動入力成功直前（価値体験後）
+        console.log('[FuelLog] OCR success, checking premium feature before autofill');
+        const canUse = checkFeature('ocr_scan', undefined, 'minimal');
+        console.log('[FuelLog] Can use OCR autofill:', canUse);
+        
+        if (!canUse) {
+          console.log('[FuelLog] Premium required for autofill, showing paywall');
+          // OCRは成功したが、自動入力はプレミアム限定
+          logOcrUsed('fuel', false); // ペイウォールで中断
+          alert('OCRスキャンに成功しました！\n自動入力機能はプレミアムプランでご利用いただけます。');
+          return; // ここでペイウォールが表示される（checkFeature内で）
+        }
+        
+        // プレミアムユーザー: フォームに自動入力（給油量は小数点第1位まで）
         if (parsedData.fuelAmount) {
           const roundedFuelAmount = Math.round(parsedData.fuelAmount * 10) / 10;
           handleInputChange('fuelAmount', roundedFuelAmount.toString());
@@ -400,20 +413,8 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                     <button
                       type="button"
                       onClick={() => {
-                        console.log('[FuelLog] OCR button clicked');
-                        console.log('[FuelLog] Checking premium feature...');
-                        
-                        // プレミアム機能チェック
-                        const canUse = checkFeature('ocr_scan', undefined, 'minimal');
-                        console.log('[FuelLog] Can use OCR:', canUse);
-                        
-                        if (!canUse) {
-                          console.log('[FuelLog] Premium required, showing paywall');
-                          return;
-                        }
-                        
-                        // チェック通過後、ファイル選択をトリガー
-                        console.log('[FuelLog] Premium user, opening file picker');
+                        console.log('[FuelLog] OCR button clicked, opening file picker');
+                        // フリーミアムモデル: まず体験させる（ボタンクリック時はチェックしない）
                         document.getElementById('receipt-file-input')?.click();
                       }}
                       disabled={isOcrProcessing}
