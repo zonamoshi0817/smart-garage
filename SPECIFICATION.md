@@ -153,59 +153,85 @@ Smart Garageは、車両のメンテナンス管理と整備計画機能を提�
 
 ## データモデル
 
+### 共通フィールド（BaseEntity）
+```typescript
+interface BaseEntity {
+  id?: string;
+  ownerUid?: string;        // 所有者UID（マルチテナンシー対応）
+  createdBy?: string;       // 作成者UID
+  updatedBy?: string;       // 更新者UID
+  deletedAt?: Date | null;  // 論理削除タイムスタンプ
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+```
+
 ### 車両（cars）
 ```typescript
-interface Car {
-  id: string;
+interface Car extends BaseEntity {
   name: string;
   modelCode?: string;
   year?: number;
   odoKm?: number;
   imagePath?: string;
-  inspectionExpiry?: string;
+  inspectionExpiry?: Date;    // Date型に統一
   firstRegYm?: string;
-  avgKmPerMonth?: number;
+  avgKmPerMonth?: number;     // 平均月間走行距離（リマインダー用）
   engineCode?: string;
   oilSpec?: {
     viscosity: string;
     api: string;
     volumeL: number;
   };
-  createdAt: Date;
-  updatedAt: Date;
 }
 ```
 
 ### 給油記録（fuelLogs）
 ```typescript
-interface FuelLog {
-  id: string;
+type FuelType = 'regular' | 'premium' | 'diesel' | 'ev';
+
+interface FuelLog extends BaseEntity {
   carId: string;
   odoKm: number;          // 走行距離（km）
   fuelAmount: number;     // 給油量（L、小数点第1位まで）
   cost: number;           // 金額（円）
   pricePerLiter?: number; // L価格（円/L）
   isFullTank: boolean;    // 満タンフラグ
+  fuelType?: FuelType;    // 燃料種別
+  stationName?: string;   // スタンド名
+  unit: string;           // 単位（デフォルト: 'JPY/L'、将来の外貨対応）
   memo?: string;          // メモ
   date: Date;             // 給油日時
-  createdAt: Date;
-  updatedAt: Date;
 }
 ```
 
 ### メンテナンス記録（maintenance）
 ```typescript
-interface MaintenanceRecord {
-  id: string;
+interface MaintenanceItem {
+  type: 'part' | 'labor' | 'other';
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+interface MaintenanceAttachment {
+  type: 'photo' | 'pdf' | 'receipt';
+  url: string;
+  fileName: string;
+  uploadedAt: Date;
+}
+
+interface MaintenanceRecord extends BaseEntity {
   carId: string;
   title: string;
   description?: string;
   cost?: number;
-  mileage?: number; // 必須項目（現在の車両走行距離以上）
+  mileage?: number;       // 必須項目（現在の車両走行距離以上）
   date: Date;
   location?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  items?: MaintenanceItem[];        // 明細行（将来対応）
+  attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
 }
 ```
 
@@ -283,77 +309,181 @@ type CustomStatus = 'planned' | 'ordered' | 'installed' | 'removed_temp' | 'remo
 - 車種適合商品の自動選択
 
 ## セキュリティ
+
+### 認証・アクセス制御
 - Firebase Authenticationによる認証
 - Firebase Storageの権限管理（ユーザー別アクセス制御）
-- ユーザー別データ分離
-- 入力値の検証
+- ユーザー別データ分離（マルチテナンシー）
+- 論理削除（deletedAt）による安全なデータ削除
+- 監査ログ（Audit Log）による操作履歴の追跡
+
+### データ保護
+- **エクスポート署名**: HMAC-SHA256ベースの改ざん防止
+- **共有URL署名トークン**: 30日有効期限付きトークン
+- **PDF署名埋め込み**: エクスポート元の正当性証明
+- 入力値の検証（Zod）
 - エラーハンドリング
 - 画像アップロードのセキュリティ（認証済みユーザーのみ）
 
+### 監査証跡
+```typescript
+interface AuditLog {
+  entityType: 'car' | 'maintenance' | 'fuelLog' | 'customization' | 'user';
+  entityId: string;
+  action: 'create' | 'update' | 'delete';
+  actorUid: string;
+  at: Timestamp;
+  before?: any;  // 変更前データ
+  after?: any;   // 変更後データ
+}
+```
+
 ## パフォーマンス
-- Firestoreインデックスの最適化
-- リアルタイムデータ同期
+
+### Firestoreクエリ最適化
+- **ページング実装**: カーソルベースのページネーション（limit付きクエリ）
+  - cars: 50件/ページ
+  - maintenance: 100件/ページ
+  - fuelLogs: リアルタイムリスナーでlimit適用
+- **複合インデックス設計**: 
+  - carId + date + deletedAt
+  - ownerUid + date + deletedAt
+  - カテゴリ + ステータス + date
+- **論理削除フィルタリング**: クエリレベルでdeletedAt除外
+
+### クライアントサイド最適化
+- リアルタイムデータ同期（onSnapshot）
 - 効率的なクエリ設計
 - クライアントサイドキャッシュ
-- 画像のクライアントサイド圧縮
+- **画像圧縮**: 最長辺1600px、品質85%、最大800KB
 - Firebase Storageの最適化されたアップロード
+- **OCR Web Worker化**: メインスレッドをブロックしない非同期処理
+- **IndexedDBキャッシュ**: traineddataのローカルキャッシュ
 
-## プレミアム機能（月額480円）
+## プレミアム機能（月額480円 / 年額4,800円）
+
 ### 無料プランの制限
-- 車両登録: 1台まで（2代目以降は有料）
-- PDFエクスポート: 利用不可
-- 履歴共有: 利用不可
-- 画像アップロード: 1台分のみ
+- **車両登録**: 1台まで（2台目以降はプレミアム必須）
+- **PDFエクスポート**: 利用不可
+- **履歴共有URL**: 利用不可
+- **リマインダー**: 車両あたり5件まで
+- **スヌーズ**: 3回まで
+- **広告**: 表示あり
 
 ### プレミアム機能
-- 複数台の車両登録（2代目以降）
-- 全車両の画像アップロード
-- PDFエクスポート
-- 履歴の共有
-- 広告非表示
-- 複数オイル候補レコメンド
-- 領収書自動保存
-- カスタムメンテナンス種別
-- データバックアップ
+- **複数車両登録**: 無制限
+- **PDFエクスポート**: 全車両の履歴書生成
+- **履歴共有URL**: 署名付き安全な共有リンク
+- **高度なリマインダー**: 無制限、走行距離ベースの推定表示
+- **スヌーズ無制限**: リマインダーのスヌーズ回数制限なし
+- **領収書自動保存**: OCRスキャン結果の自動保存
+- **自動次回予定登録**: メンテナンス完了時に次回を自動設定
+- **複数候補レコメンド**: オイル交換時に複数の商品候補
+- **フィルター同時表示**: 複数フィルタの組み合わせ
+- **詳細データ分析**: 高度な統計レポート
+- **優先サポート**: 優先的なカスタマーサポート
+- **広告非表示**: アプリ内広告の非表示
+
+### ペイウォールUI
+- **3つのvariant**: 
+  - `default`: 標準的なペイウォール（全機能表示）
+  - `minimal`: シンプルな1機能訴求
+  - `hero`: 大きなヒーロー訴求
+- **A/Bテスト対応**: variant切り替えによる効果測定
+- **インライン訴求**: 車両管理画面での自然なアップグレード誘導
+- **機能制限時の表示**: 利用不可機能へのアクセス時にペイウォール表示
+
+### 課金転換ファネル追跡
+```typescript
+// アナリティクスイベント
+- paywall_shown: ペイウォール表示
+- paywall_click: アップグレードボタンクリック
+- subscribe_started: 購読開始
+- subscribe_success: 購読成功
+- subscribe_failed: 購読失敗
+```
 
 ## 実装済み機能
+
+### コア機能
 - ✅ 車両管理（CRUD）
+  - ✅ TypeaheadCarSelectorによる車種選択
+  - ✅ 画像アップロード（Firebase Storage）
+  - ✅ デフォルト画像選択
 - ✅ 給油記録（CRUD）
   - ✅ **OCR機能**: レシート自動読み取り（Tesseract.js）
   - ✅ 給油量・金額・L価格の自動抽出
   - ✅ 小数点第1位制限
+  - ✅ 燃料種別（レギュラー・ハイオク・軽油・EV充電）
+  - ✅ スタンド名記録
   - ✅ 燃費自動計算
 - ✅ メンテナンス記録（CRUD）
   - ✅ フィルター機能（車両、カテゴリ、ステータス、検索）
   - ✅ 並び替え機能
+  - ✅ 走行距離整合性チェック
+  - ✅ 明細行・添付ファイル対応（データモデル準備済み）
 - ✅ カスタマイズ記録（CRUD）
   - ✅ 複数カテゴリ選択
   - ✅ ステータス管理
   - ✅ 費用内訳（部品代・工賃・その他）
-- ✅ 画像アップロード機能（Firebase Storage）
-- ✅ クライアントサイド画像圧縮
-- ✅ 進捗監視付きアップロード
-- ✅ アフィリエイトリンク生成
+
+### データ管理・エクスポート
 - ✅ データエクスポート（CSV、JSON、PDF）
   - ✅ エクスポート機能の統合（データページに集約）
+  - ✅ **PDF署名埋め込み**: HMAC-SHA256署名
+  - ✅ **共有URL署名トークン**: 30日有効期限
+  - ✅ 改ざん防止・真正性証明
+- ✅ クライアントサイド画像圧縮（1600px、85%品質、最大800KB）
+- ✅ 進捗監視付きアップロード
+- ✅ アフィリエイトリンク生成
+
+### プレミアム機能・収益化
+- ✅ **ペイウォールUI**
+  - ✅ 3つのvariant（default, minimal, hero）
+  - ✅ 車両数制限チェック（無料: 1台、プレミアム: 無制限）
+  - ✅ PDF/共有機能の制限
+  - ✅ インライン訴求（車両管理画面）
+- ✅ **課金転換ファネル追跡**
+  - ✅ アナリティクスイベント実装
+  - ✅ paywall_shown, paywall_click, subscribe_*
+
+### パフォーマンス・セキュリティ
+- ✅ **Firestoreページング**
+  - ✅ limit付きクエリ（cars: 50件、maintenance: 100件）
+  - ✅ 複合インデックス設計（firestore.indexes.json）
+  - ✅ カーソルベースのページネーション基盤
+- ✅ **データ整合性・監査**
+  - ✅ 論理削除（deletedAt）
+  - ✅ 所有権フィールド（ownerUid, createdBy, updatedBy）
+  - ✅ 監査ログ（Audit Log）
+  - ✅ データ型統一（inspectionExpiry: Date型）
+- ✅ **OCR最適化**
+  - ✅ Web Worker基盤実装
+  - ✅ IndexedDBキャッシュ機能
+  - ✅ オフライン対応準備
+
+### UI/UX改善
+- ✅ 統一された追加ボタン（+ アイコン）
+- ✅ CustomizationModalのcontrolled/uncontrolledエラー修正
+- ✅ **リマインダー機能強化**
+  - ✅ avgKmPerMonthによる推定日数表示
+  - ✅ 車検期限の推定走行距離表示
 - ✅ 通知設定
 - ✅ 保険管理
 - ✅ データバリデーション（Zod）
-- ✅ 走行距離整合性チェック
-- ✅ UI改善
-  - ✅ 統一された追加ボタン（+ アイコン）
-  - ✅ CustomizationModalのcontrolled/uncontrolledエラー修正
 
 ## 実装予定機能
 - 🔄 メンテナンス記録のOCR機能（費用・日付・店舗名の読み取り）
-- 🔄 車両数制限チェック（無料プラン: 1台まで）
-- 🔄 プレミアムプラン制限の実装
-- 🔄 アップグレード促進UI
-- 🔄 2代目車両追加時の制限表示
+- 🔄 OCR WorkerのFuelLogModalへの完全統合
+- 🔄 決済システム統合（Stripe/PayPal）
+- 🔄 共有URL閲覧ページの実装
+- 🔄 署名検証ページの実装
+- 🔄 サムネイル生成（Cloud Functions）
+- 🔄 複合インデックスの作成（Firebase Console）
 
 ## 開発・運用
 - Git によるバージョン管理
-- コミットID: b51b7dc（現在の安定版）
+- **最新コミット**: ee29998（高影響度改善実装）
 - 開発環境でのテストデータ対応
 - 本番環境でのFirebase設定
 - ESLint設定（警告レベルでの開発）
@@ -361,11 +491,23 @@ type CustomStatus = 'planned' | 'ordered' | 'installed' | 'removed_temp' | 'remo
 
 ## 技術的改善
 - ✅ Zodスキーマによるバリデーション
-- ✅ 型安全なイベント追跡システム
-- ✅ 証明性データ生成（ハッシュ化）
-- ✅ プレミアム機能ガード
+- ✅ 型安全なイベント追跡システム（アナリティクス）
+- ✅ 証明性データ生成（ハッシュ化、署名）
+- ✅ プレミアム機能ガード（usePremiumGuard）
 - ✅ メニュー名称の最適化
-- ✅ 履歴スコア機能（削除済み）
+- ✅ データモデル拡張（BaseEntity、論理削除、監査）
+- ✅ パフォーマンス最適化（ページング、インデックス）
+- ✅ セキュリティ強化（署名トークン、監査ログ）
+
+## 新規作成ファイル（v1.4.0）
+- `src/lib/signatureToken.ts`: エクスポート署名システム
+- `src/lib/firestorePagination.ts`: ページネーション機能
+- `src/lib/ocrWorker.ts`: OCR Web Worker基盤
+- `src/lib/auditLog.ts`: 監査ログシステム
+- `src/lib/analytics.ts`: アナリティクスイベント追跡
+- `src/components/modals/PaywallModal.tsx`: ペイウォールUI
+- `src/hooks/usePremium.ts`: プレミアム機能フック
+- `firestore.indexes.json`: 複合インデックス定義
 
 ---
 
@@ -436,25 +578,60 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 
 ## バージョン履歴
 
+### v1.4.0 (2025-11-02) 🎉
+**高影響度改善の実装**
+
+#### 収益化・ビジネス
+- **ペイウォールUI**: 3つのvariant（default, minimal, hero）でA/Bテスト対応
+- **車両数制限**: 無料プラン1台、プレミアムプラン無制限
+- **課金転換ファネル追跡**: アナリティクスイベント実装
+- **インライン訴求**: 車両管理画面でのアップグレード誘導
+
+#### セキュリティ・データ保護
+- **エクスポート署名**: HMAC-SHA256ベースの改ざん防止
+- **共有URL署名トークン**: 30日有効期限付き安全な共有
+- **PDF署名埋め込み**: エクスポート元の正当性証明
+- **監査ログ**: 全データ操作の追跡（create/update/delete）
+- **論理削除**: deletedAtによる安全なデータ削除
+
+#### パフォーマンス最適化
+- **Firestoreページング**: limit付きクエリ（cars: 50件、maintenance: 100件）
+- **複合インデックス設計**: firestore.indexes.jsonによる定義
+- **OCR Web Worker基盤**: メインスレッドをブロックしない非同期処理
+- **IndexedDBキャッシュ**: traineddataのローカルキャッシュ
+
+#### データモデル拡張
+- **BaseEntity**: 所有権・監査フィールドの統一
+- **FuelLog拡張**: fuelType, stationName, unit追加
+- **MaintenanceRecord拡張**: 明細行・添付ファイル対応
+- **データ型統一**: inspectionExpiryをDate型に統一
+
+#### UI/UX改善
+- **リマインダー強化**: avgKmPerMonthによる推定日数表示
+- **車検期限表示**: 推定走行距離の表示
+- **画像圧縮最適化**: 1600px、85%品質、最大800KB
+
+#### 新規ファイル（8個）
+- `src/lib/signatureToken.ts`
+- `src/lib/firestorePagination.ts`
+- `src/lib/ocrWorker.ts`
+- `src/lib/auditLog.ts`
+- `src/lib/analytics.ts`
+- `src/components/modals/PaywallModal.tsx`
+- `src/hooks/usePremium.ts`
+- `firestore.indexes.json`
+
 ### v1.3.0 (2025-11-01)
 - **新機能**: 給油記録のOCR機能（レシート自動読み取り）
-  - Tesseract.jsによる画像認識
-  - 給油量・金額・L価格の自動抽出
-  - 小数点第1位制限
-- **UI改善**: 
-  - 車を追加ボタンに「+」アイコンを追加
-  - カスタマイズ画面からCSV出力ボタンを削除
-  - エクスポート機能をデータページに集約
-- **バグ修正**: 
-  - CustomizationModalのcontrolled/uncontrolledエラー修正
-  - 文字列フィールドの適切な初期値設定
+- **UI改善**: 統一された追加ボタン、エクスポート機能統合
+- **バグ修正**: CustomizationModalエラー修正
 
 ### v1.2.0 (2025-09)
 - **新機能**: 画像アップロード機能（Firebase Storage統合）
 - **新機能**: クライアントサイド画像圧縮
-- **新機能**: 進捗監視付きアップロード
 
 ### v1.1.0
 - 基本的な車両管理・メンテナンス記録機能
 
-*最新バージョン: 1.3.0*
+**最新バージョン: 1.4.0**  
+**コミットID: ee29998**
