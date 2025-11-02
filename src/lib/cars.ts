@@ -3,7 +3,7 @@
 import { db, auth } from "@/lib/firebase";
 import {
   collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
-  doc, updateDoc, deleteDoc
+  doc, updateDoc, deleteDoc, Timestamp
 } from "firebase/firestore";
 
 export type Car = {
@@ -13,7 +13,7 @@ export type Car = {
   year?: number;
   odoKm?: number;
   imagePath?: string;      // 例: "users/<uid>/cars/<carId>/main.jpg" or "/car.jpg"
-  inspectionExpiry?: string; // 車検期限 (例: "2026-04-15")
+  inspectionExpiry?: Date; // 車検期限（Firestore Timestamp → Date変換済み）
   firstRegYm?: string;     // 初度登録年月 (例: "2020-03")
   avgKmPerMonth?: number;  // 平均月間走行距離
   engineCode?: string;     // エンジンコード
@@ -32,7 +32,7 @@ export type CarInput = {
   year?: number;
   odoKm?: number;
   imagePath?: string;
-  inspectionExpiry?: string;
+  inspectionExpiry?: Date; // 車検期限（Date型で入力、Firestoreに保存時はTimestampへ変換）
   firstRegYm?: string;
   avgKmPerMonth?: number;
   engineCode?: string;
@@ -54,13 +54,21 @@ export async function addCar(data: CarInput) {
   try {
     const ref = collection(db, "users", u.uid, "cars");
     
-    // undefined値をnullに変換（Firestoreではundefinedは保存できない）
-    const cleanData = Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [key, value === undefined ? null : value])
-    );
+    // Date型をTimestampに変換
+    const firestoreData: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value === undefined) {
+        firestoreData[key] = null;
+      } else if (key === 'inspectionExpiry' && value instanceof Date) {
+        // DateをTimestampに変換
+        firestoreData[key] = Timestamp.fromDate(value);
+      } else {
+        firestoreData[key] = value;
+      }
+    }
     
     const docRef = await addDoc(ref, {
-      ...cleanData,
+      ...firestoreData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -109,7 +117,28 @@ export function watchCars(cb: (cars: Car[]) => void) {
       const list = snap.docs.map((d) => {
         const data = d.data();
         console.log("Car data:", { id: d.id, ...data });
-        return { id: d.id, ...data } as Car;
+        
+        // Timestamp → Date変換
+        const car: Car = {
+          id: d.id,
+          name: data.name,
+          modelCode: data.modelCode,
+          year: data.year,
+          odoKm: data.odoKm,
+          imagePath: data.imagePath,
+          inspectionExpiry: data.inspectionExpiry?.toDate ? data.inspectionExpiry.toDate() : 
+                           (data.inspectionExpiry ? new Date(data.inspectionExpiry) : undefined),
+          firstRegYm: data.firstRegYm,
+          avgKmPerMonth: data.avgKmPerMonth,
+          engineCode: data.engineCode,
+          oilSpec: data.oilSpec,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : 
+                    (data.createdAt ? new Date(data.createdAt) : undefined),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : 
+                    (data.updatedAt ? new Date(data.updatedAt) : undefined),
+        };
+        
+        return car;
       });
       
       console.log("Final cars list:", list);
@@ -133,13 +162,21 @@ export async function updateCar(carId: string, data: Partial<Car>) {
   const u = auth.currentUser;
   if (!u) throw new Error("not signed in");
   
-  // undefined値をnullに変換（Firestoreではundefinedは保存できない）
-  const cleanData = Object.fromEntries(
-    Object.entries(data).map(([key, value]) => [key, value === undefined ? null : value])
-  );
+  // Date型をTimestampに変換、undefined値をnullに変換
+  const firestoreData: any = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined) {
+      firestoreData[key] = null;
+    } else if (key === 'inspectionExpiry' && value instanceof Date) {
+      // DateをTimestampに変換
+      firestoreData[key] = Timestamp.fromDate(value);
+    } else {
+      firestoreData[key] = value;
+    }
+  }
   
   await updateDoc(doc(db, "users", u.uid, "cars", carId), {
-    ...cleanData,
+    ...firestoreData,
     updatedAt: serverTimestamp(),
   });
 }

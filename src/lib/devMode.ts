@@ -10,7 +10,7 @@ const dummyCars: Car[] = [
     year: 2020,
     odoKm: 50000,
     imagePath: '/car.jpg',
-    inspectionExpiry: '2025-12-31',
+    inspectionExpiry: new Date('2025-12-31'), // Date型に統一
     firstRegYm: '2020-01',
     avgKmPerMonth: 1000,
     createdAt: new Date(),

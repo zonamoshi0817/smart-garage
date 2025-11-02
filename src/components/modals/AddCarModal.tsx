@@ -171,7 +171,8 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
       }
       
       if (inspectionExpiry && inspectionExpiry.trim()) {
-        carData.inspectionExpiry = inspectionExpiry.trim();
+        // string (YYYY-MM-DD) → Date変換
+        carData.inspectionExpiry = new Date(inspectionExpiry.trim());
       }
       
       if (firstRegYm && firstRegYm.trim()) {

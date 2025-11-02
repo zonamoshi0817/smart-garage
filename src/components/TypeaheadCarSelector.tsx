@@ -13,14 +13,14 @@ interface TypeaheadCarSelectorProps {
     manufacturer: CarManufacturer | null;
     model: CarModel | null;
     year: number | null;
-    inspectionExpiry: string;
+    inspectionExpiry: Date | null;
   }) => void;
   onClose: () => void;
   initialData?: {
     manufacturer?: CarManufacturer | null;
     model?: CarModel | null;
     year?: number | null;
-    inspectionExpiry?: string;
+    inspectionExpiry?: Date | null;
   };
 }
 
@@ -40,7 +40,8 @@ export default function TypeaheadCarSelector({
     initialData?.year || null
   );
   const [inspectionExpiry, setInspectionExpiry] = useState(
-    initialData?.inspectionExpiry || ''
+    initialData?.inspectionExpiry instanceof Date ? 
+      initialData.inspectionExpiry.toISOString().split('T')[0] : ''
   );
   const [allowFreeInput, setAllowFreeInput] = useState(false);
   
@@ -94,7 +95,7 @@ export default function TypeaheadCarSelector({
       manufacturer: selectedManufacturer,
       model: selectedModel,
       year: selectedYear,
-      inspectionExpiry
+      inspectionExpiry: inspectionExpiry ? new Date(inspectionExpiry) : null
     });
   };
 

@@ -235,9 +235,10 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
       const parsedData = parseReceiptText(text);
       
       if (parsedData) {
-        // フォームに自動入力
+        // フォームに自動入力（給油量は小数点第1位まで）
         if (parsedData.fuelAmount) {
-          handleInputChange('fuelAmount', parsedData.fuelAmount.toString());
+          const roundedFuelAmount = Math.round(parsedData.fuelAmount * 10) / 10;
+          handleInputChange('fuelAmount', roundedFuelAmount.toString());
         }
         if (parsedData.cost) {
           handleInputChange('cost', parsedData.cost.toString());
@@ -510,7 +511,19 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                 type="number"
                 id="fuelAmount"
                 value={formData.fuelAmount}
-                onChange={(e) => handleInputChange("fuelAmount", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // 小数点第1位までに制限
+                  if (value && value.includes('.')) {
+                    const [integer, decimal] = value.split('.');
+                    if (decimal && decimal.length > 1) {
+                      e.target.value = `${integer}.${decimal.slice(0, 1)}`;
+                      handleInputChange("fuelAmount", e.target.value);
+                      return;
+                    }
+                  }
+                  handleInputChange("fuelAmount", value);
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 placeholder="例: 45.2"
                 required

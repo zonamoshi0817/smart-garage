@@ -2018,7 +2018,8 @@ function DataManagementContent({
       modelCode: car.modelCode || '',
       year: car.year || '',
       odoKm: car.odoKm || '',
-      inspectionExpiry: car.inspectionExpiry || '',
+      inspectionExpiry: car.inspectionExpiry instanceof Date ? 
+                       car.inspectionExpiry.toISOString().split('T')[0] : '',
       createdAt: car.createdAt || new Date(),
       updatedAt: car.updatedAt || new Date()
     }));
@@ -2083,7 +2084,8 @@ function DataManagementContent({
         modelCode: car.modelCode || '',
         year: car.year || '',
         odoKm: car.odoKm || '',
-        inspectionExpiry: car.inspectionExpiry || '',
+        inspectionExpiry: car.inspectionExpiry instanceof Date ? 
+                         car.inspectionExpiry.toISOString().split('T')[0] : '',
         createdAt: car.createdAt || new Date(),
         updatedAt: car.updatedAt || new Date()
       })),
@@ -3529,7 +3531,9 @@ function EditCarModal({
   const [modelCode, setModelCode] = useState(car.modelCode || "");
   const [year, setYear] = useState(car.year?.toString() || "");
   const [odoKm, setOdoKm] = useState(car.odoKm?.toString() || "");
-  const [inspectionExpiry, setInspectionExpiry] = useState(car.inspectionExpiry || "");
+  const [inspectionExpiry, setInspectionExpiry] = useState(
+    car.inspectionExpiry instanceof Date ? car.inspectionExpiry.toISOString().split('T')[0] : ""
+  );
   const [firstRegYm, setFirstRegYm] = useState(car.firstRegYm || "");
   const [avgKmPerMonth, setAvgKmPerMonth] = useState(car.avgKmPerMonth?.toString() || "");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -3648,7 +3652,8 @@ function EditCarModal({
         carData.odoKm = Number(odoKm);
       }
       if (inspectionExpiry && inspectionExpiry.trim()) {
-        carData.inspectionExpiry = inspectionExpiry.trim();
+        // string (YYYY-MM-DD) → Date変換
+        carData.inspectionExpiry = new Date(inspectionExpiry.trim());
       }
       if (firstRegYm && firstRegYm.trim()) {
         carData.firstRegYm = firstRegYm.trim();

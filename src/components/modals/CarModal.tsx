@@ -25,7 +25,7 @@ export default function CarModal({
     year: undefined,
     odoKm: undefined,
     imagePath: '',
-    inspectionExpiry: '',
+    inspectionExpiry: undefined,
     firstRegYm: '',
     avgKmPerMonth: undefined,
   });
@@ -42,7 +42,7 @@ export default function CarModal({
         year: editingCar.year || undefined,
         odoKm: editingCar.odoKm || undefined,
         imagePath: editingCar.imagePath || '',
-        inspectionExpiry: editingCar.inspectionExpiry || '',
+        inspectionExpiry: editingCar.inspectionExpiry || undefined,
         firstRegYm: editingCar.firstRegYm || '',
         avgKmPerMonth: editingCar.avgKmPerMonth || undefined,
       });
@@ -54,7 +54,7 @@ export default function CarModal({
         year: undefined,
         odoKm: undefined,
         imagePath: '',
-        inspectionExpiry: '',
+        inspectionExpiry: undefined,
         firstRegYm: '',
         avgKmPerMonth: undefined,
       });
@@ -67,7 +67,9 @@ export default function CarModal({
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value === '' ? undefined : (name === 'year' || name === 'odoKm' || name === 'avgKmPerMonth' ? Number(value) : value)
+      [name]: value === '' ? undefined : 
+              name === 'inspectionExpiry' ? new Date(value) :
+              (name === 'year' || name === 'odoKm' || name === 'avgKmPerMonth' ? Number(value) : value)
     }));
   };
 
@@ -225,7 +227,8 @@ export default function CarModal({
                   <input
                     type="date"
                     name="inspectionExpiry"
-                    value={formData.inspectionExpiry || ''}
+                    value={formData.inspectionExpiry instanceof Date ? 
+                          formData.inspectionExpiry.toISOString().split('T')[0] : ''}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />

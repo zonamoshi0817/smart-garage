@@ -13,7 +13,7 @@ export interface Car extends BaseEntity {
   year?: number;
   odoKm?: number;
   imagePath?: string;
-  inspectionExpiry?: string;
+  inspectionExpiry?: Date; // 車検期限（Timestamp → Date変換済み）
   firstRegYm?: string;
   avgKmPerMonth?: number;
 }
@@ -24,7 +24,7 @@ export interface CarInput {
   year?: number;
   odoKm?: number;
   imagePath?: string;
-  inspectionExpiry?: string;
+  inspectionExpiry?: Date; // 車検期限（Date型で入力）
   firstRegYm?: string;
   avgKmPerMonth?: number;
 }
