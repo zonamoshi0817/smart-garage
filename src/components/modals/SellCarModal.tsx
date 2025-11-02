@@ -103,7 +103,7 @@ export default function SellCarModal({ car, onClose, onSave }: SellCarModalProps
                 onChange={(e) => setSoldPrice(e.target.value)}
                 placeholder="例: 1500000"
                 min="0"
-                step="10000"
+                step="1"
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900 font-medium placeholder:text-gray-400 placeholder:font-normal"
               />
             </div>
