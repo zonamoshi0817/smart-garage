@@ -2,12 +2,21 @@
 "use client";
 
 /**
- * エクスポートデータの署名トークン生成と検証
+ * @deprecated このファイルは非推奨です
  * 
- * 目的:
- * - 共有URLの改ざん防止
- * - PDFエクスポートの真正性保証
- * - データの出所証明
+ * 問題点:
+ * - クライアントサイドでHMAC秘密鍵を保持できない
+ * - 署名の真正性が保証できない
+ * - セキュリティリスク
+ * 
+ * 移行先:
+ * - src/lib/cloudFunctions.ts を使用
+ * - generatePdfExportToken()
+ * - generateShareTokenSecure()
+ * - verifyShareTokenSecure()
+ * 
+ * このファイルは後方互換性のためのみ保持
+ * 新規実装では cloudFunctions.ts を使用してください
  */
 
 /**
@@ -18,6 +27,7 @@
 /**
  * 署名シークレット
  * ⚠️ 本番環境では環境変数または Firebase Functions で管理
+ * ⚠️ このクライアントサイド実装は非推奨
  */
 const SIGNATURE_SECRET = process.env.NEXT_PUBLIC_SIGNATURE_SECRET || 'smart-garage-default-secret-key';
 

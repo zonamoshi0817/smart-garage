@@ -8,7 +8,7 @@ import { Car } from './cars';
 import { MaintenanceRecord } from './maintenance';
 import { generateCombinedProof, ProofData } from './proof';
 import { logPdfExported, logShareLinkCreated } from './analytics';
-import { generatePdfSignature, generateShareToken, shortenSignature } from './signatureToken';
+import { generatePdfExportToken, generateShareTokenSecure } from './cloudFunctions';
 
 // 日本語フォントの設定
 declare module 'jspdf' {
@@ -42,9 +42,23 @@ export async function generateMaintenancePDF(options: PDFExportOptions): Promise
   // 証明性データを生成
   const proof = await generateCombinedProof(car, filteredRecords);
   
-  // PDF署名を生成
+  // Cloud Functionsで署名付きトークンを生成
   const recordIds = filteredRecords.map(r => r.id || '').filter(Boolean);
-  const pdfSignature = await generatePdfSignature(car.id || '', recordIds);
+  const tokenResponse = await generatePdfExportToken({
+    carId: car.id || '',
+    recordIds,
+    options: { includeImages, dateRange }
+  });
+  
+  const pdfSignature = {
+    signature: tokenResponse.token.substring(0, 16), // 短縮トークン（互換性）
+    metadata: {
+      carId: car.id || '',
+      recordIds,
+      timestamp: Date.now(),
+      version: '2.0-jwt'
+    }
+  };
 
   // HTMLコンテンツを生成
   const htmlContent = generateHTMLContent(car, filteredRecords, proof, pdfSignature);
@@ -377,24 +391,18 @@ export async function downloadMaintenancePDF(options: PDFExportOptions): Promise
 }
 
 export async function generateMaintenanceURL(car: Car, maintenanceRecords: MaintenanceRecord[]): Promise<string> {
-  // 簡単なURL共有機能（実際の実装では、サーバーサイドでデータを保存してURLを生成）
-  const data = {
-    car,
-    records: maintenanceRecords,
-    generatedAt: new Date().toISOString()
-  };
-  
-  // 署名トークンを生成
-  const { token } = await generateShareToken(car.id || '', Date.now(), 30 * 24 * 60 * 60 * 1000); // 30日有効
-  
-  // Base64エンコードしてURLパラメータに含める（簡易実装）
-  const encodedData = btoa(JSON.stringify(data));
+  // Cloud Functionsで署名付きトークンを生成
+  const tokenResponse = await generateShareTokenSecure({
+    carId: car.id || '',
+    scope: 'share:vehicle-history',
+    expiresInDays: 30
+  });
   
   // アナリティクスイベントを記録
   if (car.id) {
     logShareLinkCreated(car.id);
   }
   
-  // 署名トークン付きURLを返す
-  return `${window.location.origin}/share?data=${encodedData}&token=${token}`;
+  // Cloud Functions発行のセキュアなURLを返す
+  return tokenResponse.shareUrl;
 }

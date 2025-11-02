@@ -55,7 +55,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Firebase設定
 
-### Firestoreインデックスのデプロイ
+### 1. Firestoreインデックスのデプロイ
 
 ```bash
 # Firebase CLIにログイン
@@ -68,11 +68,42 @@ firebase deploy --only firestore:indexes
 firebase deploy --only firestore:rules,storage:rules
 ```
 
+### 2. Cloud Functionsのセットアップ
+
+```bash
+# functionsディレクトリに移動
+cd functions
+
+# 依存関係をインストール
+npm install
+
+# ビルド
+npm run build
+
+# Cloud Functionsをデプロイ
+cd ..
+firebase deploy --only functions
+```
+
+### 環境変数の設定（Cloud Functions）
+
+```bash
+# JWT秘密鍵を設定（本番環境で必須）
+firebase functions:config:set jwt.secret="your-super-secret-key-change-this"
+
+# アプリURLを設定
+firebase functions:config:set app.url="https://your-app.web.app"
+
+# 設定を確認
+firebase functions:config:get
+```
+
 ### 必要なFirebase機能
 
 - Authentication（認証）
 - Firestore Database（データベース）
 - Storage（画像保存）
+- **Cloud Functions**（署名・共有URL生成）
 - Analytics（オプション）
 
 ## プレミアム機能のテスト
