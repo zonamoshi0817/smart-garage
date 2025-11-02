@@ -312,35 +312,48 @@ export interface FieldMetadata {
   editedByUser?: boolean;      // ユーザー編集済みフラグ
 }
 
-// 給油ログ関連の型
+// 給油ログ関連の型（物理量統一版）
 export type FuelType = 'regular' | 'premium' | 'diesel' | 'ev';
+export type EnergyUnit = 'ml' | 'wh';  // ミリリットル（ガソリン）or ワット時（EV）
 
 export interface FuelLog extends BaseEntity {
   carId: string;
   odoKm: number;
-  fuelAmount: number; // 給油量（L）
-  cost: number; // 金額（¥）
-  pricePerLiter?: number; // L価格（¥/L）
-  isFullTank: boolean; // 満タンかどうか
-  fuelType?: FuelType; // 燃料種別
-  stationName?: string; // スタンド名
-  unit: string; // 単位（デフォルト: 'JPY/L'、将来の外貨対応）
+  
+  // 【物理量統一】EVとガソリンを共通化
+  quantity: number;           // 物理量（ml or Wh の整数）
+  unit: EnergyUnit;           // 単位（ml or wh）
+  totalCostJpy: number;       // 総額（円）
+  pricePerUnit?: number;      // 単価（¥/L or ¥/kWh、表示用）
+  
+  // メタデータ
+  isFullTank: boolean;        // 満タンかどうか（EVの場合は100%充電）
+  fuelType: FuelType;         // 燃料種別（regular/premium/diesel/ev）
+  stationName?: string;       // スタンド/充電スポット名
   memo?: string;
-  date: Timestamp;        // 給油日時（Timestamp統一）
+  date: Timestamp;            // 給油/充電日時
+  
+  // 【後方互換性】旧フィールド（非推奨、将来削除）
+  fuelAmount?: number;        // @deprecated quantity/unitを使用
+  cost?: number;              // @deprecated totalCostJpyを使用
+  pricePerLiter?: number;     // @deprecated pricePerUnitを使用
 }
 
 export interface FuelLogInput {
   carId: string;
   odoKm: number;
-  fuelAmount: number;
-  cost: number;
-  pricePerLiter?: number; // L価格（¥/L）
+  
+  // 物理量統一
+  quantity: number;
+  unit: EnergyUnit;
+  totalCostJpy: number;
+  pricePerUnit?: number;
+  
   isFullTank: boolean;
-  fuelType?: FuelType; // 燃料種別
-  stationName?: string; // スタンド名
-  unit?: string; // 単位（デフォルト: 'JPY/L'）
+  fuelType: FuelType;
+  stationName?: string;
   memo?: string;
-  date: Timestamp;        // 給油日時（Timestamp型で保存）
+  date: Timestamp;
 }
 
 /**
@@ -350,11 +363,12 @@ export interface FuelLogInput {
 export interface FuelLogDraft extends BaseEntity {
   carId: string;
   
-  // フィールド値
+  // フィールド値（物理量統一）
   odoKm?: number;
-  fuelAmount?: number;
-  cost?: number;
-  pricePerLiter?: number;
+  quantity?: number;          // 物理量（ml or Wh）
+  unit?: EnergyUnit;          // ml or wh
+  totalCostJpy?: number;      // 総額
+  pricePerUnit?: number;      // 単価
   isFullTank?: boolean;
   fuelType?: FuelType;
   stationName?: string;
@@ -363,9 +377,9 @@ export interface FuelLogDraft extends BaseEntity {
   // フィールドメタデータ（信頼度・ソース情報）
   fieldMetadata: {
     odoKm?: FieldMetadata;
-    fuelAmount?: FieldMetadata;
-    cost?: FieldMetadata;
-    pricePerLiter?: FieldMetadata;
+    quantity?: FieldMetadata;
+    totalCostJpy?: FieldMetadata;
+    pricePerUnit?: FieldMetadata;
     fuelType?: FieldMetadata;
     stationName?: FieldMetadata;
     date?: FieldMetadata;
