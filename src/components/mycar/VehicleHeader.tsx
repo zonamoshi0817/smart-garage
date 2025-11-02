@@ -11,7 +11,6 @@ interface VehicleHeaderProps {
   car: Car;
   latestMaintenance?: MaintenanceRecord;
   activeInsurance?: InsurancePolicy;
-  isPremium: boolean;
   onImageChange: () => void;
 }
 
@@ -19,7 +18,6 @@ export default function VehicleHeader({
   car, 
   latestMaintenance, 
   activeInsurance,
-  isPremium,
   onImageChange 
 }: VehicleHeaderProps) {
   const [imageError, setImageError] = useState(false);

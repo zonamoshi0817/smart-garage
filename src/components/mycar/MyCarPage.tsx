@@ -107,7 +107,6 @@ export default function MyCarPage({
           car={car}
           latestMaintenance={latestMaintenance}
           activeInsurance={activeInsurance}
-          isPremium={isPremium}
           onImageChange={handleImageChange}
         />
         
