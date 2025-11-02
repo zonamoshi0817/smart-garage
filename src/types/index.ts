@@ -84,6 +84,37 @@ export interface MaintenanceInput {
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
 }
 
+/**
+ * メンテナンスOCRドラフト
+ * OCR結果を一時保存し、ユーザー確認後に正式保存
+ */
+export interface MaintenanceDraft extends BaseEntity {
+  carId: string;
+  
+  // フィールド値
+  title?: string;
+  description?: string;
+  cost?: number;
+  mileage?: number;
+  date?: Timestamp;
+  location?: string;
+  
+  // フィールドメタデータ（信頼度・ソース情報）
+  fieldMetadata: {
+    title?: FieldMetadata;
+    description?: FieldMetadata;
+    cost?: FieldMetadata;
+    mileage?: FieldMetadata;
+    date?: FieldMetadata;
+    location?: FieldMetadata;
+  };
+  
+  // ドラフト状態
+  status: 'pending_review' | 'confirmed' | 'rejected';
+  ocrRawText?: string;           // OCR元テキスト（デバッグ用）
+  confirmedAt?: Timestamp;       // 確定日時
+}
+
 // 保険関連の型（簡素化版 - OCR勝ち筋フィールド重視）
 export interface InsurancePolicy extends BaseEntity {
   // 【必須フィールド】
@@ -189,6 +220,37 @@ export interface InsurancePolicy extends BaseEntity {
   documentUrl?: string;                // 証券PDF/画像のURL
 }
 
+/**
+ * 保険証券OCRドラフト
+ * OCR結果を一時保存し、ユーザー確認後に正式保存
+ */
+export interface InsurancePolicyDraft extends BaseEntity {
+  carId: string;
+  
+  // 勝ち筋フィールド値
+  provider?: string;
+  policyNumber?: string;
+  startDate?: Timestamp;
+  endDate?: Timestamp;
+  noClaimGrade?: number;
+  premiumAmount?: number;
+  
+  // フィールドメタデータ（信頼度・ソース情報）
+  fieldMetadata: {
+    provider?: FieldMetadata;
+    policyNumber?: FieldMetadata;
+    startDate?: FieldMetadata;
+    endDate?: FieldMetadata;
+    noClaimGrade?: FieldMetadata;
+    premiumAmount?: FieldMetadata;
+  };
+  
+  // ドラフト状態
+  status: 'pending_review' | 'confirmed' | 'rejected';
+  ocrRawText?: string;           // OCR元テキスト（デバッグ用）
+  confirmedAt?: Timestamp;       // 確定日時
+}
+
 export interface InsuranceClaim extends BaseEntity {
   policyId: string;
   carId: string;
@@ -240,6 +302,16 @@ export interface ModalProps {
   onClose: () => void;
 }
 
+// OCRドラフト関連の型
+export type FieldSource = 'ocr' | 'rule' | 'user' | 'llm';
+
+export interface FieldMetadata {
+  source: FieldSource;         // データソース
+  confidence?: number;         // 信頼度（0-1）
+  originalValue?: string;      // OCR元テキスト
+  editedByUser?: boolean;      // ユーザー編集済みフラグ
+}
+
 // 給油ログ関連の型
 export type FuelType = 'regular' | 'premium' | 'diesel' | 'ev';
 
@@ -269,6 +341,41 @@ export interface FuelLogInput {
   unit?: string; // 単位（デフォルト: 'JPY/L'）
   memo?: string;
   date: Timestamp;        // 給油日時（Timestamp型で保存）
+}
+
+/**
+ * 給油ログOCRドラフト
+ * レシートOCR結果を一時保存し、ユーザー確認後に正式保存
+ */
+export interface FuelLogDraft extends BaseEntity {
+  carId: string;
+  
+  // フィールド値
+  odoKm?: number;
+  fuelAmount?: number;
+  cost?: number;
+  pricePerLiter?: number;
+  isFullTank?: boolean;
+  fuelType?: FuelType;
+  stationName?: string;
+  date?: Timestamp;
+  
+  // フィールドメタデータ（信頼度・ソース情報）
+  fieldMetadata: {
+    odoKm?: FieldMetadata;
+    fuelAmount?: FieldMetadata;
+    cost?: FieldMetadata;
+    pricePerLiter?: FieldMetadata;
+    fuelType?: FieldMetadata;
+    stationName?: FieldMetadata;
+    date?: FieldMetadata;
+  };
+  
+  // ドラフト状態
+  status: 'pending_review' | 'confirmed' | 'rejected';
+  ocrRawText?: string;           // OCR元テキスト（デバッグ用）
+  receiptImageUrl?: string;      // レシート画像URL
+  confirmedAt?: Timestamp;       // 確定日時
 }
 
 // カスタマイズ関連の型
