@@ -396,9 +396,15 @@ export default function Home() {
     });
   }, [auth.currentUser, activeCarId, authTrigger]);
 
+  // 現在保有中の車両のみ（売却済み・廃車済みを除外）
+  const activeCars = useMemo(
+    () => cars.filter((c) => !c.status || c.status === 'active'),
+    [cars]
+  );
+
   const car = useMemo(
-    () => cars.find((c) => c.id === activeCarId),
-    [cars, activeCarId]
+    () => activeCars.find((c) => c.id === activeCarId),
+    [activeCars, activeCarId]
   );
 
 
@@ -617,8 +623,8 @@ export default function Home() {
                 setActiveCarId={setActiveCarId}
               />
             ) : currentPage === 'my-car' ? (
-              // 新しいマイカーページ
-              car ? (
+              // 新しいマイカーページ（売却済み・廃車済み車両は表示しない）
+              car && (!car.status || car.status === 'active') ? (
                 <MyCarPage
                   car={car}
                   maintenanceRecords={maintenanceRecords}
@@ -650,9 +656,20 @@ export default function Home() {
                     }
                   }}
                 />
+              ) : activeCars.length === 0 ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+                  <p className="text-gray-500 mb-4">現在保有中の車両がありません</p>
+                  <button
+                    onClick={() => setShowAddCarModal(true)}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    車両を追加
+                  </button>
+                </div>
               ) : (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
                   <p className="text-gray-500 mb-4">車両を選択してください</p>
+                  <p className="text-xs text-gray-400 mb-4">右上のドロップダウンから車両を選択できます</p>
                   <button
                     onClick={() => setShowAddCarModal(true)}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
