@@ -22,7 +22,7 @@ export interface InsurancePolicy {
   carId: string; // 車両ID
   startDate: Date;
   endDate: Date; // 満期日
-  paymentCycle: 'annual' | 'monthly';
+  paymentCycle: 'annual' | 'monthly' | 'installment';
   premiumAmount: number; // 保険料（税込円）
   coverages: {
     bodilyInjury: { limit: string }; // 対人無制限等

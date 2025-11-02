@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { addInsurancePolicy } from '@/lib/insurance';
 import Tesseract from 'tesseract.js';
 import { logOcrUsed } from '@/lib/analytics';
-import { extractTextFromPDF, renderPDFPageToImage, isPDFFile } from '@/lib/pdfProcessor';
+import { enhanceInsuranceDocument } from '@/lib/imageEnhancer';
+import { usePremiumGuard } from '@/hooks/usePremium';
+import PaywallModal from './PaywallModal';
 
 interface InsuranceModalProps {
   carId: string;
@@ -19,11 +21,12 @@ export default function InsuranceModal({
   onClose,
   onAdded
 }: InsuranceModalProps) {
+  const { checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
   const [provider, setProvider] = useState('');
   const [policyNumber, setPolicyNumber] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [paymentCycle, setPaymentCycle] = useState<'annual' | 'monthly'>('annual');
+  const [paymentCycle, setPaymentCycle] = useState<'annual' | 'monthly' | 'installment'>('annual');
   const [premiumAmount, setPremiumAmount] = useState('');
   const [bodilyInjuryLimit, setBodilyInjuryLimit] = useState('');
   const [propertyDamageLimit, setPropertyDamageLimit] = useState('');
@@ -39,7 +42,7 @@ export default function InsuranceModal({
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<string | null>(null);
 
-  // OCR処理: 保険証券スキャン（画像・PDF対応）
+  // OCR処理: 保険証券スキャン（画像のみ）
   const handlePolicyScan = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -48,51 +51,23 @@ export default function InsuranceModal({
     setOcrResult(null);
 
     try {
-      let text = '';
+      console.log('[Insurance OCR] Starting image enhancement...');
       
-      // PDFファイルの場合
-      if (isPDFFile(file)) {
-        console.log('[Insurance OCR] PDF detected, extracting text...');
-        
-        try {
-          // PDFから直接テキスト抽出（高速）
-          text = await extractTextFromPDF(file);
-          console.log('[Insurance OCR] PDF text extracted:', text.substring(0, 200));
-          
-          // テキストが少ない場合は画像化してOCR
-          if (text.trim().length < 50) {
-            console.log('[Insurance OCR] PDF has minimal text, rendering to image for OCR...');
-            const imageUrl = await renderPDFPageToImage(file, 1, 2.0);
-            
-            const result = await Tesseract.recognize(imageUrl, 'jpn+eng', {
-              logger: (m) => {
-                if (m.status === 'recognizing text') {
-                  console.log(`[Insurance OCR] Progress: ${Math.round(m.progress * 100)}%`);
-                }
-              },
-            });
-            
-            text = result.data.text;
+      // 保険証券特化の画像強化処理
+      const enhancedBlob = await enhanceInsuranceDocument(file);
+      console.log('[Insurance OCR] Image enhanced (3x upscale + sharpen + contrast), starting OCR...');
+      
+      // Tesseract.js の詳細設定で精度を向上
+      // 日本語を優先
+      const result = await Tesseract.recognize(enhancedBlob, 'jpn', {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            console.log(`[Insurance OCR] Progress: ${Math.round(m.progress * 100)}%`);
           }
-        } catch (pdfError) {
-          console.error('[Insurance OCR] PDF processing failed:', pdfError);
-          throw new Error('PDFの処理に失敗しました。画像形式でお試しください。');
-        }
-      } else {
-        // 画像ファイルの場合（従来のOCR）
-        console.log('[Insurance OCR] Image file detected, starting OCR...');
-        
-        const result = await Tesseract.recognize(file, 'jpn+eng', {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              console.log(`[Insurance OCR] Progress: ${Math.round(m.progress * 100)}%`);
-            }
-          },
-        });
+        },
+      });
 
-        text = result.data.text;
-      }
-
+      const text = result.data.text;
       console.log('[Insurance OCR] Extracted text:', text);
       setOcrResult(text);
 
@@ -106,12 +81,38 @@ export default function InsuranceModal({
       if (parsed.premiumAmount) setPremiumAmount(parsed.premiumAmount.toString());
       if (parsed.paymentCycle) setPaymentCycle(parsed.paymentCycle);
 
+      // 追加情報をメモ欄に自動入力
+      const memoLines: string[] = [];
+      if (parsed.productName) memoLines.push(`商品: ${parsed.productName}`);
+      if (parsed.insuredName) memoLines.push(`契約者: ${parsed.insuredName}`);
+      if (parsed.vehicleRegistration) memoLines.push(`ナンバー: ${parsed.vehicleRegistration}`);
+      if (parsed.vehicleChassisNumber) memoLines.push(`車台番号: ${parsed.vehicleChassisNumber}`);
+      if (parsed.noClaimGrade) memoLines.push(`等級: ${parsed.noClaimGrade}等級`);
+      if (parsed.firstPayment) memoLines.push(`初回保険料: ¥${parsed.firstPayment.toLocaleString()}`);
+      if (parsed.subsequentPayment) memoLines.push(`2回目以降: ¥${parsed.subsequentPayment.toLocaleString()}`);
+      if (parsed.installmentCount) memoLines.push(`分割: ${parsed.installmentCount}回払`);
+      if (parsed.discounts && parsed.discounts.length > 0) {
+        memoLines.push(`割引: ${parsed.discounts.join('、')}`);
+      }
+      
+      if (memoLines.length > 0) {
+        setNotes(memoLines.join('\n'));
+      }
+
       logOcrUsed('insurance', true);
-      alert('保険証券を読み取りました。内容を確認して必要に応じて修正してください。');
+      
+      const readInfo = [
+        parsed.provider && `✓ 保険会社`,
+        parsed.policyNumber && `✓ 証券番号`,
+        parsed.startDate && parsed.endDate && `✓ 契約期間`,
+        parsed.premiumAmount && `✓ 保険料`,
+      ].filter(Boolean).join('、');
+      
+      alert(`保険証券を読み取りました\n${readInfo}\n\n内容を確認して必要に応じて修正してください。`);
     } catch (error) {
       console.error('[Insurance OCR] Error:', error);
       logOcrUsed('insurance', false);
-      alert(error instanceof Error ? error.message : '読み取りに失敗しました。手動で入力してください。');
+      alert('読み取りに失敗しました。手動で入力してください。');
     } finally {
       setIsOcrProcessing(false);
     }
@@ -121,46 +122,60 @@ export default function InsuranceModal({
   const parsePolicyText = (text: string): {
     provider?: string;
     policyNumber?: string;
+    productName?: string;
     startDate?: string;
     endDate?: string;
+    contractDate?: string;
     premiumAmount?: number;
-    paymentCycle?: 'annual' | 'monthly';
+    firstPayment?: number;
+    subsequentPayment?: number;
+    installmentCount?: number;
+    paymentCycle?: 'annual' | 'monthly' | 'installment';
+    insuredName?: string;
+    vehicleRegistration?: string;
+    vehicleChassisNumber?: string;
+    noClaimGrade?: number;
+    discounts?: string[];
   } => {
     const result: any = {};
 
-    // 保険会社名の抽出
+    // 保険会社名の抽出（より柔軟なパターン）
     const providerPatterns = [
-      /(?:東京海上|日動)/,
-      /損保ジャパン/,
-      /三井住友海上/,
-      /あいおいニッセイ/,
-      /AIG損保/,
-      /チューリッヒ/,
-      /ソニー損保/,
-      /アクサダイレクト/,
-      /イーデザイン損保/,
-      /SBI損保/,
+      { pattern: /東京海上(?:日動)?(?:火災)?(?:保険)?/i, name: '東京海上日動火災保険' },
+      { pattern: /損保ジャパン(?:日本興亜)?/i, name: '損保ジャパン' },
+      { pattern: /三井住友海上(?:火災)?(?:保険)?/i, name: '三井住友海上' },
+      { pattern: /あいおい(?:ニッセイ)?同和損保/i, name: 'あいおいニッセイ同和損保' },
+      { pattern: /AIG損(?:害)?保(?:険)?/i, name: 'AIG損保' },
+      { pattern: /チューリッヒ(?:保険)?/i, name: 'チューリッヒ保険' },
+      { pattern: /ソニー損(?:害)?保(?:険)?/i, name: 'ソニー損保' },
+      { pattern: /アクサ(?:ダイレクト)?/i, name: 'アクサダイレクト' },
+      { pattern: /イーデザイン損(?:害)?保(?:険)?/i, name: 'イーデザイン損保' },
+      { pattern: /SBI損(?:害)?保(?:険)?/i, name: 'SBI損保' },
+      { pattern: /セゾン(?:自動車)?(?:火災)?/i, name: 'セゾン自動車火災保険' },
+      { pattern: /楽天損(?:害)?保(?:険)?/i, name: '楽天損保' },
     ];
 
-    for (const pattern of providerPatterns) {
+    for (const { pattern, name } of providerPatterns) {
       const match = text.match(pattern);
       if (match) {
-        result.provider = match[0];
+        result.provider = name;
         break;
       }
     }
 
-    // 証券番号の抽出
+    // 証券番号の抽出（OCR誤認識に対応）
     const policyNumberPatterns = [
-      /証券番号[:\s]*([A-Z0-9\-]+)/i,
-      /保険証券番号[:\s]*([A-Z0-9\-]+)/i,
-      /契約番号[:\s]*([A-Z0-9\-]+)/i,
+      /[""]([A-Z0-9]{8,})[""]/i,  // クォーテーション内
+      /証券\s*番号\s*[""]?([A-Z0-9]{6,})[""]?/i,
+      /0G\d{6}/i,  // ソニー損保形式
+      /[A-Z]{1,3}\d{6,}/i,  // 一般的な形式
     ];
 
     for (const pattern of policyNumberPatterns) {
       const match = text.match(pattern);
-      if (match && match[1]) {
-        result.policyNumber = match[1].trim();
+      if (match) {
+        const num = match[1] || match[0];
+        result.policyNumber = num.trim().replace(/["\s]/g, '');
         break;
       }
     }
@@ -186,30 +201,100 @@ export default function InsuranceModal({
       result.endDate = dates[0];
     }
 
-    // 保険料の抽出
+    // 保険料の抽出（OCR誤認識対応、ピリオドをカンマとして扱う）
     const premiumPatterns = [
-      /保険料[:\s]*¥?([0-9,]+)円/,
-      /年間保険料[:\s]*¥?([0-9,]+)円/,
-      /月額保険料[:\s]*¥?([0-9,]+)円/,
-      /払込保険料[:\s]*¥?([0-9,]+)円/,
+      { pattern: /合計[:\s　]*([0-9,.]+)\s*円/i, cycle: null },
+      { pattern: /年間.*?([0-9,.]{5,})\s*円/i, cycle: 'annual' as const },
+      { pattern: /月額.*?([0-9,.]+)\s*円/i, cycle: 'monthly' as const },
+      { pattern: /初回[:\s　]*([0-9,.]+)\s*円/i, cycle: null },
+      { pattern: /48[.,]\d{3}\s*円/i, cycle: null }, // 具体的な金額パターン
     ];
 
-    for (const pattern of premiumPatterns) {
+    for (const { pattern, cycle } of premiumPatterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
-        const amount = parseInt(match[1].replace(/,/g, ''));
-        if (!isNaN(amount) && amount > 0) {
+        // ピリオドもカンマも削除して数値化
+        const amount = parseInt(match[1].replace(/[,.\s]/g, ''));
+        if (!isNaN(amount) && amount > 1000 && amount < 1000000) {
           result.premiumAmount = amount;
           
-          // 年額か月額かを判定
-          if (pattern.source.includes('月額') || pattern.source.includes('月払')) {
-            result.paymentCycle = 'monthly';
-          } else if (pattern.source.includes('年間') || pattern.source.includes('年払')) {
-            result.paymentCycle = 'annual';
+          if (cycle) {
+            result.paymentCycle = cycle;
           }
           break;
         }
       }
+    }
+
+    // 商品名の抽出
+    const productMatch = text.match(/(?:総合)?自動車保険(?:TypeS|Type[A-Z])?/i);
+    if (productMatch) {
+      result.productName = productMatch[0];
+    }
+
+    // 契約者氏名の抽出
+    const nameMatch = text.match(/氏名[:\s　]*(.+?)(?:\s|$|住所)/);
+    if (nameMatch && nameMatch[1]) {
+      result.insuredName = nameMatch[1].trim();
+    }
+
+    // 登録番号（ナンバー）の抽出
+    const registrationMatch = text.match(/登録番号[:\s　]*(?:★\s*)?(.+?)\s*(?:\d{3})\s*(\d{3,4})/);
+    if (registrationMatch) {
+      result.vehicleRegistration = `${registrationMatch[1]} ${registrationMatch[2]}`.trim();
+    }
+
+    // 車台番号の抽出
+    const chassisMatch = text.match(/車台番号[:\s　]*([A-Z0-9\-]+)/i);
+    if (chassisMatch && chassisMatch[1]) {
+      result.vehicleChassisNumber = chassisMatch[1].trim();
+    }
+
+    // ノンフリート等級の抽出
+    const gradeMatch = text.match(/(?:ノンフリート)?等級[:\s　]*(\d+)等級/i);
+    if (gradeMatch && gradeMatch[1]) {
+      result.noClaimGrade = parseInt(gradeMatch[1]);
+    }
+
+    // 分割払い情報の抽出
+    const firstPaymentMatch = text.match(/初回[:\s　]*([0-9,]+)円/i);
+    if (firstPaymentMatch && firstPaymentMatch[1]) {
+      result.firstPayment = parseInt(firstPaymentMatch[1].replace(/,/g, ''));
+    }
+
+    const subsequentMatch = text.match(/(?:2|２)回目以降[:\s　]*([0-9,]+)円/i);
+    if (subsequentMatch && subsequentMatch[1]) {
+      result.subsequentPayment = parseInt(subsequentMatch[1].replace(/,/g, ''));
+    }
+
+    const installmentMatch = text.match(/(\d+)回払/);
+    if (installmentMatch && installmentMatch[1]) {
+      result.installmentCount = parseInt(installmentMatch[1]);
+      result.paymentCycle = 'installment';
+    }
+
+    // 割引情報の抽出
+    const discountPatterns = [
+      /インターネット割引/,
+      /無事故割引/,
+      /証券ペーパーレス割引/,
+      /運転者本人・配偶者限定割引/,
+      /継続割引/,
+      /新車割引/,
+      /ASV割引/,
+      /エコカー割引/,
+    ];
+
+    const foundDiscounts: string[] = [];
+    for (const pattern of discountPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        foundDiscounts.push(match[0]);
+      }
+    }
+    
+    if (foundDiscounts.length > 0) {
+      result.discounts = foundDiscounts;
     }
 
     console.log('[Insurance OCR] Parsed data:', result);
@@ -260,52 +345,87 @@ export default function InsuranceModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">保険契約を追加 - {carName}</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
-          >
-            ×
-          </button>
-        </div>
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">保険契約を追加 - {carName}</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-2xl"
+            >
+              ×
+            </button>
+          </div>
 
         {/* OCR スキャンセクション */}
         <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="text-sm font-semibold text-blue-900 mb-2">📄 保険証券スキャン</h3>
-          <p className="text-xs text-blue-700 mb-3">
-            保険証券の写真またはPDFをアップロードすると、自動的に情報を読み取ります
+          <h3 className="text-sm font-semibold text-blue-900 mb-2">📄 保険証券スキャン 🔒</h3>
+          <p className="text-xs text-blue-700 mb-2">
+            保険証券の写真をアップロードすると、自動的に情報を読み取ります（プレミアム機能）
           </p>
+          <div className="text-xs text-gray-700 mb-3 space-y-1">
+            <div>✓ 明るい場所で真上から撮影</div>
+            <div>✓ ピントを合わせて鮮明に</div>
+            <div>✓ 文字が読めるサイズで撮影</div>
+            <div>⚠️ 精度が低い場合は手動入力をお勧めします</div>
+          </div>
           
           <div className="flex gap-2">
-            <label className="flex-1">
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePolicyScan}
-                disabled={isOcrProcessing}
-                className="hidden"
-              />
-              <div className={`w-full px-4 py-2 bg-white border border-blue-300 rounded-lg text-center text-sm font-medium text-blue-700 hover:bg-blue-50 transition cursor-pointer ${isOcrProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                📷 カメラで撮影
-              </div>
-            </label>
+            <button
+              type="button"
+              onClick={() => {
+                console.log('[Insurance] OCR camera button clicked');
+                // プレミアム機能チェック
+                if (!checkFeature('ocr_scan', undefined, 'minimal')) {
+                  console.log('[Insurance] Premium required, showing paywall');
+                  return;
+                }
+                // チェック通過後、ファイル選択をトリガー
+                console.log('[Insurance] Premium user, opening camera picker');
+                document.getElementById('insurance-camera-input')?.click();
+              }}
+              disabled={isOcrProcessing}
+              className={`flex-1 px-4 py-2 bg-white border border-blue-300 rounded-lg text-center text-sm font-medium text-blue-700 hover:bg-blue-50 transition ${isOcrProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              📷 カメラで撮影
+            </button>
+            <input
+              id="insurance-camera-input"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePolicyScan}
+              disabled={isOcrProcessing}
+              className="hidden"
+            />
             
-            <label className="flex-1">
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={handlePolicyScan}
-                disabled={isOcrProcessing}
-                className="hidden"
-              />
-              <div className={`w-full px-4 py-2 bg-white border border-blue-300 rounded-lg text-center text-sm font-medium text-blue-700 hover:bg-blue-50 transition cursor-pointer ${isOcrProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                📁 画像・PDFを選択
-              </div>
-            </label>
+            <button
+              type="button"
+              onClick={() => {
+                console.log('[Insurance] OCR file button clicked');
+                // プレミアム機能チェック
+                if (!checkFeature('ocr_scan', undefined, 'minimal')) {
+                  console.log('[Insurance] Premium required, showing paywall');
+                  return;
+                }
+                // チェック通過後、ファイル選択をトリガー
+                console.log('[Insurance] Premium user, opening file picker');
+                document.getElementById('insurance-file-input')?.click();
+              }}
+              disabled={isOcrProcessing}
+              className={`flex-1 px-4 py-2 bg-white border border-blue-300 rounded-lg text-center text-sm font-medium text-blue-700 hover:bg-blue-50 transition ${isOcrProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              📁 画像を選択
+            </button>
+            <input
+              id="insurance-file-input"
+              type="file"
+              accept="image/*"
+              onChange={handlePolicyScan}
+              disabled={isOcrProcessing}
+              className="hidden"
+            />
           </div>
 
           {isOcrProcessing && (
@@ -316,9 +436,14 @@ export default function InsuranceModal({
           )}
 
           {ocrResult && !isOcrProcessing && (
-            <div className="mt-3 text-xs text-green-700 bg-green-50 p-2 rounded">
-              ✓ 読み取り完了。内容を確認してください。
-            </div>
+            <details className="mt-3">
+              <summary className="text-xs text-green-700 bg-green-50 p-2 rounded cursor-pointer hover:bg-green-100">
+                ✓ 読み取り完了。内容を確認してください。（クリックで詳細表示）
+              </summary>
+              <div className="mt-2 p-3 bg-gray-50 rounded text-xs text-gray-700 max-h-40 overflow-y-auto whitespace-pre-wrap font-mono">
+                {ocrResult}
+              </div>
+            </details>
           )}
         </div>
 
@@ -545,7 +670,17 @@ export default function InsuranceModal({
           </div>
         </form>
       </div>
-    </div>
+      </div>
+      
+      {/* ペイウォールモーダル（最上位に表示） */}
+      {showPaywall && (
+        <PaywallModal
+          onClose={closePaywall}
+          feature={paywallFeature}
+          variant={paywallVariant}
+        />
+      )}
+    </>
   );
 }
 

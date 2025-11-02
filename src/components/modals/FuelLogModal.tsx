@@ -7,6 +7,8 @@ import type { Car, FuelLog } from "@/types";
 import type { ModalProps } from "@/types";
 import Tesseract from 'tesseract.js';
 import { logOcrUsed, logFuelCreated } from '@/lib/analytics';
+import { usePremiumGuard } from '@/hooks/usePremium';
+import PaywallModal from './PaywallModal';
 
 interface FuelLogModalProps extends ModalProps {
   car: Car;
@@ -15,6 +17,7 @@ interface FuelLogModalProps extends ModalProps {
 }
 
 export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onSuccess }: FuelLogModalProps) {
+  const { checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
   const [formData, setFormData] = useState({
     meterType: "odo" as "odo" | "trip",
     odoKm: (car.odoKm || 0).toString(),
@@ -347,7 +350,8 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -380,9 +384,30 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-blue-900 mb-1">レシートから自動入力</h4>
-                    <p className="text-xs text-blue-700 mb-3">給油レシートの写真から給油量・金額を自動で読み取ります</p>
-                    <label className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">レシートから自動入力 🔒</h4>
+                    <p className="text-xs text-blue-700 mb-3">給油レシートの写真から給油量・金額を自動で読み取ります（プレミアム機能）</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        console.log('[FuelLog] OCR button clicked');
+                        console.log('[FuelLog] Checking premium feature...');
+                        
+                        // プレミアム機能チェック
+                        const canUse = checkFeature('ocr_scan', undefined, 'minimal');
+                        console.log('[FuelLog] Can use OCR:', canUse);
+                        
+                        if (!canUse) {
+                          console.log('[FuelLog] Premium required, showing paywall');
+                          return;
+                        }
+                        
+                        // チェック通過後、ファイル選択をトリガー
+                        console.log('[FuelLog] Premium user, opening file picker');
+                        document.getElementById('receipt-file-input')?.click();
+                      }}
+                      disabled={isOcrProcessing}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       {isOcrProcessing ? (
                         <>
                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -399,20 +424,21 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                           レシートを撮影/選択
                         </>
                       )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleReceiptScan(file);
-                          }
-                        }}
-                        disabled={isOcrProcessing}
-                      />
-                    </label>
+                    </button>
+                    <input
+                      id="receipt-file-input"
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleReceiptScan(file);
+                        }
+                      }}
+                      disabled={isOcrProcessing}
+                    />
                     {ocrResult && (
                       <div className="mt-2 text-xs text-blue-600">
                         ✓ レシートを読み取りました
@@ -693,6 +719,16 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           </form>
         </div>
       </div>
-    </div>
+      </div>
+      
+      {/* ペイウォールモーダル（最上位に表示） */}
+      {showPaywall && (
+        <PaywallModal
+          onClose={closePaywall}
+          feature={paywallFeature}
+          variant={paywallVariant}
+        />
+      )}
+    </>
   );
 }

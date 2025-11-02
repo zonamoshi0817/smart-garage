@@ -8,6 +8,7 @@ export type PremiumFeature =
   | 'multiple_cars'           // 複数車両登録（無料: 1台、プレミアム: 無制限）
   | 'pdf_export'             // PDF出力（無料: なし、プレミアム: あり）
   | 'share_links'            // 共有URL（無料: なし、プレミアム: あり）
+  | 'ocr_scan'               // OCRスキャン機能（無料: なし、プレミアム: あり）
   | 'advanced_reminders'     // 高度なリマインダー（無料: 基本、プレミアム: 無制限）
   | 'ad_free'                // 広告非表示（無料: あり、プレミアム: なし）
   | 'receipt_auto_save'      // 領収書自動保存（無料: なし、プレミアム: あり）
@@ -28,6 +29,7 @@ export const PREMIUM_LIMITS = {
     max_snooze_count: 3,
     pdf_export: false,
     share_links: false,
+    ocr_scan: false,
     receipt_auto_save: false,
     auto_next_reminder: false,
     multiple_recommendations: false,
@@ -43,6 +45,7 @@ export const PREMIUM_LIMITS = {
     max_snooze_count: -1, // 無制限
     pdf_export: true,
     share_links: true,
+    ocr_scan: true,
     receipt_auto_save: true,
     auto_next_reminder: true,
     multiple_recommendations: true,
@@ -104,6 +107,16 @@ export function canUseFeature(
       return {
         canUse: false,
         reason: '共有URLはプレミアム機能です',
+        upgradeRequired: true
+      };
+      
+    case 'ocr_scan':
+      if (limits.ocr_scan) {
+        return { canUse: true };
+      }
+      return {
+        canUse: false,
+        reason: 'OCRスキャン機能はプレミアム機能です',
         upgradeRequired: true
       };
       
@@ -249,6 +262,12 @@ export const PREMIUM_FEATURE_DESCRIPTIONS = {
     description: 'メンテナンス履歴を共有URLで公開できます',
     freeLimit: '利用不可',
     premiumBenefit: '利用可能'
+  },
+  ocr_scan: {
+    title: 'OCRスキャン',
+    description: 'レシート・保険証券を自動読み取り',
+    freeLimit: '利用不可',
+    premiumBenefit: '無制限'
   },
   advanced_reminders: {
     title: '高度なリマインダー',

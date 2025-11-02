@@ -22,13 +22,14 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
   // 主要機能（最初に表示）
   const primaryFeatures: PremiumFeature[] = [
     'multiple_cars',
+    'ocr_scan',
     'pdf_export',
-    'share_links',
-    'advanced_reminders'
+    'share_links'
   ];
 
   // その他の機能（「もっと見る」で表示）
   const secondaryFeatures: PremiumFeature[] = [
+    'advanced_reminders',
     'receipt_auto_save',
     'unlimited_snooze',
     'auto_next_reminder',
@@ -56,7 +57,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
     const featureDesc = feature ? PREMIUM_FEATURE_DESCRIPTIONS[feature] : null;
     
     return (
-      <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60] animate-fadeIn">
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
           <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 p-8 text-white">
             <button
@@ -120,7 +121,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
   // variant: hero - 大きなヒーロー訴求
   if (variant === 'hero') {
     return (
-      <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60] animate-fadeIn">
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden">
           <button
             onClick={onClose}
@@ -213,7 +214,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
 
   // variant: default - 標準的なペイウォール
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60] animate-fadeIn">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-gradient-to-br from-blue-600 to-purple-600 p-6 text-white rounded-t-3xl">
           <button
