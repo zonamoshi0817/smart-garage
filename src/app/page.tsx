@@ -581,12 +581,12 @@ export default function Home() {
               onClick={() => setCurrentPage('dashboard')}
             />
             <NavItem 
-              label="車両データ" 
+              label="マイカー" 
               active={currentPage === 'my-car'} 
               onClick={() => setCurrentPage('my-car')}
             />
             <NavItem 
-              label="燃費" 
+              label="ガソリン" 
               active={currentPage === 'fuel-logs'} 
               onClick={() => setCurrentPage('fuel-logs')}
             />
