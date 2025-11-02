@@ -117,6 +117,11 @@ export function watchCars(cb: (cars: Car[]) => void, limitCount: number = 50) {
             inspectionExpiry: data.inspectionExpiry,
             firstRegYm: data.firstRegYm,
             avgKmPerMonth: data.avgKmPerMonth,
+            status: data.status,
+            soldDate: data.soldDate,
+            soldPrice: data.soldPrice,
+            soldTo: data.soldTo,
+            soldNotes: data.soldNotes,
             engineCode: data.engineCode,
             oilSpec: data.oilSpec,
             ownerUid: data.ownerUid,
@@ -219,4 +224,38 @@ export async function updateCarMileage(carId: string, newMileage: number) {
   });
   
   console.log(`Successfully updated car ${carId} mileage to ${newMileage}`);
+}
+
+// 車両を売却済みにする
+export async function markCarAsSold(
+  carId: string,
+  soldData: {
+    soldDate: Timestamp;
+    soldPrice?: number;
+    soldTo?: string;
+    soldNotes?: string;
+  }
+) {
+  const u = auth.currentUser;
+  if (!u) throw new Error("not signed in");
+  
+  console.log(`Marking car ${carId} as sold`);
+  
+  const carRef = doc(db, "users", u.uid, "cars", carId);
+  await updateDoc(carRef, {
+    status: 'sold',
+    ...soldData,
+    updatedBy: u.uid,
+    updatedAt: serverTimestamp(),
+  });
+  
+  // 監査ログを記録
+  await logAudit({
+    entityType: 'car',
+    entityId: carId,
+    action: 'update',
+    after: { status: 'sold', ...soldData }
+  });
+  
+  console.log(`Successfully marked car ${carId} as sold`);
 }

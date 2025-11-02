@@ -26,6 +26,7 @@ import FuelLogCard from "@/components/dashboard/FuelLogCard";
 import CustomizationModal from "@/components/modals/CustomizationModal";
 import PaywallModal from "@/components/modals/PaywallModal";
 import InsuranceModal from "@/components/modals/InsuranceModal";
+import SellCarModal from "@/components/modals/SellCarModal";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import MyCarPage from "@/components/mycar/MyCarPage";
 import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
@@ -48,6 +49,8 @@ export default function Home() {
   const [showInsuranceModal, setShowInsuranceModal] = useState(false);
   const [customizations, setCustomizations] = useState<Customization[]>([]);
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
+  const [showSellCarModal, setShowSellCarModal] = useState(false);
+  const [carToSell, setCarToSell] = useState<Car | null>(null);
   const [editingCustomization, setEditingCustomization] = useState<Customization | null>(null);
   const [showEditInsuranceModal, setShowEditInsuranceModal] = useState(false);
   const [editingInsurancePolicy, setEditingInsurancePolicy] = useState<InsurancePolicy | null>(null);
@@ -670,6 +673,8 @@ export default function Home() {
                 setShowFuelLogModal={setShowFuelLogModal}
                 setShowMaintenanceModal={setShowMaintenanceModal}
                 setShowCustomizationModal={setShowCustomizationModal}
+                setShowSellCarModal={setShowSellCarModal}
+                setCarToSell={setCarToSell}
                 userPlan={userPlan}
                 checkFeature={checkFeature}
               />
@@ -834,6 +839,23 @@ export default function Home() {
           onAdded={() => {
             console.log("Insurance policy added, closing modal");
             setShowInsuranceModal(false);
+          }}
+        />
+      )}
+
+      {/* 車両売却モーダル */}
+      {showSellCarModal && carToSell && (
+        <SellCarModal
+          car={carToSell}
+          onClose={() => {
+            setShowSellCarModal(false);
+            setCarToSell(null);
+          }}
+          onSave={async (carId, soldData) => {
+            const { markCarAsSold } = await import("@/lib/cars");
+            await markCarAsSold(carId, soldData);
+            setShowSellCarModal(false);
+            setCarToSell(null);
           }}
         />
       )}
@@ -2876,6 +2898,8 @@ function CarManagementContent({
   setShowFuelLogModal,
   setShowMaintenanceModal,
   setShowCustomizationModal,
+  setShowSellCarModal,
+  setCarToSell,
   userPlan,
   checkFeature
 }: {
@@ -2888,6 +2912,8 @@ function CarManagementContent({
   maintenanceRecords: MaintenanceRecord[];
   fuelLogs: FuelLog[];
   customizations: Customization[];
+  setShowSellCarModal: (show: boolean) => void;
+  setCarToSell: (car: Car | null) => void;
   setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance') => void;
   setShowFuelLogModal: (show: boolean) => void;
   setShowMaintenanceModal: (show: boolean) => void;
@@ -3005,6 +3031,10 @@ function CarManagementContent({
                   onSelect={() => car.id && setActiveCarId(car.id)}
                   onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
                   onEdit={() => handleEditCar(car)}
+                  onMarkAsSold={() => {
+                    setCarToSell(car);
+                    setShowSellCarModal(true);
+                  }}
                   maintenanceRecords={maintenanceRecords}
                   fuelLogs={fuelLogs}
                   onAddFuel={handleAddFuel}
@@ -3056,6 +3086,7 @@ function CarManagementContent({
                 onSelect={() => {}}
                 onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
                 onEdit={() => handleEditCar(car)}
+                onMarkAsSold={() => {}}
                 maintenanceRecords={maintenanceRecords}
                 fuelLogs={fuelLogs}
                 onAddFuel={handleAddFuel}
@@ -3085,6 +3116,7 @@ function CarManagementContent({
                 onSelect={() => {}}
                 onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
                 onEdit={() => handleEditCar(car)}
+                onMarkAsSold={() => {}}
                 maintenanceRecords={maintenanceRecords}
                 fuelLogs={fuelLogs}
                 onAddFuel={handleAddFuel}
@@ -3107,6 +3139,7 @@ function CarCard({
   onSelect,
   onDelete,
   onEdit,
+  onMarkAsSold,
   maintenanceRecords,
   fuelLogs,
   onAddFuel,
@@ -3120,6 +3153,7 @@ function CarCard({
   onSelect: () => void;
   onDelete: () => void;
   onEdit: () => void;
+  onMarkAsSold: () => void;
   maintenanceRecords: MaintenanceRecord[];
   fuelLogs: FuelLog[];
   onAddFuel: (carId: string) => void;
@@ -3299,8 +3333,7 @@ function CarCard({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // 売却処理のモーダルを開く（TODO: 実装）
-                        console.log('Mark as sold:', car.id);
+                        onMarkAsSold();
                         setShowDropdown(false);
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm font-medium text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-3"
