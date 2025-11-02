@@ -119,6 +119,10 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
       mileage: data.mileage || null,
       date: data.date, // Dateオブジェクトのまま（Firestoreが自動変換）
       location: data.location || null,
+      ownerUid: u.uid,
+      createdBy: u.uid,
+      updatedBy: u.uid,
+      deletedAt: null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -185,15 +189,21 @@ export function watchMaintenanceRecords(carId: string, cb: (records: Maintenance
     
     return onSnapshot(q, (snap) => {
       console.log("Snapshot received for carId", carId, ":", snap.docs.length, "documents");
-      const list = snap.docs.map((d) => {
-        const data = d.data();
-        console.log("Document data:", d.id, data);
-        return { 
-          id: d.id, 
-          ...data,
-          date: data.date instanceof Date ? data.date : (data.date?.toDate ? data.date.toDate() : new Date())
-        } as MaintenanceRecord;
-      });
+      const list = snap.docs
+        .filter((d) => {
+          // 論理削除されたレコードを除外
+          const data = d.data();
+          return !data.deletedAt;
+        })
+        .map((d) => {
+          const data = d.data();
+          console.log("Document data:", d.id, data);
+          return { 
+            id: d.id, 
+            ...data,
+            date: data.date instanceof Date ? data.date : (data.date?.toDate ? data.date.toDate() : new Date())
+          } as MaintenanceRecord;
+        });
       // クライアント側でソート
       list.sort((a, b) => b.date.getTime() - a.date.getTime());
       console.log("Processed records for carId", carId, ":", list);
@@ -216,6 +226,7 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
   try {
     // undefinedの値をnullに変換またはフィールドから除外
     const updateData: any = {
+      updatedBy: u.uid,
       updatedAt: serverTimestamp(),
     };
     
@@ -249,13 +260,21 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
   }
 }
 
-// メンテナンス履歴を削除
+// メンテナンス履歴を削除（論理削除）
 export async function deleteMaintenanceRecord(recordId: string) {
   const u = auth.currentUser;
   if (!u) throw new Error("not signed in");
   
   try {
-    await deleteDoc(doc(db, "users", u.uid, "maintenance", recordId));
+    // 論理削除を実装
+    await updateDoc(doc(db, "users", u.uid, "maintenance", recordId), {
+      deletedAt: serverTimestamp(),
+      updatedBy: u.uid,
+      updatedAt: serverTimestamp(),
+    });
+    
+    // 物理削除が必要な場合はコメントアウトを解除
+    // await deleteDoc(doc(db, "users", u.uid, "maintenance", recordId));
   } catch (error) {
     console.error("Error deleting maintenance record:", error);
     throw error;
@@ -303,15 +322,21 @@ export function watchAllMaintenanceRecords(cb: (records: MaintenanceRecord[]) =>
     
     return onSnapshot(q, (snap) => {
       console.log("All maintenance snapshot received:", snap.docs.length, "documents");
-      const list = snap.docs.map((d) => {
-        const data = d.data();
-        console.log("All maintenance document data:", d.id, data);
-        return { 
-          id: d.id, 
-          ...data,
-          date: data.date instanceof Date ? data.date : (data.date?.toDate ? data.date.toDate() : new Date())
-        } as MaintenanceRecord;
-      });
+      const list = snap.docs
+        .filter((d) => {
+          // 論理削除されたレコードを除外
+          const data = d.data();
+          return !data.deletedAt;
+        })
+        .map((d) => {
+          const data = d.data();
+          console.log("All maintenance document data:", d.id, data);
+          return { 
+            id: d.id, 
+            ...data,
+            date: data.date instanceof Date ? data.date : (data.date?.toDate ? data.date.toDate() : new Date())
+          } as MaintenanceRecord;
+        });
       // クライアント側でソート
       list.sort((a, b) => b.date.getTime() - a.date.getTime());
       console.log("All maintenance processed records:", list);

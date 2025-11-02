@@ -69,6 +69,10 @@ export async function addCar(data: CarInput) {
     
     const docRef = await addDoc(ref, {
       ...firestoreData,
+      ownerUid: u.uid,
+      createdBy: u.uid,
+      updatedBy: u.uid,
+      deletedAt: null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -114,32 +118,42 @@ export function watchCars(cb: (cars: Car[]) => void) {
         console.log("3. User is not properly authenticated");
       }
       
-      const list = snap.docs.map((d) => {
-        const data = d.data();
-        console.log("Car data:", { id: d.id, ...data });
-        
-        // Timestamp → Date変換
-        const car: Car = {
-          id: d.id,
-          name: data.name,
-          modelCode: data.modelCode,
-          year: data.year,
-          odoKm: data.odoKm,
-          imagePath: data.imagePath,
-          inspectionExpiry: data.inspectionExpiry?.toDate ? data.inspectionExpiry.toDate() : 
-                           (data.inspectionExpiry ? new Date(data.inspectionExpiry) : undefined),
-          firstRegYm: data.firstRegYm,
-          avgKmPerMonth: data.avgKmPerMonth,
-          engineCode: data.engineCode,
-          oilSpec: data.oilSpec,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : 
-                    (data.createdAt ? new Date(data.createdAt) : undefined),
-          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : 
-                    (data.updatedAt ? new Date(data.updatedAt) : undefined),
-        };
-        
-        return car;
-      });
+      const list = snap.docs
+        .filter((d) => {
+          // 論理削除されたレコードを除外
+          const data = d.data();
+          return !data.deletedAt;
+        })
+        .map((d) => {
+          const data = d.data();
+          console.log("Car data:", { id: d.id, ...data });
+          
+          // Timestamp → Date変換
+          const car: Car = {
+            id: d.id,
+            name: data.name,
+            modelCode: data.modelCode,
+            year: data.year,
+            odoKm: data.odoKm,
+            imagePath: data.imagePath,
+            inspectionExpiry: data.inspectionExpiry?.toDate ? data.inspectionExpiry.toDate() : 
+                             (data.inspectionExpiry ? new Date(data.inspectionExpiry) : undefined),
+            firstRegYm: data.firstRegYm,
+            avgKmPerMonth: data.avgKmPerMonth,
+            engineCode: data.engineCode,
+            oilSpec: data.oilSpec,
+            ownerUid: data.ownerUid,
+            createdBy: data.createdBy,
+            updatedBy: data.updatedBy,
+            deletedAt: data.deletedAt?.toDate ? data.deletedAt.toDate() : null,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : 
+                      (data.createdAt ? new Date(data.createdAt) : undefined),
+            updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : 
+                      (data.updatedAt ? new Date(data.updatedAt) : undefined),
+          };
+          
+          return car;
+        });
       
       console.log("Final cars list:", list);
       cb(list);
@@ -177,6 +191,7 @@ export async function updateCar(carId: string, data: Partial<Car>) {
   
   await updateDoc(doc(db, "users", u.uid, "cars", carId), {
     ...firestoreData,
+    updatedBy: u.uid,
     updatedAt: serverTimestamp(),
   });
 }
@@ -184,7 +199,16 @@ export async function updateCar(carId: string, data: Partial<Car>) {
 export async function removeCar(carId: string) {
   const u = auth.currentUser;
   if (!u) throw new Error("not signed in");
-  await deleteDoc(doc(db, "users", u.uid, "cars", carId));
+  
+  // 論理削除を実装（物理削除の代わり）
+  await updateDoc(doc(db, "users", u.uid, "cars", carId), {
+    deletedAt: serverTimestamp(),
+    updatedBy: u.uid,
+    updatedAt: serverTimestamp(),
+  });
+  
+  // 物理削除が必要な場合はコメントアウトを解除
+  // await deleteDoc(doc(db, "users", u.uid, "cars", carId));
 }
 
 // 車両の走行距離を更新

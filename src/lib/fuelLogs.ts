@@ -39,6 +39,10 @@ export const addFuelLog = async (fuelLogData: FuelLogInput): Promise<string> => 
     
     const docRef = await addDoc(collection(db, "users", user.uid, "fuelLogs"), {
       ...cleanData,
+      ownerUid: user.uid,
+      createdBy: user.uid,
+      updatedBy: user.uid,
+      deletedAt: null,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
@@ -72,6 +76,7 @@ export const updateFuelLog = async (id: string, fuelLogData: Partial<FuelLogInpu
     const docRef = doc(db, "users", user.uid, "fuelLogs", id);
     await updateDoc(docRef, {
       ...cleanData,
+      updatedBy: user.uid,
       updatedAt: Timestamp.now(),
     });
 
@@ -82,7 +87,7 @@ export const updateFuelLog = async (id: string, fuelLogData: Partial<FuelLogInpu
   }
 };
 
-// 給油ログを削除
+// 給油ログを削除（論理削除）
 export const deleteFuelLog = async (id: string): Promise<void> => {
   const user = auth.currentUser;
   if (!user) {
@@ -90,8 +95,17 @@ export const deleteFuelLog = async (id: string): Promise<void> => {
   }
 
   try {
-    await deleteDoc(doc(db, "users", user.uid, "fuelLogs", id));
-    console.log("給油ログを削除しました:", id);
+    // 論理削除を実装
+    await updateDoc(doc(db, "users", user.uid, "fuelLogs", id), {
+      deletedAt: Timestamp.now(),
+      updatedBy: user.uid,
+      updatedAt: Timestamp.now(),
+    });
+    
+    console.log("給油ログを論理削除しました:", id);
+    
+    // 物理削除が必要な場合はコメントアウトを解除
+    // await deleteDoc(doc(db, "users", user.uid, "fuelLogs", id));
   } catch (error) {
     console.error("給油ログの削除に失敗しました:", error);
     throw error;
@@ -163,16 +177,22 @@ export const watchFuelLogs = (
       hasPendingWrites: snapshot.metadata.hasPendingWrites
     });
     
-    const fuelLogs: FuelLog[] = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        date: data.date?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      } as FuelLog;
-    });
+    const fuelLogs: FuelLog[] = snapshot.docs
+      .filter((doc) => {
+        // 論理削除されたレコードを除外
+        const data = doc.data();
+        return !data.deletedAt;
+      })
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          date: data.date?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as FuelLog;
+      });
     
     // クライアント側で日付順にソート
     fuelLogs.sort((a, b) => b.date.getTime() - a.date.getTime());

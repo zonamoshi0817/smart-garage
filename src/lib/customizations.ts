@@ -53,6 +53,10 @@ export async function addCustomization(
     const cleanCustomization = {
       ...customization,
       carId,
+      ownerUid: userId,
+      createdBy: userId,
+      updatedBy: userId,
+      deletedAt: null,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       // undefinedの値をnullに変換
@@ -105,6 +109,7 @@ export async function updateCustomization(
     // undefinedの値をnullに変換（Firestoreではundefinedを保存できない）
     const cleanUpdates = {
       ...updates,
+      updatedBy: userId,
       updatedAt: Timestamp.now(),
       // undefinedの値をnullに変換
       odoKm: updates.odoKm ?? null,
@@ -130,7 +135,7 @@ export async function updateCustomization(
   }
 }
 
-// カスタマイズの削除
+// カスタマイズの削除（論理削除）
 export async function deleteCustomization(
   userId: string,
   carId: string,
@@ -138,7 +143,16 @@ export async function deleteCustomization(
 ): Promise<void> {
   try {
     const docRef = doc(db, 'users', userId, 'cars', carId, CUSTOMIZATIONS_COLLECTION, customizationId);
-    await deleteDoc(docRef);
+    
+    // 論理削除を実装
+    await updateDoc(docRef, {
+      deletedAt: Timestamp.now(),
+      updatedBy: userId,
+      updatedAt: Timestamp.now(),
+    });
+    
+    // 物理削除が必要な場合はコメントアウトを解除
+    // await deleteDoc(docRef);
     
     // メタデータを更新
     await updateCustomizationMeta(userId, carId);
@@ -170,13 +184,18 @@ export async function getCustomizations(
     const querySnapshot = await getDocs(q);
     console.log('Raw query result:', querySnapshot.docs.length, 'documents');
     
-    let customizations = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      date: doc.data().date?.toDate() || new Date(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-    })) as Customization[];
+    let customizations = querySnapshot.docs
+      .filter(doc => {
+        // 論理削除されたレコードを除外
+        return !doc.data().deletedAt;
+      })
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date?.toDate() || new Date(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+      })) as Customization[];
 
     // クライアント側でフィルタリングとソート
     customizations = customizations.sort((a, b) => b.date.getTime() - a.date.getTime());

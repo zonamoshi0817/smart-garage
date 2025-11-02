@@ -92,6 +92,10 @@ export async function addInsurancePolicy(policy: Omit<InsurancePolicy, 'id' | 'c
 
   const policyData = {
     ...policy,
+    ownerUid: user.uid,
+    createdBy: user.uid,
+    updatedBy: user.uid,
+    deletedAt: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -137,7 +141,7 @@ export async function updateInsurancePolicy(
   }
 }
 
-// 保険契約の削除
+// 保険契約の削除（論理削除）
 export async function removeInsurancePolicy(policyId: string): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error('ユーザーが認証されていません');
@@ -150,7 +154,15 @@ export async function removeInsurancePolicy(policyId: string): Promise<void> {
     console.error('Error deleting notifications for policy:', error);
   }
 
-  await deleteDoc(doc(db, 'users', user.uid, 'policies', policyId));
+  // 論理削除を実装
+  await updateDoc(doc(db, 'users', user.uid, 'policies', policyId), {
+    deletedAt: serverTimestamp(),
+    updatedBy: user.uid,
+    updatedAt: serverTimestamp(),
+  });
+  
+  // 物理削除が必要な場合はコメントアウトを解除
+  // await deleteDoc(doc(db, 'users', user.uid, 'policies', policyId));
 }
 
 // 保険契約の監視
@@ -174,14 +186,17 @@ export function watchInsurancePolicies(callback: (policies: InsurancePolicy[]) =
     const policies: InsurancePolicy[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      policies.push({
-        id: doc.id,
-        ...data,
-        startDate: data.startDate?.toDate() || new Date(),
-        endDate: data.endDate?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      } as InsurancePolicy);
+      // 論理削除されたレコードを除外
+      if (!data.deletedAt) {
+        policies.push({
+          id: doc.id,
+          ...data,
+          startDate: data.startDate?.toDate() || new Date(),
+          endDate: data.endDate?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as InsurancePolicy);
+      }
     });
     
     console.log('Processed insurance policies:', policies.length);

@@ -2,6 +2,10 @@
 
 export interface BaseEntity {
   id?: string;
+  ownerUid?: string;        // 所有者UID（マルチテナンシー対応）
+  createdBy?: string;       // 作成者UID
+  updatedBy?: string;       // 更新者UID
+  deletedAt?: Date | null;  // 論理削除タイムスタンプ
   createdAt?: Date | string;
   updatedAt?: Date | string;
 }
