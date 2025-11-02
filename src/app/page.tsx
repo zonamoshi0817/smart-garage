@@ -3409,40 +3409,6 @@ function CarCard({
           )}
         </div>
       </div>
-
-      {/* クイックアクションボタン - カード下部に配置 */}
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (car.id) onAddFuel(car.id);
-          }}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 transition"
-          title="給油を記録"
-        >
-          ⛽ 給油
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (car.id) onAddMaintenance(car.id);
-          }}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-orange-50 text-orange-700 text-xs font-medium hover:bg-orange-100 transition"
-          title="メンテナンスを記録"
-        >
-          🔧 メンテ
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (car.id) onAddCustomization(car.id);
-          }}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-purple-50 text-purple-700 text-xs font-medium hover:bg-purple-100 transition"
-          title="カスタマイズを記録"
-        >
-          ✨ カスタム
-        </button>
-      </div>
     </div>
   );
 }
