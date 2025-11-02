@@ -496,10 +496,10 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-4">
               {/* ヘッダー車両セレクター（右上に配置） */}
-              {cars.length > 0 && (
+              {activeCars.length > 0 && (
                 <div className="relative">
                   <CarHeaderDropdown 
-                    cars={cars}
+                    cars={activeCars}
                     activeCarId={activeCarId}
                     onSelectCar={(id) => setActiveCarId(id)}
                     onAddCar={() => setShowAddCarModal(true)}
