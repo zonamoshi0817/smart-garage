@@ -51,7 +51,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
     fuelLogsCount: fuelLogs.length,
     fuelLogs: fuelLogs.map(log => ({
       id: log.id,
-      date: log.date.toLocaleDateString(),
+      date: (log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString(),
       odoKm: log.odoKm,
       fuelAmount: log.fuelAmount,
       isFullTank: log.isFullTank
@@ -79,7 +79,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
   const handleDelete = async (log: FuelLog) => {
     if (!log.id) return;
     
-    if (confirm(`給油記録を削除しますか？\n日時: ${log.date.toLocaleDateString('ja-JP')}\n給油量: ${log.fuelAmount}L`)) {
+    if (confirm(`給油記録を削除しますか？\n日時: ${(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP')}\n給油量: ${log.fuelAmount}L`)) {
       try {
         await deleteFuelLog(log.id);
         console.log("Fuel log deleted successfully");
@@ -199,7 +199,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-gray-900">
-                      {latestFuelLog.date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                      {(latestFuelLog.date?.toDate ? latestFuelLog.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                     </div>
                     <div className="text-xs text-gray-500">日時</div>
                   </div>
@@ -288,7 +288,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                           <div className="flex-1">
                             <div className="flex items-center space-x-3">
                               <span className="text-sm font-semibold text-gray-900">
-                                {log.date.toLocaleDateString('ja-JP')}
+                                {(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP')}
                               </span>
                               {log.isFullTank && (
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
