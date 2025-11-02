@@ -2981,68 +2981,6 @@ function CarManagementContent({
 
   return (
     <>
-      {/* ガレージ統計チップ */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div 
-          className="bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition"
-          onClick={() => {
-            // 車両フィルタ適用（現在は全車両表示なので何もしない）
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">{totalCars}台</div>
-              <div className="text-sm text-gray-600">所有中</div>
-            </div>
-          </div>
-        </div>
-
-        <div 
-          className="bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition"
-          onClick={() => {
-            // 費用タブに遷移（現在は未実装）
-            console.log("Navigate to cost tab");
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">¥{monthlyCost.toLocaleString()}</div>
-              <div className="text-sm text-gray-600">今月の総費用</div>
-            </div>
-          </div>
-        </div>
-
-        <div 
-          className="bg-white rounded-2xl border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 transition"
-          onClick={() => {
-            // メンテ一覧に遷移
-            setCurrentPage('maintenance-history');
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-900">{recentTasks}件</div>
-              <div className="text-sm text-gray-600">直近のタスク</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">車両</h1>
