@@ -421,10 +421,16 @@ export default function Home() {
     [cars]
   );
 
-  const car = useMemo(
-    () => activeCars.find((c) => c.id === activeCarId),
-    [activeCars, activeCarId]
-  );
+  const car = useMemo(() => {
+    const foundCar = activeCars.find((c) => c.id === activeCarId);
+    console.log("Finding car:", {
+      activeCarId,
+      carsCount: cars.length,
+      activeCarsCount: activeCars.length,
+      foundCar: foundCar ? { id: foundCar.id, name: foundCar.name } : null
+    });
+    return foundCar;
+  }, [activeCars, activeCarId, cars]);
 
 
   // デバッグ情報
