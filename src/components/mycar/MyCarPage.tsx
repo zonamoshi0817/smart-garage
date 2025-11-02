@@ -13,6 +13,7 @@ import NextMaintenanceSuggestion from './NextMaintenanceSuggestion';
 import DocumentsAndDrafts from './DocumentsAndDrafts';
 import ShareAndPDF from './ShareAndPDF';
 import ContextualAd from './ContextualAd';
+import VehicleSpecsPanel from './VehicleSpecsPanel';
 import PaywallModal from '../modals/PaywallModal';
 
 interface MyCarPageProps {
@@ -185,6 +186,13 @@ export default function MyCarPage({
           actions={quickActions}
           isPremium={isPremium}
           onLockedClick={handleLockedAction}
+        />
+        
+        {/* 2.5. 車両データパネル（GTスタイル） */}
+        <VehicleSpecsPanel
+          car={car}
+          maintenanceRecords={maintenanceRecords}
+          fuelLogs={fuelLogs}
         />
         
         {/* 3. 車両ヘルスインジケータ */}
