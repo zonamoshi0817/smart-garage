@@ -251,3 +251,93 @@ export function logFeatureDiscovered(feature: string): void {
   logAnalyticsEvent('feature_discovered', { feature });
 }
 
+// ============================================
+// 情報アーキテクチャ v2.1: ナビゲーション計測
+// ============================================
+
+/**
+ * ページ遷移計測（混線率の測定用）
+ * 目標: vehicle→dashboard直帰率 < 10%
+ */
+export function logPageNavigation(
+  from: 'dashboard' | 'vehicle' | 'other',
+  to: 'dashboard' | 'vehicle' | 'other',
+  carId?: string
+) {
+  logEvent('page_navigation', {
+    from,
+    to,
+    car_id: carId,
+    timestamp: Date.now()
+  });
+}
+
+/**
+ * アラート解決計測
+ * 目標: ダッシュボード主導で解決時間を30%短縮
+ */
+export function logAlertResolved(
+  alertType: 'inspection' | 'insurance' | 'maintenance' | 'fuel' | 'ocr',
+  minutesToResolve: number,
+  resolvedFrom: 'dashboard' | 'vehicle'
+) {
+  logEvent('alert_resolved', {
+    alert_type: alertType,
+    minutes_to_resolve: minutesToResolve,
+    resolved_from: resolvedFrom,
+    timestamp: Date.now()
+  });
+}
+
+/**
+ * 深リンククリック計測
+ * 目標: クリック率 > 60%
+ */
+export function logDeepLinkClicked(
+  from: 'dashboard',
+  targetPage: 'vehicle',
+  tab?: string,
+  action?: string,
+  carId?: string
+) {
+  logEvent('deeplink_clicked', {
+    from,
+    target_page: targetPage,
+    tab,
+    action,
+    car_id: carId,
+    timestamp: Date.now()
+  });
+}
+
+/**
+ * テンプレート使用計測
+ * 目標: 保存率 > 80%
+ */
+export function logTemplateUsed(
+  template: string,
+  saved: boolean,
+  carId?: string
+) {
+  logEvent('template_used', {
+    template,
+    saved,
+    car_id: carId,
+    timestamp: Date.now()
+  });
+}
+
+/**
+ * 車両データページ直接アクセス計測
+ */
+export function logVehicleDataAccessed(
+  source: 'dashboard' | 'navigation' | 'direct',
+  carId: string
+) {
+  logEvent('vehicle_data_accessed', {
+    source,
+    car_id: carId,
+    timestamp: Date.now()
+  });
+}
+

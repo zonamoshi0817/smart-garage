@@ -6,6 +6,19 @@ import type { FuelLog, Car } from "@/types";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import FuelLogModal from '../modals/FuelLogModal';
 
+// FuelLog後方互換ヘルパー
+function getFuelQuantityInLiters(log: FuelLog): number {
+  // 新フィールド優先、なければ旧フィールド
+  if (log.quantity !== undefined) {
+    return log.unit === 'ml' ? log.quantity / 1000 : log.quantity; // mlをLに変換
+  }
+  return log.fuelAmount || 0;
+}
+
+function getFuelTotalCost(log: FuelLog): number {
+  return log.totalCostJpy ?? log.cost ?? 0;
+}
+
 interface FuelLogCardProps {
   car: Car;
 }

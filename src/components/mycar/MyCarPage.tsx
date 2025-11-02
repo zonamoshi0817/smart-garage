@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Car, MaintenanceRecord, FuelLog, Customization, InsurancePolicy } from '@/types';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import { toDate } from '@/lib/dateUtils';
@@ -12,6 +13,7 @@ import ContextualAd from './ContextualAd';
 import VehicleSpecsPanel from './VehicleSpecsPanel';
 import CustomPartsPanel from './CustomPartsPanel';
 import PaywallModal from '../modals/PaywallModal';
+import Breadcrumbs from '../Breadcrumbs';
 
 interface MyCarPageProps {
   car: Car;
@@ -34,6 +36,42 @@ export default function MyCarPage({
 }: MyCarPageProps) {
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
   const isPremium = userPlan === 'premium';
+  const searchParams = useSearchParams();
+  
+  // URLクエリパラメータから直接アクションを実行
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const tab = searchParams.get('tab');
+    
+    console.log('[MyCarPage] Deep link detected:', { action, tab });
+    
+    if (action && !readOnly) {
+      // アクション実行（編集不可モードではスキップ）
+      switch (action) {
+        case 'add-fuel':
+        case 'add':
+          onOpenModal('fuel');
+          break;
+        case 'add-maintenance':
+          onOpenModal('maintenance');
+          break;
+        case 'add-customization':
+          onOpenModal('customization');
+          break;
+        case 'add-insurance':
+          onOpenModal('insurance');
+          break;
+      }
+    }
+    
+    // タブへのスクロール（将来実装）
+    if (tab) {
+      const element = document.getElementById(`section-${tab}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [searchParams, readOnly, onOpenModal]);
   
   // 最新のメンテナンス記録を取得
   const latestMaintenance = useMemo(() => {
@@ -105,6 +143,14 @@ export default function MyCarPage({
       )}
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* パンくずナビゲーション */}
+        <Breadcrumbs 
+          items={[
+            { label: 'ダッシュボード', onClick: () => window.history.back() },
+            { label: `${car.name}${car.modelCode ? ` (${car.modelCode})` : ''}` }
+          ]} 
+        />
+        
         {/* 1. ヘッダー（車両カード・ミニヒーロー） */}
         <VehicleHeader
           car={car}
@@ -149,31 +195,39 @@ export default function MyCarPage({
         )}
         
         {/* 2.5. 車両データパネル（GTスタイル） */}
-        <VehicleSpecsPanel
-          car={car}
-          maintenanceRecords={maintenanceRecords}
-          fuelLogs={fuelLogs}
-        />
+        <div id="section-specs">
+          <VehicleSpecsPanel
+            car={car}
+            maintenanceRecords={maintenanceRecords}
+            fuelLogs={fuelLogs}
+          />
+        </div>
         
         {/* 2.6. カスタムパーツ一覧 */}
-        <CustomPartsPanel
-          customizations={customizations}
-          onAddCustomization={(category) => {
-            onOpenModal('customization', { category });
-          }}
-        />
+        <div id="section-custom">
+          <CustomPartsPanel
+            customizations={customizations}
+            onAddCustomization={(category) => {
+              onOpenModal('customization', { category });
+            }}
+          />
+        </div>
         
         {/* 3. 燃費・単価チャート */}
-        <FuelAndPriceChart
-          fuelLogs={fuelLogs}
-        />
+        <div id="section-fuel">
+          <FuelAndPriceChart
+            fuelLogs={fuelLogs}
+          />
+        </div>
         
         {/* 4. メンテ & カスタムの「次回提案」カード */}
-        <NextMaintenanceSuggestion
-          car={car}
-          maintenanceRecords={maintenanceRecords}
-          onCreateFromTemplate={handleCreateFromTemplate}
-        />
+        <div id="section-maintenance">
+          <NextMaintenanceSuggestion
+            car={car}
+            maintenanceRecords={maintenanceRecords}
+            onCreateFromTemplate={handleCreateFromTemplate}
+          />
+        </div>
         
         {/* 5. コンテキスト広告/アフィリ枠（無料ユーザーのみ） */}
         <ContextualAd

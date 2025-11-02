@@ -613,13 +613,7 @@ export default function Home() {
                 maintenanceRecords={maintenanceRecords}
                 fuelLogs={fuelLogs}
                 customizations={customizations}
-                setShowMaintenanceModal={setShowMaintenanceModal}
-                setShowAddCarModal={setShowAddCarModal}
-                setShowEditMaintenanceModal={setShowEditMaintenanceModal}
-                setEditingMaintenanceRecord={setEditingMaintenanceRecord}
                 setCurrentPage={setCurrentPage}
-                setShowFuelLogModal={setShowFuelLogModal}
-                setShowCustomizationModal={setShowCustomizationModal}
                 setActiveCarId={setActiveCarId}
               />
             ) : currentPage === 'my-car' ? (
@@ -925,13 +919,7 @@ function DashboardContent({
   maintenanceRecords,
   fuelLogs,
   customizations,
-  setShowMaintenanceModal, 
-  setShowAddCarModal,
-  setShowEditMaintenanceModal,
-  setEditingMaintenanceRecord,
   setCurrentPage,
-  setShowFuelLogModal,
-  setShowCustomizationModal,
   setActiveCarId
 }: {
   cars: Car[];
@@ -940,13 +928,7 @@ function DashboardContent({
   maintenanceRecords: MaintenanceRecord[];
   fuelLogs: FuelLog[];
   customizations: Customization[];
-  setShowMaintenanceModal: (show: boolean) => void;
-  setShowAddCarModal: (show: boolean) => void;
-  setShowEditMaintenanceModal: (show: boolean) => void;
-  setEditingMaintenanceRecord: (record: MaintenanceRecord | null) => void;
-  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance') => void;
-  setShowFuelLogModal: (show: boolean) => void;
-  setShowCustomizationModal: (show: boolean) => void;
+  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance' | 'my-car') => void;
   setActiveCarId: (id: string) => void;
 }) {
 
@@ -1152,30 +1134,12 @@ function DashboardContent({
                 <>
                   <button 
                     onClick={() => {
-                      console.log("Maintenance button clicked, activeCarId:", activeCarId);
-                      setShowMaintenanceModal(true);
+                      console.log("Navigate to vehicle data, activeCarId:", activeCarId);
+                      setCurrentPage('my-car');
                     }}
                     className="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-500"
                   >
-                    ＋ メンテナンスを記録
-                  </button>
-                  <button 
-                    onClick={() => {
-                      console.log("Fuel log button clicked, activeCarId:", activeCarId);
-                      setShowFuelLogModal(true);
-                    }}
-                    className="rounded-xl bg-green-600 text-white px-3 py-2 text-sm font-medium hover:bg-green-500"
-                  >
-                    ＋ 給油を記録
-                  </button>
-                  <button 
-                    onClick={() => {
-                      console.log("Customization button clicked, activeCarId:", activeCarId);
-                      setShowCustomizationModal(true);
-                    }}
-                    className="rounded-xl bg-purple-600 text-white px-3 py-2 text-sm font-medium hover:bg-purple-500"
-                  >
-                    ＋ カスタマイズを記録
+                    📊 車両データを見る
                   </button>
                 </>
               )}
@@ -1191,10 +1155,10 @@ function DashboardContent({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold">最近のメンテナンス</h3>
                   <button
-                    onClick={() => setShowMaintenanceModal(true)}
+                    onClick={() => setCurrentPage('maintenance-history')}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    ＋ メンテナンスを記録
+                    すべて見る →
                   </button>
                   </div>
               
@@ -1202,7 +1166,7 @@ function DashboardContent({
                 <div className="space-y-3">
                   {maintenanceRecords
                     .sort((a, b) => toMillis(b.date) - toMillis(a.date))
-                    .slice(0, 5)
+                    .slice(0, 3)
                     .map((record) => (
                     <div key={record.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition">
                       <div className="flex items-start justify-between">
@@ -1224,21 +1188,20 @@ function DashboardContent({
                             </p>
                           )}
               </div>
-                        <div className="flex gap-1 ml-2">
-                          <button
-                            onClick={() => {
-                              setEditingMaintenanceRecord(record);
-                              setShowEditMaintenanceModal(true);
-                            }}
-                            className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs"
-                            aria-label="Edit maintenance record"
-                          >
-                            ✏️
-                          </button>
-                        </div>
+                        {/* 詳細ボタンは削除 - クリックで車両データページへ */}
                       </div>
                     </div>
                   ))}
+                  {maintenanceRecords.length > 3 && (
+                    <div className="pt-2 text-center border-t border-gray-200">
+                      <button
+                        onClick={() => setCurrentPage('maintenance-history')}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        もっと見る ({maintenanceRecords.length}件) →
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -1248,12 +1211,12 @@ function DashboardContent({
                     </svg>
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h4>
-                  <p className="text-gray-500 mb-4">最初のメンテナンス記録を追加しましょう</p>
+                  <p className="text-gray-500 mb-4">車両データページで記録を追加できます</p>
                   <button
-                    onClick={() => setShowMaintenanceModal(true)}
+                    onClick={() => setCurrentPage('my-car')}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
-                    メンテナンスを記録
+                    車両データを見る →
                   </button>
                 </div>
               )}
@@ -1346,7 +1309,7 @@ function DashboardContent({
 
                       {/* 最近の給油履歴 */}
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">最近の給油履歴</h4>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">最近の給油履歴（上位3件）</h4>
                         <div className="space-y-2">
                           {fuelLogs
                             .sort((a, b) => {
@@ -1354,7 +1317,7 @@ function DashboardContent({
                               const bSeconds = b.date?.seconds || 0;
                               return bSeconds - aSeconds;
                             })
-                            .slice(0, 2)
+                            .slice(0, 3)
                             .map((log) => (
                             <div key={log.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
                               <div className="flex items-center justify-between">
@@ -1387,6 +1350,16 @@ function DashboardContent({
                             </div>
                           ))}
                         </div>
+                        {fuelLogs.length > 3 && (
+                          <div className="pt-3 text-center border-t border-gray-200">
+                            <button
+                              onClick={() => setCurrentPage('fuel-logs')}
+                              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              もっと見る ({fuelLogs.length}件) →
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -1396,14 +1369,14 @@ function DashboardContent({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                         </svg>
                       </div>
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                      <p className="text-gray-500 mb-4">最初の給油記録を追加しましょう</p>
-                      <button
-                        onClick={() => setShowFuelLogModal(true)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                      >
-                        給油を記録
-                      </button>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
+                  <p className="text-gray-500 mb-4">車両データページで記録を追加できます</p>
+                  <button
+                    onClick={() => setCurrentPage('my-car')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  >
+                    車両データを見る →
+                  </button>
               </div>
             )}
                 </div>
@@ -1414,10 +1387,10 @@ function DashboardContent({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold">最近のカスタマイズ</h3>
                   <button
-                    onClick={() => setShowCustomizationModal(true)}
+                    onClick={() => setCurrentPage('customizations')}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    ＋ カスタマイズを記録
+                    すべて見る →
                   </button>
                 </div>
                 
@@ -1479,12 +1452,12 @@ function DashboardContent({
                       </svg>
                     </div>
                     <h4 className="text-lg font-medium text-gray-900 mb-2">カスタマイズ記録がありません</h4>
-                    <p className="text-gray-500 mb-4">最初のカスタマイズ記録を追加しましょう</p>
+                    <p className="text-gray-500 mb-4">車両データページで記録を追加できます</p>
                     <button
-                      onClick={() => setShowCustomizationModal(true)}
+                      onClick={() => setCurrentPage('my-car')}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     >
-                      カスタマイズを記録
+                      車両データを見る →
                     </button>
                   </div>
                 )}

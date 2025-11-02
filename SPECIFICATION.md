@@ -1134,6 +1134,456 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 
 ---
 
+## 🏗️ 情報アーキテクチャ v2.1：役割の明確化
+
+### 設計思想：時間軸×粒度で役割を切る
+
+#### 役割定義
+- **ダッシュボード** = 今すぐ動くための全車横断ハブ（短期・薄く広く）
+  - Job: ① 未処理の"赤/黄"をゼロにする（今日のTo-Do）、② 直近の傾向を掴み、次の1手を決める（軽い比較）
+  
+- **車両データ** = 1台に深く潜る作戦室（中長期・深く狭く）
+  - Job: ① 1台の現状を正しく把握（指標×履歴×書類）、② 次のメンテ計画を作る（テンプレ→自動入力→予約リンク）
+
+#### 基本原則
+> **ダッシュボードは「上位N件＋"すべてを見る"」まで。編集系や深堀りは必ず車両ページに委譲。**
+
+---
+
+### Ownership Matrix（機能の所有権）
+
+| 機能/情報 | ダッシュボード（全車） | 車両データ（単車） |
+|---------|-----------------|---------------|
+| **重要アラート**（車検/保険/リコール/未確認OCR） | ✅ 要約（上位3件） | ✅ 完全一覧＋根拠（残日数・履歴リンク） |
+| **次のアクション**（給油/メンテ/書類登録） | ✅ 1クリックCTA（対象車にジャンプ） | ✅ 事前入力テンプレ＋自動見積もり |
+| **燃費/コスト可視化** | ✅ スパークライン&順位（直近30日/全車比較） | ✅ 詳細チャート（期間/分位/車種補正/注釈） |
+| **活動タイムライン** | ✅ 直近7日ダイジェスト | ✅ 無制限フィルタ＋添付/メモ込み |
+| **カスタマイズ** | ⛔ **出さない**（カードが重くなる） | ✅ 12カテゴリ完全版 |
+| **PDF/共有** | ✅ ショートカットだけ | ✅ 実行画面（署名・オプション） |
+| **コンテキスト広告** | ✅ 全車横断1枠 | ⛔ **非表示**（プレミアム優先） |
+| **編集フォーム** | ⛔ **すべて車両ページへ** | ✅ 全モーダル |
+
+---
+
+### ナビゲーションと遷移の約束
+
+#### 1. 深リンク必須
+```typescript
+// ダッシュボードのカードから車両データの特定セクションへ
+<Card onClick={() => navigate(`/vehicle/${carId}?tab=fuel&action=add`)}>
+  
+// URLパターン
+/                              // ダッシュボード（全車）
+/vehicle/{carId}               // 車両データトップ
+/vehicle/{carId}?tab=fuel      // 給油セクション
+/vehicle/{carId}?tab=maintenance&action=add  // メンテ追加モーダル直起動
+```
+
+#### 2. 車両バッジ
+- ダッシュボードのすべてのカードに**車両バッジ**（例：🚗 FL5）
+- クリックで車両データの該当セクションへ深リンク
+
+#### 3. ヘッダー車両ドロップダウンの文脈
+- **車両データページ**: 車両切り替えドロップダウン表示
+- **ダッシュボード**: "全車"固定、ドロップダウン非表示（迷わせない）
+
+#### 4. パンくずナビゲーション
+```
+ダッシュボード > Honda Civic FL5 > メンテナンス
+```
+
+---
+
+### 具体UI設計
+
+#### ダッシュボード（全車横断）
+
+##### 上段：アラート集約
+```typescript
+<AlertHub>
+  {/* 車検期限（上位3件） */}
+  <Alert severity="high" car="FL5" daysLeft={14}>
+    車検期限まであと14日
+    <Button onClick={() => navigate('/vehicle/xxx?tab=inspection')}>
+      詳細を見る →
+    </Button>
+  </Alert>
+  
+  {/* 保険満期（上位3件） */}
+  {/* 未確認OCRドラフト */}
+  {/* 低燃費警告 */}
+  
+  <Link to="/alerts">すべてのアラート (12) →</Link>
+</AlertHub>
+```
+
+##### 中段：全車ランキング＋スパークライン
+```typescript
+<RankingCard title="燃費ランキング（直近30日）">
+  {cars.map(car => (
+    <RankRow 
+      car={car} 
+      metric={car.avgFuelEfficiency} 
+      sparkline={last30DaysData}
+      rank={rank}
+      onClick={() => navigate(`/vehicle/${car.id}?tab=fuel`)}
+    />
+  ))}
+</RankingCard>
+
+<RankingCard title="コスト効率（¥/km、車種補正済み）">
+  {/* 同様 */}
+</RankingCard>
+```
+
+##### 下段：今日やること（自動提案3件）
+```typescript
+<ActionSuggestions>
+  <ActionCard
+    icon="⛽"
+    title="給油推奨"
+    car="FL5"
+    reason="前回給油から450km走行"
+    onClick={() => navigate('/vehicle/xxx?tab=fuel&action=add')}
+  >
+    1クリック追加 →
+  </ActionCard>
+  
+  <ActionCard
+    icon="🔧"
+    title="オイル交換時期"
+    car="GDB"
+    reason="前回交換から5,200km"
+    onClick={() => navigate('/vehicle/yyy?tab=maintenance&template=oil')}
+  >
+    テンプレから作成 →
+  </ActionCard>
+  
+  <ActionCard
+    icon="📄"
+    title="OCRドラフト確認"
+    car="FL5"
+    reason="未確認の給油レシート1件"
+    onClick={() => navigate('/vehicle/xxx?tab=fuel&draft=zzz')}
+  >
+    確認する →
+  </ActionCard>
+</ActionSuggestions>
+```
+
+---
+
+#### 車両データ（単車深堀り）
+
+##### ヘッダー：車両カード＋3バッジ
+```typescript
+<VehicleHeader car={car}>
+  <Badge type="inspection" status={getInspectionStatus(car)}>
+    車検 残り{daysLeft}日
+  </Badge>
+  <Badge type="insurance" status={getInsuranceStatus(car)}>
+    保険 {provider}
+  </Badge>
+  {isPremium && <Badge type="premium">Premium</Badge>}
+</VehicleHeader>
+```
+
+##### 2カラムレイアウト
+```typescript
+<Grid cols={2}>
+  {/* 左カラム：基本/走行/メンテ統計 */}
+  <Panel title="基本情報">...</Panel>
+  <Panel title="走行データ">...</Panel>
+  <Panel title="メンテナンス統計">
+    {/* 理想頻度との適合度を表示 */}
+  </Panel>
+  
+  {/* 右カラム：燃料/コスト/車検/評価バー */}
+  <Panel title="給油統計">
+    <DetailChart type="fuel" period="all" annotations={true} />
+  </Panel>
+  <Panel title="コストサマリー">
+    {/* 車種補正済みのコスト効率 */}
+  </Panel>
+  <Panel title="パフォーマンス評価">
+    <PerformanceBar label="メンテナンス品質" value={maintenanceScore} />
+    <PerformanceBar label="コスト効率" value={costEfficiencyScore} subtitle={`¥${costPerKm}/km (${vehicleClass})`} />
+  </Panel>
+</Grid>
+```
+
+##### セクション：カスタム・チャート・提案・ドキュメント
+```typescript
+<Sections>
+  <CustomPartsPanel categories={12} />  {/* 折りたたみUI */}
+  <FuelAndPriceChart detailed={true} />  {/* 重厚版チャート */}
+  <NextMaintenanceSuggestion templates={true} autoEstimate={true} />
+  <DocumentsPanel ocr={true} />
+</Sections>
+```
+
+---
+
+### 重複をなくす運用ルール（実装しやすい順）
+
+#### 1. ダッシュボードでは"表示のみ・編集なし"
+```typescript
+// ❌ ダッシュボードに置かない
+<FuelLogForm />
+<MaintenanceModal />
+
+// ✅ ダッシュボードに置く
+<QuickAction onClick={() => navigate('/vehicle/xxx?action=add-fuel')}>
+  給油を追加 →
+</QuickAction>
+```
+
+#### 2. チャートは軽量版/重厚版をコンポーネント分割
+```typescript
+// src/components/charts/ChartMini.tsx（ダッシュボード用）
+export function SparklineChart({ data, height = 40 }) {
+  return <Sparklines data={data} height={height} />;
+}
+
+// src/components/charts/ChartPro.tsx（車両データ用）
+export function DetailedChart({ data, annotations, period, filters }) {
+  return (
+    <ResponsiveContainer>
+      <LineChart data={data}>
+        <XAxis />
+        <YAxis />
+        <Tooltip />
+        <Line dataKey="value" />
+        {annotations && <ReferenceArea />}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+```
+
+#### 3. カードに"根拠"を置かない
+```typescript
+// ❌ ダッシュボードのカードに詳細を展開
+<Card>
+  <Title>燃費が悪化しています</Title>
+  <Details>
+    <Chart />  // 重い
+    <Table />  // 重い
+  </Details>
+</Card>
+
+// ✅ ダッシュボードは要約のみ
+<Card>
+  <Title>燃費が悪化しています</Title>
+  <Summary>直近3回の平均: 8.2km/L（前月比-15%）</Summary>
+  <Link to="/vehicle/xxx?tab=fuel#analysis">
+    詳細を見る →
+  </Link>
+</Card>
+```
+
+#### 4. 深リンク必須
+```typescript
+// すべての"もっと見る"が車両ページ特定タブへ
+const deepLinks = {
+  fuelDetail: `/vehicle/${carId}?tab=fuel`,
+  maintenanceAdd: `/vehicle/${carId}?tab=maintenance&action=add`,
+  customizationCategory: `/vehicle/${carId}?tab=custom&category=engine`,
+  ocrDraft: `/vehicle/${carId}?tab=fuel&draft=${draftId}`,
+};
+```
+
+---
+
+### データ/クエリ設計の切り分け
+
+#### ダッシュボード用ビュー（集約・最新N件）
+```typescript
+// Firestore構造
+dashboard_summary/{uid} {
+  lastUpdated: Timestamp,
+  alerts: {
+    inspection: [{ carId, carName, daysLeft, severity }], // 上位3件
+    insurance: [...],
+    ocrDrafts: [...],
+    lowFuelEfficiency: [...]
+  },
+  rankings: {
+    fuelEfficiency: [{ carId, value, sparkline30d: number[] }],
+    costEfficiency: [{ carId, value, sparkline30d: number[] }]
+  },
+  actionSuggestions: [
+    { type: 'fuel', carId, reason, priority },
+    { type: 'maintenance', carId, template, reason, priority },
+    { type: 'ocr', carId, draftId, reason, priority }
+  ]
+}
+
+// Cloud Functions で更新（トリガー: onWrite of fuelLogs/maintenance/cars）
+exports.updateDashboardSummary = functions.firestore
+  .document('users/{uid}/cars/{carId}/fuelLogs/{logId}')
+  .onWrite(async (change, context) => {
+    // 集約処理
+    await updateSummary(context.params.uid);
+  });
+```
+
+#### 車両ページ用クエリ（生データ＋ページング）
+```typescript
+// 既存のコレクション構造を使用
+users/{uid}/cars/{carId}/fuelLogs
+users/{uid}/cars/{carId}/maintenance
+users/{uid}/cars/{carId}/customizations
+
+// クエリ最適化（インデックス活用）
+const fuelLogsQuery = query(
+  collection(db, `users/${uid}/cars/${carId}/fuelLogs`),
+  orderBy('date', 'desc'),
+  limit(50)  // 無限スクロールで追加読み込み
+);
+```
+
+#### 体感速度目標
+- **ダッシュボード**: 100ms台でスケルトン解除（集約データ読み込み）
+- **車両データ**: 段階ロード（基本情報→グラフ→履歴）
+
+---
+
+### ナビゲーションフロー
+
+#### 1. 車両バッジからの遷移
+```typescript
+// ダッシュボードの各カードに車両バッジ
+<Card>
+  <VehicleBadge 
+    name="FL5" 
+    onClick={() => navigate(`/vehicle/${carId}?tab=fuel`)}
+  />
+  <Content>燃費が悪化...</Content>
+</Card>
+```
+
+#### 2. ヘッダー車両ドロップダウンの文脈制御
+```typescript
+// page.tsx
+{currentPage === 'dashboard' ? (
+  // ダッシュボード：ドロップダウン非表示
+  <Header showCarSelector={false} />
+) : currentPage === 'my-car' ? (
+  // 車両データ：ドロップダウン表示（車両切り替え）
+  <Header showCarSelector={true} activeCars={activeCars} />
+) : null}
+```
+
+#### 3. パンくずナビゲーション
+```typescript
+<Breadcrumbs>
+  <Link to="/">ダッシュボード</Link>
+  <Separator />
+  <Link to={`/vehicle/${carId}`}>{car.name} {car.modelCode}</Link>
+  <Separator />
+  <Current>メンテナンス</Current>
+</Breadcrumbs>
+```
+
+---
+
+### 計測指標（やって良かったかを測る）
+
+#### KPI定義
+```typescript
+// src/lib/analytics.ts に追加
+
+// 1. 混線率（車両ページ→ダッシュボード直帰率）
+export function logPageNavigation(from: 'dashboard' | 'vehicle', to: 'dashboard' | 'vehicle') {
+  logEvent('page_navigation', { from, to });
+}
+
+// 目標: vehicle→dashboard直帰率 < 10%
+
+// 2. 解決時間（アラート発生→解消までの中央値）
+export function logAlertResolved(alertType: string, minutesToResolve: number) {
+  logEvent('alert_resolved', { alertType, minutesToResolve });
+}
+
+// 目標: ダッシュボード主導で解決時間を30%短縮
+
+// 3. 深リンククリック率
+export function logDeepLinkClicked(from: 'dashboard', to: 'vehicle', tab: string) {
+  logEvent('deeplink_clicked', { from, to, tab });
+}
+
+// 目標: クリック率 > 60%
+
+// 4. テンプレート保存率
+export function logTemplateUsed(template: string, saved: boolean) {
+  logEvent('template_used', { template, saved });
+}
+
+// 目標: 保存率 > 80%
+```
+
+---
+
+### スプリント1：すぐできる差分タスク
+
+#### Phase 1: UI整理（1-2日）
+- [ ] ダッシュボードの編集UI撤去
+  - [ ] `DashboardContent`からフォーム関連のprops削除
+  - [ ] 全CTAを**車両ページ深リンク**に変更
+  - [ ] `setShowMaintenanceModal`等の呼び出しを`navigate`に置換
+
+#### Phase 2: コンポーネント分割（2-3日）
+- [ ] ChartMini/ChartPro の分割
+  - [ ] `src/components/charts/SparklineChart.tsx`作成（ダッシュボード用）
+  - [ ] `src/components/charts/DetailedChart.tsx`作成（車両データ用）
+  - [ ] propsは互換性維持
+
+- [ ] "上位3件＋もっと見る" 統一ルールを全カードに適用
+  - [ ] `AlertHub`: 上位3件＋"すべてのアラート→"
+  - [ ] タイムライン: 直近7日＋"すべての履歴→"
+  - [ ] ランキング: 上位5台＋"すべての車両→"
+
+#### Phase 3: データ最適化（3-4日）
+- [ ] `dashboard_summary` 集約データ生成
+  - [ ] Cloud Functions: `updateDashboardSummary`
+  - [ ] トリガー: fuelLogs/maintenance/cars の onWrite
+  - [ ] 集約: alerts（上位3件）、rankings、actionSuggestions
+
+#### Phase 4: 深リンク実装（2-3日）
+- [ ] URLクエリパラメータ対応
+  - [ ] `?tab=fuel&action=add` でモーダル直起動
+  - [ ] `?draft=xxx` でOCRドラフト直開
+  - [ ] パンくずナビゲーション追加
+
+#### Phase 5: 計測実装（1-2日）
+- [ ] 計測イベント追加
+  - [ ] `dash_deeplink_clicked`
+  - [ ] `vehicle_from_dash_resolved`
+  - [ ] `alert_resolution_time`
+  - [ ] `template_save_rate`
+
+---
+
+### 実装優先度
+
+#### 🔴 最優先（今週）
+1. ダッシュボードの編集UI撤去
+2. 深リンク基本実装
+3. 車両バッジ追加
+
+#### 🟡 重要（来週）
+4. ChartMini/Pro分割
+5. "上位N件"統一ルール
+6. dashboard_summary生成
+
+#### 🟢 次回（再来週以降）
+7. パンくずナビゲーション
+8. 計測ダッシュボード
+9. A/Bテスト（車両ドロップダウン表示/非表示）
+
+---
+
 ## 🔥 優先度A：速攻改善ポイント
 
 ### 1. メンテナンス評価ロジックの改善 ⚠️
