@@ -3,7 +3,7 @@
 import { db, auth } from "@/lib/firebase";
 import {
   collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
-  doc, updateDoc, deleteDoc, Timestamp
+  doc, updateDoc, deleteDoc, Timestamp, limit
 } from "firebase/firestore";
 import { logAudit } from "./auditLog";
 import { logCarAdded, logCarDeleted } from "./analytics";
