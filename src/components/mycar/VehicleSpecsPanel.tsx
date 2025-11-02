@@ -71,7 +71,6 @@ export default function VehicleSpecsPanel({
           <span>📊</span>
           <span>車両データ</span>
         </h2>
-        <p className="text-gray-500 text-sm mt-1">Vehicle Performance & Statistics</p>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
