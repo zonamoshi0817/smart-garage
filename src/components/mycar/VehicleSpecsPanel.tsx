@@ -263,7 +263,7 @@ function DataRow({
   label, 
   value, 
   highlight = false,
-  valueColor = 'text-slate-200'
+  valueColor
 }: { 
   label: string; 
   value: string; 
@@ -272,10 +272,10 @@ function DataRow({
 }) {
   return (
     <div className="flex justify-between items-center">
-      <span className={`text-sm ${highlight ? 'font-semibold text-gray-700' : 'text-gray-600'}`}>
+      <span className={`text-sm ${highlight ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
         {label}
       </span>
-      <span className={`font-mono ${highlight ? 'text-lg font-bold' : 'text-base font-semibold'} ${valueColor || 'text-gray-900'}`}>
+      <span className={`font-mono ${highlight ? 'text-xl font-bold' : 'text-base font-bold'} ${valueColor || 'text-gray-900'}`}>
         {value}
       </span>
     </div>
@@ -301,8 +301,8 @@ function PerformanceBar({
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
-        <span className="text-xs text-gray-600">{label}</span>
-        <span className="text-xs font-mono text-gray-900 font-semibold">{value.toFixed(0)}%</span>
+        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <span className="text-sm font-mono text-gray-900 font-bold">{value.toFixed(0)}%</span>
       </div>
       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
         <div 
