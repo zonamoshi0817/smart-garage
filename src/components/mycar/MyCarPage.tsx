@@ -14,6 +14,7 @@ import DocumentsAndDrafts from './DocumentsAndDrafts';
 import ShareAndPDF from './ShareAndPDF';
 import ContextualAd from './ContextualAd';
 import VehicleSpecsPanel from './VehicleSpecsPanel';
+import CustomPartsPanel from './CustomPartsPanel';
 import PaywallModal from '../modals/PaywallModal';
 
 interface MyCarPageProps {
@@ -193,6 +194,10 @@ export default function MyCarPage({
           car={car}
           maintenanceRecords={maintenanceRecords}
           fuelLogs={fuelLogs}
+        />
+        
+        {/* 2.6. カスタムパーツ一覧 */}
+        <CustomPartsPanel
           customizations={customizations}
         />
         
