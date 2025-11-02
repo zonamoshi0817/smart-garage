@@ -5,13 +5,8 @@ import { Car, MaintenanceRecord, FuelLog, Customization, InsurancePolicy } from 
 import { usePremiumGuard } from '@/hooks/usePremium';
 import VehicleHeader from './VehicleHeader';
 import QuickActions from './QuickActions';
-import VehicleHealthIndicator from './VehicleHealthIndicator';
-import ActivityTimeline from './ActivityTimeline';
-import CostAndFuelDashboard from './CostAndFuelDashboard';
 import FuelAndPriceChart from './FuelAndPriceChart';
 import NextMaintenanceSuggestion from './NextMaintenanceSuggestion';
-import DocumentsAndDrafts from './DocumentsAndDrafts';
-import ShareAndPDF from './ShareAndPDF';
 import ContextualAd from './ContextualAd';
 import VehicleSpecsPanel from './VehicleSpecsPanel';
 import CustomPartsPanel from './CustomPartsPanel';
@@ -99,67 +94,15 @@ export default function MyCarPage({
     checkFeature(actionId as any, undefined, 'minimal');
   };
   
-  // ヘルスインジケータからの1タップ追加
-  const handleQuickAddMaintenance = (type: string) => {
-    onOpenModal('maintenance', { type });
-  };
-  
-  // アクティビティの詳細表示
-  const handleViewActivityDetails = (type: string, id: string) => {
-    onOpenModal(`${type}-detail`, { id });
-  };
-  
-  // アクティビティの複製
-  const handleDuplicateActivity = (type: string, id: string) => {
-    onOpenModal(`${type}-duplicate`, { id });
-  };
-  
   // メンテナンステンプレートから作成
   const handleCreateFromTemplate = (type: string) => {
     onOpenModal('maintenance', { template: type });
-  };
-  
-  // OCRドラフトの確定
-  const handleConfirmDraft = (draftId: string) => {
-    onOpenModal('confirm-draft', { draftId });
-  };
-  
-  // ドキュメント表示
-  const handleViewDocument = (documentId: string) => {
-    onOpenModal('view-document', { documentId });
-  };
-  
-  // 検証ページ表示
-  const handleViewVerification = (verificationId: string) => {
-    window.open(`/verification/${verificationId}`, '_blank');
-  };
-  
-  // PDF生成
-  const handleGeneratePDF = () => {
-    if (!checkFeature('pdf_export')) return;
-    onOpenModal('generate-pdf', { carId: car.id });
-  };
-  
-  // 共有リンク生成
-  const handleGenerateShareLink = () => {
-    if (!checkFeature('share_links')) return;
-    onOpenModal('generate-share-link', { carId: car.id });
-  };
-  
-  // 共有リンク失効
-  const handleRevokeShareLink = () => {
-    onOpenModal('revoke-share-link', { carId: car.id });
   };
   
   // 車両画像変更
   const handleImageChange = () => {
     onOpenModal('change-car-image', { carId: car.id });
   };
-  
-  // ダミーデータ（実際にはFirestoreから取得）
-  const dummyDrafts: any[] = [];
-  const dummyDocuments: any[] = [];
-  const dummyShareLink = undefined;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-12">
@@ -204,62 +147,19 @@ export default function MyCarPage({
           }}
         />
         
-        {/* 3. 車両ヘルスインジケータ */}
-        <VehicleHealthIndicator
-          car={car}
-          maintenanceRecords={maintenanceRecords}
-          onQuickAdd={handleQuickAddMaintenance}
-        />
-        
-        {/* 4. 直近の活動タイムライン */}
-        <ActivityTimeline
-          maintenanceRecords={maintenanceRecords}
-          fuelLogs={fuelLogs}
-          customizations={customizations}
-          insurancePolicies={insurancePolicies}
-          onViewDetails={handleViewActivityDetails}
-          onDuplicate={handleDuplicateActivity}
-        />
-        
-        {/* 5. コスト & 燃費ミニダッシュボード */}
-        <CostAndFuelDashboard
-          maintenanceRecords={maintenanceRecords}
-          fuelLogs={fuelLogs}
-          insurancePolicies={insurancePolicies}
-        />
-        
-        {/* 6. 燃費・単価チャート */}
+        {/* 3. 燃費・単価チャート */}
         <FuelAndPriceChart
           fuelLogs={fuelLogs}
         />
         
-        {/* 7. メンテ & カスタムの「次回提案」カード */}
+        {/* 4. メンテ & カスタムの「次回提案」カード */}
         <NextMaintenanceSuggestion
           car={car}
           maintenanceRecords={maintenanceRecords}
           onCreateFromTemplate={handleCreateFromTemplate}
         />
         
-        {/* 8. ドキュメント & OCRドラフト */}
-        <DocumentsAndDrafts
-          drafts={dummyDrafts}
-          documents={dummyDocuments}
-          onConfirmDraft={handleConfirmDraft}
-          onViewDocument={handleViewDocument}
-          onViewVerification={handleViewVerification}
-        />
-        
-        {/* 9. 共有 & PDF */}
-        <ShareAndPDF
-          carId={car.id!}
-          shareLink={dummyShareLink}
-          onGeneratePDF={handleGeneratePDF}
-          onGenerateShareLink={handleGenerateShareLink}
-          onRevokeShareLink={handleRevokeShareLink}
-          onViewVerificationPage={() => window.open('/verification', '_blank')}
-        />
-        
-        {/* 10. コンテキスト広告/アフィリ枠（無料ユーザーのみ） */}
+        {/* 5. コンテキスト広告/アフィリ枠（無料ユーザーのみ） */}
         <ContextualAd
           car={car}
           isPremium={isPremium}
