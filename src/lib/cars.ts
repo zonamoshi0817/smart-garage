@@ -99,7 +99,7 @@ export async function addCar(data: CarInput) {
 }
 
 // リアルタイム購読
-export function watchCars(cb: (cars: Car[]) => void) {
+export function watchCars(cb: (cars: Car[]) => void, limitCount: number = 50) {
   const u = auth.currentUser;
   if (!u) {
     console.log("No user found, cannot watch cars");
@@ -113,8 +113,8 @@ export function watchCars(cb: (cars: Car[]) => void) {
     const ref = collection(db, "users", u.uid, "cars");
     console.log("Collection reference created:", ref.path);
     
-    const q = query(ref, orderBy("createdAt", "desc"));
-    console.log("Query created, setting up snapshot listener...");
+    const q = query(ref, orderBy("createdAt", "desc"), limit(limitCount));
+    console.log("Query created with limit:", limitCount, "setting up snapshot listener...");
     
     return onSnapshot(q, (snap) => {
       console.log("=== Cars Snapshot Received ===");

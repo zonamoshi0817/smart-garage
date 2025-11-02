@@ -21,6 +21,8 @@ import FuelLogModal from "@/components/modals/FuelLogModal";
 import AddCarModal from "@/components/modals/AddCarModal";
 import FuelLogCard from "@/components/dashboard/FuelLogCard";
 import CustomizationModal from "@/components/modals/CustomizationModal";
+import PaywallModal from "@/components/modals/PaywallModal";
+import { usePremiumGuard } from "@/hooks/usePremium";
 
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
@@ -48,6 +50,9 @@ export default function Home() {
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
+
+  // プレミアムガード
+  const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
 
   // テスト用の車両データ（開発時のみ）
   const testCars: Car[] = [
@@ -556,7 +561,12 @@ export default function Home() {
               <p className="text-xs text-gray-600 mt-1">
                 無制限の車両登録と高度な分析機能を利用できます
               </p>
-              <button className="mt-3 w-full rounded-xl bg-white border border-blue-300 py-2 text-sm font-medium hover:bg-blue-100">
+              <button 
+                onClick={() => {
+                  checkFeature('multiple_cars', { carCount: 999 }, 'hero');
+                }}
+                className="mt-3 w-full rounded-xl bg-white border border-blue-300 py-2 text-sm font-medium hover:bg-blue-100"
+              >
                 詳細を見る
               </button>
             </div>
@@ -596,6 +606,8 @@ export default function Home() {
                 setShowFuelLogModal={setShowFuelLogModal}
                 setShowMaintenanceModal={setShowMaintenanceModal}
                 setShowCustomizationModal={setShowCustomizationModal}
+                userPlan={userPlan}
+                checkFeature={checkFeature}
               />
             ) : currentPage === 'maintenance-history' ? (
               <MaintenanceHistoryContent 
@@ -785,7 +797,14 @@ export default function Home() {
         />
       )}
 
-
+      {/* ペイウォールモーダル */}
+      {showPaywall && (
+        <PaywallModal
+          onClose={closePaywall}
+          feature={paywallFeature}
+          variant={paywallVariant}
+        />
+      )}
 
     </AuthGate>
   );
@@ -2152,6 +2171,11 @@ function DataManagementContent({
 
   // PDF出力機能
   const handleExportPDF = async (carId?: string) => {
+    // プレミアム機能チェック
+    if (!checkFeature('pdf_export', undefined, 'default')) {
+      return;
+    }
+
     try {
       if (carId) {
         // 特定の車両のPDFを生成
@@ -2188,7 +2212,12 @@ function DataManagementContent({
   };
 
   // URL共有機能
-  const handleGenerateURL = (carId?: string) => {
+  const handleGenerateURL = async (carId?: string) => {
+    // プレミアム機能チェック
+    if (!checkFeature('share_links', undefined, 'default')) {
+      return;
+    }
+
     try {
       if (carId) {
         const car = cars.find(c => c.id === carId);
@@ -2198,7 +2227,7 @@ function DataManagementContent({
         }
         
         const carMaintenanceRecords = maintenanceRecords.filter(record => record.carId === carId);
-        const url = generateMaintenanceURL(car, carMaintenanceRecords);
+        const url = await generateMaintenanceURL(car, carMaintenanceRecords);
         
         navigator.clipboard.writeText(url).then(() => {
           alert('URLをクリップボードにコピーしました。');
@@ -2775,7 +2804,9 @@ function CarManagementContent({
   setCurrentPage,
   setShowFuelLogModal,
   setShowMaintenanceModal,
-  setShowCustomizationModal
+  setShowCustomizationModal,
+  userPlan,
+  checkFeature
 }: {
   cars: Car[];
   activeCarId?: string;
@@ -2790,6 +2821,8 @@ function CarManagementContent({
   setShowFuelLogModal: (show: boolean) => void;
   setShowMaintenanceModal: (show: boolean) => void;
   setShowCustomizationModal: (show: boolean) => void;
+  userPlan: 'free' | 'premium';
+  checkFeature: (feature: any, currentUsage?: any, variant?: any) => boolean;
 }) {
 
   const handleDeleteCar = async (carId: string, carName: string) => {
@@ -2944,7 +2977,13 @@ function CarManagementContent({
         <h1 className="text-2xl font-bold">車両</h1>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowAddCarModal(true)}
+            onClick={() => {
+              // 車両数制限をチェック
+              if (!checkFeature('multiple_cars', { carCount: cars.length }, 'minimal')) {
+                return;
+              }
+              setShowAddCarModal(true);
+            }}
             className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
           >
             + 車を追加
@@ -2965,7 +3004,13 @@ function CarManagementContent({
             <p className="text-gray-500 mb-4">まず車を追加して、メンテナンスを管理しましょう。</p>
             <div className="flex gap-2 justify-center">
               <button
-                onClick={() => setShowAddCarModal(true)}
+                onClick={() => {
+                  // 車両数制限をチェック
+                  if (!checkFeature('multiple_cars', { carCount: cars.length }, 'minimal')) {
+                    return;
+                  }
+                  setShowAddCarModal(true);
+                }}
                 className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
               >
                 車を追加
@@ -2973,21 +3018,44 @@ function CarManagementContent({
             </div>
           </div>
         ) : (
-          cars.map((car) => (
-            <CarCard
-              key={car.id}
-              car={car}
-              isActive={car.id === activeCarId}
-              onSelect={() => car.id && setActiveCarId(car.id)}
-              onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
-              onEdit={() => handleEditCar(car)}
-              maintenanceRecords={maintenanceRecords}
-              fuelLogs={fuelLogs}
-              onAddFuel={handleAddFuel}
-              onAddMaintenance={handleAddMaintenance}
-              onAddCustomization={handleAddCustomization}
-            />
-          ))
+          <>
+            {cars.map((car) => (
+              <CarCard
+                key={car.id}
+                car={car}
+                isActive={car.id === activeCarId}
+                onSelect={() => car.id && setActiveCarId(car.id)}
+                onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
+                onEdit={() => handleEditCar(car)}
+                maintenanceRecords={maintenanceRecords}
+                fuelLogs={fuelLogs}
+                onAddFuel={handleAddFuel}
+                onAddMaintenance={handleAddMaintenance}
+                onAddCustomization={handleAddCustomization}
+              />
+            ))}
+            
+            {/* 無料プランユーザー向けのアップグレード訴求 */}
+            {userPlan === 'free' && cars.length === 1 && (
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-dashed border-blue-300 p-6 flex flex-col items-center justify-center text-center hover:border-blue-400 transition">
+                <div className="text-4xl mb-3">🚗✨</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  もう1台追加しませんか？
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  プレミアムプランなら、無制限に車両を登録できます。
+                </p>
+                <button
+                  onClick={() => {
+                    checkFeature('multiple_cars', { carCount: 999 }, 'hero');
+                  }}
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 font-bold hover:shadow-lg transition"
+                >
+                  プレミアムを見る
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

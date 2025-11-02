@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { addCar } from '@/lib/cars';
+import { useState, useEffect } from 'react';
+import { addCar, watchCars } from '@/lib/cars';
 import { CarInput } from '@/types';
 import { isImageFile, compressImage, getCompressionInfo, uploadCarImageWithProgress } from '@/lib/imageCompression';
+import { usePremiumGuard } from '@/hooks/usePremium';
+import PaywallModal from '@/components/modals/PaywallModal';
 
 interface AddCarModalProps {
   onClose: () => void;
@@ -11,6 +13,8 @@ interface AddCarModalProps {
 }
 
 export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
+  const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
+  const [carCount, setCarCount] = useState(0);
   const [name, setName] = useState("");
   const [modelCode, setModel] = useState("");
   const [year, setYear] = useState<string>("");
@@ -28,6 +32,14 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
     compressedSize: string;
     compressionRatio: string;
   } | null>(null);
+
+  // 車両数をリアルタイムで監視
+  useEffect(() => {
+    const unsubscribe = watchCars((cars) => {
+      setCarCount(cars.length);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // ファイル選択ハンドラー
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +158,15 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
       return alert("車名を入力してください");
     }
     
+    // 車両数チェック: 2台目以降はプレミアム必須
+    if (carCount >= 1) {
+      const canAdd = checkFeature('multiple_cars', { carCount: carCount }, 'minimal');
+      if (!canAdd) {
+        console.log("Car limit reached, showing paywall");
+        return; // ペイウォールが表示され、ユーザーがアップグレードするまで処理を中断
+      }
+    }
+    
     console.log("Starting to add car...");
     
     try {
@@ -205,8 +226,18 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-2xl h-[90vh] flex flex-col overflow-hidden">
+    <>
+      {/* ペイウォールモーダル */}
+      {showPaywall && (
+        <PaywallModal
+          onClose={closePaywall}
+          feature={paywallFeature}
+          variant={paywallVariant}
+        />
+      )}
+      
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-2xl h-[90vh] flex flex-col overflow-hidden">
         {/* アップロード中のオーバーレイ */}
         {isUploading && (
           <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center z-10">
@@ -431,6 +462,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

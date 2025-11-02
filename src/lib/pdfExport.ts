@@ -8,6 +8,7 @@ import { Car } from './cars';
 import { MaintenanceRecord } from './maintenance';
 import { generateCombinedProof, ProofData } from './proof';
 import { logPdfExported, logShareLinkCreated } from './analytics';
+import { generatePdfSignature, generateShareToken, shortenSignature } from './signatureToken';
 
 // 日本語フォントの設定
 declare module 'jspdf' {
@@ -40,9 +41,13 @@ export async function generateMaintenancePDF(options: PDFExportOptions): Promise
 
   // 証明性データを生成
   const proof = await generateCombinedProof(car, filteredRecords);
+  
+  // PDF署名を生成
+  const recordIds = filteredRecords.map(r => r.id || '').filter(Boolean);
+  const pdfSignature = await generatePdfSignature(car.id || '', recordIds);
 
   // HTMLコンテンツを生成
-  const htmlContent = generateHTMLContent(car, filteredRecords, proof);
+  const htmlContent = generateHTMLContent(car, filteredRecords, proof, pdfSignature);
   
   // 一時的なDOM要素を作成
   const tempDiv = document.createElement('div');
@@ -90,10 +95,18 @@ export async function generateMaintenancePDF(options: PDFExportOptions): Promise
   }
 }
 
-function generateHTMLContent(car: Car, records: MaintenanceRecord[], proof?: ProofData): string {
+function generateHTMLContent(
+  car: Car, 
+  records: MaintenanceRecord[], 
+  proof?: ProofData,
+  pdfSignature?: { signature: string; metadata: any }
+): string {
   const totalCost = records.reduce((sum, record) => sum + (record.cost || 0), 0);
   const recordCount = records.length;
   const avgCost = recordCount > 0 ? Math.round(totalCost / recordCount) : 0;
+
+  // 署名の短縮版（QRコード用）
+  const shortSignature = pdfSignature ? shortenSignature(pdfSignature.signature) : '';
 
   return `
     <!DOCTYPE html>
@@ -323,6 +336,18 @@ function generateHTMLContent(car: Car, records: MaintenanceRecord[], proof?: Pro
           </div>
         </div>
         ` : ''}
+        ${pdfSignature ? `
+        <div class="signature-section" style="margin-top: 15px; padding: 12px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 8px;">
+          <h4 style="margin: 0 0 8px 0; color: #666; font-size: 13px;">📋 エクスポート署名</h4>
+          <div style="font-size: 11px; color: #666;">
+            <div style="margin-bottom: 4px;">署名ID: <code style="background: #fff; padding: 2px 4px; border-radius: 3px;">${shortSignature}</code></div>
+            <div style="margin-bottom: 4px;">生成時刻: ${new Date(pdfSignature.metadata.timestamp).toLocaleString('ja-JP')}</div>
+            <div style="font-size: 10px; color: #999; margin-top: 6px;">
+              この署名により、エクスポート元の正当性と改ざんの有無を検証できます。
+            </div>
+          </div>
+        </div>
+        ` : ''}
       </div>
     </body>
     </html>
@@ -351,13 +376,16 @@ export async function downloadMaintenancePDF(options: PDFExportOptions): Promise
   }
 }
 
-export function generateMaintenanceURL(car: Car, maintenanceRecords: MaintenanceRecord[]): string {
+export async function generateMaintenanceURL(car: Car, maintenanceRecords: MaintenanceRecord[]): Promise<string> {
   // 簡単なURL共有機能（実際の実装では、サーバーサイドでデータを保存してURLを生成）
   const data = {
     car,
     records: maintenanceRecords,
     generatedAt: new Date().toISOString()
   };
+  
+  // 署名トークンを生成
+  const { token } = await generateShareToken(car.id || '', Date.now(), 30 * 24 * 60 * 60 * 1000); // 30日有効
   
   // Base64エンコードしてURLパラメータに含める（簡易実装）
   const encodedData = btoa(JSON.stringify(data));
@@ -367,5 +395,6 @@ export function generateMaintenanceURL(car: Car, maintenanceRecords: Maintenance
     logShareLinkCreated(car.id);
   }
   
-  return `${window.location.origin}/shared/${encodedData}`;
+  // 署名トークン付きURLを返す
+  return `${window.location.origin}/share?data=${encodedData}&token=${token}`;
 }

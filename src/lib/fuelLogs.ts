@@ -11,13 +11,17 @@ import {
   orderBy, 
   onSnapshot, 
   getDocs,
-  Timestamp 
+  Timestamp,
+  limit,
+  QueryDocumentSnapshot,
+  DocumentData
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { auth } from "./firebase";
 import type { FuelLog, FuelLogInput } from "@/types";
 import { logAudit } from "./auditLog";
 import { logFuelCreated } from "./analytics";
+import { fetchPaginatedData } from "./pagination";
 
 // 型をエクスポート
 export type { FuelLog, FuelLogInput };
@@ -141,6 +145,49 @@ export const deleteFuelLog = async (id: string): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * ページング対応: 給油ログを取得
+ */
+export async function fetchFuelLogsPaginated(
+  carId?: string,
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null = null,
+  pageSize: number = 20
+): Promise<{
+  items: FuelLog[];
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("ユーザーがログインしていません");
+
+  try {
+    const ref = collection(db, "users", user.uid, "fuelLogs");
+    
+    // ベースクエリを構築
+    let baseQuery = carId
+      ? query(ref, where("carId", "==", carId), where("deletedAt", "==", null), orderBy("date", "desc"))
+      : query(ref, where("deletedAt", "==", null), orderBy("date", "desc"));
+
+    // ページング適用
+    const result = await fetchPaginatedData<any>(baseQuery, lastDoc, { pageSize });
+
+    // Timestampを変換
+    const items = result.items.map((item) => ({
+      ...item,
+      date: item.date?.toDate ? item.date.toDate() : new Date(item.date)
+    })) as FuelLog[];
+
+    return {
+      items,
+      lastDoc: result.lastDoc,
+      hasMore: result.hasMore
+    };
+  } catch (error) {
+    console.error("Error fetching paginated fuel logs:", error);
+    throw error;
+  }
+}
 
 // 特定の車両の給油ログを取得
 export const getFuelLogs = async (carId: string): Promise<FuelLog[]> => {

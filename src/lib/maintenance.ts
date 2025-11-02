@@ -3,12 +3,14 @@
 import { db, auth } from "@/lib/firebase";
 import {
   collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
-  doc, updateDoc, deleteDoc, where
+  doc, updateDoc, deleteDoc, where, limit, startAfter, getDocs,
+  QueryDocumentSnapshot, DocumentData
 } from "firebase/firestore";
 import { validateMileageConsistency } from "@/lib/validators";
 import { getDoc } from "firebase/firestore";
 import { logAudit } from "./auditLog";
 import { logMaintenanceCreated } from "./analytics";
+import { fetchPaginatedData, PaginationState } from "./pagination";
 
 export type MaintenanceRecord = {
   id?: string;
@@ -180,7 +182,7 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
 }
 
 // 特定の車のメンテナンス履歴をリアルタイム購読
-export function watchMaintenanceRecords(carId: string, cb: (records: MaintenanceRecord[]) => void) {
+export function watchMaintenanceRecords(carId: string, cb: (records: MaintenanceRecord[]) => void, limitCount: number = 100) {
   const u = auth.currentUser;
   if (!u) {
     console.log("No user authenticated, cannot watch maintenance records");
@@ -194,11 +196,13 @@ export function watchMaintenanceRecords(carId: string, cb: (records: Maintenance
     console.log("Collection reference created:", ref.path);
     
     // 一時的にインデックスエラーを回避するため、orderByを削除
+    // limitを追加してパフォーマンスを向上
     const q = query(
       ref, 
-      where("carId", "==", carId)
+      where("carId", "==", carId),
+      limit(limitCount)
     );
-    console.log("Query created for carId:", carId);
+    console.log("Query created for carId:", carId, "with limit:", limitCount);
     
     return onSnapshot(q, (snap) => {
       console.log("Snapshot received for carId", carId, ":", snap.docs.length, "documents");
@@ -330,8 +334,51 @@ export async function deleteMultipleMaintenanceRecords(recordIds: string[]) {
   }
 }
 
-// すべてのメンテナンス履歴をリアルタイム購読
-export function watchAllMaintenanceRecords(cb: (records: MaintenanceRecord[]) => void) {
+/**
+ * ページング対応: メンテナンス履歴を取得
+ */
+export async function fetchMaintenanceRecordsPaginated(
+  carId?: string,
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null = null,
+  pageSize: number = 20
+): Promise<{
+  items: MaintenanceRecord[];
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}> {
+  const u = auth.currentUser;
+  if (!u) throw new Error("not signed in");
+
+  try {
+    const ref = collection(db, "users", u.uid, "maintenance");
+    
+    // ベースクエリを構築
+    let baseQuery = carId
+      ? query(ref, where("carId", "==", carId), where("deletedAt", "==", null), orderBy("date", "desc"))
+      : query(ref, where("deletedAt", "==", null), orderBy("date", "desc"));
+
+    // ページング適用
+    const result = await fetchPaginatedData<any>(baseQuery, lastDoc, { pageSize });
+
+    // Timestampを変換
+    const items = result.items.map((item) => ({
+      ...item,
+      date: item.date instanceof Date ? item.date : (item.date?.toDate ? item.date.toDate() : new Date())
+    })) as MaintenanceRecord[];
+
+    return {
+      items,
+      lastDoc: result.lastDoc,
+      hasMore: result.hasMore
+    };
+  } catch (error) {
+    console.error("Error fetching paginated maintenance records:", error);
+    throw error;
+  }
+}
+
+// すべてのメンテナンス履歴をリアルタイム購読（上限付き）
+export function watchAllMaintenanceRecords(cb: (records: MaintenanceRecord[]) => void, limitCount: number = 50) {
   const u = auth.currentUser;
   if (!u) {
     console.log("No user authenticated, cannot watch all maintenance records");
@@ -344,18 +391,13 @@ export function watchAllMaintenanceRecords(cb: (records: MaintenanceRecord[]) =>
     const ref = collection(db, "users", u.uid, "maintenance");
     console.log("All maintenance collection reference created:", ref.path);
     
-    // 一時的にインデックスエラーを回避するため、orderByを削除
-    const q = query(ref);
-    console.log("All maintenance query created");
+    // limit付きでクエリを作成
+    const q = query(ref, where("deletedAt", "==", null), orderBy("date", "desc"), limit(limitCount));
+    console.log("All maintenance query created with limit:", limitCount);
     
     return onSnapshot(q, (snap) => {
       console.log("All maintenance snapshot received:", snap.docs.length, "documents");
       const list = snap.docs
-        .filter((d) => {
-          // 論理削除されたレコードを除外
-          const data = d.data();
-          return !data.deletedAt;
-        })
         .map((d) => {
           const data = d.data();
           console.log("All maintenance document data:", d.id, data);
