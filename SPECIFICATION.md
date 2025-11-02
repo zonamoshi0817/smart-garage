@@ -1479,26 +1479,25 @@ async function handleOcrResult(result: Tesseract.RecognizeResult) {
 ---
 
 **最新バージョン: 2.1.0**  
-**コミットID: 06df2e7**  
-**総コミット数: 120コミット**  
-**本番環境**: https://smart-garage-mmwgktgq1-kobayashis-projects-6366834f.vercel.app
+**コミットID: c9715ae**  
+**総コミット数: 121コミット**  
+**本番環境**: https://smart-garage-1hbxpbfes-kobayashis-projects-6366834f.vercel.app
 
 ---
 
 ## 📝 変更履歴
 
 ### v2.1.0 (2025-11-02)
-- ✅ Vercelへのデプロイ成功
+- ✅ Vercelへのデプロイ成功（本番環境公開）
 - ✅ TypeScript型エラー修正（Timestamp/Date統一）
 - ✅ ビルドエラー17ファイル修正
-- ✅ 優先度A改善ポイントの仕様化
-- 🔄 次回実装予定：
-  - メンテナンス評価ロジック改善（理想頻度ベース）
-  - コスト効率の車種特性補正
-  - FuelLog単位整合（物理量と価格分離）
-  - Date/Timestamp完全統一
-  - 売却済み車両のREAD ONLY閲覧
-  - OCR信頼度ベースのペイウォール発火
+- ✅ **優先度A改善ポイント全6項目実装完了** 🔥
+  1. ✅ メンテナンス評価ロジック改善（理想頻度ベース評価）
+  2. ✅ コスト効率の車種特性補正（クラス係数導入）
+  3. ✅ FuelLog単位整合（物理量と価格の分離、後方互換ヘルパー）
+  4. ✅ Date/Timestamp完全統一（toTs()ヘルパー追加）
+  5. ✅ 売却済み車両のREAD ONLY閲覧機能
+  6. ✅ OCR信頼度ベースのペイウォール発火（65%閾値）
 
 ### v2.0.0 (2025-11-01)
 - ✅ 車両ステータス管理（active/sold/scrapped）
