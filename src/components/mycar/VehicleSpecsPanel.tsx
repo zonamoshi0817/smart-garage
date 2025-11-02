@@ -201,25 +201,32 @@ export default function VehicleSpecsPanel({
           </div>
           
           {/* 車検情報 */}
-          {car.inspectionExpiry && (
-            <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-              <h3 className="text-lg font-bold text-yellow-700 mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-yellow-500 rounded"></span>
-                車検情報
-              </h3>
-              <div className="space-y-3">
-                <DataRow 
-                  label="車検期限" 
-                  value={toDate(car.inspectionExpiry)?.toLocaleDateString('ja-JP') || '---'} 
-                />
-                <DataRow 
-                  label="残り日数" 
-                  value={`${Math.ceil((toDate(car.inspectionExpiry)!.getTime() - Date.now()) / (1000 * 60 * 60 * 24))}日`}
-                  valueColor={getInspectionColor(Math.ceil((toDate(car.inspectionExpiry)!.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}
-                />
+          {(() => {
+            const inspectionDate = toDate(car.inspectionExpiry);
+            if (!inspectionDate) return null;
+            
+            const daysRemaining = Math.ceil((inspectionDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+            
+            return (
+              <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                <h3 className="text-lg font-bold text-yellow-700 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-yellow-500 rounded"></span>
+                  車検情報
+                </h3>
+                <div className="space-y-3">
+                  <DataRow 
+                    label="車検期限" 
+                    value={inspectionDate.toLocaleDateString('ja-JP')} 
+                  />
+                  <DataRow 
+                    label="残り日数" 
+                    value={`${daysRemaining}日`}
+                    valueColor={getInspectionColor(daysRemaining)}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
           
           {/* パフォーマンス指標 */}
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
