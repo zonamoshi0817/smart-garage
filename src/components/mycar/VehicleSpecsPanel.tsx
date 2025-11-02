@@ -230,9 +230,9 @@ export default function VehicleSpecsPanel({
         {/* 左パネル：基本スペック */}
         <div className="space-y-6">
           {/* 基本情報 */}
-          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-            <h3 className="text-lg font-bold text-blue-700 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-blue-500 rounded"></span>
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-gray-400 rounded"></span>
               基本情報
             </h3>
             <div className="space-y-3">
@@ -244,9 +244,9 @@ export default function VehicleSpecsPanel({
           </div>
           
           {/* 走行データ */}
-          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-            <h3 className="text-lg font-bold text-green-700 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-green-500 rounded"></span>
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-gray-400 rounded"></span>
               走行データ
             </h3>
             <div className="space-y-3">
@@ -267,16 +267,15 @@ export default function VehicleSpecsPanel({
               <DataRow 
                 label="平均燃費" 
                 value={`${averageFuelEfficiency} km/L`}
-                valueColor="text-green-600"
               />
               )}
             </div>
           </div>
           
           {/* メンテナンス統計 */}
-          <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-            <h3 className="text-lg font-bold text-purple-700 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-purple-500 rounded"></span>
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-gray-400 rounded"></span>
               メンテナンス統計
             </h3>
             <div className="space-y-3">
@@ -291,7 +290,6 @@ export default function VehicleSpecsPanel({
               <DataRow 
                 label="総メンテナンス費" 
                 value={`¥${totalMaintenanceCost.toLocaleString()}`}
-                valueColor="text-purple-600"
               />
             </div>
           </div>
@@ -300,9 +298,9 @@ export default function VehicleSpecsPanel({
         {/* 右パネル：給油・コストデータ */}
         <div className="space-y-6">
           {/* 給油統計 */}
-          <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-            <h3 className="text-lg font-bold text-orange-700 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-orange-500 rounded"></span>
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-gray-400 rounded"></span>
               給油統計
             </h3>
             <div className="space-y-3">
@@ -317,22 +315,20 @@ export default function VehicleSpecsPanel({
               <DataRow 
                 label="総燃料費" 
                 value={`¥${totalFuelCost.toLocaleString()}`}
-                valueColor="text-orange-600"
               />
               {averageFuelEfficiency && (
                 <DataRow 
                   label="燃費評価" 
                   value={getFuelEfficiencyRating(parseFloat(averageFuelEfficiency))}
-                  valueColor={getFuelEfficiencyColor(parseFloat(averageFuelEfficiency))}
                 />
               )}
             </div>
           </div>
           
           {/* コストサマリー */}
-          <div className="bg-red-50 rounded-xl p-4 border border-red-200">
-            <h3 className="text-lg font-bold text-red-700 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-red-500 rounded"></span>
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-gray-400 rounded"></span>
               コストサマリー
             </h3>
             <div className="space-y-3">
@@ -360,9 +356,9 @@ export default function VehicleSpecsPanel({
             const daysRemaining = Math.ceil((inspectionDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
             
             return (
-              <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-                <h3 className="text-lg font-bold text-yellow-700 mb-4 flex items-center gap-2">
-                  <span className="w-1 h-6 bg-yellow-500 rounded"></span>
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-gray-400 rounded"></span>
                   車検情報
                 </h3>
                 <div className="space-y-3">
@@ -373,7 +369,6 @@ export default function VehicleSpecsPanel({
                   <DataRow 
                     label="残り日数" 
                     value={`${daysRemaining}日`}
-                    valueColor={getInspectionColor(daysRemaining)}
                   />
                 </div>
               </div>
@@ -381,9 +376,9 @@ export default function VehicleSpecsPanel({
           })()}
           
           {/* パフォーマンス指標 */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
-            <h3 className="text-lg font-bold text-indigo-700 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-indigo-500 rounded"></span>
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-gray-400 rounded"></span>
               パフォーマンス評価
             </h3>
             <div className="space-y-4">

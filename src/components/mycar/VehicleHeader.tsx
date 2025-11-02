@@ -56,7 +56,7 @@ export default function VehicleHeader({
         <div className="flex flex-col lg:flex-row gap-6">
           {/* 左側：車両画像 */}
           <div className="flex-shrink-0">
-            <div className="relative w-full lg:w-64 h-48 bg-gray-200 rounded-xl overflow-hidden group">
+            <div className="relative w-full lg:w-64 h-48 bg-white rounded-xl overflow-hidden group border border-gray-200">
               {!imageError && car.imagePath ? (
                 <Image
                   src={car.imagePath}
@@ -66,8 +66,8 @@ export default function VehicleHeader({
                   onError={() => setImageError(true)}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
-                  <svg className="w-24 h-24 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-full h-full flex items-center justify-center bg-white">
+                  <svg className="w-24 h-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h8m0 0v8m0-8l-8 8" />
                   </svg>
                 </div>
