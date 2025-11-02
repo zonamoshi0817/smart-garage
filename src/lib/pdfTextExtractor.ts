@@ -1,11 +1,18 @@
 // src/lib/pdfTextExtractor.ts
 "use client";
 
-import * as pdfjsLib from 'pdfjs-dist';
-
-// PDF.js Worker設定
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+/**
+ * PDF.jsの動的インポート（Next.js互換性のため）
+ */
+async function getPdfJs() {
+  const pdfjsLib = await import('pdfjs-dist');
+  
+  // Worker設定（初回のみ）
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  }
+  
+  return pdfjsLib;
 }
 
 /**
@@ -16,6 +23,9 @@ if (typeof window !== 'undefined') {
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
     console.log('[PDF Extractor] Starting PDF text extraction...');
+    
+    // PDF.jsを動的インポート
+    const pdfjsLib = await getPdfJs();
     
     // ファイルをArrayBufferとして読み込み
     const arrayBuffer = await file.arrayBuffer();
@@ -64,6 +74,9 @@ export async function renderPDFPageToImage(
 ): Promise<string> {
   try {
     console.log(`[PDF Extractor] Rendering page ${pageNum} to image...`);
+    
+    // PDF.jsを動的インポート
+    const pdfjsLib = await getPdfJs();
     
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
