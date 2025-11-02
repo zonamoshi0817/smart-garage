@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function: Check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function: Check if user owns the resource
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      // Cars subcollection
+      match /cars/{carId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Maintenance records subcollection
+      match /maintenance/{maintenanceId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Fuel logs subcollection
+      match /fuelLogs/{fuelLogId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Customizations subcollection
+      match /customizations/{customizationId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Insurance policies subcollection
+      match /policies/{policyId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Insurance claims subcollection
+      match /claims/{claimId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Insurance notifications subcollection
+      match /insuranceNotifications/{notificationId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Analytics events subcollection
+      match /analyticsEvents/{eventId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+    
+    // Audit logs collection (admin only, or user can read their own)
+    match /auditLogs/{logId} {
+      allow read: if isSignedIn() && resource.data.actorUid == request.auth.uid;
+      allow write: if false; // Only via server-side SDK
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
