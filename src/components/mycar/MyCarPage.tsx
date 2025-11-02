@@ -72,14 +72,14 @@ export default function MyCarPage({
       label: 'PDF出力',
       icon: '📄',
       isPremium: true,
-      onClick: () => handleGeneratePDF()
+      onClick: () => onOpenModal('pdf')
     },
     {
       id: 'share',
       label: '共有リンク',
       icon: '🔗',
       isPremium: true,
-      onClick: () => handleGenerateShareLink()
+      onClick: () => onOpenModal('share')
     },
     {
       id: 'insurance',
