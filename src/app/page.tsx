@@ -544,11 +544,6 @@ export default function Home() {
               onClick={() => setCurrentPage('my-car')}
             />
             <NavItem 
-              label="車両管理" 
-              active={currentPage === 'car-management'} 
-              onClick={() => setCurrentPage('car-management')}
-            />
-            <NavItem 
               label="燃費" 
               active={currentPage === 'fuel-logs'} 
               onClick={() => setCurrentPage('fuel-logs')}
