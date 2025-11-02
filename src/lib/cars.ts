@@ -273,3 +273,32 @@ export async function markCarAsSold(
   
   console.log(`Successfully marked car ${carId} as sold`);
 }
+
+// 車両を現在保有中に戻す（売却済み・廃車済みから復元）
+export async function restoreCarToActive(carId: string) {
+  const u = auth.currentUser;
+  if (!u) throw new Error("not signed in");
+  
+  console.log(`Restoring car ${carId} to active status`);
+  
+  const carRef = doc(db, "users", u.uid, "cars", carId);
+  await updateDoc(carRef, {
+    status: 'active',
+    soldDate: null,
+    soldPrice: null,
+    soldTo: null,
+    soldNotes: null,
+    updatedBy: u.uid,
+    updatedAt: serverTimestamp(),
+  });
+  
+  // 監査ログを記録
+  await logAudit({
+    entityType: 'car',
+    entityId: carId,
+    action: 'update',
+    after: { status: 'active' }
+  });
+  
+  console.log(`Successfully restored car ${carId} to active status`);
+}

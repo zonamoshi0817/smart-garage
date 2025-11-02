@@ -3327,7 +3327,7 @@ function CarCard({
                   </svg>
                   <span>編集</span>
                 </button>
-                {!isSold && !isScrapped && (
+                {!isSold && !isScrapped ? (
                   <>
                     <div className="h-px bg-gray-200 my-1"></div>
                     <button
@@ -3342,6 +3342,31 @@ function CarCard({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
                       <span>売却済みにする</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-px bg-gray-200 my-1"></div>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (confirm(`「${car.name}」を現在保有中に戻しますか？`)) {
+                          try {
+                            const { restoreCarToActive } = await import("@/lib/cars");
+                            await restoreCarToActive(car.id!);
+                          } catch (error) {
+                            console.error('Error restoring car:', error);
+                            alert('復元に失敗しました');
+                          }
+                        }
+                        setShowDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-medium text-green-600 hover:bg-green-50 transition-colors flex items-center gap-3"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                      <span>現在保有中に戻す</span>
                     </button>
                   </>
                 )}
