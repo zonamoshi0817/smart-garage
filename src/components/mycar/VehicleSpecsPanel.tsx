@@ -64,23 +64,23 @@ export default function VehicleSpecsPanel({
   }, [fuelLogs]);
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl p-6 border border-slate-700">
+    <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
       {/* ヘッダー */}
-      <div className="mb-6 pb-4 border-b border-slate-700">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+      <div className="mb-6 pb-4 border-b border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <span>📊</span>
           <span>車両データ</span>
         </h2>
-        <p className="text-slate-400 text-sm mt-1">Vehicle Performance & Statistics</p>
+        <p className="text-gray-500 text-sm mt-1">Vehicle Performance & Statistics</p>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 左パネル：基本スペック */}
         <div className="space-y-6">
           {/* 基本情報 */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <h3 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-blue-400 rounded"></span>
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+            <h3 className="text-lg font-bold text-blue-700 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-blue-500 rounded"></span>
               基本情報
             </h3>
             <div className="space-y-3">
@@ -92,9 +92,9 @@ export default function VehicleSpecsPanel({
           </div>
           
           {/* 走行データ */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-green-400 rounded"></span>
+          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+            <h3 className="text-lg font-bold text-green-700 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-green-500 rounded"></span>
               走行データ
             </h3>
             <div className="space-y-3">
@@ -112,19 +112,19 @@ export default function VehicleSpecsPanel({
                 value={monthlyAverageKm ? `${(monthlyAverageKm * 12).toLocaleString()} km/年` : '---'} 
               />
               {averageFuelEfficiency && (
-                <DataRow 
-                  label="平均燃費" 
-                  value={`${averageFuelEfficiency} km/L`}
-                  valueColor="text-green-300"
-                />
+              <DataRow 
+                label="平均燃費" 
+                value={`${averageFuelEfficiency} km/L`}
+                valueColor="text-green-600"
+              />
               )}
             </div>
           </div>
           
           {/* メンテナンス統計 */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <h3 className="text-lg font-bold text-purple-400 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-purple-400 rounded"></span>
+          <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+            <h3 className="text-lg font-bold text-purple-700 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-purple-500 rounded"></span>
               メンテナンス統計
             </h3>
             <div className="space-y-3">
@@ -139,7 +139,7 @@ export default function VehicleSpecsPanel({
               <DataRow 
                 label="総メンテナンス費" 
                 value={`¥${totalMaintenanceCost.toLocaleString()}`}
-                valueColor="text-purple-300"
+                valueColor="text-purple-600"
               />
             </div>
           </div>
@@ -148,9 +148,9 @@ export default function VehicleSpecsPanel({
         {/* 右パネル：給油・コストデータ */}
         <div className="space-y-6">
           {/* 給油統計 */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <h3 className="text-lg font-bold text-orange-400 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-orange-400 rounded"></span>
+          <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+            <h3 className="text-lg font-bold text-orange-700 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-orange-500 rounded"></span>
               給油統計
             </h3>
             <div className="space-y-3">
@@ -165,7 +165,7 @@ export default function VehicleSpecsPanel({
               <DataRow 
                 label="総燃料費" 
                 value={`¥${totalFuelCost.toLocaleString()}`}
-                valueColor="text-orange-300"
+                valueColor="text-orange-600"
               />
               {averageFuelEfficiency && (
                 <DataRow 
@@ -178,9 +178,9 @@ export default function VehicleSpecsPanel({
           </div>
           
           {/* コストサマリー */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <h3 className="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-red-400 rounded"></span>
+          <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+            <h3 className="text-lg font-bold text-red-700 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-red-500 rounded"></span>
               コストサマリー
             </h3>
             <div className="space-y-3">
@@ -202,9 +202,9 @@ export default function VehicleSpecsPanel({
           
           {/* 車検情報 */}
           {car.inspectionExpiry && (
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-              <h3 className="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-yellow-400 rounded"></span>
+            <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+              <h3 className="text-lg font-bold text-yellow-700 mb-4 flex items-center gap-2">
+                <span className="w-1 h-6 bg-yellow-500 rounded"></span>
                 車検情報
               </h3>
               <div className="space-y-3">
@@ -222,9 +222,9 @@ export default function VehicleSpecsPanel({
           )}
           
           {/* パフォーマンス指標 */}
-          <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-xl p-4 border border-blue-700">
-            <h3 className="text-lg font-bold text-cyan-400 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-cyan-400 rounded"></span>
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
+            <h3 className="text-lg font-bold text-indigo-700 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-indigo-500 rounded"></span>
               パフォーマンス評価
             </h3>
             <div className="space-y-4">
@@ -265,10 +265,10 @@ function DataRow({
 }) {
   return (
     <div className="flex justify-between items-center">
-      <span className={`text-sm ${highlight ? 'font-semibold text-slate-300' : 'text-slate-400'}`}>
+      <span className={`text-sm ${highlight ? 'font-semibold text-gray-700' : 'text-gray-600'}`}>
         {label}
       </span>
-      <span className={`font-mono ${highlight ? 'text-lg font-bold' : 'text-base font-semibold'} ${valueColor}`}>
+      <span className={`font-mono ${highlight ? 'text-lg font-bold' : 'text-base font-semibold'} ${valueColor || 'text-gray-900'}`}>
         {value}
       </span>
     </div>
@@ -294,10 +294,10 @@ function PerformanceBar({
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
-        <span className="text-xs text-slate-400">{label}</span>
-        <span className="text-xs font-mono text-slate-300">{value.toFixed(0)}%</span>
+        <span className="text-xs text-gray-600">{label}</span>
+        <span className="text-xs font-mono text-gray-900 font-semibold">{value.toFixed(0)}%</span>
       </div>
-      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
         <div 
           className={`h-full ${colorClasses[color]} transition-all duration-500`}
           style={{ width: `${value}%` }}
@@ -317,16 +317,16 @@ function getFuelEfficiencyRating(efficiency: number): string {
 }
 
 function getFuelEfficiencyColor(efficiency: number): string {
-  if (efficiency >= 15) return 'text-green-400';
-  if (efficiency >= 12) return 'text-blue-400';
-  if (efficiency >= 10) return 'text-yellow-400';
-  if (efficiency >= 8) return 'text-orange-400';
-  return 'text-red-400';
+  if (efficiency >= 15) return 'text-green-600';
+  if (efficiency >= 12) return 'text-blue-600';
+  if (efficiency >= 10) return 'text-yellow-600';
+  if (efficiency >= 8) return 'text-orange-600';
+  return 'text-red-600';
 }
 
 function getInspectionColor(days: number): string {
-  if (days < 30) return 'text-red-400';
-  if (days < 90) return 'text-orange-400';
-  return 'text-green-400';
+  if (days < 30) return 'text-red-600';
+  if (days < 90) return 'text-orange-600';
+  return 'text-green-600';
 }
 
