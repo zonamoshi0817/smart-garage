@@ -28,7 +28,6 @@ import { usePremiumGuard } from "@/hooks/usePremium";
 
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
-  const { userPlan, checkFeature } = usePremiumGuard();
   const [cars, setCars] = useState<Car[]>([]);
   const [activeCarId, setActiveCarId] = useState<string | undefined>(undefined);
   const [showAddCarModal, setShowAddCarModal] = useState(false);
@@ -1249,7 +1248,11 @@ function DashboardContent({
                         <h4 className="text-sm font-medium text-gray-700 mb-3">最近の給油履歴</h4>
                         <div className="space-y-2">
                           {fuelLogs
-                            .sort((a, b) => b.date.getTime() - a.date.getTime())
+                            .sort((a, b) => {
+                              const aSeconds = a.date?.seconds || 0;
+                              const bSeconds = b.date?.seconds || 0;
+                              return bSeconds - aSeconds;
+                            })
                             .slice(0, 2)
                             .map((log) => (
                             <div key={log.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
