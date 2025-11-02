@@ -2937,16 +2937,21 @@ function CarManagementContent({
     setShowCustomizationModal(true);
   };
 
+  // 車両をステータスで分類
+  const activeCars = cars.filter(car => !car.status || car.status === 'active');
+  const soldCars = cars.filter(car => car.status === 'sold');
+  const scrappedCars = cars.filter(car => car.status === 'scrapped');
+
   return (
     <>
       {/* ヘッダー */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">車両</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">車両管理</h1>
         <div className="flex gap-2">
           <button
             onClick={() => {
               // 車両数制限をチェック
-              if (!checkFeature('multiple_cars', { carCount: cars.length }, 'minimal')) {
+              if (!checkFeature('multiple_cars', { carCount: activeCars.length }, 'minimal')) {
                 return;
               }
               setShowAddCarModal(true);
@@ -2958,9 +2963,15 @@ function CarManagementContent({
         </div>
       </div>
 
-      {/* 車一覧 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {cars.length === 0 ? (
+      {/* 現在保有中の車両 */}
+      <div className="mb-8">
+        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <span>🚗</span>
+          <span>現在保有中</span>
+          <span className="text-sm font-normal text-gray-500">({activeCars.length}台)</span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {activeCars.length === 0 ? (
           <div className="col-span-full bg-white rounded-2xl border border-gray-200 p-8 text-center">
             <div className="text-gray-500 mb-4">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2984,26 +2995,26 @@ function CarManagementContent({
               </button>
             </div>
           </div>
-        ) : (
-          <>
-            {cars.map((car) => (
-              <CarCard
-                key={car.id}
-                car={car}
-                isActive={car.id === activeCarId}
-                onSelect={() => car.id && setActiveCarId(car.id)}
-                onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
-                onEdit={() => handleEditCar(car)}
-                maintenanceRecords={maintenanceRecords}
-                fuelLogs={fuelLogs}
-                onAddFuel={handleAddFuel}
-                onAddMaintenance={handleAddMaintenance}
-                onAddCustomization={handleAddCustomization}
-              />
-            ))}
-            
-            {/* 無料プランユーザー向けのアップグレード訴求 */}
-            {userPlan === 'free' && cars.length === 1 && (
+          ) : (
+            <>
+              {activeCars.map((car) => (
+                <CarCard
+                  key={car.id}
+                  car={car}
+                  isActive={car.id === activeCarId}
+                  onSelect={() => car.id && setActiveCarId(car.id)}
+                  onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
+                  onEdit={() => handleEditCar(car)}
+                  maintenanceRecords={maintenanceRecords}
+                  fuelLogs={fuelLogs}
+                  onAddFuel={handleAddFuel}
+                  onAddMaintenance={handleAddMaintenance}
+                  onAddCustomization={handleAddCustomization}
+                />
+              ))}
+              
+              {/* 無料プランユーザー向けのアップグレード訴求 */}
+              {userPlan === 'free' && activeCars.length === 1 && (
               <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-dashed border-blue-300 p-6 flex flex-col items-center justify-center text-center hover:border-blue-400 transition">
                 <div className="text-4xl mb-3">🚗✨</div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">
@@ -3023,9 +3034,67 @@ function CarManagementContent({
               </div>
             )}
           </>
-        )}
+          )}
+        </div>
       </div>
 
+      {/* 売却済み車両 */}
+      {soldCars.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+            <span>📦</span>
+            <span>売却済み</span>
+            <span className="text-sm font-normal text-gray-500">({soldCars.length}台)</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {soldCars.map((car) => (
+              <CarCard
+                key={car.id}
+                car={car}
+                isActive={false}
+                isSold={true}
+                onSelect={() => {}}
+                onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
+                onEdit={() => handleEditCar(car)}
+                maintenanceRecords={maintenanceRecords}
+                fuelLogs={fuelLogs}
+                onAddFuel={handleAddFuel}
+                onAddMaintenance={handleAddMaintenance}
+                onAddCustomization={handleAddCustomization}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 廃車済み車両 */}
+      {scrappedCars.length > 0 && (
+        <div>
+          <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+            <span>🏭</span>
+            <span>廃車済み</span>
+            <span className="text-sm font-normal text-gray-500">({scrappedCars.length}台)</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {scrappedCars.map((car) => (
+              <CarCard
+                key={car.id}
+                car={car}
+                isActive={false}
+                isScrapped={true}
+                onSelect={() => {}}
+                onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
+                onEdit={() => handleEditCar(car)}
+                maintenanceRecords={maintenanceRecords}
+                fuelLogs={fuelLogs}
+                onAddFuel={handleAddFuel}
+                onAddMaintenance={handleAddMaintenance}
+                onAddCustomization={handleAddCustomization}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -3033,6 +3102,8 @@ function CarManagementContent({
 function CarCard({ 
   car, 
   isActive, 
+  isSold = false,
+  isScrapped = false,
   onSelect,
   onDelete,
   onEdit,
@@ -3043,7 +3114,9 @@ function CarCard({
   onAddCustomization
 }: { 
   car: Car; 
-  isActive: boolean; 
+  isActive: boolean;
+  isSold?: boolean;
+  isScrapped?: boolean;
   onSelect: () => void;
   onDelete: () => void;
   onEdit: () => void;
@@ -3164,9 +3237,29 @@ function CarCard({
   return (
     <div 
       className={`bg-white rounded-2xl border p-4 transition relative ${
-        isActive ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'
+        isSold || isScrapped 
+          ? 'border-gray-300 opacity-75'
+          : isActive 
+          ? 'border-blue-500 ring-2 ring-blue-100' 
+          : 'border-gray-200 hover:border-gray-300'
       }`}
     >
+      {/* ステータスバッジ（売却済み・廃車済み） */}
+      {isSold && (
+        <div className="absolute top-2 left-2 z-10">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 border border-orange-300">
+            📦 売却済み
+          </span>
+        </div>
+      )}
+      {isScrapped && (
+        <div className="absolute top-2 left-2 z-10">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300">
+            🏭 廃車済み
+          </span>
+        </div>
+      )}
+    
       {/* 編集・削除ボタン（テスト車両以外） - 右上に1つだけ */}
       {!isTestCar && (
         <div className="absolute top-2 right-2">
@@ -3195,6 +3288,19 @@ function CarCard({
                 >
                   ✏️ 編集
                 </button>
+                {!isSold && !isScrapped && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // 売却処理のモーダルを開く（TODO: 実装）
+                      console.log('Mark as sold:', car.id);
+                      setShowDropdown(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2"
+                  >
+                    📦 売却済みにする
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -3298,9 +3404,37 @@ function CarCard({
             </div>
           )}
           
-          {isActive && (
+          {isActive && !isSold && !isScrapped && (
             <div className="text-xs text-blue-600 font-medium">
               現在選択中
+            </div>
+          )}
+          
+          {/* 売却情報 */}
+          {isSold && car.soldDate && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="text-xs text-gray-600 space-y-1">
+                <div>
+                  売却日: <span className="font-semibold text-gray-800">
+                    {toDate(car.soldDate)?.toLocaleDateString('ja-JP') || '---'}
+                  </span>
+                </div>
+                {car.soldPrice && (
+                  <div>
+                    売却価格: <span className="font-semibold text-orange-600">
+                      ¥{car.soldPrice.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                {car.soldTo && (
+                  <div>
+                    売却先: <span className="font-semibold text-gray-800">{car.soldTo}</span>
+                  </div>
+                )}
+                {car.soldNotes && (
+                  <div className="text-gray-700 mt-2">{car.soldNotes}</div>
+                )}
+              </div>
             </div>
           )}
         </div>

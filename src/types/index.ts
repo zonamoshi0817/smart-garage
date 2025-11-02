@@ -21,6 +21,9 @@ export interface BaseEntity {
   updatedAt: Timestamp;     // 更新日時（serverTimestamp）
 }
 
+// 車両ステータス
+export type CarStatus = 'active' | 'sold' | 'scrapped' | 'other';
+
 // 車両関連の型
 export interface Car extends BaseEntity {
   name: string;
@@ -31,6 +34,11 @@ export interface Car extends BaseEntity {
   inspectionExpiry?: Timestamp; // 車検期限（Timestamp統一）
   firstRegYm?: string;
   avgKmPerMonth?: number;
+  status?: CarStatus; // 車両ステータス（デフォルト: 'active'）
+  soldDate?: Timestamp; // 売却日
+  soldPrice?: number; // 売却価格
+  soldTo?: string; // 売却先
+  soldNotes?: string; // 売却メモ
 }
 
 export interface CarInput {
@@ -42,6 +50,11 @@ export interface CarInput {
   inspectionExpiry?: Timestamp; // 車検期限（Timestamp型で保存）
   firstRegYm?: string;
   avgKmPerMonth?: number;
+  status?: CarStatus; // 車両ステータス
+  soldDate?: Timestamp; // 売却日
+  soldPrice?: number; // 売却価格
+  soldTo?: string; // 売却先
+  soldNotes?: string; // 売却メモ
 }
 
 // メンテナンス関連の型
