@@ -33,7 +33,15 @@ export async function uploadCarImage(file: File, carId?: string): Promise<string
     const storageRef = ref(storage, storagePath);
     console.log("Uploading to Firebase Storage...");
     
-    const snapshot = await uploadBytes(storageRef, file);
+    // メタデータにownerUidを追加（Storage Rulesで検証）
+    const metadata = {
+      customMetadata: {
+        ownerUid: user.uid,
+        uploadedAt: new Date().toISOString()
+      }
+    };
+    
+    const snapshot = await uploadBytes(storageRef, file, metadata);
     console.log("Upload successful:", snapshot.metadata.fullPath);
     
     const downloadURL = await getDownloadURL(snapshot.ref);
@@ -81,8 +89,16 @@ export async function uploadCarImageWithProgress(
     const storageRef = ref(storage, storagePath);
     console.log("Starting resumable upload...");
     
+    // メタデータにownerUidを追加（Storage Rulesで検証）
+    const metadata = {
+      customMetadata: {
+        ownerUid: user.uid,
+        uploadedAt: new Date().toISOString()
+      }
+    };
+    
     // 進捗監視付きアップロード
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
     console.log("Upload task created");
   
     return new Promise((resolve, reject) => {

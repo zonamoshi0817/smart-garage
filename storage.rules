@@ -2,9 +2,32 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function hasValidMetadata() {
+      // 書き込み時: メタデータのownerUidがリクエストユーザーと一致
+      return request.resource.metadata != null 
+        && request.resource.metadata.ownerUid == request.auth.uid;
+    }
+    
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
     // Users can only access their own files
     match /users/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // 読み取り: パス内のuserIdが自分
+      allow read: if isOwner(userId);
+      
+      // 書き込み: パス内のuserIdが自分 かつ メタデータのownerUidも一致
+      allow write: if isOwner(userId) && hasValidMetadata();
     }
     
     // Deny all other access
