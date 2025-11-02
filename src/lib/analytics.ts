@@ -115,14 +115,18 @@ export function logOcrAutofillDone(
   fieldsPopulated: string[],
   confidenceScores?: Record<string, number>
 ): void {
-  logAnalyticsEvent('ocr_autofill_done', { 
+  const properties: any = { 
     type, 
     fieldsPopulated,
     fieldCount: fieldsPopulated.length,
-    avgConfidence: confidenceScores 
-      ? Object.values(confidenceScores).reduce((a, b) => a + b, 0) / Object.values(confidenceScores).length
-      : undefined
-  });
+  };
+  
+  // avgConfidenceがundefinedの場合は省略（Firestoreエラー回避）
+  if (confidenceScores && Object.values(confidenceScores).length > 0) {
+    properties.avgConfidence = Object.values(confidenceScores).reduce((a, b) => a + b, 0) / Object.values(confidenceScores).length;
+  }
+  
+  logAnalyticsEvent('ocr_autofill_done', properties);
 }
 
 /**
