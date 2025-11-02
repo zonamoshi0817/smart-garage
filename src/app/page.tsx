@@ -623,14 +623,15 @@ export default function Home() {
                 setActiveCarId={setActiveCarId}
               />
             ) : currentPage === 'my-car' ? (
-              // 新しいマイカーページ（売却済み・廃車済み車両は表示しない）
-              car && (!car.status || car.status === 'active') ? (
+              // 新しいマイカーページ（全車両を表示、売却済み・廃車済みはREAD ONLYモード）
+              car ? (
                 <MyCarPage
                   car={car}
                   maintenanceRecords={maintenanceRecords}
                   fuelLogs={fuelLogs}
                   customizations={customizations}
                   insurancePolicies={insurancePolicies}
+                  readOnly={car.status === 'sold' || car.status === 'scrapped'} // READ ONLYモード
                   onOpenModal={(modalType, data) => {
                     // モーダル表示ハンドラー
                     switch (modalType) {

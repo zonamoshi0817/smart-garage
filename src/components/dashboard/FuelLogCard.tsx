@@ -39,7 +39,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
     if (!previousLog || !log.isFullTank || !previousLog.isFullTank) return null;
     
     const distance = log.odoKm - previousLog.odoKm;
-    const fuelUsed = log.fuelAmount;
+    const fuelUsed = getFuelQuantityInLiters(log);
     
     if (distance <= 0 || !fuelUsed || fuelUsed <= 0) return null;
     
@@ -53,7 +53,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
       id: log.id,
       date: (log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString(),
       odoKm: log.odoKm,
-      fuelAmount: log.fuelAmount,
+      fuelQuantity: getFuelQuantityInLiters(log),
       isFullTank: log.isFullTank
     })),
     currentFuelEfficiency,
@@ -79,7 +79,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
   const handleDelete = async (log: FuelLog) => {
     if (!log.id) return;
     
-    if (confirm(`給油記録を削除しますか？\n日時: ${(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP')}\n給油量: ${log.fuelAmount}L`)) {
+    if (confirm(`給油記録を削除しますか？\n日時: ${(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP')}\n給油量: ${getFuelQuantityInLiters(log)}L`)) {
       try {
         await deleteFuelLog(log.id);
         console.log("Fuel log deleted successfully");
@@ -212,7 +212,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                     <div className="text-xs text-gray-500">km</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">¥{(latestFuelLog.cost || 0).toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-gray-900">¥{getFuelTotalCost(latestFuelLog).toLocaleString()}</div>
                     <div className="text-xs text-gray-500">金額</div>
                   </div>
                 </div>
@@ -297,7 +297,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                               )}
                             </div>
                             <div className="text-sm text-gray-500 mt-1">
-                              {log.odoKm.toLocaleString()} km • {log.fuelAmount}L • ¥{(log.cost || 0).toLocaleString()}
+                              {log.odoKm.toLocaleString()} km • {getFuelQuantityInLiters(log).toFixed(1)}L • ¥{getFuelTotalCost(log).toLocaleString()}
                               {individualEfficiency && (
                                 <span className="ml-2 text-green-600 font-medium">
                                   • {individualEfficiency} km/L
@@ -309,7 +309,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                         <div className="flex items-center space-x-3">
                           <div className="text-right">
                             <div className="text-lg font-bold text-gray-900">
-                              ¥{Math.round((log.cost || 0) / (log.fuelAmount || 1)).toLocaleString()}
+                              ¥{Math.round(getFuelTotalCost(log) / (getFuelQuantityInLiters(log) || 1)).toLocaleString()}
                             </div>
                             <div className="text-xs text-gray-500">/L</div>
                           </div>

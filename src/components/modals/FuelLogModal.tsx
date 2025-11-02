@@ -235,7 +235,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
     try {
       console.log("Starting OCR processing...");
       
-      const { data: { text } } = await Tesseract.recognize(
+      const result = await Tesseract.recognize(
         file,
         'jpn+eng',
         {
@@ -247,7 +247,10 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
         }
       );
       
+      const text = result.data.text;
+      const confidence = result.data.confidence / 100; // 0-1の範囲に正規化
       console.log("OCR結果:", text);
+      console.log("OCR信頼度:", confidence);
       setOcrResult(text);
       
       // テキストから給油データを抽出
@@ -256,17 +259,22 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
       if (parsedData) {
         const fieldsPopulated: string[] = [];
         
-        // ペイウォールチェック: 自動入力成功直前（価値体験後）
-        console.log('[FuelLog] OCR success, checking premium feature before autofill');
-        const canUse = checkFeature('ocr_scan', undefined, 'minimal');
-        console.log('[FuelLog] Can use OCR autofill:', canUse);
-        
-        if (!canUse) {
-          console.log('[FuelLog] Premium required for autofill, showing paywall');
-          // OCRは成功したが、自動入力はプレミアム限定
-          logOcrUsed('fuel', false); // ペイウォールで中断
-          alert('OCRスキャンに成功しました！\n自動入力機能はプレミアムプランでご利用いただけます。');
-          return; // ここでペイウォールが表示される（checkFeature内で）
+        // 【信頼度ベースのペイウォール発火】
+        if (confidence > 0.65) {
+          // 高信頼度（65%以上）：プレミアム機能として価値提供
+          console.log('[FuelLog] High confidence (' + (confidence * 100).toFixed(1) + '%), checking premium...');
+          const canUse = checkFeature('ocr_scan', undefined, 'success_moment');
+          console.log('[FuelLog] Can use OCR autofill:', canUse);
+          
+          if (!canUse) {
+            console.log('[FuelLog] Premium required for autofill, showing paywall');
+            logOcrUsed('fuel', false); // ペイウォールで中断
+            setIsOcrProcessing(false);
+            return; // ペイウォール表示して処理中断
+          }
+        } else {
+          // 低信頼度（65%未満）：無料で体験させて不満を減らす
+          console.log('[FuelLog] Low confidence (' + (confidence * 100).toFixed(1) + '%) - 無料体験として提供');
         }
         
         // プレミアムユーザー: フォームに自動入力（給油量は小数点第1位まで）
@@ -290,7 +298,12 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
         // 既存のアナリティクスイベント
         logOcrUsed('fuel', true);
         
-        alert('レシートから給油データを読み取りました！\n内容を確認して必要に応じて修正してください。');
+        // 信頼度に応じたメッセージ
+        const confidenceMessage = confidence > 0.65
+          ? '（高精度）'
+          : `（精度: ${(confidence * 100).toFixed(0)}% - 内容を確認してください）`;
+        
+        alert(`レシートから給油データを読み取りました！${confidenceMessage}\n内容を確認して必要に応じて修正してください。`);
       } else {
         // アナリティクスイベントを記録（失敗）
         logOcrUsed('fuel', false);

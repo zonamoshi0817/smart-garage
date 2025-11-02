@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Car, MaintenanceRecord, FuelLog, Customization, InsurancePolicy } from '@/types';
 import { usePremiumGuard } from '@/hooks/usePremium';
+import { toDate } from '@/lib/dateUtils';
 import VehicleHeader from './VehicleHeader';
 import QuickActions from './QuickActions';
 import FuelAndPriceChart from './FuelAndPriceChart';
@@ -18,6 +19,7 @@ interface MyCarPageProps {
   fuelLogs: FuelLog[];
   customizations: Customization[];
   insurancePolicies: InsurancePolicy[];
+  readOnly?: boolean; // READ ONLYモード（売却済み・廃車済み車両用）
   onOpenModal: (modalType: string, data?: any) => void;
 }
 
@@ -27,6 +29,7 @@ export default function MyCarPage({
   fuelLogs,
   customizations,
   insurancePolicies,
+  readOnly = false,
   onOpenModal
 }: MyCarPageProps) {
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
@@ -110,12 +113,40 @@ export default function MyCarPage({
           onImageChange={handleImageChange}
         />
         
-        {/* 2. クイックアクション（横スクロールの丸ボタン） */}
-        <QuickActions
-          actions={quickActions}
-          isPremium={isPremium}
-          onLockedClick={handleLockedAction}
-        />
+        {/* READ ONLYバナー（売却済み・廃車済み車両） */}
+        {readOnly && (
+          <div className="mb-4 p-4 bg-orange-50 border-2 border-orange-200 rounded-xl">
+            <div className="flex items-center gap-3 text-orange-800 mb-2">
+              <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1">
+                <span className="font-bold text-lg">
+                  {car.status === 'sold' ? '売却済み車両（閲覧専用）' : '廃車済み車両（閲覧専用）'}
+                </span>
+                {car.status === 'sold' && car.soldDate && (
+                  <p className="text-sm text-orange-700 mt-1">
+                    売却日: {toDate(car.soldDate)?.toLocaleDateString('ja-JP')}
+                    {car.soldPrice && ` / 売却価格: ¥${car.soldPrice.toLocaleString()}`}
+                    {car.soldTo && ` / 売却先: ${car.soldTo}`}
+                  </p>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-orange-700">
+              💡 過去データの閲覧は可能ですが、新規登録や編集はできません。
+            </p>
+          </div>
+        )}
+        
+        {/* 2. クイックアクション（横スクロールの丸ボタン）※READ ONLYモードでは非表示 */}
+        {!readOnly && (
+          <QuickActions
+            actions={quickActions}
+            isPremium={isPremium}
+            onLockedClick={handleLockedAction}
+          />
+        )}
         
         {/* 2.5. 車両データパネル（GTスタイル） */}
         <VehicleSpecsPanel

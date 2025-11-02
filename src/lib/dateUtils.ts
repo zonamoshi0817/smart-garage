@@ -65,3 +65,35 @@ export function toTimestamp(date: Date | Timestamp | undefined | null): Timestam
   return null;
 }
 
+/**
+ * Date | string | Timestamp を Timestamp に統一変換（完全版）
+ * 全CRUD操作で使用する標準ヘルパー
+ */
+export function toTs(input: Date | string | Timestamp | null | undefined): Timestamp | null {
+  if (!input) return null;
+  
+  // すでに Timestamp の場合
+  if (typeof input === 'object' && 'toDate' in input && typeof input.toDate === 'function') {
+    return input as Timestamp;
+  }
+  
+  // Date の場合
+  if (input instanceof Date) {
+    return Timestamp.fromDate(input);
+  }
+  
+  // string の場合（ISO文字列など）
+  if (typeof input === 'string') {
+    try {
+      const date = new Date(input);
+      if (!isNaN(date.getTime())) {
+        return Timestamp.fromDate(date);
+      }
+    } catch (e) {
+      console.error('Invalid date string:', input, e);
+    }
+  }
+  
+  return null;
+}
+

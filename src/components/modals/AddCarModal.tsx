@@ -8,6 +8,7 @@ import { isImageFile, uploadCarImageWithProgress } from '@/lib/storage';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import PaywallModal from '@/components/modals/PaywallModal';
 import { toTimestamp } from '@/lib/dateUtils';
+import { VehicleClass } from '@/types';
 
 interface AddCarModalProps {
   onClose: () => void;
@@ -25,6 +26,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
   const [inspectionExpiry, setInspectionExpiry] = useState("");
   const [firstRegYm, setFirstRegYm] = useState("");
   const [avgKmPerMonth, setAvgKmPerMonth] = useState<string>("");
+  const [vehicleClass, setVehicleClass] = useState<VehicleClass>('Cセグメント'); // デフォルトは標準クラス
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -206,6 +208,9 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
         carData.avgKmPerMonth = Number(avgKmPerMonth);
       }
       
+      // 車種クラスは常に保存（デフォルト値あり）
+      carData.vehicleClass = vehicleClass;
+      
       // undefined を null に正規化（Firestore 対策）
       const clean = <T extends object>(o: T): T => {
         return JSON.parse(JSON.stringify(o, (_, v) => v === undefined ? null : v));
@@ -219,7 +224,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
       // 完了トースト（将来的に実装）
       console.log(`✅ ${name} を追加しました`);
       
-      setName(""); setModel(""); setYear(""); setOdo(""); setInspectionExpiry(""); setFirstRegYm(""); setAvgKmPerMonth(""); setSelectedFile(null); setImagePreview(null); setCompressionInfo(null);
+      setName(""); setModel(""); setYear(""); setOdo(""); setInspectionExpiry(""); setFirstRegYm(""); setAvgKmPerMonth(""); setVehicleClass('Cセグメント'); setSelectedFile(null); setImagePreview(null); setCompressionInfo(null);
       onAdded?.();
     } catch (error) {
       console.error("Error adding car:", error);
@@ -407,6 +412,26 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                     value={inspectionExpiry}
                     onChange={(e) => setInspectionExpiry(e.target.value)}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    車種クラス
+                  </label>
+                  <select
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                    value={vehicleClass}
+                    onChange={(e) => setVehicleClass(e.target.value as VehicleClass)}
+                  >
+                    <option value="軽自動車">軽自動車</option>
+                    <option value="コンパクト">コンパクト</option>
+                    <option value="Cセグメント">Cセグメント（標準）</option>
+                    <option value="Dセグメント">Dセグメント</option>
+                    <option value="ミニバン">ミニバン</option>
+                    <option value="SUV">SUV</option>
+                    <option value="スポーツ">スポーツ</option>
+                    <option value="スーパーカー">スーパーカー</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">コスト効率評価の補正に使用されます</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

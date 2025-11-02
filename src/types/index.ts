@@ -25,6 +25,8 @@ export interface BaseEntity {
 export type CarStatus = 'active' | 'sold' | 'scrapped' | 'other';
 
 // 車両関連の型
+export type VehicleClass = '軽自動車' | 'コンパクト' | 'Cセグメント' | 'Dセグメント' | 'ミニバン' | 'SUV' | 'スポーツ' | 'スーパーカー';
+
 export interface Car extends BaseEntity {
   name: string;
   modelCode?: string;
@@ -34,6 +36,7 @@ export interface Car extends BaseEntity {
   inspectionExpiry?: Timestamp; // 車検期限（Timestamp統一）
   firstRegYm?: string;
   avgKmPerMonth?: number;
+  vehicleClass?: VehicleClass; // 車種クラス（コスト効率補正用）
   status?: CarStatus; // 車両ステータス（デフォルト: 'active'）
   soldDate?: Timestamp; // 売却日
   soldPrice?: number; // 売却価格
@@ -50,6 +53,7 @@ export interface CarInput {
   inspectionExpiry?: Timestamp; // 車検期限（Timestamp型で保存）
   firstRegYm?: string;
   avgKmPerMonth?: number;
+  vehicleClass?: VehicleClass; // 車種クラス（コスト効率補正用）
   status?: CarStatus; // 車両ステータス
   soldDate?: Timestamp; // 売却日
   soldPrice?: number; // 売却価格

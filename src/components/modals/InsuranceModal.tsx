@@ -72,8 +72,24 @@ export default function InsuranceModal({
       });
 
       const text = result.data.text;
+      const confidence = result.data.confidence / 100; // 0-1の範囲に正規化
       console.log('[Insurance OCR] Extracted text:', text);
+      console.log('[Insurance OCR] Confidence:', confidence);
       setOcrResult(text);
+
+      // 【信頼度ベースのペイウォール発火】
+      if (confidence > 0.65) {
+        // 高信頼度（65%以上）：プレミアム機能として価値提供
+        console.log('[Insurance OCR] High confidence, checking premium...');
+        if (!checkFeature('ocr_scan', undefined, 'success_moment')) {
+          console.log('[Insurance OCR] Premium required, showing paywall');
+          setIsOcrProcessing(false);
+          return; // ペイウォール表示して処理中断
+        }
+      } else {
+        // 低信頼度（65%未満）：無料で体験させて不満を減らす
+        console.log('[Insurance OCR] Low confidence (' + (confidence * 100).toFixed(1) + '%) - 無料体験として提供');
+      }
 
       // テキストから勝ち筋6項目のみを抽出
       const parsed = parsePolicyText(text);
@@ -121,7 +137,12 @@ export default function InsuranceModal({
         parsed.premiumAmount && `✓ 保険料`,
       ].filter(Boolean).join('、');
       
-      alert(`保険証券を読み取りました（勝ち筋フィールド）\n${readInfo}\n\n内容を確認して、その他の詳細情報はメモ欄に手動入力してください。`);
+      // 信頼度に応じたメッセージ
+      const confidenceMessage = confidence > 0.65 
+        ? '（高精度）' 
+        : `（精度: ${(confidence * 100).toFixed(0)}% - 内容を確認してください）`;
+      
+      alert(`保険証券を読み取りました${confidenceMessage}\n${readInfo}\n\n内容を確認して、その他の詳細情報はメモ欄に手動入力してください。`);
     } catch (error) {
       console.error('[Insurance OCR] Error:', error);
       logOcrUsed('insurance', false);
