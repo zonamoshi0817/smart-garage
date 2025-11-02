@@ -199,6 +199,9 @@ export default function MyCarPage({
         {/* 2.6. カスタムパーツ一覧 */}
         <CustomPartsPanel
           customizations={customizations}
+          onAddCustomization={(category) => {
+            onOpenModal('customization', { category });
+          }}
         />
         
         {/* 3. 車両ヘルスインジケータ */}

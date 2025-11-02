@@ -5,9 +5,13 @@ import { useMemo, useState } from 'react';
 
 interface CustomPartsPanelProps {
   customizations: Customization[];
+  onAddCustomization?: (category: string) => void;
 }
 
-export default function CustomPartsPanel({ customizations }: CustomPartsPanelProps) {
+export default function CustomPartsPanel({ 
+  customizations,
+  onAddCustomization 
+}: CustomPartsPanelProps) {
   
   // カスタマイズをカテゴリ別に集計
   const customizationsByCategory = useMemo(() => {
@@ -100,35 +104,43 @@ export default function CustomPartsPanel({ customizations }: CustomPartsPanelPro
       </div>
       
       {/* パーツリスト */}
-      {installedCount === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <div className="text-4xl mb-3">🏭</div>
-          <p className="text-base mb-2 font-medium">カスタムパーツなし</p>
-          <p className="text-sm text-gray-400">全て純正パーツです</p>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {Object.entries(customizationsByCategory).map(([category, items]) => {
-            const hasCustom = items.length > 0;
-            const categoryInfo = categoryLabels[category as keyof typeof categoryLabels];
-            const isExpanded = expandedCategories.has(category);
-            
-            if (!categoryInfo) return null;
-            
-            return (
-              <PartAccordion
-                key={category}
-                category={category}
-                categoryInfo={categoryInfo}
-                parts={items}
-                isStock={!hasCustom}
-                isExpanded={isExpanded}
-                onToggle={() => toggleCategory(category)}
-              />
-            );
-          })}
-        </div>
-      )}
+      <div className="space-y-1">
+        {installedCount === 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-dashed border-blue-300 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">💡</div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-blue-700 mb-1">
+                  カスタマイズを記録してみましょう！
+                </p>
+                <p className="text-xs text-gray-600">
+                  パーツ交換や改造の履歴を記録すると、車両の詳細データとして一覧表示されます
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {Object.entries(customizationsByCategory).map(([category, items]) => {
+          const hasCustom = items.length > 0;
+          const categoryInfo = categoryLabels[category as keyof typeof categoryLabels];
+          const isExpanded = expandedCategories.has(category);
+          
+          if (!categoryInfo) return null;
+          
+          return (
+            <PartAccordion
+              key={category}
+              category={category}
+              categoryInfo={categoryInfo}
+              parts={items}
+              isStock={!hasCustom}
+              isExpanded={isExpanded}
+              onToggle={() => toggleCategory(category)}
+              onAdd={onAddCustomization ? () => onAddCustomization(category) : undefined}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -140,7 +152,8 @@ function PartAccordion({
   parts,
   isStock,
   isExpanded,
-  onToggle
+  onToggle,
+  onAdd
 }: {
   category: string;
   categoryInfo: { name: string; subcategories: string[] };
@@ -148,6 +161,7 @@ function PartAccordion({
   isStock: boolean;
   isExpanded: boolean;
   onToggle: () => void;
+  onAdd?: () => void;
 }) {
   return (
     <div className="border-b border-gray-200 last:border-b-0">
@@ -182,8 +196,29 @@ function PartAccordion({
       {isExpanded && (
         <div className="pb-3 px-2 space-y-2">
           {isStock ? (
-            <div className="ml-6 text-sm text-gray-600 py-2">
-              このカテゴリは全て純正パーツです
+            <div className="ml-6 py-3">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <p className="text-sm text-gray-600 mb-2">
+                  このカテゴリは全て純正パーツです
+                </p>
+                {categoryInfo.subcategories.length > 0 && (
+                  <div className="text-xs text-gray-500 mb-3">
+                    <span className="font-medium">例: </span>
+                    {categoryInfo.subcategories.join('、')}
+                  </div>
+                )}
+                {onAdd && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAdd();
+                    }}
+                    className="w-full px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    + カスタマイズを登録
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="ml-6 space-y-3">
