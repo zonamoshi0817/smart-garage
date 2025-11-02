@@ -1134,6 +1134,312 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 
 ---
 
+## 🔥 優先度A：速攻改善ポイント
+
+### 1. メンテナンス評価ロジックの改善 ⚠️
+
+#### 現状の問題
+- **現在**: メンテ回数が多いほど高評価（逆誘導の恐れ）
+- **問題点**: 不要な整備を促進してしまう可能性
+
+#### 改善提案：理想頻度との差分評価
+```typescript
+// 各整備項目の理想サイクル定義
+const IDEAL_MAINTENANCE_CYCLES = {
+  'オイル交換': { months: 6, km: 5000 },
+  'エレメント交換': { months: 12, km: 10000 },
+  'タイヤ交換': { months: 36, km: 30000 },
+  'ブレーキパッド': { months: 24, km: 20000 },
+  // ... 他の項目
+};
+
+// スコア計算式
+// スコア = 1 - |実績周期 - 理想周期| / 理想周期
+// 0–1の範囲を0–100%に変換
+function calculateMaintenanceScore(actual: number, ideal: number): number {
+  const deviation = Math.abs(actual - ideal);
+  const score = Math.max(1 - (deviation / ideal), 0);
+  return Math.min(score * 100, 100);
+}
+```
+
+#### 実装ファイル
+- `src/components/mycar/VehicleSpecsPanel.tsx`: メンテナンススコアの計算ロジック
+- `src/lib/maintenance.ts`: 理想サイクル定数の定義
+
+---
+
+### 2. コスト効率の車種特性補正 ⚠️
+
+#### 現状の問題
+- **現在**: 全車種で一律20円/kmを基準に評価
+- **問題点**: 軽自動車とスポーツカーで必要コストが大きく異なる
+
+#### 改善提案：車種クラス係数の導入
+```typescript
+// 車種クラス係数
+const CLASS_FACTORS = {
+  '軽自動車': 0.7,
+  'コンパクト': 0.85,
+  'Cセグメント': 1.0,   // 基準
+  'Dセグメント': 1.15,
+  'ミニバン': 1.2,
+  'SUV': 1.25,
+  'スポーツ': 1.3,
+  'スーパーカー': 1.8,
+};
+
+// 補正後のコスト効率
+const costPerKmAdjusted = costPerKm / classFactor;
+
+// スコア計算（基準20円/kmで評価）
+const costEfficiencyScore = Math.max((1 - costPerKmAdjusted / 20) * 100, 0);
+```
+
+#### 実装方法
+1. `Car`型に `vehicleClass?: string` フィールドを追加
+2. `AddCarModal.tsx` で車種クラスの選択肢を追加
+3. `VehicleSpecsPanel.tsx` でクラス係数を適用したスコア計算
+
+#### 実装ファイル
+- `src/types/index.ts`: `Car`インターフェースに`vehicleClass`追加
+- `src/components/modals/AddCarModal.tsx`: 車種クラス選択UI
+- `src/components/mycar/VehicleSpecsPanel.tsx`: 補正ロジック実装
+
+---
+
+### 3. FuelLogの単位整合（物理量と価格の分離） ⚠️
+
+#### 現状の問題
+- **二重表現**: `unit: 'JPY/L'` は価格単位だが、`fuelAmount`の物理単位(L)と混在
+- **型不一致**: `EnergyUnit = 'ml' | 'wh'` なのに実装では `'JPY/L'` を使用
+
+#### 改善提案：物理量と価格を明確に分離
+```typescript
+// 新しい型定義
+export interface FuelLogInput {
+  carId: string;
+  odoKm: number;
+  
+  // 物理量（統一）
+  quantity: number;           // 給油量または充電量
+  quantityUnit: 'L' | 'kWh';  // リットル or キロワット時
+  
+  // 価格情報
+  totalCostJpy: number;       // 合計金額（円）
+  pricePerUnit?: number;      // 単価（円/L or 円/kWh）
+  
+  // メタデータ
+  isFullTank: boolean;
+  fuelType: FuelType;
+  stationName?: string;
+  memo?: string;
+  date: Timestamp;
+}
+
+// 既存フィールド（後方互換）
+// @deprecated - 新規実装では quantity を使用
+fuelAmount?: number;
+// @deprecated - 新規実装では pricePerUnit を使用  
+pricePerLiter?: number;
+```
+
+#### マイグレーション戦略
+1. 新フィールド追加（`quantity`, `quantityUnit`, `totalCostJpy`, `pricePerUnit`）
+2. 既存データ読み込み時に自動変換ヘルパで補完
+3. 表示は新フィールド優先、なければ既存フィールドにフォールバック
+4. 新規保存は新フィールドのみ使用
+
+#### 実装ファイル
+- `src/types/index.ts`: FuelLog型の更新
+- `src/lib/fuelLogs.ts`: マイグレーションヘルパー追加
+- `src/components/modals/FuelLogModal.tsx`: フォーム更新
+
+---
+
+### 4. Date/Timestampの完全統一 ⚠️
+
+#### 現状の問題
+- **仕様の矛盾**: `BaseEntity`では`Date | string`だが、v2.0では「Timestamp統一」と記載
+- **型の不整合**: 一部で`Date`、一部で`Timestamp`、一部で`string`が混在
+
+#### 改善提案：全フィールドをTimestampに統一
+```typescript
+// BaseEntity の完全Timestamp統一
+export interface BaseEntity {
+  id?: string;
+  ownerUid?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  deletedAt?: Timestamp | null;  // Timestamp型に統一
+  createdAt?: Timestamp;          // Timestamp型に統一
+  updatedAt?: Timestamp;          // Timestamp型に統一
+}
+
+// すべての日付フィールド
+export interface Car extends BaseEntity {
+  // ...
+  inspectionExpiry?: Timestamp;  // Date → Timestamp
+  soldDate?: Timestamp;          // Date → Timestamp
+}
+
+export interface MaintenanceRecord extends BaseEntity {
+  date: Timestamp;  // Date → Timestamp
+  nextDue?: Timestamp;
+}
+
+export interface FuelLog extends BaseEntity {
+  date: Timestamp;  // Date → Timestamp
+}
+```
+
+#### 変換ヘルパーの強制適用
+```typescript
+// src/lib/dateUtils.ts
+export function toTs(input: Date | string | Timestamp | null | undefined): Timestamp | null {
+  if (!input) return null;
+  if (input instanceof Timestamp) return input;
+  if (typeof input === 'string') return Timestamp.fromDate(new Date(input));
+  if (input instanceof Date) return Timestamp.fromDate(input);
+  return null;
+}
+
+// 全CRUD操作で強制適用
+export async function addCar(data: CarInput) {
+  const cleanData = {
+    ...data,
+    inspectionExpiry: data.inspectionExpiry ? toTs(data.inspectionExpiry) : null,
+    // ...
+  };
+  // Firestoreに保存
+}
+```
+
+#### 実装ファイル
+- `src/types/index.ts`: 全インターフェースの日付フィールドをTimestamp統一
+- `src/lib/dateUtils.ts`: `toTs()`ヘルパー追加
+- 全CRUDファイル (`cars.ts`, `maintenance.ts`, `fuelLogs.ts`, etc.): 変換ヘルパー適用
+
+---
+
+### 5. 売却済み車両の到達不能問題 ⚠️
+
+#### 現状の問題
+- **良い点**: ドロップダウンとメニューから売却済み車両を除外 ✅
+- **問題点**: 履歴PDFや共有リンク、過去データが見られない
+
+#### 改善提案：READ ONLY詳細閲覧の許可
+```typescript
+// 車両管理ページから売却済み車両の詳細へ遷移
+<CarCard
+  car={soldCar}
+  readOnly={true}  // 編集不可モード
+  onClick={() => {
+    setActiveCarId(soldCar.id);
+    setCurrentPage('my-car');  // 詳細ページへ遷移
+  }}
+/>
+
+// 車両データページでREAD ONLYバナー表示
+{car.status === 'sold' && (
+  <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+    <div className="flex items-center gap-2 text-orange-800">
+      <svg className="w-5 h-5">...</svg>
+      <span className="font-semibold">この車両は売却済みです（閲覧専用）</span>
+    </div>
+    <p className="text-sm text-orange-700 mt-2">
+      売却日: {toDate(car.soldDate)?.toLocaleDateString('ja-JP')}
+      {car.soldPrice && ` / 売却価格: ¥${car.soldPrice.toLocaleString()}`}
+    </p>
+  </div>
+)}
+
+// 編集ボタンを無効化
+<button disabled={car.status === 'sold'} ...>
+```
+
+#### 共有リンクの自動失効
+```typescript
+// 共有リンク生成時に車両ステータスをチェック
+export async function generateShareLink(carId: string): Promise<string> {
+  const car = await getCar(carId);
+  
+  if (car.status === 'sold') {
+    // 既存リンクを失効させるか確認
+    const shouldRegenerate = confirm(
+      'この車両は売却済みです。\n共有リンクを再発行しますか？\n（既存のリンクは無効になります）'
+    );
+    if (!shouldRegenerate) return '';
+    
+    // リンク再発行時に「閲覧専用」フラグを付与
+    const token = await createShareToken({
+      carId,
+      readOnly: true,
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)), // 90日
+    });
+    return `${window.location.origin}/share/${token}`;
+  }
+  
+  // 通常のリンク生成
+  // ...
+}
+```
+
+#### 実装ファイル
+- `src/app/page.tsx`: 売却済み車両の詳細閲覧ロジック追加
+- `src/components/mycar/MyCarPage.tsx`: READ ONLYバナーと編集制限
+- `src/lib/shareLink.ts`: ステータスチェックと失効ロジック
+- `src/components/mycar/VehicleHeader.tsx`: 売却バッジの表示改善
+
+---
+
+### 6. プレミアム発火タイミングの最適化（OCR） ⚠️
+
+#### 現状
+- ✅ 結果成立直前ペイウォールは実装済み
+
+#### 改善提案：信頼度ベースの発火
+```typescript
+// OCR処理後の信頼度チェック
+async function handleOcrResult(result: Tesseract.RecognizeResult) {
+  const confidence = result.data.confidence / 100; // 0-1の範囲に正規化
+  
+  if (confidence > 0.65) {
+    // 高信頼度：プレミアム機能として価値提供
+    if (!isPremium) {
+      showPaywall('ocr_scan', 'success_moment');
+      return; // ペイウォールを表示して停止
+    }
+    // プレミアムユーザーは自動入力
+    autoFillForm(result.data.text);
+  } else {
+    // 低信頼度：無料で体験させて不満を減らす
+    console.log('OCR confidence低 - 無料体験として提供');
+    showOcrDraft(result.data.text); // ドラフトとして表示
+    
+    // 補足メッセージ
+    showNotification({
+      type: 'info',
+      message: '読み取り精度が低いため、手動入力をお勧めします。プレミアムプランでは高精度OCRをご利用いただけます。',
+      action: { label: '詳細を見る', onClick: () => showPaywall('ocr_scan', 'minimal') }
+    });
+  }
+}
+```
+
+#### A/Bテスト案
+- **パターンA**: 信頼度65%以上でペイウォール
+- **パターンB**: 信頼度80%以上でペイウォール
+- **KPI**: CVR、離脱率、満足度アンケート
+
+#### 実装ファイル
+- `src/components/modals/FuelLogModal.tsx`: OCR信頼度チェック
+- `src/components/modals/InsuranceModal.tsx`: OCR信頼度チェック
+- `src/components/modals/MaintenanceModal.tsx`: OCR信頼度チェック（将来実装）
+- `src/lib/analytics.ts`: `logOcrConfidenceAnalysis`イベント追加
+
+---
+
 ## 🚀 デプロイ情報
 
 ### Vercelへのデプロイ
@@ -1173,6 +1479,31 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 ---
 
 **最新バージョン: 2.1.0**  
-**コミットID: 06f1f1e**  
-**総コミット数: 119コミット**  
+**コミットID: 06df2e7**  
+**総コミット数: 120コミット**  
 **本番環境**: https://smart-garage-mmwgktgq1-kobayashis-projects-6366834f.vercel.app
+
+---
+
+## 📝 変更履歴
+
+### v2.1.0 (2025-11-02)
+- ✅ Vercelへのデプロイ成功
+- ✅ TypeScript型エラー修正（Timestamp/Date統一）
+- ✅ ビルドエラー17ファイル修正
+- ✅ 優先度A改善ポイントの仕様化
+- 🔄 次回実装予定：
+  - メンテナンス評価ロジック改善（理想頻度ベース）
+  - コスト効率の車種特性補正
+  - FuelLog単位整合（物理量と価格分離）
+  - Date/Timestamp完全統一
+  - 売却済み車両のREAD ONLY閲覧
+  - OCR信頼度ベースのペイウォール発火
+
+### v2.0.0 (2025-11-01)
+- ✅ 車両ステータス管理（active/sold/scrapped）
+- ✅ 車両データページ（Gran Turismo風UI）
+- ✅ カスタムパーツ管理（折りたたみUI）
+- ✅ コスト効率評価（走行距離ベース）
+- ✅ プレミアム機能の条件分岐
+- ✅ ナビゲーション改善（名称変更、順序変更）
