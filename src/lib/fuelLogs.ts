@@ -355,7 +355,7 @@ export const watchAllFuelLogs = (
 export const calculateFuelEfficiency = (fuelLogs: FuelLog[]): number | null => {
   console.log("calculateFuelEfficiency called with:", fuelLogs.length, "logs");
   console.log("All fuel logs:", fuelLogs.map(log => ({
-    date: log.date.toLocaleDateString(),
+    date: (log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString(),
     odoKm: log.odoKm,
     fuelAmount: log.fuelAmount,
     isFullTank: log.isFullTank
@@ -366,14 +366,18 @@ export const calculateFuelEfficiency = (fuelLogs: FuelLog[]): number | null => {
     return null;
   }
 
-  // 満タンのログのみを抽出し、日付順でソート
+  // 満タンのログのみを抽出し、日付順でソート（Timestampの秒数で比較）
   const fullTankLogs = fuelLogs
     .filter(log => log.isFullTank)
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+    .sort((a, b) => {
+      const aSeconds = a.date?.seconds || 0;
+      const bSeconds = b.date?.seconds || 0;
+      return aSeconds - bSeconds;
+    });
 
   console.log("Full tank logs:", fullTankLogs.length);
   console.log("Full tank logs details:", fullTankLogs.map(log => ({
-    date: log.date.toLocaleDateString(),
+    date: (log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString(),
     odoKm: log.odoKm,
     fuelAmount: log.fuelAmount
   })));
