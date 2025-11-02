@@ -86,9 +86,11 @@ export default function VehicleSpecsPanel({
   // コスト効率スコア（km当たり10円を基準として評価）
   const costEfficiencyScore = useMemo(() => {
     if (costPerKm === 0) return 100; // データなしの場合は100%
-    // km当たり10円を基準（100点）
-    // 5円以下 → 100点、10円 → 50点、20円以上 → 0点
-    const score = Math.max(100 - (costPerKm / 0.2) * 100, 0);
+    // km当たり20円を基準（0点）、0円で100点
+    // 例: ¥5/km → (1 - 5/20) × 100 = 75点
+    //     ¥10/km → (1 - 10/20) × 100 = 50点
+    //     ¥20/km → (1 - 20/20) × 100 = 0点
+    const score = Math.max((1 - costPerKm / 20) * 100, 0);
     return Math.min(score, 100);
   }, [costPerKm]);
 
