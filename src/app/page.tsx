@@ -536,11 +536,11 @@ export default function Home() {
 
 
             <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
-              <NavItem 
-                label="ガレージ" 
-                active={currentPage === 'dashboard'} 
-                onClick={() => setCurrentPage('dashboard')}
-              />
+            <NavItem 
+              label="ダッシュボード" 
+              active={currentPage === 'dashboard'} 
+              onClick={() => setCurrentPage('dashboard')}
+            />
             <NavItem 
               label="車両データ" 
               active={currentPage === 'my-car'} 
