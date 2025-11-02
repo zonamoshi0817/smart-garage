@@ -28,6 +28,7 @@ import { usePremiumGuard } from "@/hooks/usePremium";
 
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
+  const { userPlan, checkFeature } = usePremiumGuard();
   const [cars, setCars] = useState<Car[]>([]);
   const [activeCarId, setActiveCarId] = useState<string | undefined>(undefined);
   const [showAddCarModal, setShowAddCarModal] = useState(false);
