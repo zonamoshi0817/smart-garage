@@ -68,20 +68,6 @@ export default function MyCarPage({
       onClick: () => onOpenModal('ocr')
     },
     {
-      id: 'pdf',
-      label: 'PDF出力',
-      icon: '📄',
-      isPremium: true,
-      onClick: () => onOpenModal('pdf')
-    },
-    {
-      id: 'share',
-      label: '共有リンク',
-      icon: '🔗',
-      isPremium: true,
-      onClick: () => onOpenModal('share')
-    },
-    {
       id: 'insurance',
       label: '保険証券を追加',
       icon: '🛡️',
