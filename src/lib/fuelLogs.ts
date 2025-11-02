@@ -420,7 +420,8 @@ export const calculateMonthlyFuelCosts = (fuelLogs: FuelLog[]): { month: string;
   const monthlyCosts: { [key: string]: number } = {};
 
   fuelLogs.forEach(log => {
-    const month = log.date.toISOString().slice(0, 7); // YYYY-MM形式
+    const dateObj = log.date?.toDate ? log.date.toDate() : new Date();
+    const month = dateObj.toISOString().slice(0, 7); // YYYY-MM形式
     monthlyCosts[month] = (monthlyCosts[month] || 0) + log.cost;
   });
 
@@ -440,7 +441,11 @@ export const calculateAverageFuelEfficiency = (fuelLogs: FuelLog[]): number | nu
 
   const fullTankLogs = fuelLogs
     .filter(log => log.isFullTank)
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+    .sort((a, b) => {
+      const aSeconds = a.date?.seconds || 0;
+      const bSeconds = b.date?.seconds || 0;
+      return aSeconds - bSeconds;
+    });
 
   console.log("Full tank logs for average:", fullTankLogs.length);
 
