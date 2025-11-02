@@ -241,13 +241,27 @@ export async function markCarAsSold(
   
   console.log(`Marking car ${carId} as sold`);
   
-  const carRef = doc(db, "users", u.uid, "cars", carId);
-  await updateDoc(carRef, {
+  // undefinedのフィールドを除外（Firestoreはundefinedを許容しない）
+  const updateData: any = {
     status: 'sold',
-    ...soldData,
+    soldDate: soldData.soldDate,
     updatedBy: u.uid,
     updatedAt: serverTimestamp(),
-  });
+  };
+  
+  // 任意フィールドは値が存在する場合のみ追加
+  if (soldData.soldPrice !== undefined) {
+    updateData.soldPrice = soldData.soldPrice;
+  }
+  if (soldData.soldTo !== undefined) {
+    updateData.soldTo = soldData.soldTo;
+  }
+  if (soldData.soldNotes !== undefined) {
+    updateData.soldNotes = soldData.soldNotes;
+  }
+  
+  const carRef = doc(db, "users", u.uid, "cars", carId);
+  await updateDoc(carRef, updateData);
   
   // 監査ログを記録
   await logAudit({
