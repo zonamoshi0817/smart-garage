@@ -121,6 +121,22 @@ export default function Home() {
     };
   }, []);
 
+  // 車両リストが変更されたときに自動選択
+  useEffect(() => {
+    if (cars.length === 0) {
+      console.log("No cars available, clearing activeCarId");
+      return;
+    }
+
+    // activeCarIdが未設定、または選択されている車両が存在しない場合は最初の車両を選択
+    const currentCarExists = activeCarId ? cars.some(car => car.id === activeCarId) : false;
+    
+    if (!activeCarId || !currentCarExists) {
+      console.log("Auto-selecting first car from cars list:", cars[0].id, cars[0].name);
+      setActiveCarId(cars[0].id);
+    }
+  }, [cars, activeCarId]);
+
 
   // 車両データの取得（認証状態に依存）
   useEffect(() => {
@@ -145,9 +161,12 @@ export default function Home() {
         // 実際のデータがある場合はそれを使用
         if (list.length > 0) {
           console.log("Using real cars from Firestore");
-      setCars(list);
-          if (!activeCarId && list[0]?.id) {
-            console.log("Setting active car to:", list[0].id);
+          setCars(list);
+          
+          // activeCarIdが未設定、または選択されている車両が存在しない場合は最初の車両を選択
+          const currentCarExists = activeCarId ? list.some(car => car.id === activeCarId) : false;
+          if (!activeCarId || !currentCarExists) {
+            console.log("Auto-selecting first car:", list[0].id);
             setActiveCarId(list[0].id);
           }
         } else {
