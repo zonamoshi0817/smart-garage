@@ -9,6 +9,7 @@ import { MaintenanceRecord } from './maintenance';
 import { generateCombinedProof, ProofData } from './proof';
 import { logPdfExported, logShareLinkCreated } from './analytics';
 import { generatePdfExportToken, generateShareTokenSecure } from './cloudFunctions';
+import { shortenSignature } from './signatureToken';
 
 // 日本語フォントの設定
 declare module 'jspdf' {
