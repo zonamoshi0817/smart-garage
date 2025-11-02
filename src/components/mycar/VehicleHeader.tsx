@@ -51,7 +51,7 @@ export default function VehicleHeader({
   };
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-md overflow-hidden border border-blue-100">
+    <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200">
       <div className="p-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* 左側：車両画像 */}
