@@ -51,9 +51,16 @@ export async function addCustomization(
     const collectionPath = `users/${userId}/cars/${carId}/${CUSTOMIZATIONS_COLLECTION}`;
     console.log('Collection path:', collectionPath);
 
-    // undefinedの値をnullに変換（Firestoreではundefinedを保存できない）
+    // Timestamp変換、undefinedの値をnullに変換
+    let dateField = customization.date;
+    if (customization.date instanceof Date) {
+      // Date → Timestamp変換（後方互換性）
+      dateField = Timestamp.fromDate(customization.date);
+    }
+    
     const cleanCustomization = {
       ...customization,
+      date: dateField,  // Timestamp型で保存
       carId,
       ownerUid: userId,
       createdBy: userId,
@@ -119,8 +126,14 @@ export async function updateCustomization(
   updates: Partial<CustomizationInput>
 ): Promise<void> {
   try {
-    // undefinedの値をnullに変換（Firestoreではundefinedを保存できない）
-    const cleanUpdates = {
+    // Timestamp変換、undefinedの値をnullに変換
+    let dateField = updates.date;
+    if (updates.date && updates.date instanceof Date) {
+      // Date → Timestamp変換（後方互換性）
+      dateField = Timestamp.fromDate(updates.date);
+    }
+    
+    const cleanUpdates: any = {
       ...updates,
       updatedBy: userId,
       updatedAt: Timestamp.now(),
@@ -136,6 +149,10 @@ export async function updateCustomization(
       link: updates.link ?? null,
       memo: updates.memo ?? null,
     };
+    
+    if (dateField) {
+      cleanUpdates.date = dateField;
+    }
 
     const docRef = doc(db, 'users', userId, 'cars', carId, CUSTOMIZATIONS_COLLECTION, customizationId);
     await updateDoc(docRef, cleanUpdates);
@@ -220,13 +237,18 @@ export async function getCustomizations(
       .map(doc => ({
         id: doc.id,
         ...doc.data(),
-        date: doc.data().date?.toDate() || new Date(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        date: doc.data().date,  // Timestampをそのまま返す
+        deletedAt: doc.data().deletedAt || null,  // null統一
+        createdAt: doc.data().createdAt,
+        updatedAt: doc.data().updatedAt,
       })) as Customization[];
 
-    // クライアント側でフィルタリングとソート
-    customizations = customizations.sort((a, b) => b.date.getTime() - a.date.getTime());
+    // クライアント側でフィルタリングとソート（Timestampの秒数で比較）
+    customizations = customizations.sort((a, b) => {
+      const aSeconds = a.date?.seconds || 0;
+      const bSeconds = b.date?.seconds || 0;
+      return bSeconds - aSeconds;
+    });
 
     if (options?.status) {
       customizations = customizations.filter(c => c.status === options.status);
@@ -269,9 +291,10 @@ export async function getCustomization(
       return {
         id: docSnap.id,
         ...docSnap.data(),
-        date: docSnap.data().date?.toDate() || new Date(),
-        createdAt: docSnap.data().createdAt?.toDate() || new Date(),
-        updatedAt: docSnap.data().updatedAt?.toDate() || new Date(),
+        date: docSnap.data().date,  // Timestampをそのまま返す
+        deletedAt: docSnap.data().deletedAt || null,  // null統一
+        createdAt: docSnap.data().createdAt,
+        updatedAt: docSnap.data().updatedAt,
       } as Customization;
     }
     
@@ -299,7 +322,11 @@ export async function updateCustomizationMeta(
 
     const currentYear = new Date().getFullYear();
     const yearToDateCostJpy = customizations
-      .filter(c => c.date.getFullYear() === currentYear)
+      .filter(c => {
+        // Timestamp → Date変換して年を取得
+        const dateObj = c.date?.toDate ? c.date.toDate() : new Date();
+        return dateObj.getFullYear() === currentYear;
+      })
       .reduce((sum, c) => {
         const partsCost = c.partsCostJpy || 0;
         const laborCost = c.laborCostJpy || 0;

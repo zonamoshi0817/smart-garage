@@ -13,85 +13,28 @@ import {
   DocumentReference,
   Timestamp
 } from 'firebase/firestore';
+import type { InsurancePolicy, InsuranceClaim } from '@/types';
 
-// 保険契約の型定義
-export interface InsurancePolicy {
-  id?: string;
-  provider: string; // 保険会社名
-  policyNumber: string; // 証券番号
-  carId: string; // 車両ID
-  startDate: Date;
-  endDate: Date; // 満期日
-  paymentCycle: 'annual' | 'monthly' | 'installment';
-  premiumAmount: number; // 保険料（税込円）
-  coverages: {
-    bodilyInjury: { limit: string }; // 対人無制限等
-    propertyDamage: { limit: string }; // 対物無制限等
-    personalInjury: { limit: string }; // 人身傷害
-    vehicle: { 
-      type: 'AG' | 'AC' | 'NONE'; // AG: 車両保険、AC: 車両保険（免責あり）、NONE: なし
-      deductible: string; // 免責金額
-    };
-    riders: string[]; // 特約（弁護士特約等）
-  };
-  drivers: {
-    ageLimit: string; // 年齢制限
-    familyOnly: boolean; // 家族限定
-  };
-  usage: {
-    purpose: 'private' | 'business'; // 使用目的
-    annualMileageKm: number; // 年間走行距離
-  };
-  notes: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// 事故記録の型定義
-export interface InsuranceClaim {
-  id?: string;
-  policyId: string; // 保険契約ID
-  occurredAt: Date; // 事故発生日時
-  location: string; // 事故場所
-  description: string; // 事故状況
-  policeReportNo: string; // 警察届出番号
-  insurer: string; // 保険会社
-  handler: string; // 担当者
-  status: 'reported' | 'investigating' | 'paid' | 'denied'; // 進捗ステータス
-  paidAmount: number; // 支払金額
-  photos: string[]; // 写真URL配列
-  notes: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// 通知設定の型定義
-export interface InsuranceNotification {
-  id?: string;
-  policyId: string;
-  type: 'policy_expiry';
-  sendAt: Date;
-  sent: boolean;
-  createdAt: Date;
-}
-
-// 証券ファイルの型定義
-export interface InsuranceFile {
-  id?: string;
-  policyId: string;
-  url: string; // Storage URL
-  mimeType: string;
-  size: number;
-  createdAt: Date;
-}
+// 型を再エクスポート
+export type { InsurancePolicy, InsuranceClaim };
 
 // 保険契約の作成
-export async function addInsurancePolicy(policy: Omit<InsurancePolicy, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+export async function addInsurancePolicy(policy: Omit<InsurancePolicy, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'ownerUid' | 'createdBy' | 'updatedBy'>): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new Error('ユーザーが認証されていません');
 
+  // Date → Timestamp変換（後方互換性）
+  const startDate = policy.startDate instanceof Date ? Timestamp.fromDate(policy.startDate) : policy.startDate;
+  const endDate = policy.endDate instanceof Date ? Timestamp.fromDate(policy.endDate) : policy.endDate;
+  const contractDate = policy.contractDate ? 
+    (policy.contractDate instanceof Date ? Timestamp.fromDate(policy.contractDate) : policy.contractDate) : 
+    undefined;
+
   const policyData = {
     ...policy,
+    startDate,
+    endDate,
+    contractDate,
     ownerUid: user.uid,
     createdBy: user.uid,
     updatedBy: user.uid,
@@ -191,10 +134,12 @@ export function watchInsurancePolicies(callback: (policies: InsurancePolicy[]) =
         policies.push({
           id: doc.id,
           ...data,
-          startDate: data.startDate?.toDate() || new Date(),
-          endDate: data.endDate?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
+          startDate: data.startDate,  // Timestampをそのまま返す
+          endDate: data.endDate,
+          contractDate: data.contractDate,
+          deletedAt: data.deletedAt || null,  // null統一
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
         } as InsurancePolicy);
       }
     });
@@ -231,14 +176,19 @@ export function watchInsurancePoliciesByCar(
     const policies: InsurancePolicy[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      policies.push({
-        id: doc.id,
-        ...data,
-        startDate: data.startDate?.toDate() || new Date(),
-        endDate: data.endDate?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      } as InsurancePolicy);
+      // 論理削除されたレコードを除外
+      if (!data.deletedAt) {
+        policies.push({
+          id: doc.id,
+          ...data,
+          startDate: data.startDate,  // Timestampをそのまま返す
+          endDate: data.endDate,
+          contractDate: data.contractDate,
+          deletedAt: data.deletedAt || null,  // null統一
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        } as InsurancePolicy);
+      }
     });
     
     console.log('Processed insurance policies by car:', policies.length);

@@ -38,10 +38,18 @@ export const addFuelLog = async (fuelLogData: FuelLogInput): Promise<string> => 
   console.log("Collection path:", `users/${user.uid}/fuelLogs`);
 
   try {
-    // undefined値をnullに変換（Firestoreではundefinedは保存できない）
-    const cleanData = Object.fromEntries(
-      Object.entries(fuelLogData).map(([key, value]) => [key, value === undefined ? null : value])
-    );
+    // undefined値をnullに変換、Timestamp変換
+    const cleanData: any = {};
+    for (const [key, value] of Object.entries(fuelLogData)) {
+      if (value === undefined) {
+        cleanData[key] = null;
+      } else if (key === 'date' && value instanceof Date) {
+        // Date → Timestamp変換（後方互換性）
+        cleanData[key] = Timestamp.fromDate(value);
+      } else {
+        cleanData[key] = value;
+      }
+    }
     
     const docRef = await addDoc(collection(db, "users", user.uid, "fuelLogs"), {
       ...cleanData,
@@ -87,10 +95,18 @@ export const updateFuelLog = async (id: string, fuelLogData: Partial<FuelLogInpu
   }
 
   try {
-    // undefined値をnullに変換（Firestoreではundefinedは保存できない）
-    const cleanData = Object.fromEntries(
-      Object.entries(fuelLogData).map(([key, value]) => [key, value === undefined ? null : value])
-    );
+    // undefined値をnullに変換、Timestamp変換
+    const cleanData: any = {};
+    for (const [key, value] of Object.entries(fuelLogData)) {
+      if (value === undefined) {
+        cleanData[key] = null;
+      } else if (key === 'date' && value instanceof Date) {
+        // Date → Timestamp変換（後方互換性）
+        cleanData[key] = Timestamp.fromDate(value);
+      } else {
+        cleanData[key] = value;
+      }
+    }
     
     const docRef = doc(db, "users", user.uid, "fuelLogs", id);
     await updateDoc(docRef, {
@@ -216,7 +232,11 @@ export const getFuelLogs = async (carId: string): Promise<FuelLog[]> => {
     });
     
     // クライアント側で日付順にソート（新しい順）
-    fuelLogs.sort((a, b) => b.date.getTime() - a.date.getTime());
+    fuelLogs.sort((a, b) => {
+      const aSeconds = a.date?.seconds || 0;
+      const bSeconds = b.date?.seconds || 0;
+      return bSeconds - aSeconds;
+    });
 
     return fuelLogs;
   } catch (error) {
@@ -265,14 +285,19 @@ export const watchFuelLogs = (
         return {
           id: doc.id,
           ...data,
-          date: data.date?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
+          date: data.date,  // Timestampをそのまま返す
+          deletedAt: data.deletedAt || null,  // null統一
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
         } as FuelLog;
       });
     
     // クライアント側で日付順にソート
-    fuelLogs.sort((a, b) => b.date.getTime() - a.date.getTime());
+    fuelLogs.sort((a, b) => {
+      const aSeconds = a.date?.seconds || 0;
+      const bSeconds = b.date?.seconds || 0;
+      return bSeconds - aSeconds;
+    });
     callback(fuelLogs);
   }, (error) => {
     console.error("給油ログの監視に失敗しました:", error);
@@ -314,7 +339,11 @@ export const watchAllFuelLogs = (
     });
     
     // クライアント側で日付順にソート
-    fuelLogs.sort((a, b) => b.date.getTime() - a.date.getTime());
+    fuelLogs.sort((a, b) => {
+      const aSeconds = a.date?.seconds || 0;
+      const bSeconds = b.date?.seconds || 0;
+      return bSeconds - aSeconds;
+    });
     callback(fuelLogs);
   }, (error) => {
     console.error("全給油ログの監視に失敗しました:", error);

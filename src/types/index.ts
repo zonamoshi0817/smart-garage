@@ -1,13 +1,24 @@
 // 共通の型定義
 
+import { Timestamp } from 'firebase/firestore';
+
+/**
+ * すべてのエンティティの基底型
+ * 
+ * 重要: 日時フィールドはFirestore Timestampに完全統一
+ * - Firestoreに保存: Timestamp（serverTimestamp()使用）
+ * - クライアント表示: Timestamp.toDate() でDateに変換
+ * - Date | string 型は廃止（バグの温床）
+ * - deletedAtは null（未削除）で統一（クエリ最適化）
+ */
 export interface BaseEntity {
   id?: string;
   ownerUid?: string;        // 所有者UID（マルチテナンシー対応）
   createdBy?: string;       // 作成者UID
   updatedBy?: string;       // 更新者UID
-  deletedAt?: Date | null;  // 論理削除タイムスタンプ
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
+  deletedAt: Timestamp | null;  // 論理削除（null=未削除、Timestamp=削除済み）
+  createdAt: Timestamp;     // 作成日時（serverTimestamp）
+  updatedAt: Timestamp;     // 更新日時（serverTimestamp）
 }
 
 // 車両関連の型
@@ -17,7 +28,7 @@ export interface Car extends BaseEntity {
   year?: number;
   odoKm?: number;
   imagePath?: string;
-  inspectionExpiry?: Date; // 車検期限（Timestamp → Date変換済み）
+  inspectionExpiry?: Timestamp; // 車検期限（Timestamp統一）
   firstRegYm?: string;
   avgKmPerMonth?: number;
 }
@@ -28,7 +39,7 @@ export interface CarInput {
   year?: number;
   odoKm?: number;
   imagePath?: string;
-  inspectionExpiry?: Date; // 車検期限（Date型で入力）
+  inspectionExpiry?: Timestamp; // 車検期限（Timestamp型で保存）
   firstRegYm?: string;
   avgKmPerMonth?: number;
 }
@@ -46,7 +57,7 @@ export interface MaintenanceAttachment {
   type: 'photo' | 'pdf' | 'receipt';
   url: string;
   fileName: string;
-  uploadedAt: Date;
+  uploadedAt: Timestamp;   // アップロード日時（Timestamp統一）
 }
 
 export interface MaintenanceRecord extends BaseEntity {
@@ -55,7 +66,7 @@ export interface MaintenanceRecord extends BaseEntity {
   description?: string;
   cost?: number;
   mileage?: number;
-  date: Date;
+  date: Timestamp;        // メンテナンス実施日（Timestamp統一）
   location?: string;
   items?: MaintenanceItem[];        // 明細行（将来対応）
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
@@ -67,7 +78,7 @@ export interface MaintenanceInput {
   description?: string;
   cost?: number;
   mileage: number;
-  date: Date;
+  date: Timestamp;        // メンテナンス実施日（Timestamp型で保存）
   location?: string;
   items?: MaintenanceItem[];        // 明細行（将来対応）
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
@@ -82,9 +93,9 @@ export interface InsurancePolicy extends BaseEntity {
   productName?: string;                // 商品名（例: 総合自動車保険TypeS）
   
   // 契約期間
-  startDate: Date;                     // 契約開始日
-  endDate: Date;                       // 満期日
-  contractDate?: Date;                 // 契約日
+  startDate: Timestamp;                // 契約開始日（Timestamp統一）
+  endDate: Timestamp;                  // 満期日（Timestamp統一）
+  contractDate?: Timestamp;            // 契約日（Timestamp統一）
   
   // 契約者情報
   insuredName?: string;                // 契約者氏名
@@ -180,7 +191,7 @@ export interface InsuranceClaim extends BaseEntity {
   policyId: string;
   carId: string;
   claimNumber: string;
-  incidentDate: Date;
+  incidentDate: Timestamp;  // 事故発生日（Timestamp統一）
   description: string;
   amount: number;
   status: 'pending' | 'approved' | 'rejected' | 'paid';
@@ -194,7 +205,7 @@ export interface InsuranceNotification extends BaseEntity {
   type: 'expiry' | 'payment' | 'renewal';
   title: string;
   message: string;
-  dueDate: Date;
+  dueDate: Timestamp;      // 期限日（Timestamp統一）
   isRead: boolean;
   actionUrl?: string;
 }
@@ -241,7 +252,7 @@ export interface FuelLog extends BaseEntity {
   stationName?: string; // スタンド名
   unit: string; // 単位（デフォルト: 'JPY/L'、将来の外貨対応）
   memo?: string;
-  date: Date;
+  date: Timestamp;        // 給油日時（Timestamp統一）
 }
 
 export interface FuelLogInput {
@@ -255,7 +266,7 @@ export interface FuelLogInput {
   stationName?: string; // スタンド名
   unit?: string; // 単位（デフォルト: 'JPY/L'）
   memo?: string;
-  date: Date;
+  date: Timestamp;        // 給油日時（Timestamp型で保存）
 }
 
 // カスタマイズ関連の型
@@ -272,7 +283,7 @@ export interface Customization extends BaseEntity {
   modelCode?: string;
   categories: CustomCategory[];
   status: CustomStatus;
-  date: Date;
+  date: Timestamp;        // 実施日（Timestamp統一）
   odoKm?: number;
   vendorType?: 'self' | 'shop' | 'dealer';
   vendorName?: string;
@@ -292,7 +303,7 @@ export interface CustomizationInput {
   modelCode?: string;
   categories: CustomCategory[];
   status: CustomStatus;
-  date: Date;
+  date: Timestamp;        // 実施日（Timestamp型で保存）
   odoKm?: number;
   vendorType?: 'self' | 'shop' | 'dealer';
   vendorName?: string;

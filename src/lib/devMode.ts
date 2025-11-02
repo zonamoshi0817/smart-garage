@@ -1,7 +1,8 @@
 // 開発モード用のダミーデータベース機能
 import { Car, MaintenanceRecord } from '../types';
+import { Timestamp } from 'firebase/firestore';
 
-// ダミーデータ
+// ダミーデータ（Timestamp統一）
 const dummyCars: Car[] = [
   {
     id: 'demo-car-1',
@@ -10,11 +11,15 @@ const dummyCars: Car[] = [
     year: 2020,
     odoKm: 50000,
     imagePath: '/car.jpg',
-    inspectionExpiry: new Date('2025-12-31'), // Date型に統一
+    inspectionExpiry: Timestamp.fromDate(new Date('2025-12-31')),
     firstRegYm: '2020-01',
     avgKmPerMonth: 1000,
-    createdAt: new Date(),
-    updatedAt: new Date()
+    ownerUid: 'demo-user',
+    createdBy: 'demo-user',
+    updatedBy: 'demo-user',
+    deletedAt: null,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now()
   }
 ];
 
@@ -26,10 +31,14 @@ const dummyMaintenanceRecords: MaintenanceRecord[] = [
     description: '定期的なオイル交換',
     cost: 5000,
     mileage: 45000,
-    date: new Date('2024-01-15'),
+    date: Timestamp.fromDate(new Date('2024-01-15')),
     location: 'デモ工場',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    ownerUid: 'demo-user',
+    createdBy: 'demo-user',
+    updatedBy: 'demo-user',
+    deletedAt: null,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now()
   }
 ];
 

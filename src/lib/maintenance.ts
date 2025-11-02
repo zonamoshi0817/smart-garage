@@ -4,36 +4,14 @@ import { db, auth } from "@/lib/firebase";
 import {
   collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
   doc, updateDoc, deleteDoc, where, limit, startAfter, getDocs,
-  QueryDocumentSnapshot, DocumentData
+  QueryDocumentSnapshot, DocumentData, Timestamp
 } from "firebase/firestore";
 import { validateMileageConsistency } from "@/lib/validators";
 import { getDoc } from "firebase/firestore";
 import { logAudit } from "./auditLog";
 import { logMaintenanceCreated } from "./analytics";
 import { fetchPaginatedData, PaginationState } from "./pagination";
-
-export type MaintenanceRecord = {
-  id?: string;
-  carId: string;
-  title: string;
-  description?: string;
-  cost?: number;
-  mileage?: number; // 走行距離
-  date: Date;
-  location?: string; // 作業場所
-  createdAt?: Date;
-  updatedAt?: Date;
-};
-
-export type MaintenanceInput = {
-  carId: string;
-  title: string;
-  description?: string;
-  cost?: number;
-  mileage: number; // 必須項目に変更
-  date: Date;
-  location?: string;
-};
+import type { MaintenanceRecord, MaintenanceInput } from "@/types";
 
 // 車両の現在走行距離を取得
 async function getCurrentCarMileage(carId: string): Promise<number> {
@@ -75,9 +53,12 @@ async function getExistingMaintenanceRecords(carId: string): Promise<Array<{ mil
     snapshot.forEach((doc: any) => {
       const data = doc.data() as { mileage?: number; date?: { toDate?: () => Date } | Date };
       if (data.mileage && data.date) {
+        // Timestampを Date に変換（バリデーション用）
+        const date = data.date?.toDate ? data.date.toDate() : 
+                     (data.date instanceof Date ? data.date : new Date());
         records.push({
           mileage: data.mileage,
-          date: typeof data.date === 'object' && 'toDate' in data.date ? (data.date as any).toDate() : new Date(data.date as Date)
+          date: date
         });
       }
     });
@@ -114,14 +95,21 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
     
     const ref = collection(db, "users", u.uid, "maintenance");
     
-    // データを準備（Dateオブジェクトを適切に処理）
+    // Timestamp型への変換
+    let dateField = data.date;
+    if (data.date instanceof Date) {
+      // Date → Timestamp変換（後方互換性）
+      dateField = Timestamp.fromDate(data.date);
+    }
+    
+    // データを準備
     const recordData = {
       carId: data.carId,
       title: data.title,
       description: data.description || null,
       cost: data.cost || null,
       mileage: data.mileage || null,
-      date: data.date, // Dateオブジェクトのまま（Firestoreが自動変換）
+      date: dateField,  // Timestamp型で保存
       location: data.location || null,
       ownerUid: u.uid,
       createdBy: u.uid,
@@ -218,11 +206,16 @@ export function watchMaintenanceRecords(carId: string, cb: (records: Maintenance
           return { 
             id: d.id, 
             ...data,
-            date: data.date instanceof Date ? data.date : (data.date?.toDate ? data.date.toDate() : new Date())
+            date: data.date,  // Timestampをそのまま返す（BaseEntity完全統一）
+            deletedAt: data.deletedAt || null,  // null統一
           } as MaintenanceRecord;
         });
-      // クライアント側でソート
-      list.sort((a, b) => b.date.getTime() - a.date.getTime());
+      // クライアント側でソート（Timestampの秒数で比較）
+      list.sort((a, b) => {
+        const aSeconds = a.date?.seconds || 0;
+        const bSeconds = b.date?.seconds || 0;
+        return bSeconds - aSeconds;
+      });
       console.log("Processed records for carId", carId, ":", list);
       cb(list);
     }, (error) => {
@@ -253,7 +246,10 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
     if (data.description !== undefined) updateData.description = data.description || null;
     if (data.cost !== undefined) updateData.cost = data.cost || null;
     if (data.mileage !== undefined) updateData.mileage = data.mileage || null;
-    if (data.date !== undefined) updateData.date = data.date;
+    if (data.date !== undefined) {
+      // Date → Timestamp変換（後方互換性）
+      updateData.date = data.date instanceof Date ? Timestamp.fromDate(data.date) : data.date;
+    }
     if (data.location !== undefined) updateData.location = data.location || null;
     
     console.log("Updating maintenance record with data:", updateData);
@@ -404,11 +400,16 @@ export function watchAllMaintenanceRecords(cb: (records: MaintenanceRecord[]) =>
           return { 
             id: d.id, 
             ...data,
-            date: data.date instanceof Date ? data.date : (data.date?.toDate ? data.date.toDate() : new Date())
+            date: data.date,  // Timestampをそのまま返す
+            deletedAt: data.deletedAt || null,  // null統一
           } as MaintenanceRecord;
         });
-      // クライアント側でソート
-      list.sort((a, b) => b.date.getTime() - a.date.getTime());
+      // クライアント側でソート（Timestampの秒数で比較）
+      list.sort((a, b) => {
+        const aSeconds = a.date?.seconds || 0;
+        const bSeconds = b.date?.seconds || 0;
+        return bSeconds - aSeconds;
+      });
       console.log("All maintenance processed records:", list);
       cb(list);
     }, (error) => {
