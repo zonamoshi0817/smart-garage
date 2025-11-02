@@ -1132,6 +1132,47 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 - 💰 CVR: 価値体験後ペイウォールで15-25%向上
 - 🚗 EV対応: 物理量統一で基盤完成
 
-**最新バージョン: 2.0.0**  
-**コミットID: b09bdf0**  
-**総コミット数: 22コミット**
+---
+
+## 🚀 デプロイ情報
+
+### Vercelへのデプロイ
+- **プラットフォーム**: Vercel
+- **本番URL**: https://smart-garage-mmwgktgq1-kobayashis-projects-6366834f.vercel.app
+- **デプロイ方法**: `npx vercel --prod --yes`
+- **自動デプロイ**: GitHubにプッシュすると自動的にVercelがビルド＆デプロイ
+
+### ビルド設定
+- **ビルドコマンド**: `npm run build`
+- **出力ディレクトリ**: `.next`
+- **Node.jsバージョン**: 20.x
+- **環境変数**: Firebase設定は `.env.local` に保存（Vercelダッシュボードでも設定可能）
+
+### Next.js ビルド設定（next.config.ts）
+```typescript
+{
+  typescript: {
+    ignoreBuildErrors: true,  // 型エラーを一時的に無視
+  },
+  eslint: {
+    ignoreDuringBuilds: true,  // ESLintエラーを一時的に無視
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        port: '',
+        pathname: '/v0/b/**',
+      },
+    ],
+  },
+}
+```
+
+---
+
+**最新バージョン: 2.1.0**  
+**コミットID: 06f1f1e**  
+**総コミット数: 119コミット**  
+**本番環境**: https://smart-garage-mmwgktgq1-kobayashis-projects-6366834f.vercel.app
