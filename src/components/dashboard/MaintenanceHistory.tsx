@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MaintenanceRecord, Car } from '@/types';
 import MaintenanceModal from '@/components/modals/MaintenanceModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { toDate } from '@/lib/dateUtils';
 
 interface MaintenanceHistoryProps {
   maintenanceRecords: MaintenanceRecord[];
@@ -148,7 +149,7 @@ export default function MaintenanceHistory({
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-medium text-gray-900">{record.title}</h3>
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span>{new Date(record.date).toLocaleDateString('ja-JP')}</span>
+                          <span>{toDate(record.date)?.toLocaleDateString('ja-JP')}</span>
                           {record.mileage && (
                             <span>{record.mileage.toLocaleString()} km</span>
                           )}

@@ -4,6 +4,7 @@ import { Customization, CustomizationInput, CustomStatus, CustomCategory } from 
 import { CATEGORY_LABELS, STATUS_LABELS } from '@/lib/customizations';
 import { addCustomization, updateCustomization } from '@/lib/customizations';
 import { auth } from '@/lib/firebase';
+import { toTimestamp, toDate } from '@/lib/dateUtils';
 
 interface CustomizationModalProps extends ModalProps {
   carId: string;
@@ -24,7 +25,7 @@ export default function CustomizationModal({
     modelCode: '',
     categories: [],
     status: 'planned',
-    date: new Date(),
+    date: toTimestamp(new Date())!,
     odoKm: undefined,
     vendorType: undefined,
     vendorName: '',
@@ -67,7 +68,7 @@ export default function CustomizationModal({
         modelCode: '',
         categories: [],
         status: 'planned',
-        date: new Date(),
+        date: toTimestamp(new Date())!,
         odoKm: undefined,
         vendorType: undefined,
         vendorName: '',
@@ -281,8 +282,8 @@ export default function CustomizationModal({
               </label>
               <input
                 type="date"
-                value={formData.date.toISOString().split('T')[0]}
-                onChange={(e) => handleInputChange('date', new Date(e.target.value))}
+                value={toDate(formData.date)?.toISOString().split('T')[0] || ''}
+                onChange={(e) => handleInputChange('date', toTimestamp(new Date(e.target.value))!)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
               />
             </div>

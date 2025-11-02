@@ -122,8 +122,6 @@ export function watchCars(cb: (cars: Car[]) => void, limitCount: number = 50) {
             soldPrice: data.soldPrice,
             soldTo: data.soldTo,
             soldNotes: data.soldNotes,
-            engineCode: data.engineCode,
-            oilSpec: data.oilSpec,
             ownerUid: data.ownerUid,
             createdBy: data.createdBy,
             updatedBy: data.updatedBy,

@@ -41,7 +41,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
     const distance = log.odoKm - previousLog.odoKm;
     const fuelUsed = log.fuelAmount;
     
-    if (distance <= 0 || fuelUsed <= 0) return null;
+    if (distance <= 0 || !fuelUsed || fuelUsed <= 0) return null;
     
     return Math.round((distance / fuelUsed) * 10) / 10;
   };
@@ -212,7 +212,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                     <div className="text-xs text-gray-500">km</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">¥{latestFuelLog.cost.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-gray-900">¥{(latestFuelLog.cost || 0).toLocaleString()}</div>
                     <div className="text-xs text-gray-500">金額</div>
                   </div>
                 </div>
@@ -297,7 +297,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                               )}
                             </div>
                             <div className="text-sm text-gray-500 mt-1">
-                              {log.odoKm.toLocaleString()} km • {log.fuelAmount}L • ¥{log.cost.toLocaleString()}
+                              {log.odoKm.toLocaleString()} km • {log.fuelAmount}L • ¥{(log.cost || 0).toLocaleString()}
                               {individualEfficiency && (
                                 <span className="ml-2 text-green-600 font-medium">
                                   • {individualEfficiency} km/L
@@ -309,7 +309,7 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
                         <div className="flex items-center space-x-3">
                           <div className="text-right">
                             <div className="text-lg font-bold text-gray-900">
-                              ¥{Math.round(log.cost / log.fuelAmount).toLocaleString()}
+                              ¥{Math.round((log.cost || 0) / (log.fuelAmount || 1)).toLocaleString()}
                             </div>
                             <div className="text-xs text-gray-500">/L</div>
                           </div>

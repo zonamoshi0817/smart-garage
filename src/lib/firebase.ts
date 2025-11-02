@@ -19,22 +19,24 @@ const firebaseConfig = {
 };
 
 // Firebaseアプリを初期化（複数回呼んでも大丈夫にする）
-let app;
-try {
-  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  console.log("Firebase initialized successfully");
-} catch (error) {
-  console.error("Firebase initialization failed:", error);
-  // フォールバック用のダミー設定
-  app = getApps().length ? getApp() : initializeApp({
-    apiKey: "demo-api-key",
-    authDomain: "demo-project.firebaseapp.com",
-    projectId: "demo-project",
-    storageBucket: "demo-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "demo-app-id",
-  });
-}
+const app = (() => {
+  try {
+    const existingApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    console.log("Firebase initialized successfully");
+    return existingApp;
+  } catch (error) {
+    console.error("Firebase initialization failed:", error);
+    // フォールバック用のダミー設定
+    return getApps().length ? getApp() : initializeApp({
+      apiKey: "demo-api-key",
+      authDomain: "demo-project.firebaseapp.com",
+      projectId: "demo-project",
+      storageBucket: "demo-project.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "demo-app-id",
+    });
+  }
+})();
 
 // デバッグ用：Firebase設定を確認
 console.log("Firebase initialized with config:", {
@@ -63,6 +65,7 @@ if (typeof window !== 'undefined') {
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+export { app };
 
 // Googleログイン用
 const provider = new GoogleAuthProvider();

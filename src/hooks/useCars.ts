@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { addCar, watchCars, updateCar, removeCar, type Car, type CarInput } from '@/lib/cars';
+import { addCar, watchCars, updateCar, removeCar } from '@/lib/cars';
+import { type Car, type CarInput } from '@/types';
 import { auth, watchAuth } from '@/lib/firebase';
 
 export function useCars() {

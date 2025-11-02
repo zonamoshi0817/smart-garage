@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Car } from '@/types';
 import CarModal from '@/components/modals/CarModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { toDate } from '@/lib/dateUtils';
 
 interface CarManagementProps {
   cars: Car[];
@@ -156,7 +157,7 @@ export default function CarManagement({
                 {car.inspectionExpiry && (
                   <div className="flex justify-between">
                     <span>車検期限:</span>
-                    <span>{new Date(car.inspectionExpiry).toLocaleDateString('ja-JP')}</span>
+                    <span>{toDate(car.inspectionExpiry)?.toLocaleDateString('ja-JP')}</span>
                   </div>
                 )}
                 {car.avgKmPerMonth && (

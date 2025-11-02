@@ -1,4 +1,6 @@
 import React from 'react';
+import { FuelLog as FuelLogType } from '@/types';
+import { toDate } from '@/lib/dateUtils';
 
 interface HistoryItemProps {
   record: any;
@@ -134,16 +136,7 @@ export default function HistoryItem({
 
 // 給油ログ用の履歴アイテム
 interface FuelLogItemProps {
-  fuelLog: {
-    id?: string;
-    date: string | Date;
-    odoKm: number;
-    fuelAmount: number;
-    cost: number;
-    isFullTank?: boolean;
-    memo?: string;
-    carId: string;
-  };
+  fuelLog: FuelLogType;
   carName?: string;
   onClick: () => void;
   onEdit: () => void;
@@ -158,8 +151,10 @@ export function FuelLogItem({
   className = ""
 }: FuelLogItemProps) {
   
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('ja-JP', {
+  const formatDate = () => {
+    const date = toDate(fuelLog.date);
+    if (!date) return '';
+    return date.toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
@@ -206,10 +201,10 @@ export function FuelLogItem({
             
             {/* メタ情報 */}
             <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500">
-              <span>{formatDate(fuelLog.date.toString())}</span>
+              <span>{formatDate()}</span>
               <span>{fuelLog.odoKm.toLocaleString()}km</span>
               <span>{fuelLog.fuelAmount}L</span>
-              <span className="font-medium text-gray-900">¥{fuelLog.cost.toLocaleString()}</span>
+              <span className="font-medium text-gray-900">¥{(fuelLog.cost || 0).toLocaleString()}</span>
             </div>
             
             {/* 車両名と場所 */}

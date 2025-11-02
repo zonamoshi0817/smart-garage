@@ -5,10 +5,9 @@ import {
   watchAllMaintenanceRecords,
   updateMaintenanceRecord, 
   deleteMaintenanceRecord,
-  deleteMultipleMaintenanceRecords,
-  type MaintenanceRecord, 
-  type MaintenanceInput 
+  deleteMultipleMaintenanceRecords
 } from '@/lib/maintenance';
+import { type MaintenanceRecord, type MaintenanceInput } from '@/types';
 
 export function useMaintenance(carId?: string) {
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);

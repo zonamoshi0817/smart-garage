@@ -7,6 +7,7 @@ import { logOcrUsed, logOcrStarted, logOcrAutofillDone } from '@/lib/analytics';
 import { enhanceInsuranceDocument } from '@/lib/imageEnhancer';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import PaywallModal from './PaywallModal';
+import { toTimestamp } from '@/lib/dateUtils';
 
 interface InsuranceModalProps {
   carId: string;
@@ -260,19 +261,26 @@ export default function InsuranceModal({
     }
 
     try {
+      // vehicleType のマッピング
+      const vehicleTypeMap: Record<'AG' | 'AC' | 'NONE', 'general' | 'economy' | 'none'> = {
+        'AG': 'general',
+        'AC': 'economy',
+        'NONE': 'none'
+      };
+      
       const policyData = {
         provider,
         policyNumber,
         carId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: toTimestamp(new Date(startDate))!,
+        endDate: toTimestamp(new Date(endDate))!,
         paymentCycle,
         premiumAmount: parseInt(premiumAmount),
         coverages: {
           bodilyInjury: { limit: bodilyInjuryLimit },
           propertyDamage: { limit: propertyDamageLimit },
           personalInjury: { limit: personalInjuryLimit },
-          vehicle: { type: vehicleType, deductible },
+          vehicle: { type: vehicleTypeMap[vehicleType], deductible },
           riders: riders.split(',').map(r => r.trim()).filter(r => r)
         },
         drivers: {

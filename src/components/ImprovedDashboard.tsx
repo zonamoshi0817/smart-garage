@@ -6,6 +6,7 @@ import HistoryItem, { FuelLogItem } from './HistoryItem';
 import InlineUpsell, { LockedFeature } from './InlineUpsell';
 import EmptyStateGuide from './EmptyStateGuide';
 import { CarCardSkeleton, HistoryItemSkeleton, StatusCardSkeleton } from './SkeletonLoaders';
+import { toMillis, toDate } from '@/lib/dateUtils';
 
 interface ImprovedDashboardProps {
   // データ
@@ -111,7 +112,7 @@ export default function ImprovedDashboard({
               <>
                 <StatusCard
                   title="車検期限"
-                  value={activeCar.inspectionExpiry}
+                  value={activeCar.inspectionExpiry ? toMillis(activeCar.inspectionExpiry) : undefined}
                   icon="📋"
                   type="date"
                 />
@@ -390,13 +391,15 @@ function calculateRecentCosts(maintenance: MaintenanceRecord[], fuel: FuelLog[])
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
-  const recentMaintenance = maintenance.filter(record => 
-    new Date(record.date) >= thirtyDaysAgo && record.cost
-  );
+  const recentMaintenance = maintenance.filter(record => {
+    const date = toDate(record.date);
+    return date && date >= thirtyDaysAgo && record.cost;
+  });
   
-  const recentFuel = fuel.filter(log => 
-    new Date(log.date) >= thirtyDaysAgo && log.cost
-  );
+  const recentFuel = fuel.filter(log => {
+    const date = toDate(log.date);
+    return date && date >= thirtyDaysAgo && log.cost;
+  });
   
   const maintenanceCost = recentMaintenance.reduce((sum, record) => sum + (record.cost || 0), 0);
   const fuelCost = recentFuel.reduce((sum, log) => sum + (log.cost || 0), 0);

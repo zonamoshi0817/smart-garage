@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '@/components/common/Modal';
 import { MaintenanceRecord, MaintenanceInput, Car } from '@/types';
+import { toTimestamp, toDate } from '@/lib/dateUtils';
 
 interface MaintenanceModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export default function MaintenanceModal({
     description: '',
     cost: undefined,
     mileage: 0,
-    date: new Date(),
+    date: toTimestamp(new Date())!,
     location: '',
   });
   const [loading, setLoading] = useState(false);
@@ -49,7 +50,7 @@ export default function MaintenanceModal({
         description: '',
         cost: undefined,
         mileage: 0,
-        date: new Date(),
+        date: toTimestamp(new Date())!,
         location: '',
       });
     }
@@ -67,7 +68,7 @@ export default function MaintenanceModal({
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
-      date: new Date(e.target.value)
+      date: toTimestamp(new Date(e.target.value))!
     }));
   };
 
@@ -124,7 +125,7 @@ export default function MaintenanceModal({
             </label>
             <input
               type="date"
-              value={formData.date.toISOString().split('T')[0]}
+              value={toDate(formData.date)?.toISOString().split('T')[0] || ''}
               onChange={handleDateChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

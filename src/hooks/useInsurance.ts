@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toDate } from '@/lib/dateUtils';
 import { 
   addInsurancePolicy, 
   watchInsurancePolicies, 
@@ -112,9 +113,11 @@ export function useInsurance(carId?: string) {
   };
 
   const getExpiryInfo = (policy: InsurancePolicy) => {
+    const endDate = toDate(policy.endDate);
+    if (!endDate) return { daysUntilExpiry: 0, status: 'expired' as const };
     return {
-      daysUntilExpiry: getDaysUntilExpiry(policy.endDate),
-      status: getExpiryStatus(policy.endDate),
+      daysUntilExpiry: getDaysUntilExpiry(endDate),
+      status: getExpiryStatus(endDate),
     };
   };
 

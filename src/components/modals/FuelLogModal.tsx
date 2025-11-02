@@ -9,6 +9,7 @@ import Tesseract from 'tesseract.js';
 import { logOcrUsed, logOcrStarted, logOcrAutofillDone, logFuelCreated } from '@/lib/analytics';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import PaywallModal from './PaywallModal';
+import { toDate, toTimestamp } from '@/lib/dateUtils';
 
 interface FuelLogModalProps extends ModalProps {
   car: Car;
@@ -79,14 +80,14 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           meterType: "odo",
           odoKm: editingFuelLog.odoKm.toString(),
           tripKm: "",
-          fuelAmount: editingFuelLog.fuelAmount.toString(),
-          cost: editingFuelLog.cost.toString(),
+          fuelAmount: (editingFuelLog.fuelAmount || 0).toString(),
+          cost: (editingFuelLog.cost || 0).toString(),
           pricePerLiter: editingFuelLog.pricePerLiter?.toString() || "",
           isFullTank: editingFuelLog.isFullTank,
           fuelType: (editingFuelLog.fuelType as any) || "regular",
           stationName: editingFuelLog.stationName || "",
           memo: editingFuelLog.memo || "",
-          date: editingFuelLog.date.toISOString().slice(0, 16),
+          date: (toDate(editingFuelLog.date) || new Date()).toISOString().slice(0, 16),
         });
       } else {
         // 新規作成モード：給油ログの履歴を取得して推奨メーターを決定
@@ -133,15 +134,15 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
       const fuelLogData: FuelLogInput = {
         carId: car.id!,
         odoKm: finalOdoKm,
-        fuelAmount: parseFloat(formData.fuelAmount) || 0,
-        cost: parseInt(formData.cost) || 0,
-        pricePerLiter: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : undefined,
+        quantity: parseFloat(formData.fuelAmount) || 0,
+        totalCostJpy: parseInt(formData.cost) || 0,
+        pricePerUnit: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : undefined,
         isFullTank: formData.isFullTank,
         fuelType: formData.fuelType as any,
         stationName: formData.stationName.trim() || undefined,
-        unit: 'JPY/L',
+        unit: 'ml' as const,
         memo: formData.memo.trim() || undefined,
-        date: new Date(formData.date),
+        date: toTimestamp(new Date(formData.date))!,
       };
 
       if (isEditing && editingFuelLog?.id) {

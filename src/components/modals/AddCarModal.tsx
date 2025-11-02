@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { addCar, watchCars } from '@/lib/cars';
 import { CarInput } from '@/types';
-import { isImageFile, compressImage, getCompressionInfo, uploadCarImageWithProgress } from '@/lib/imageCompression';
+import { compressImage, getCompressionInfo } from '@/lib/imageCompression';
+import { isImageFile, uploadCarImageWithProgress } from '@/lib/storage';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import PaywallModal from '@/components/modals/PaywallModal';
+import { toTimestamp } from '@/lib/dateUtils';
 
 interface AddCarModalProps {
   onClose: () => void;
@@ -192,8 +194,8 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
       }
       
       if (inspectionExpiry && inspectionExpiry.trim()) {
-        // string (YYYY-MM-DD) → Date変換
-        carData.inspectionExpiry = new Date(inspectionExpiry.trim());
+        // string (YYYY-MM-DD) → Timestamp変換
+        carData.inspectionExpiry = toTimestamp(new Date(inspectionExpiry.trim())) || undefined;
       }
       
       if (firstRegYm && firstRegYm.trim()) {
