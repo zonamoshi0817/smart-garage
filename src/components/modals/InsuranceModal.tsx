@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { addInsurancePolicy } from '@/lib/insurance';
 import Tesseract from 'tesseract.js';
 import { logOcrUsed } from '@/lib/analytics';
-import { extractTextFromPDF, renderPDFPageToImage, isPDFFile } from '@/lib/pdfTextExtractor';
 
 interface InsuranceModalProps {
   carId: string;
@@ -39,7 +38,7 @@ export default function InsuranceModal({
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<string | null>(null);
 
-  // OCR処理: 保険証券スキャン（画像・PDF対応）
+  // OCR処理: 保険証券スキャン（画像対応）
   const handlePolicyScan = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -48,55 +47,17 @@ export default function InsuranceModal({
     setOcrResult(null);
 
     try {
-      let text = '';
+      console.log('[Insurance OCR] Starting OCR processing...');
       
-      // PDFファイルの場合
-      if (isPDFFile(file)) {
-        console.log('[Insurance OCR] PDF detected, extracting text...');
-        
-        try {
-          // まずPDFからテキストを直接抽出を試みる（高速・高精度）
-          text = await extractTextFromPDF(file);
-          console.log('[Insurance OCR] PDF text extracted:', text.substring(0, 200));
-          
-          // テキストが少ない場合は、PDFを画像化してOCR処理
-          if (text.trim().length < 50) {
-            console.log('[Insurance OCR] PDF text is minimal, rendering to image for OCR...');
-            const imageUrl = await renderPDFPageToImage(file, 1, 2.0);
-            
-            const result = await Tesseract.recognize(imageUrl, 'jpn+eng', {
-              logger: (m) => {
-                if (m.status === 'recognizing text') {
-                  console.log(`[Insurance OCR] Progress: ${Math.round(m.progress * 100)}%`);
-                }
-              },
-            });
-            
-            text = result.data.text;
+      const result = await Tesseract.recognize(file, 'jpn+eng', {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            console.log(`[Insurance OCR] Progress: ${Math.round(m.progress * 100)}%`);
           }
-        } catch (pdfError) {
-          console.error('[Insurance OCR] PDF processing failed, falling back to OCR:', pdfError);
-          
-          // フォールバック: PDFを画像化してOCR
-          const imageUrl = await renderPDFPageToImage(file, 1, 2.0);
-          const result = await Tesseract.recognize(imageUrl, 'jpn+eng');
-          text = result.data.text;
-        }
-      } else {
-        // 画像ファイルの場合（従来のOCR処理）
-        console.log('[Insurance OCR] Image file detected, starting OCR...');
-        
-        const result = await Tesseract.recognize(file, 'jpn+eng', {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              console.log(`[Insurance OCR] Progress: ${Math.round(m.progress * 100)}%`);
-            }
-          },
-        });
+        },
+      });
 
-        text = result.data.text;
-      }
-
+      const text = result.data.text;
       console.log('[Insurance OCR] Extracted text:', text);
       setOcrResult(text);
 
@@ -280,7 +241,7 @@ export default function InsuranceModal({
         <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <h3 className="text-sm font-semibold text-blue-900 mb-2">📄 保険証券スキャン</h3>
           <p className="text-xs text-blue-700 mb-3">
-            保険証券の写真またはPDFをアップロードすると、自動的に情報を読み取ります
+            保険証券の写真をアップロードすると、自動的に情報を読み取ります
           </p>
           
           <div className="flex gap-2">
@@ -301,13 +262,13 @@ export default function InsuranceModal({
             <label className="flex-1">
               <input
                 type="file"
-                accept="image/*,application/pdf,.pdf"
+                accept="image/*"
                 onChange={handlePolicyScan}
                 disabled={isOcrProcessing}
                 className="hidden"
               />
               <div className={`w-full px-4 py-2 bg-white border border-blue-300 rounded-lg text-center text-sm font-medium text-blue-700 hover:bg-blue-50 transition cursor-pointer ${isOcrProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                📁 画像・PDFを選択
+                📁 画像を選択
               </div>
             </label>
           </div>
