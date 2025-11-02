@@ -22,33 +22,37 @@ export function usePremium() {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
+    // 認証状態の変化を監視
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        setUserPlan('free');
+        setIsLoading(false);
+        return;
+      }
+
+      // 開発モードで全員プレミアムにする場合（環境変数で制御）
+      if (process.env.NEXT_PUBLIC_DEV_ALL_PREMIUM === 'true') {
+        console.log('[Premium] Dev mode: All users are premium');
+        setUserPlan('premium');
+        setIsLoading(false);
+        return;
+      }
+
+      // 開発者アカウントは自動的にプレミアムプラン
+      if (user.email && DEVELOPER_EMAILS.includes(user.email.toLowerCase())) {
+        console.log('[Premium] Developer account detected:', user.email);
+        setUserPlan('premium');
+        setIsLoading(false);
+        return;
+      }
+
+      // TODO: Firestoreから実際のプラン情報を取得
+      // 現在は開発用として全員無料プラン
       setUserPlan('free');
       setIsLoading(false);
-      return;
-    }
+    });
 
-    // 開発モードで全員プレミアムにする場合（環境変数で制御）
-    if (process.env.NEXT_PUBLIC_DEV_ALL_PREMIUM === 'true') {
-      console.log('[Premium] Dev mode: All users are premium');
-      setUserPlan('premium');
-      setIsLoading(false);
-      return;
-    }
-
-    // 開発者アカウントは自動的にプレミアムプラン
-    if (user.email && DEVELOPER_EMAILS.includes(user.email.toLowerCase())) {
-      console.log('[Premium] Developer account detected:', user.email);
-      setUserPlan('premium');
-      setIsLoading(false);
-      return;
-    }
-
-    // TODO: Firestoreから実際のプラン情報を取得
-    // 現在は開発用として全員無料プラン
-    setUserPlan('free');
-    setIsLoading(false);
+    return () => unsubscribe();
   }, []);
 
   return { userPlan, isLoading };
