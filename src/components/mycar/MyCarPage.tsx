@@ -193,6 +193,7 @@ export default function MyCarPage({
           car={car}
           maintenanceRecords={maintenanceRecords}
           fuelLogs={fuelLogs}
+          customizations={customizations}
         />
         
         {/* 3. 車両ヘルスインジケータ */}

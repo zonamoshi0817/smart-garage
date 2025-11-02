@@ -1,6 +1,6 @@
 'use client';
 
-import { Car, MaintenanceRecord, FuelLog } from '@/types';
+import { Car, MaintenanceRecord, FuelLog, Customization } from '@/types';
 import { useMemo } from 'react';
 import { toDate } from './utils';
 
@@ -8,12 +8,14 @@ interface VehicleSpecsPanelProps {
   car: Car;
   maintenanceRecords: MaintenanceRecord[];
   fuelLogs: FuelLog[];
+  customizations: Customization[];
 }
 
 export default function VehicleSpecsPanel({ 
   car, 
   maintenanceRecords,
-  fuelLogs 
+  fuelLogs,
+  customizations
 }: VehicleSpecsPanelProps) {
   
   // 平均燃費を計算
@@ -62,6 +64,50 @@ export default function VehicleSpecsPanel({
   const totalFuelCost = useMemo(() => {
     return fuelLogs.reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
   }, [fuelLogs]);
+  
+  // カスタマイズをカテゴリ別に集計
+  const customizationsByCategory = useMemo(() => {
+    const categories = {
+      engine: [] as Customization[],
+      exhaust: [] as Customization[],
+      intake: [] as Customization[],
+      suspension: [] as Customization[],
+      brake: [] as Customization[],
+      tire_wheel: [] as Customization[],
+      exterior: [] as Customization[],
+      interior: [] as Customization[],
+      electrical: [] as Customization[],
+      ecu: [] as Customization[],
+      other: [] as Customization[]
+    };
+    
+    customizations
+      .filter(c => c.status === 'installed') // インストール済みのみ
+      .forEach(custom => {
+        custom.categories.forEach(cat => {
+          if (cat in categories) {
+            categories[cat as keyof typeof categories].push(custom);
+          }
+        });
+      });
+    
+    return categories;
+  }, [customizations]);
+  
+  // カテゴリ別の表示名
+  const categoryLabels = {
+    engine: 'エンジン',
+    exhaust: '排気系',
+    intake: '吸気系',
+    suspension: 'サスペンション',
+    brake: 'ブレーキ',
+    tire_wheel: 'ホイール・タイヤ',
+    exterior: 'エクステリア',
+    interior: 'インテリア',
+    electrical: '電装系',
+    ecu: 'ECU',
+    other: 'その他'
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
@@ -74,7 +120,7 @@ export default function VehicleSpecsPanel({
         <p className="text-gray-500 text-sm mt-1">Vehicle Performance & Statistics</p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 左パネル：基本スペック */}
         <div className="space-y-6">
           {/* 基本情報 */}
@@ -227,6 +273,37 @@ export default function VehicleSpecsPanel({
               </div>
             );
           })()}
+        </div>
+        
+        {/* 中央パネル：カスタムパーツ */}
+        <div className="space-y-6">
+          {/* パーツリスト */}
+          <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-200">
+            <h3 className="text-lg font-bold text-cyan-700 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-cyan-500 rounded"></span>
+              カスタムパーツ
+            </h3>
+            <div className="space-y-0.5 max-h-[500px] overflow-y-auto">
+              {Object.entries(customizationsByCategory).map(([category, items]) => {
+                const hasCustom = items.length > 0;
+                const categoryName = categoryLabels[category as keyof typeof categoryLabels];
+                
+                return (
+                  <PartRow
+                    key={category}
+                    label={categoryName}
+                    parts={items}
+                    isStock={!hasCustom}
+                  />
+                );
+              })}
+            </div>
+            {customizations.filter(c => c.status === 'installed').length === 0 && (
+              <div className="text-center py-4 text-gray-500 text-sm">
+                カスタムパーツなし（全て純正）
+              </div>
+            )}
+          </div>
           
           {/* パフォーマンス指標 */}
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
@@ -278,6 +355,52 @@ function DataRow({
       <span className={`font-mono ${highlight ? 'text-xl font-bold' : 'text-base font-bold'} ${valueColor || 'text-gray-900'}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+// パーツ行コンポーネント
+function PartRow({
+  label,
+  parts,
+  isStock
+}: {
+  label: string;
+  parts: Customization[];
+  isStock: boolean;
+}) {
+  if (isStock) {
+    return (
+      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <span className="text-sm text-gray-500 italic">純正</span>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="py-2 border-b border-cyan-200">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm font-bold text-gray-900">{label}</span>
+        <span className="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded-full font-semibold">
+          カスタム
+        </span>
+      </div>
+      <div className="space-y-1 ml-2">
+        {parts.map((part, index) => (
+          <div key={part.id || index} className="flex items-start gap-2">
+            <span className="text-cyan-600 mt-0.5">▸</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-cyan-700 truncate">
+                {part.brand ? `${part.brand} ${part.modelCode || part.title}` : part.title}
+              </div>
+              {part.memo && (
+                <div className="text-xs text-gray-600 truncate">{part.memo}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
