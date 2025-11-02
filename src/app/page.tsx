@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Timestamp } from "firebase/firestore";
 import AuthGate from "@/components/AuthGate";
 import { addCar, watchCars, type Car, type CarInput, updateCar } from "@/lib/cars";
 import { auth, watchAuth } from "@/lib/firebase";
@@ -862,7 +863,7 @@ function DashboardContent({
       // その月のメンテナンス費用を計算
       const maintenanceCost = maintenanceRecords
         .filter(record => {
-          const recordDate = record.date;
+          const recordDate = record.date?.toDate ? record.date.toDate() : new Date();
           return recordDate.getFullYear() === date.getFullYear() && 
                  recordDate.getMonth() === date.getMonth();
         })
@@ -871,7 +872,7 @@ function DashboardContent({
       // その月の給油費用を計算
       const fuelCost = fuelLogs
         .filter(log => {
-          const logDate = log.date;
+          const logDate = log.date?.toDate ? log.date.toDate() : new Date();
           return logDate.getFullYear() === date.getFullYear() && 
                  logDate.getMonth() === date.getMonth();
         })
@@ -880,7 +881,7 @@ function DashboardContent({
       // その月のカスタマイズ費用を計算
       const customizationCost = customizations
         .filter(custom => {
-          const customDate = custom.date;
+          const customDate = custom.date?.toDate ? custom.date.toDate() : new Date();
           return customDate.getFullYear() === date.getFullYear() && 
                  customDate.getMonth() === date.getMonth();
         })
@@ -930,7 +931,7 @@ function DashboardContent({
 
       {/* 車検期限リマインダー */}
       {car?.inspectionExpiry && (() => {
-        const expiryDate = new Date(car.inspectionExpiry);
+        const expiryDate = car.inspectionExpiry.toDate ? car.inspectionExpiry.toDate() : new Date(car.inspectionExpiry as any);
         const today = new Date();
         const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
@@ -1031,7 +1032,7 @@ function DashboardContent({
                         label="車検期限" 
                         value={
                           car?.inspectionExpiry
-                            ? new Date(car.inspectionExpiry).toLocaleDateString('ja-JP', {
+                            ? (car.inspectionExpiry.toDate ? car.inspectionExpiry.toDate() : new Date(car.inspectionExpiry as any)).toLocaleDateString('ja-JP', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
@@ -1109,7 +1110,7 @@ function DashboardContent({
                             <h4 className="font-medium text-gray-900">{record.title}</h4>
                 </div>
                           <p className="text-sm text-gray-600 mb-2">
-                            {record.date.toLocaleDateString('ja-JP')} • {record.mileage?.toLocaleString()}km
+                            {(record.date?.toDate ? record.date.toDate() : new Date()).toLocaleDateString('ja-JP')} • {record.mileage?.toLocaleString()}km
                             {record.cost && (
                               <span className="ml-2 font-medium text-gray-900">
                                 ¥{record.cost.toLocaleString()}
@@ -1179,7 +1180,7 @@ function DashboardContent({
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
                               <div className="text-lg font-bold text-gray-900">
-                            {fuelLogs[0].date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                            {(fuelLogs[0].date?.toDate ? fuelLogs[0].date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                           </div>
                           <div className="text-xs text-gray-500">日時</div>
                         </div>
@@ -1255,7 +1256,7 @@ function DashboardContent({
                                 <div className="flex items-center space-x-3">
                                   <div className="text-center">
                                     <div className="text-sm font-medium text-gray-900">
-                                      {log.date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                                      {(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                                     </div>
                                     <div className="text-xs text-gray-500">日付</div>
                                   </div>
@@ -1343,7 +1344,7 @@ function DashboardContent({
                               )}
                             </div>
                             <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span>{customization.date.toLocaleDateString('ja-JP')}</span>
+                              <span>{(customization.date?.toDate ? customization.date.toDate() : new Date()).toLocaleDateString('ja-JP')}</span>
                               {(customization.partsCostJpy || customization.laborCostJpy || customization.otherCostJpy) && (
                                 <span className="font-medium text-green-600">
                                   ¥{((customization.partsCostJpy || 0) + (customization.laborCostJpy || 0) + (customization.otherCostJpy || 0)).toLocaleString()}
@@ -1966,7 +1967,7 @@ function MaintenanceHistoryContent({
                       <p className="text-gray-600 mb-2">{record.description}</p>
                     )}
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>📅 {record.date.toLocaleDateString('ja-JP')}</span>
+                      <span>📅 {(record.date?.toDate ? record.date.toDate() : new Date()).toLocaleDateString('ja-JP')}</span>
                       {record.cost && (
                         <span>💰 ¥{record.cost.toLocaleString()}</span>
                       )}
@@ -2881,7 +2882,7 @@ function CarManagementContent({
     const carMaintenanceCost = maintenanceRecords
       .filter(record => record.carId === car.id)
       .filter(record => {
-        const recordDate = new Date(record.date);
+        const recordDate = record.date?.toDate ? record.date.toDate() : new Date();
         return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
       })
       .reduce((sum, record) => sum + (record.cost || 0), 0);
@@ -2890,7 +2891,7 @@ function CarManagementContent({
     const carFuelCost = fuelLogs
       .filter(log => log.carId === car.id)
       .filter(log => {
-        const logDate = new Date(log.date);
+        const logDate = log.date?.toDate ? log.date.toDate() : new Date();
         return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
       })
       .reduce((sum, log) => sum + (log.cost || 0), 0);
@@ -2899,7 +2900,7 @@ function CarManagementContent({
     const carCustomCost = customizations
       .filter(custom => custom.carId === car.id)
       .filter(custom => {
-        const customDate = new Date(custom.date);
+        const customDate = custom.date?.toDate ? custom.date.toDate() : new Date();
         return customDate.getMonth() === currentMonth && customDate.getFullYear() === currentYear;
       })
       .reduce((sum, custom) => sum + ((custom as any).cost || 0), 0);
@@ -2909,7 +2910,7 @@ function CarManagementContent({
 
   // 直近のタスク数（今月のメンテナンス記録数）
   const recentTasks = maintenanceRecords.filter(record => {
-    const recordDate = new Date(record.date);
+    const recordDate = record.date?.toDate ? record.date.toDate() : new Date();
     return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
   }).length;
 
@@ -3171,7 +3172,7 @@ function CarCard({
     
     // 車検期限
     if (car.inspectionExpiry) {
-      const expiryDate = new Date(car.inspectionExpiry);
+      const expiryDate = car.inspectionExpiry.toDate ? car.inspectionExpiry.toDate() : new Date(car.inspectionExpiry as any);
       const today = new Date();
       const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
@@ -3316,7 +3317,7 @@ function CarCard({
               </div>
               {nextTask.type === 'date' && nextTask.nextDate && (
                 <div className="text-xs text-blue-600 mt-1">
-                  {nextTask.nextDate.toLocaleDateString('ja-JP')}
+                  {(nextTask.nextDate instanceof Date ? nextTask.nextDate : new Date()).toLocaleDateString('ja-JP')}
                 </div>
               )}
             </div>
@@ -4268,7 +4269,7 @@ function InsuranceContent({
                            `D-${daysUntilExpiry}`}
                         </span>
                         <span className="text-sm text-gray-500">
-                          {policy.endDate.toLocaleDateString('ja-JP')}
+                          {(policy.endDate?.toDate ? policy.endDate.toDate() : new Date()).toLocaleDateString('ja-JP')}
                         </span>
                       </div>
                     </div>
@@ -4931,7 +4932,7 @@ function CustomizationsContent({
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
                     <div>
                       <span className="font-medium">実施日:</span>
-                      <div>{customization.date.toLocaleDateString('ja-JP')}</div>
+                      <div>{(customization.date?.toDate ? customization.date.toDate() : new Date()).toLocaleDateString('ja-JP')}</div>
                     </div>
                     {customization.odoKm && (
                       <div>
