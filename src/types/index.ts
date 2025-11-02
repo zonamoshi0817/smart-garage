@@ -84,18 +84,23 @@ export interface MaintenanceInput {
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
 }
 
-// 保険関連の型（拡張版）
+// 保険関連の型（簡素化版 - OCR勝ち筋フィールド重視）
 export interface InsurancePolicy extends BaseEntity {
-  // 基本情報
-  provider: string;                    // 保険会社
-  policyNumber: string;                // 証券番号
+  // 【必須フィールド】
   carId: string;                       // 車両ID
-  productName?: string;                // 商品名（例: 総合自動車保険TypeS）
   
-  // 契約期間
-  startDate: Timestamp;                // 契約開始日（Timestamp統一）
-  endDate: Timestamp;                  // 満期日（Timestamp統一）
-  contractDate?: Timestamp;            // 契約日（Timestamp統一）
+  // 【OCR勝ち筋フィールド】高確度・高価値の6項目
+  provider: string;                    // 保険会社 ★OCR最優先★
+  policyNumber: string;                // 証券番号 ★OCR最優先★
+  startDate: Timestamp;                // 契約開始日 ★OCR最優先★
+  endDate: Timestamp;                  // 満期日 ★OCR最優先★
+  noClaimGrade?: number;               // ノンフリート等級 ★OCR最優先★
+  premiumAmount: number;               // 年間保険料合計 ★OCR最優先★
+  
+  // 【サブフィールド】（OCRでは取得しない、手動入力またはメモ欄へ）
+  paymentCycle: 'annual' | 'monthly' | 'installment'; // 支払いサイクル
+  productName?: string;                // 商品名
+  contractDate?: Timestamp;            // 契約日
   
   // 契約者情報
   insuredName?: string;                // 契約者氏名
@@ -109,20 +114,17 @@ export interface InsurancePolicy extends BaseEntity {
   vehicleOwner?: string;               // 車両所有者
   vehicleType?: string;                // 用途車種（例: 自家用普通乗用車）
   
-  // 保険料
-  paymentCycle: 'annual' | 'monthly' | 'installment'; // 支払いサイクル
-  premiumAmount: number;               // 年間保険料合計
+  // 保険料詳細（オプション - OCR対象外）
   firstPayment?: number;               // 初回保険料
   subsequentPayment?: number;          // 2回目以降の保険料
   installmentCount?: number;           // 分割回数
   
-  // 等級・割引
-  noClaimGrade?: number;               // ノンフリート等級
+  // 等級・割引詳細（オプション - OCR対象外）
   accidentSurchargeYears?: number;     // 事故あり係数適用期間
   discounts?: string[];                // 適用割引（例: インターネット割引、無事故割引）
   
-  // 補償内容
-  coverages: {
+  // 補償内容（オプション - OCR対象外、手動入力またはメモ欄へ）
+  coverages?: {
     // 相手方への補償
     bodilyInjury: { 
       limit: string;                   // 対人賠償（例: 無制限）
@@ -168,22 +170,22 @@ export interface InsurancePolicy extends BaseEntity {
     riders: string[];                  // その他の特約
   };
   
-  // 運転者条件
-  drivers: {
+  // 運転者条件（オプション - OCR対象外、手動入力またはメモ欄へ）
+  drivers?: {
     restriction?: 'self' | 'self_spouse' | 'family' | 'none'; // 運転者限定
     ageLimit: string;                  // 年齢条件（例: 30歳以上）
     familyOnly: boolean;               // 家族限定
   };
   
-  // 使用条件
-  usage: {
+  // 使用条件（オプション - OCR対象外、手動入力またはメモ欄へ）
+  usage?: {
     purpose: 'private' | 'business' | 'commute'; // 使用目的
     annualMileageKm: number;           // 年間走行距離
     mileageCategory?: string;          // 契約距離区分
   };
   
   // その他
-  notes: string;                       // メモ
+  notes: string;                       // メモ（住所・氏名・細かい特約はここに記載推奨）
   documentUrl?: string;                // 証券PDF/画像のURL
 }
 

@@ -50,6 +50,9 @@ export default function InsuranceModal({
     setIsOcrProcessing(true);
     setOcrResult(null);
 
+    // OCRファネル: スキャン開始イベント
+    logOcrStarted('insurance', file.size);
+
     try {
       console.log('[Insurance OCR] Starting image enhancement...');
       
@@ -71,44 +74,53 @@ export default function InsuranceModal({
       console.log('[Insurance OCR] Extracted text:', text);
       setOcrResult(text);
 
-      // テキストから情報を抽出
+      // テキストから勝ち筋6項目のみを抽出
       const parsed = parsePolicyText(text);
+      const fieldsPopulated: string[] = [];
       
-      if (parsed.provider) setProvider(parsed.provider);
-      if (parsed.policyNumber) setPolicyNumber(parsed.policyNumber);
-      if (parsed.startDate) setStartDate(parsed.startDate);
-      if (parsed.endDate) setEndDate(parsed.endDate);
-      if (parsed.premiumAmount) setPremiumAmount(parsed.premiumAmount.toString());
-      if (parsed.paymentCycle) setPaymentCycle(parsed.paymentCycle);
-
-      // 追加情報をメモ欄に自動入力
-      const memoLines: string[] = [];
-      if (parsed.productName) memoLines.push(`商品: ${parsed.productName}`);
-      if (parsed.insuredName) memoLines.push(`契約者: ${parsed.insuredName}`);
-      if (parsed.vehicleRegistration) memoLines.push(`ナンバー: ${parsed.vehicleRegistration}`);
-      if (parsed.vehicleChassisNumber) memoLines.push(`車台番号: ${parsed.vehicleChassisNumber}`);
-      if (parsed.noClaimGrade) memoLines.push(`等級: ${parsed.noClaimGrade}等級`);
-      if (parsed.firstPayment) memoLines.push(`初回保険料: ¥${parsed.firstPayment.toLocaleString()}`);
-      if (parsed.subsequentPayment) memoLines.push(`2回目以降: ¥${parsed.subsequentPayment.toLocaleString()}`);
-      if (parsed.installmentCount) memoLines.push(`分割: ${parsed.installmentCount}回払`);
-      if (parsed.discounts && parsed.discounts.length > 0) {
-        memoLines.push(`割引: ${parsed.discounts.join('、')}`);
+      // 自動入力（勝ち筋フィールドのみ）
+      if (parsed.provider) {
+        setProvider(parsed.provider);
+        fieldsPopulated.push('provider');
       }
+      if (parsed.policyNumber) {
+        setPolicyNumber(parsed.policyNumber);
+        fieldsPopulated.push('policyNumber');
+      }
+      if (parsed.startDate) {
+        setStartDate(parsed.startDate);
+        fieldsPopulated.push('startDate');
+      }
+      if (parsed.endDate) {
+        setEndDate(parsed.endDate);
+        fieldsPopulated.push('endDate');
+      }
+      if (parsed.noClaimGrade !== undefined) {
+        // 等級はメモ欄に記載（フィールドがないため）
+        const currentNotes = notes;
+        setNotes(currentNotes ? `${currentNotes}\n等級: ${parsed.noClaimGrade}等級` : `等級: ${parsed.noClaimGrade}等級`);
+        fieldsPopulated.push('noClaimGrade');
+      }
+      if (parsed.premiumAmount) {
+        setPremiumAmount(parsed.premiumAmount.toString());
+        fieldsPopulated.push('premiumAmount');
+      }
+
+      // OCRファネル: 自動入力完了イベント
+      logOcrAutofillDone('insurance', fieldsPopulated);
       
-      if (memoLines.length > 0) {
-        setNotes(memoLines.join('\n'));
-      }
-
+      // 既存のアナリティクス
       logOcrUsed('insurance', true);
       
       const readInfo = [
         parsed.provider && `✓ 保険会社`,
         parsed.policyNumber && `✓ 証券番号`,
         parsed.startDate && parsed.endDate && `✓ 契約期間`,
+        parsed.noClaimGrade && `✓ 等級`,
         parsed.premiumAmount && `✓ 保険料`,
       ].filter(Boolean).join('、');
       
-      alert(`保険証券を読み取りました\n${readInfo}\n\n内容を確認して必要に応じて修正してください。`);
+      alert(`保険証券を読み取りました（勝ち筋フィールド）\n${readInfo}\n\n内容を確認して、その他の詳細情報はメモ欄に手動入力してください。`);
     } catch (error) {
       console.error('[Insurance OCR] Error:', error);
       logOcrUsed('insurance', false);
@@ -119,23 +131,26 @@ export default function InsuranceModal({
   };
 
   // 保険証券テキストの解析
+  /**
+   * OCR勝ち筋フィールドのみを抽出（高確度・高価値に絞る）
+   * 
+   * 対象フィールド（6項目）:
+   * 1. provider: 保険会社
+   * 2. policyNumber: 証券番号
+   * 3. startDate: 契約開始日
+   * 4. endDate: 満期日
+   * 5. noClaimGrade: 等級
+   * 6. premiumAmount: 年間保険料
+   * 
+   * その他（住所・氏名・細かい特約）はメモ欄に手動入力推奨
+   */
   const parsePolicyText = (text: string): {
     provider?: string;
     policyNumber?: string;
-    productName?: string;
     startDate?: string;
     endDate?: string;
-    contractDate?: string;
-    premiumAmount?: number;
-    firstPayment?: number;
-    subsequentPayment?: number;
-    installmentCount?: number;
-    paymentCycle?: 'annual' | 'monthly' | 'installment';
-    insuredName?: string;
-    vehicleRegistration?: string;
-    vehicleChassisNumber?: string;
     noClaimGrade?: number;
-    discounts?: string[];
+    premiumAmount?: number;
   } => {
     const result: any = {};
 
@@ -226,78 +241,13 @@ export default function InsuranceModal({
       }
     }
 
-    // 商品名の抽出
-    const productMatch = text.match(/(?:総合)?自動車保険(?:TypeS|Type[A-Z])?/i);
-    if (productMatch) {
-      result.productName = productMatch[0];
-    }
-
-    // 契約者氏名の抽出
-    const nameMatch = text.match(/氏名[:\s　]*(.+?)(?:\s|$|住所)/);
-    if (nameMatch && nameMatch[1]) {
-      result.insuredName = nameMatch[1].trim();
-    }
-
-    // 登録番号（ナンバー）の抽出
-    const registrationMatch = text.match(/登録番号[:\s　]*(?:★\s*)?(.+?)\s*(?:\d{3})\s*(\d{3,4})/);
-    if (registrationMatch) {
-      result.vehicleRegistration = `${registrationMatch[1]} ${registrationMatch[2]}`.trim();
-    }
-
-    // 車台番号の抽出
-    const chassisMatch = text.match(/車台番号[:\s　]*([A-Z0-9\-]+)/i);
-    if (chassisMatch && chassisMatch[1]) {
-      result.vehicleChassisNumber = chassisMatch[1].trim();
-    }
-
-    // ノンフリート等級の抽出
+    // ノンフリート等級の抽出 ★OCR最優先★
     const gradeMatch = text.match(/(?:ノンフリート)?等級[:\s　]*(\d+)等級/i);
     if (gradeMatch && gradeMatch[1]) {
       result.noClaimGrade = parseInt(gradeMatch[1]);
     }
 
-    // 分割払い情報の抽出
-    const firstPaymentMatch = text.match(/初回[:\s　]*([0-9,]+)円/i);
-    if (firstPaymentMatch && firstPaymentMatch[1]) {
-      result.firstPayment = parseInt(firstPaymentMatch[1].replace(/,/g, ''));
-    }
-
-    const subsequentMatch = text.match(/(?:2|２)回目以降[:\s　]*([0-9,]+)円/i);
-    if (subsequentMatch && subsequentMatch[1]) {
-      result.subsequentPayment = parseInt(subsequentMatch[1].replace(/,/g, ''));
-    }
-
-    const installmentMatch = text.match(/(\d+)回払/);
-    if (installmentMatch && installmentMatch[1]) {
-      result.installmentCount = parseInt(installmentMatch[1]);
-      result.paymentCycle = 'installment';
-    }
-
-    // 割引情報の抽出
-    const discountPatterns = [
-      /インターネット割引/,
-      /無事故割引/,
-      /証券ペーパーレス割引/,
-      /運転者本人・配偶者限定割引/,
-      /継続割引/,
-      /新車割引/,
-      /ASV割引/,
-      /エコカー割引/,
-    ];
-
-    const foundDiscounts: string[] = [];
-    for (const pattern of discountPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        foundDiscounts.push(match[0]);
-      }
-    }
-    
-    if (foundDiscounts.length > 0) {
-      result.discounts = foundDiscounts;
-    }
-
-    console.log('[Insurance OCR] Parsed data:', result);
+    console.log('[Insurance OCR] Parsed data (勝ち筋6項目のみ):', result);
     return result;
   };
 
