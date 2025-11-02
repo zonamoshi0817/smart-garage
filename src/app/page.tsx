@@ -578,20 +578,23 @@ export default function Home() {
             />
             </nav>
 
-            <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-              <div className="text-sm font-semibold">プレミアムにアップグレード</div>
-              <p className="text-xs text-gray-600 mt-1">
-                無制限の車両登録と高度な分析機能を利用できます
-              </p>
-              <button 
-                onClick={() => {
-                  checkFeature('multiple_cars', { carCount: 999 }, 'hero');
-                }}
-                className="mt-3 w-full rounded-xl bg-white border border-blue-300 py-2 text-sm font-medium hover:bg-blue-100"
-              >
-                詳細を見る
-              </button>
-            </div>
+            {/* プレミアムアップグレード（無料ユーザーのみ表示） */}
+            {userPlan === 'free' && (
+              <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                <div className="text-sm font-semibold">プレミアムにアップグレード</div>
+                <p className="text-xs text-gray-600 mt-1">
+                  無制限の車両登録と高度な分析機能を利用できます
+                </p>
+                <button 
+                  onClick={() => {
+                    checkFeature('multiple_cars', { carCount: 999 }, 'hero');
+                  }}
+                  className="mt-3 w-full rounded-xl bg-white border border-blue-300 py-2 text-sm font-medium hover:bg-blue-100"
+                >
+                  詳細を見る
+                </button>
+              </div>
+            )}
           </aside>
 
           {/* メイン */}
