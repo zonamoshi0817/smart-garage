@@ -17,6 +17,7 @@ import { db } from "./firebase";
 import { auth } from "./firebase";
 import type { FuelLog, FuelLogInput } from "@/types";
 import { logAudit } from "./auditLog";
+import { logFuelCreated } from "./analytics";
 
 // 型をエクスポート
 export type { FuelLog, FuelLogInput };
@@ -58,6 +59,9 @@ export const addFuelLog = async (fuelLogData: FuelLogInput): Promise<string> => 
       action: 'create',
       after: cleanData
     });
+    
+    // アナリティクスイベントを記録
+    logFuelCreated(fuelLogData.carId, false);
     
     return docRef.id;
   } catch (error) {

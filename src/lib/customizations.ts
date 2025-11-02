@@ -23,6 +23,7 @@ import {
   CustomCategory 
 } from '@/types';
 import { logAudit } from './auditLog';
+import { logCustomizationCreated } from './analytics';
 
 const CUSTOMIZATIONS_COLLECTION = 'customizations';
 const CUSTOMIZATION_MEDIA_COLLECTION = 'customization_media';
@@ -87,6 +88,9 @@ export async function addCustomization(
       action: 'create',
       after: cleanCustomization
     });
+    
+    // アナリティクスイベントを記録
+    logCustomizationCreated(carId, customization.categories);
     
     // メタデータを更新（エラーが発生してもカスタマイズの保存は成功とする）
     try {

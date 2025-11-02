@@ -8,6 +8,7 @@ import {
 import { validateMileageConsistency } from "@/lib/validators";
 import { getDoc } from "firebase/firestore";
 import { logAudit } from "./auditLog";
+import { logMaintenanceCreated } from "./analytics";
 
 export type MaintenanceRecord = {
   id?: string;
@@ -147,6 +148,9 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
       action: 'create',
       after: recordData
     });
+    
+    // アナリティクスイベントを記録
+    logMaintenanceCreated(data.carId, data.title);
     
     // 車両の走行距離を更新
     try {

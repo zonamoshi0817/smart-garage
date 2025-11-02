@@ -1,0 +1,202 @@
+// src/lib/analytics.ts
+"use client";
+
+import { logEvent as firebaseLogEvent } from 'firebase/analytics';
+import { db, auth } from './firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
+/**
+ * アナリティクスイベント定義
+ * 課金転換ファネルを追跡
+ */
+
+// イベント型定義
+export type AnalyticsEventType = 
+  // 機能利用
+  | 'ocr_used'
+  | 'fuel_created'
+  | 'maintenance_created'
+  | 'customization_created'
+  | 'pdf_exported'
+  | 'share_link_created'
+  | 'csv_exported'
+  
+  // 課金フロー
+  | 'paywall_shown'
+  | 'paywall_click'
+  | 'subscribe_started'
+  | 'subscribe_success'
+  | 'subscribe_failed'
+  | 'subscribe_cancelled'
+  
+  // ユーザー行動
+  | 'page_view'
+  | 'car_added'
+  | 'car_deleted'
+  | 'feature_discovered';
+
+export interface AnalyticsEvent {
+  eventType: AnalyticsEventType;
+  properties?: Record<string, any>;
+  timestamp: Date;
+  userId?: string;
+  sessionId?: string;
+}
+
+/**
+ * セッションIDを生成・取得（ブラウザセッション単位）
+ */
+function getSessionId(): string {
+  if (typeof window === 'undefined') return '';
+  
+  let sessionId = sessionStorage.getItem('analytics_session_id');
+  if (!sessionId) {
+    sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem('analytics_session_id', sessionId);
+  }
+  return sessionId;
+}
+
+/**
+ * アナリティクスイベントを記録
+ */
+export async function logAnalyticsEvent(
+  eventType: AnalyticsEventType,
+  properties?: Record<string, any>
+): Promise<void> {
+  const user = auth.currentUser;
+  
+  try {
+    // Firestoreにイベントを記録
+    if (user) {
+      await addDoc(collection(db, 'users', user.uid, 'analyticsEvents'), {
+        eventType,
+        properties: properties || null,
+        timestamp: serverTimestamp(),
+        userId: user.uid,
+        sessionId: getSessionId(),
+      });
+    }
+    
+    // コンソールログ（開発環境のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Analytics] ${eventType}`, properties);
+    }
+  } catch (error) {
+    console.error('Analytics event logging failed:', error);
+    // アナリティクスの失敗はユーザー体験を阻害しない
+  }
+}
+
+/**
+ * OCR使用イベント
+ */
+export function logOcrUsed(type: 'fuel' | 'maintenance', success: boolean): void {
+  logAnalyticsEvent('ocr_used', { type, success });
+}
+
+/**
+ * 給油記録作成イベント
+ */
+export function logFuelCreated(carId: string, withOcr: boolean = false): void {
+  logAnalyticsEvent('fuel_created', { carId, withOcr });
+}
+
+/**
+ * メンテナンス記録作成イベント
+ */
+export function logMaintenanceCreated(carId: string, title: string): void {
+  logAnalyticsEvent('maintenance_created', { carId, title });
+}
+
+/**
+ * カスタマイズ記録作成イベント
+ */
+export function logCustomizationCreated(carId: string, categories: string[]): void {
+  logAnalyticsEvent('customization_created', { carId, categories });
+}
+
+/**
+ * PDFエクスポートイベント
+ */
+export function logPdfExported(carId: string, recordCount: number): void {
+  logAnalyticsEvent('pdf_exported', { carId, recordCount });
+}
+
+/**
+ * 共有リンク作成イベント
+ */
+export function logShareLinkCreated(carId: string): void {
+  logAnalyticsEvent('share_link_created', { carId });
+}
+
+/**
+ * CSVエクスポートイベント
+ */
+export function logCsvExported(dataType: string, recordCount: number): void {
+  logAnalyticsEvent('csv_exported', { dataType, recordCount });
+}
+
+/**
+ * ペイウォール表示イベント
+ */
+export function logPaywallShown(trigger: string, plan: string = 'premium'): void {
+  logAnalyticsEvent('paywall_shown', { trigger, plan });
+}
+
+/**
+ * ペイウォールクリックイベント
+ */
+export function logPaywallClick(trigger: string, plan: string = 'premium'): void {
+  logAnalyticsEvent('paywall_click', { trigger, plan });
+}
+
+/**
+ * 購読開始イベント
+ */
+export function logSubscribeStarted(plan: string, billingCycle: 'monthly' | 'annual'): void {
+  logAnalyticsEvent('subscribe_started', { plan, billingCycle });
+}
+
+/**
+ * 購読成功イベント
+ */
+export function logSubscribeSuccess(plan: string, amount: number): void {
+  logAnalyticsEvent('subscribe_success', { plan, amount });
+}
+
+/**
+ * 購読失敗イベント
+ */
+export function logSubscribeFailed(plan: string, reason: string): void {
+  logAnalyticsEvent('subscribe_failed', { plan, reason });
+}
+
+/**
+ * 車両追加イベント
+ */
+export function logCarAdded(carCount: number, isFirstCar: boolean): void {
+  logAnalyticsEvent('car_added', { carCount, isFirstCar });
+}
+
+/**
+ * 車両削除イベント
+ */
+export function logCarDeleted(carCount: number): void {
+  logAnalyticsEvent('car_deleted', { carCount });
+}
+
+/**
+ * ページビューイベント
+ */
+export function logPageView(page: string): void {
+  logAnalyticsEvent('page_view', { page });
+}
+
+/**
+ * 機能発見イベント（ユーザーが新機能を発見した時）
+ */
+export function logFeatureDiscovered(feature: string): void {
+  logAnalyticsEvent('feature_discovered', { feature });
+}
+

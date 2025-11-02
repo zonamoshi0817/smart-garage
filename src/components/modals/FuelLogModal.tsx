@@ -6,6 +6,7 @@ import { updateCar } from "@/lib/cars";
 import type { Car, FuelLog } from "@/types";
 import type { ModalProps } from "@/types";
 import Tesseract from 'tesseract.js';
+import { logOcrUsed, logFuelCreated } from '@/lib/analytics';
 
 interface FuelLogModalProps extends ModalProps {
   car: Car;
@@ -258,12 +259,22 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           handleInputChange('pricePerLiter', parsedData.pricePerLiter.toString());
         }
         
+        // アナリティクスイベントを記録
+        logOcrUsed('fuel', true);
+        
         alert('レシートから給油データを読み取りました！\n内容を確認して必要に応じて修正してください。');
       } else {
+        // アナリティクスイベントを記録（失敗）
+        logOcrUsed('fuel', false);
+        
         alert('レシートから給油データを読み取れませんでした。\n手動で入力してください。');
       }
     } catch (err) {
       console.error('OCR処理エラー:', err);
+      
+      // アナリティクスイベントを記録（エラー）
+      logOcrUsed('fuel', false);
+      
       setError('レシートの読み取りに失敗しました。もう一度お試しいただくか、手動で入力してください。');
     } finally {
       setIsOcrProcessing(false);

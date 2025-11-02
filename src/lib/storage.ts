@@ -169,3 +169,55 @@ export function validateFileSize(file: File, maxSizeMB: number = 5): boolean {
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   return file.size <= maxSizeBytes;
 }
+
+/**
+ * 原本とサムネイルを両方アップロード（将来対応）
+ * 現在は原本のみアップロード、将来的にCloud Functionsでサムネイル生成
+ */
+export async function uploadCarImageWithThumbnail(
+  file: File,
+  carId: string | undefined,
+  onProgress?: (progress: number) => void
+): Promise<{
+  originalUrl: string;
+  thumbnailUrl?: string;
+}> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ユーザーがログインしていません");
+  }
+
+  try {
+    // 原本をアップロード
+    const originalUrl = await uploadCarImageWithProgress(file, carId, onProgress);
+    
+    // 将来: Cloud Functions トリガでサムネイル自動生成
+    // 現在は原本のみを返す
+    return {
+      originalUrl,
+      thumbnailUrl: undefined  // 将来的にCloud Functionsで生成
+    };
+  } catch (error) {
+    console.error("Upload with thumbnail failed:", error);
+    throw error;
+  }
+}
+
+/**
+ * ストレージパス生成のヘルパー関数
+ */
+export function generateStoragePath(
+  userId: string,
+  carId: string | undefined,
+  fileName: string,
+  variant: 'original' | 'thumbnail' = 'original'
+): string {
+  const timestamp = Date.now();
+  const prefix = variant === 'thumbnail' ? 'thumbnails/' : 'original/';
+  
+  if (carId) {
+    return `users/${userId}/cars/${carId}/${prefix}${timestamp}_${fileName}`;
+  } else {
+    return `users/${userId}/temp/${prefix}${timestamp}_${fileName}`;
+  }
+}

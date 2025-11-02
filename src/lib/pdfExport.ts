@@ -7,6 +7,7 @@ import html2canvas from 'html2canvas';
 import { Car } from './cars';
 import { MaintenanceRecord } from './maintenance';
 import { generateCombinedProof, ProofData } from './proof';
+import { logPdfExported, logShareLinkCreated } from './analytics';
 
 // 日本語フォントの設定
 declare module 'jspdf' {
@@ -339,6 +340,11 @@ export async function downloadMaintenancePDF(options: PDFExportOptions): Promise
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    
+    // アナリティクスイベントを記録
+    if (options.car.id) {
+      logPdfExported(options.car.id, options.maintenanceRecords.length);
+    }
   } catch (error) {
     console.error('PDF生成エラー:', error);
     throw new Error('PDFの生成に失敗しました');
@@ -355,5 +361,11 @@ export function generateMaintenanceURL(car: Car, maintenanceRecords: Maintenance
   
   // Base64エンコードしてURLパラメータに含める（簡易実装）
   const encodedData = btoa(JSON.stringify(data));
+  
+  // アナリティクスイベントを記録
+  if (car.id) {
+    logShareLinkCreated(car.id);
+  }
+  
   return `${window.location.origin}/shared/${encodedData}`;
 }

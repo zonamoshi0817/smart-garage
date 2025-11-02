@@ -6,6 +6,7 @@ import {
   doc, updateDoc, deleteDoc, Timestamp
 } from "firebase/firestore";
 import { logAudit } from "./auditLog";
+import { logCarAdded, logCarDeleted } from "./analytics";
 
 export type Car = {
   id?: string;
@@ -86,6 +87,9 @@ export async function addCar(data: CarInput) {
       action: 'create',
       after: firestoreData
     });
+    
+    // アナリティクスイベントを記録
+    logCarAdded(1, true); // 車両数は後で実装
     
     return docRef.id;
   } catch (error) {
@@ -230,6 +234,9 @@ export async function removeCar(carId: string) {
     entityId: carId,
     action: 'delete'
   });
+  
+  // アナリティクスイベントを記録
+  logCarDeleted(0); // 車両数は後で実装
   
   // 物理削除が必要な場合はコメントアウトを解除
   // await deleteDoc(doc(db, "users", u.uid, "cars", carId));

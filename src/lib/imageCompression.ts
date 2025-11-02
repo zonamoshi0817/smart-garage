@@ -16,10 +16,10 @@ export function compressImage(
   options: CompressionOptions = {}
 ): Promise<File> {
   const {
-    maxWidth = 1200,
-    maxHeight = 1200,
-    quality = 0.8,
-    maxSizeKB = 500
+    maxWidth = 1600,  // 最長辺を1600pxに変更
+    maxHeight = 1600,
+    quality = 0.85,   // 品質を少し向上
+    maxSizeKB = 800   // サイズ上限を800KBに変更
   } = options;
 
   return new Promise((resolve, reject) => {
