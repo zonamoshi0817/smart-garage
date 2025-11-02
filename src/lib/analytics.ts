@@ -91,7 +91,7 @@ export async function logAnalyticsEvent(
 /**
  * OCR使用イベント
  */
-export function logOcrUsed(type: 'fuel' | 'maintenance', success: boolean): void {
+export function logOcrUsed(type: 'fuel' | 'maintenance' | 'insurance', success: boolean): void {
   logAnalyticsEvent('ocr_used', { type, success });
 }
 
