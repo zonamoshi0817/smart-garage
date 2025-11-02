@@ -27,6 +27,8 @@ import CustomizationModal from "@/components/modals/CustomizationModal";
 import PaywallModal from "@/components/modals/PaywallModal";
 import InsuranceModal from "@/components/modals/InsuranceModal";
 import { usePremiumGuard } from "@/hooks/usePremium";
+import MyCarPage from "@/components/mycar/MyCarPage";
+import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
 
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
@@ -53,7 +55,7 @@ export default function Home() {
   const [showFuelLogModal, setShowFuelLogModal] = useState(false);
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
 
   // プレミアムガード
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
@@ -66,7 +68,10 @@ export default function Home() {
       modelCode: 'RS200',
       year: 2023,
       odoKm: 10000,
-      imagePath: '/car.jpg'
+      imagePath: '/car.jpg',
+      deletedAt: null,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
     }
   ];
 
@@ -415,11 +420,12 @@ export default function Home() {
         description: 'これはテスト用のメンテナンス記録です',
         cost: 5000,
         mileage: 50000,
-        date: new Date(),
+        date: Timestamp.now(),
         location: 'テスト工場',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+        deletedAt: null,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      } as MaintenanceRecord;
       setAllMaintenanceRecords([testRecord]);
     }
   }, [activeCarId, allMaintenanceRecords.length]);
@@ -533,7 +539,12 @@ export default function Home() {
                 onClick={() => setCurrentPage('dashboard')}
               />
             <NavItem 
-              label="マイカー" 
+              label="マイカー (新)" 
+              active={currentPage === 'my-car'} 
+              onClick={() => setCurrentPage('my-car')}
+            />
+            <NavItem 
+              label="車両管理" 
               active={currentPage === 'car-management'} 
               onClick={() => setCurrentPage('car-management')}
             />
@@ -599,6 +610,51 @@ export default function Home() {
                 setShowCustomizationModal={setShowCustomizationModal}
                 setActiveCarId={setActiveCarId}
               />
+            ) : currentPage === 'my-car' ? (
+              // 新しいマイカーページ
+              car ? (
+                <MyCarPage
+                  car={car}
+                  maintenanceRecords={maintenanceRecords}
+                  fuelLogs={fuelLogs}
+                  customizations={customizations}
+                  insurancePolicies={insurancePolicies}
+                  onOpenModal={(modalType, data) => {
+                    // モーダル表示ハンドラー
+                    switch (modalType) {
+                      case 'fuel':
+                        setShowFuelLogModal(true);
+                        break;
+                      case 'maintenance':
+                        setShowMaintenanceModal(true);
+                        break;
+                      case 'insurance':
+                        setShowInsuranceModal(true);
+                        break;
+                      case 'customization':
+                        setShowCustomizationModal(true);
+                        break;
+                      case 'change-car-image':
+                        setShowEditCarModal(true);
+                        setEditingCar(car);
+                        break;
+                      // その他のモーダルは今後実装
+                      default:
+                        console.log('Modal not implemented:', modalType, data);
+                    }
+                  }}
+                />
+              ) : (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+                  <p className="text-gray-500 mb-4">車両を選択してください</p>
+                  <button
+                    onClick={() => setShowAddCarModal(true)}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    車両を追加
+                  </button>
+                </div>
+              )
             ) : currentPage === 'car-management' ? (
               <CarManagementContent 
                 cars={cars}
@@ -1102,7 +1158,7 @@ function DashboardContent({
               {maintenanceRecords.length > 0 ? (
                 <div className="space-y-3">
                   {maintenanceRecords
-                    .sort((a, b) => b.date.getTime() - a.date.getTime())
+                    .sort((a, b) => toMillis(b.date) - toMillis(a.date))
                     .slice(0, 5)
                     .map((record) => (
                     <div key={record.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition">
@@ -1182,22 +1238,22 @@ function DashboardContent({
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
                               <div className="text-lg font-bold text-gray-900">
-                            {(fuelLogs[0].date?.toDate ? fuelLogs[0].date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                            {(toDate(fuelLogs[0].date) || new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                           </div>
                           <div className="text-xs text-gray-500">日時</div>
                         </div>
                         <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">{fuelLogs[0].fuelAmount}L</div>
+                              <div className="text-lg font-bold text-gray-900">{((fuelLogs[0].quantity || 0) / 1000 || fuelLogs[0].fuelAmount || 0)}L</div>
                               <div className="text-xs text-gray-500">給油量</div>
                         </div>
                         <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">¥{fuelLogs[0].cost.toLocaleString()}</div>
+                              <div className="text-lg font-bold text-gray-900">¥{(fuelLogs[0].totalCostJpy || fuelLogs[0].cost || 0).toLocaleString()}</div>
                           <div className="text-xs text-gray-500">金額</div>
                         </div>
                       </div>
                       <div className="text-right">
                             <div className="text-sm font-bold text-gray-900">
-                          ¥{Math.round(fuelLogs[0].cost / fuelLogs[0].fuelAmount).toLocaleString()}
+                          ¥{Math.round((fuelLogs[0].totalCostJpy || fuelLogs[0].cost || 0) / ((fuelLogs[0].quantity || 0) / 1000 || fuelLogs[0].fuelAmount || 1)).toLocaleString()}
                         </div>
                             <div className="text-xs text-gray-500">単価</div>
                       </div>
@@ -1208,8 +1264,8 @@ function DashboardContent({
                       {(() => {
                         const currentEfficiency = calculateFuelEfficiency(fuelLogs);
                         const averageEfficiency = calculateAverageFuelEfficiency(fuelLogs);
-                        const totalFuelCost = fuelLogs.reduce((sum, log) => sum + log.cost, 0);
-                        const totalFuelAmount = fuelLogs.reduce((sum, log) => sum + log.fuelAmount, 0);
+                        const totalFuelCost = fuelLogs.reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
+                        const totalFuelAmount = fuelLogs.reduce((sum, log) => sum + ((log.quantity || 0) / 1000 || log.fuelAmount || 0), 0);
                         const avgPricePerLiter = totalFuelAmount > 0 ? totalFuelCost / totalFuelAmount : 0;
 
                         return (
@@ -1267,11 +1323,11 @@ function DashboardContent({
                                     <div className="text-xs text-gray-500">日付</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="text-sm font-medium text-gray-900">{log.fuelAmount}L</div>
+                                    <div className="text-sm font-medium text-gray-900">{((log.quantity || 0) / 1000 || log.fuelAmount || 0)}L</div>
                                     <div className="text-xs text-gray-500">給油量</div>
                                   </div>
                                   <div className="text-center">
-                                    <div className="text-sm font-medium text-gray-900">¥{log.cost.toLocaleString()}</div>
+                                    <div className="text-sm font-medium text-gray-900">¥{(log.totalCostJpy || log.cost || 0).toLocaleString()}</div>
                                     <div className="text-xs text-gray-500">金額</div>
                                   </div>
                                   {log.isFullTank && (
@@ -1325,7 +1381,7 @@ function DashboardContent({
                 {customizations.length > 0 ? (
                   <div className="space-y-3">
                     {customizations
-                      .sort((a, b) => b.date.getTime() - a.date.getTime())
+                      .sort((a, b) => toMillis(b.date) - toMillis(a.date))
                       .slice(0, 3)
                       .map((customization) => (
                       <div key={customization.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition">
@@ -1694,7 +1750,7 @@ function MaintenanceHistoryContent({
       let comparison = 0;
       switch (sortBy) {
         case 'date':
-          comparison = a.date.getTime() - b.date.getTime();
+          comparison = toMillis(a.date) - toMillis(b.date);
           break;
         case 'title':
           comparison = a.title.localeCompare(b.title);
@@ -2593,7 +2649,7 @@ function EditMaintenanceModal({
   const [description, setDescription] = useState(record.description || '');
   const [cost, setCost] = useState(record.cost?.toString() || '');
   const [mileage, setMileage] = useState(record.mileage?.toString() || '');
-  const [date, setDate] = useState(record.date.toISOString().split('T')[0]);
+  const [date, setDate] = useState((toDate(record.date) || new Date()).toISOString().split('T')[0]);
   const [location, setLocation] = useState(record.location || '');
   const [carId, setCarId] = useState(record.carId);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -2623,7 +2679,7 @@ function EditMaintenanceModal({
         description: description || undefined,
         cost: cost ? Number(cost) : undefined,
         mileage: mileage ? Number(mileage) : undefined,
-        date: new Date(date),
+        date: Timestamp.fromDate(new Date(date)),
         location: location || undefined,
       };
 
@@ -3126,7 +3182,7 @@ function CarCard({
     // この車のメンテナンス記録を取得
     const carMaintenanceRecords = maintenanceRecords
       .filter(record => record.carId === car.id)
-      .sort((a, b) => b.date.getTime() - a.date.getTime());
+      .sort((a, b) => toMillis(b.date) - toMillis(a.date));
     
     if (carMaintenanceRecords.length === 0) return null;
     
@@ -3156,7 +3212,7 @@ function CarCard({
     }
     
     // その他のメンテナンスの場合は3ヶ月後を想定
-    const nextDate = new Date(latestRecord.date);
+    const nextDate = toDate(latestRecord.date) || new Date();
     nextDate.setMonth(nextDate.getMonth() + 3);
     const today = new Date();
     const daysUntilNext = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -3473,7 +3529,7 @@ function MaintenanceModal({
         description: description || undefined,
         cost: cost ? Number(cost) : undefined,
         mileage: Number(mileage), // 必須項目なので必ず数値
-        date: new Date(date),
+        date: Timestamp.fromDate(new Date(date)),
         location: location || undefined,
       });
       
@@ -3760,8 +3816,8 @@ function EditCarModal({
         carData.odoKm = Number(odoKm);
       }
       if (inspectionExpiry && inspectionExpiry.trim()) {
-        // string (YYYY-MM-DD) → Date変換
-        carData.inspectionExpiry = new Date(inspectionExpiry.trim());
+        // string (YYYY-MM-DD) → Timestamp変換
+        carData.inspectionExpiry = Timestamp.fromDate(new Date(inspectionExpiry.trim()));
       }
       if (firstRegYm && firstRegYm.trim()) {
         carData.firstRegYm = firstRegYm.trim();
@@ -4132,7 +4188,7 @@ function InsuranceContent({
       filtered = filtered.filter(policy => policy.carId === selectedCarId);
     }
     
-    return filtered.sort((a, b) => a.endDate.getTime() - b.endDate.getTime());
+    return filtered.sort((a, b) => toMillis(a.endDate) - toMillis(b.endDate));
   }, [insurancePolicies, selectedCarId]);
 
   // 編集ボタンのハンドラー
@@ -4220,8 +4276,8 @@ function InsuranceContent({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPolicies.map((policy) => {
               const car = cars.find(c => c.id === policy.carId);
-              const daysUntilExpiry = getDaysUntilExpiry(policy.endDate);
-              const expiryStatus = getExpiryStatus(policy.endDate);
+              const daysUntilExpiry = getDaysUntilExpiry(toDate(policy.endDate) || new Date());
+              const expiryStatus = getExpiryStatus(toDate(policy.endDate) || new Date());
               
               return (
                 <div key={policy.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-md transition">
@@ -4307,20 +4363,20 @@ function EditInsuranceModal({
 }) {
   const [provider, setProvider] = useState(policy.provider);
   const [policyNumber, setPolicyNumber] = useState(policy.policyNumber);
-  const [startDate, setStartDate] = useState(policy.startDate.toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(policy.endDate.toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState((toDate(policy.startDate) || new Date()).toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState((toDate(policy.endDate) || new Date()).toISOString().split('T')[0]);
   const [paymentCycle, setPaymentCycle] = useState(policy.paymentCycle);
   const [premiumAmount, setPremiumAmount] = useState(policy.premiumAmount.toString());
-  const [bodilyInjuryLimit, setBodilyInjuryLimit] = useState(policy.coverages.bodilyInjury.limit);
-  const [propertyDamageLimit, setPropertyDamageLimit] = useState(policy.coverages.propertyDamage.limit);
-  const [personalInjuryLimit, setPersonalInjuryLimit] = useState(policy.coverages.personalInjury.limit);
-  const [vehicleType, setVehicleType] = useState(policy.coverages.vehicle.type);
-  const [deductible, setDeductible] = useState(policy.coverages.vehicle.deductible);
-  const [riders, setRiders] = useState(policy.coverages.riders.join(', '));
-  const [ageLimit, setAgeLimit] = useState(policy.drivers.ageLimit);
-  const [familyOnly, setFamilyOnly] = useState(policy.drivers.familyOnly);
-  const [purpose, setPurpose] = useState(policy.usage.purpose);
-  const [annualMileageKm, setAnnualMileageKm] = useState(policy.usage.annualMileageKm.toString());
+  const [bodilyInjuryLimit, setBodilyInjuryLimit] = useState(policy.coverages?.bodilyInjury?.limit || '無制限');
+  const [propertyDamageLimit, setPropertyDamageLimit] = useState(policy.coverages?.propertyDamage?.limit || '無制限');
+  const [personalInjuryLimit, setPersonalInjuryLimit] = useState(policy.coverages?.personalInjury?.limit || '');
+  const [vehicleType, setVehicleType] = useState<'general' | 'economy' | 'none'>(policy.coverages?.vehicle?.type || 'none');
+  const [deductible, setDeductible] = useState(policy.coverages?.vehicle?.deductible || '');
+  const [riders, setRiders] = useState(policy.coverages?.riders?.join(', ') || '');
+  const [ageLimit, setAgeLimit] = useState(policy.drivers?.ageLimit || '');
+  const [familyOnly, setFamilyOnly] = useState(policy.drivers?.familyOnly || false);
+  const [purpose, setPurpose] = useState<'private' | 'business' | 'commute'>(policy.usage?.purpose || 'private');
+  const [annualMileageKm, setAnnualMileageKm] = useState((policy.usage?.annualMileageKm || 0).toString());
   const [notes, setNotes] = useState(policy.notes);
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -4335,8 +4391,8 @@ function EditInsuranceModal({
       const updateData = {
         provider,
         policyNumber,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: Timestamp.fromDate(new Date(startDate)),
+        endDate: Timestamp.fromDate(new Date(endDate)),
         paymentCycle,
         premiumAmount: parseInt(premiumAmount),
         coverages: {
@@ -4494,16 +4550,16 @@ function EditInsuranceModal({
                 <label className="block text-sm font-medium text-gray-700 mb-1">車両保険</label>
                 <select
                   value={vehicleType}
-                  onChange={(e) => setVehicleType(e.target.value as 'AG' | 'AC' | 'NONE')}
+                  onChange={(e) => setVehicleType(e.target.value as 'general' | 'economy' | 'none')}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 >
-                  <option value="NONE">なし</option>
-                  <option value="AG">車両保険（免責なし）</option>
-                  <option value="AC">車両保険（免責あり）</option>
+                  <option value="none">なし</option>
+                  <option value="general">一般型</option>
+                  <option value="economy">エコノミー型</option>
                 </select>
               </div>
             </div>
-            {vehicleType !== 'NONE' && (
+            {vehicleType !== 'none' && (
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">免責金額</label>
                 <input
@@ -4721,7 +4777,7 @@ function CustomizationsContent({
       
       switch (sortBy) {
         case 'date':
-          comparison = a.date.getTime() - b.date.getTime();
+          comparison = toMillis(a.date) - toMillis(b.date);
           break;
         case 'title':
           comparison = a.title.localeCompare(b.title);
