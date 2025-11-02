@@ -22,6 +22,7 @@ import {
   CustomStatus,
   CustomCategory 
 } from '@/types';
+import { logAudit } from './auditLog';
 
 const CUSTOMIZATIONS_COLLECTION = 'customizations';
 const CUSTOMIZATION_MEDIA_COLLECTION = 'customization_media';
@@ -79,6 +80,14 @@ export async function addCustomization(
     
     console.log('Customization added successfully with ID:', docRef.id);
     
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'customization',
+      entityId: docRef.id,
+      action: 'create',
+      after: cleanCustomization
+    });
+    
     // メタデータを更新（エラーが発生してもカスタマイズの保存は成功とする）
     try {
       await updateCustomizationMeta(userId, carId);
@@ -127,6 +136,14 @@ export async function updateCustomization(
     const docRef = doc(db, 'users', userId, 'cars', carId, CUSTOMIZATIONS_COLLECTION, customizationId);
     await updateDoc(docRef, cleanUpdates);
     
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'customization',
+      entityId: customizationId,
+      action: 'update',
+      after: cleanUpdates
+    });
+    
     // メタデータを更新
     await updateCustomizationMeta(userId, carId);
   } catch (error) {
@@ -149,6 +166,13 @@ export async function deleteCustomization(
       deletedAt: Timestamp.now(),
       updatedBy: userId,
       updatedAt: Timestamp.now(),
+    });
+    
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'customization',
+      entityId: customizationId,
+      action: 'delete'
     });
     
     // 物理削除が必要な場合はコメントアウトを解除

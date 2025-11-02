@@ -16,6 +16,7 @@ import {
 import { db } from "./firebase";
 import { auth } from "./firebase";
 import type { FuelLog, FuelLogInput } from "@/types";
+import { logAudit } from "./auditLog";
 
 // 型をエクスポート
 export type { FuelLog, FuelLogInput };
@@ -48,6 +49,15 @@ export const addFuelLog = async (fuelLogData: FuelLogInput): Promise<string> => 
     });
 
     console.log("給油ログを追加しました:", docRef.id);
+    
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'fuelLog',
+      entityId: docRef.id,
+      action: 'create',
+      after: cleanData
+    });
+    
     return docRef.id;
   } catch (error) {
     console.error("給油ログの追加に失敗しました:", error);
@@ -81,6 +91,14 @@ export const updateFuelLog = async (id: string, fuelLogData: Partial<FuelLogInpu
     });
 
     console.log("給油ログを更新しました:", id);
+    
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'fuelLog',
+      entityId: id,
+      action: 'update',
+      after: cleanData
+    });
   } catch (error) {
     console.error("給油ログの更新に失敗しました:", error);
     throw error;
@@ -103,6 +121,13 @@ export const deleteFuelLog = async (id: string): Promise<void> => {
     });
     
     console.log("給油ログを論理削除しました:", id);
+    
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'fuelLog',
+      entityId: id,
+      action: 'delete'
+    });
     
     // 物理削除が必要な場合はコメントアウトを解除
     // await deleteDoc(doc(db, "users", user.uid, "fuelLogs", id));

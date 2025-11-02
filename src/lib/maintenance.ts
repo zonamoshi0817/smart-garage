@@ -7,6 +7,7 @@ import {
 } from "firebase/firestore";
 import { validateMileageConsistency } from "@/lib/validators";
 import { getDoc } from "firebase/firestore";
+import { logAudit } from "./auditLog";
 
 export type MaintenanceRecord = {
   id?: string;
@@ -139,6 +140,14 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
     console.log("Maintenance record added successfully with ID:", docRef.id);
     console.log("Document path:", docRef.path);
     
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'maintenance',
+      entityId: docRef.id,
+      action: 'create',
+      after: recordData
+    });
+    
     // 車両の走行距離を更新
     try {
       const { updateCarMileage } = await import("@/lib/cars");
@@ -243,6 +252,14 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
     await updateDoc(doc(db, "users", u.uid, "maintenance", recordId), updateData);
     console.log("Maintenance record updated successfully");
     
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'maintenance',
+      entityId: recordId,
+      action: 'update',
+      after: updateData
+    });
+    
     // 走行距離が更新された場合は車両の走行距離も更新
     if (data.mileage !== undefined && data.carId) {
       try {
@@ -271,6 +288,13 @@ export async function deleteMaintenanceRecord(recordId: string) {
       deletedAt: serverTimestamp(),
       updatedBy: u.uid,
       updatedAt: serverTimestamp(),
+    });
+    
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'maintenance',
+      entityId: recordId,
+      action: 'delete'
     });
     
     // 物理削除が必要な場合はコメントアウトを解除

@@ -5,6 +5,7 @@ import {
   collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
   doc, updateDoc, deleteDoc, Timestamp
 } from "firebase/firestore";
+import { logAudit } from "./auditLog";
 
 export type Car = {
   id?: string;
@@ -77,6 +78,14 @@ export async function addCar(data: CarInput) {
       updatedAt: serverTimestamp(),
     });
     console.log("Car added successfully with ID:", docRef.id);
+    
+    // 監査ログを記録
+    await logAudit({
+      entityType: 'car',
+      entityId: docRef.id,
+      action: 'create',
+      after: firestoreData
+    });
     
     return docRef.id;
   } catch (error) {
@@ -194,6 +203,14 @@ export async function updateCar(carId: string, data: Partial<Car>) {
     updatedBy: u.uid,
     updatedAt: serverTimestamp(),
   });
+  
+  // 監査ログを記録
+  await logAudit({
+    entityType: 'car',
+    entityId: carId,
+    action: 'update',
+    after: firestoreData
+  });
 }
 
 export async function removeCar(carId: string) {
@@ -205,6 +222,13 @@ export async function removeCar(carId: string) {
     deletedAt: serverTimestamp(),
     updatedBy: u.uid,
     updatedAt: serverTimestamp(),
+  });
+  
+  // 監査ログを記録
+  await logAudit({
+    entityType: 'car',
+    entityId: carId,
+    action: 'delete'
   });
   
   // 物理削除が必要な場合はコメントアウトを解除
