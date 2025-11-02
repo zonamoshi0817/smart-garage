@@ -63,6 +63,35 @@ export default function VehicleSpecsPanel({
     return fuelLogs.reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
   }, [fuelLogs]);
 
+  // 総走行距離（給油記録から算出）
+  const totalDistance = useMemo(() => {
+    const sortedLogs = [...fuelLogs]
+      .filter(log => log.odoKm && log.odoKm > 0)
+      .sort((a, b) => (a.odoKm || 0) - (b.odoKm || 0));
+    
+    if (sortedLogs.length < 2) return 0;
+    
+    const firstOdo = sortedLogs[0].odoKm || 0;
+    const lastOdo = sortedLogs[sortedLogs.length - 1].odoKm || 0;
+    
+    return lastOdo - firstOdo;
+  }, [fuelLogs]);
+
+  // km当たりのメンテナンスコスト
+  const costPerKm = useMemo(() => {
+    if (totalDistance === 0 || totalMaintenanceCost === 0) return 0;
+    return totalMaintenanceCost / totalDistance;
+  }, [totalDistance, totalMaintenanceCost]);
+
+  // コスト効率スコア（km当たり10円を基準として評価）
+  const costEfficiencyScore = useMemo(() => {
+    if (costPerKm === 0) return 100; // データなしの場合は100%
+    // km当たり10円を基準（100点）
+    // 5円以下 → 100点、10円 → 50点、20円以上 → 0点
+    const score = Math.max(100 - (costPerKm / 0.2) * 100, 0);
+    return Math.min(score, 100);
+  }, [costPerKm]);
+
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
       {/* ヘッダー */}
@@ -246,8 +275,9 @@ export default function VehicleSpecsPanel({
               />
               <PerformanceBar 
                 label="コスト効率" 
-                value={totalMaintenanceCost > 0 ? Math.max(100 - (totalMaintenanceCost / 100000) * 100, 0) : 100}
+                value={costEfficiencyScore}
                 color="blue"
+                subtitle={costPerKm > 0 ? `¥${costPerKm.toFixed(2)}/km` : undefined}
               />
             </div>
           </div>
@@ -285,11 +315,13 @@ function DataRow({
 function PerformanceBar({ 
   label, 
   value, 
-  color 
+  color,
+  subtitle
 }: { 
   label: string; 
   value: number; 
-  color: 'green' | 'purple' | 'blue' 
+  color: 'green' | 'purple' | 'blue';
+  subtitle?: string;
 }) {
   const colorClasses = {
     green: 'bg-green-500',
@@ -300,7 +332,12 @@ function PerformanceBar({
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
-        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-gray-700">{label}</span>
+          {subtitle && (
+            <span className="text-xs text-gray-500 font-mono">{subtitle}</span>
+          )}
+        </div>
         <span className="text-sm font-mono text-gray-900 font-bold">{value.toFixed(0)}%</span>
       </div>
       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
