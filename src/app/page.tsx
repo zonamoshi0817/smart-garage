@@ -2947,7 +2947,7 @@ function CarManagementContent({
   setShowFuelLogModal: (show: boolean) => void;
   setShowMaintenanceModal: (show: boolean) => void;
   setShowCustomizationModal: (show: boolean) => void;
-  userPlan: 'free' | 'premium';
+  userPlan: 'free' | 'premium' | 'premium_monthly' | 'premium_yearly';
   checkFeature: (feature: any, currentUsage?: any, variant?: any) => boolean;
 }) {
 
@@ -4233,11 +4233,12 @@ function FuelLogsContent({
   fuelLogs: FuelLog[];
   setShowFuelLogModal: (show: boolean) => void;
 }) {
+  // 安全のため、fuelLogsがundefinedの場合は空配列を使用
+  const safeFuelLogs = fuelLogs || [];
   const activeCar = cars.find(car => car.id === activeCarId);
-  const [selectedRange] = useState<'all' | '3m' | '6m' | '12m'>('all');
 
   const summary = useMemo(() => {
-    if (!fuelLogs || fuelLogs.length === 0) {
+    if (!safeFuelLogs || !Array.isArray(safeFuelLogs) || safeFuelLogs.length === 0) {
       return {
         totalLogs: 0,
         totalVolume: 0,
@@ -4255,27 +4256,55 @@ function FuelLogsContent({
     let totalVolume = 0;
     let volumeSamples = 0;
 
-    fuelLogs.forEach((log) => {
-      const { value, unit } = getDisplayAmount(log);
-      const cost = getDisplayCost(log);
-      totalCost += cost;
+    try {
+      safeFuelLogs.forEach((log) => {
+        if (!log) return;
+        try {
+          const { value, unit } = getDisplayAmount(log);
+          const cost = getDisplayCost(log);
+          totalCost += cost || 0;
 
-      if (unit === 'L' && value) {
-        totalVolume += value;
-        volumeSamples += 1;
+          if (unit === 'L' && value && value > 0) {
+            totalVolume += value;
+            volumeSamples += 1;
+          }
+        } catch (error) {
+          console.error('Error processing fuel log:', error, log);
+        }
+      });
+    } catch (error) {
+      console.error('Error processing fuel logs:', error);
+    }
+
+    const lastLog = safeFuelLogs[0] ?? null;
+    let lastRefuelDate: Date | null = null;
+    if (lastLog && lastLog.date) {
+      try {
+        const dateValue: any = lastLog.date;
+        if (dateValue && typeof dateValue === 'object' && 'toDate' in dateValue) {
+          lastRefuelDate = dateValue.toDate();
+        } else if (dateValue instanceof Date) {
+          lastRefuelDate = dateValue;
+        } else if (dateValue) {
+          lastRefuelDate = new Date(dateValue);
+        }
+      } catch (error) {
+        console.error('Error converting date:', error);
+        lastRefuelDate = null;
       }
-    });
-
-    const lastLog = fuelLogs[0] ?? null;
-    const lastRefuelDate = lastLog
-      ? (lastLog.date?.toDate ? lastLog.date.toDate() : new Date(lastLog.date as any))
-      : null;
+    }
 
     let lastPricePerLiter: number | null = null;
     if (lastLog) {
-      const { value, unit } = getDisplayAmount(lastLog);
-      if (unit === 'L' && value > 0) {
-        lastPricePerLiter = getDisplayCost(lastLog) / value;
+      try {
+        const { value, unit } = getDisplayAmount(lastLog);
+        const cost = getDisplayCost(lastLog);
+        if (unit === 'L' && value > 0 && cost > 0) {
+          lastPricePerLiter = cost / value;
+        }
+      } catch (error) {
+        console.error('Error calculating last price per liter:', error);
+        lastPricePerLiter = null;
       }
     }
 
@@ -4283,39 +4312,63 @@ function FuelLogsContent({
     const averageFillSize = volumeSamples > 0 ? totalVolume / volumeSamples : null;
 
     return {
-      totalLogs: fuelLogs.length,
+      totalLogs: safeFuelLogs.length,
       totalVolume,
       totalCost,
       avgPricePerLiter,
       lastLog,
       lastRefuelDate,
       lastPricePerLiter,
-      fullTankCount: fuelLogs.filter((log) => log.isFullTank).length,
+      fullTankCount: safeFuelLogs.filter((log) => log && log.isFullTank).length,
       averageFillSize,
     };
-  }, [fuelLogs]);
+  }, [safeFuelLogs]);
 
-  const totalCostLabel = summary.totalCost > 0 ? `¥${summary.totalCost.toLocaleString('ja-JP')}` : '¥0';
+  const formatNumber = (num: number): string => {
+    if (typeof window === 'undefined') {
+      // サーバーサイドではシンプルな形式を使用
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    return num.toLocaleString('ja-JP');
+  };
+
+  const totalCostLabel = summary.totalCost > 0 ? `¥${formatNumber(summary.totalCost)}` : '¥0';
   const totalVolumeLabel = summary.totalVolume > 0
-    ? `${(summary.totalVolume >= 100 ? Math.round(summary.totalVolume) : Math.round(summary.totalVolume * 10) / 10).toLocaleString('ja-JP')} L`
+    ? `${formatNumber(summary.totalVolume >= 100 ? Math.round(summary.totalVolume) : Math.round(summary.totalVolume * 10) / 10)} L`
     : '0 L';
   const avgPriceLabel = summary.avgPricePerLiter
-    ? `¥${Math.round(summary.avgPricePerLiter).toLocaleString('ja-JP')} / L`
+    ? `¥${formatNumber(Math.round(summary.avgPricePerLiter))} / L`
     : '---';
   const lastRefuelLabel = summary.lastRefuelDate
-    ? summary.lastRefuelDate.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })
+    ? (() => {
+        try {
+          if (typeof window === 'undefined') {
+            // サーバーサイドではシンプルな形式を使用
+            const date = summary.lastRefuelDate;
+            return `${date.getMonth() + 1}月${date.getDate()}日`;
+          }
+          return summary.lastRefuelDate.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' });
+        } catch (error) {
+          console.error('Error formatting date:', error);
+          if (summary.lastRefuelDate) {
+            const date = summary.lastRefuelDate;
+            return `${date.getMonth() + 1}月${date.getDate()}日`;
+          }
+          return '記録なし';
+        }
+      })()
     : '記録なし';
   const lastPriceLabel = summary.lastPricePerLiter
-    ? `¥${Math.round(summary.lastPricePerLiter).toLocaleString('ja-JP')} / L`
+    ? `¥${formatNumber(Math.round(summary.lastPricePerLiter))} / L`
     : '---';
   const averageFillSizeLabel = summary.averageFillSize
-    ? `${(summary.averageFillSize >= 100 ? Math.round(summary.averageFillSize) : Math.round(summary.averageFillSize * 10) / 10).toLocaleString('ja-JP')} L`
+    ? `${formatNumber(summary.averageFillSize >= 100 ? Math.round(summary.averageFillSize) : Math.round(summary.averageFillSize * 10) / 10)} L`
     : '---';
 
   const summaryCards = useMemo(() => ([
     {
       title: '総給油回数',
-      value: summary.totalLogs ? `${summary.totalLogs.toLocaleString('ja-JP')} 回` : '0 回',
+      value: summary.totalLogs ? `${formatNumber(summary.totalLogs)} 回` : '0 回',
       description: '保存済みの記録',
       icon: '🧾',
     },
@@ -4341,156 +4394,82 @@ function FuelLogsContent({
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 text-white shadow-xl">
-        <div className="absolute -top-24 -right-10 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
-        <div className="relative z-10 flex flex-col gap-8 p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/80">
-                <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
-                ガソリン管理ダッシュボード
-              </div>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight">{activeCar ? activeCar.name : '車両が選択されていません'}</h1>
-                <p className="mt-2 text-sm text-white/70">
-                  {activeCar ? '最新の給油状況と燃費の推移を一目で確認できます。' : '車両を選択すると給油データが表示されます。'}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-white/70">
-                {activeCar?.modelCode && (
-                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 font-medium">{activeCar.modelCode}</span>
-                )}
-                {activeCar?.year && (
-                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 font-medium">{activeCar.year}年式</span>
-                )}
-                {activeCar?.odoKm !== undefined && (
-                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 font-medium">ODO {activeCar.odoKm.toLocaleString('ja-JP')} km</span>
-                )}
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 font-medium">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 8v4l3 3" />
-                    <circle cx="12" cy="12" r="9" />
-                  </svg>
-                  最終給油 {lastRefuelLabel}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-              <button
-                onClick={() => setShowFuelLogModal(true)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:bg-emerald-400"
-              >
-                <span className="text-lg">⛽</span>
-                給油を記録
-              </button>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/30 px-6 py-3 text-sm font-semibold text-white/80 transition hover:border-white/50 hover:text-white"
-                title="近日公開予定です"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3a1.5 1.5 0 0 1 1.5 1.5V13l-3 2-3-2V4.5a1.5 1.5 0 0 1 1.5-1.5h3Z" />
-                  <path d="M4 11a2 2 0 0 1 2-2h4v11H5.5A1.5 1.5 0 0 1 4 18.5V11Z" />
-                </svg>
-                履歴をエクスポート（準備中）
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {summaryCards.map((card) => (
-              <div
-                key={card.title}
-                className="flex h-full flex-col justify-between rounded-2xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-white/70">{card.title}</span>
-                  <span className="text-lg">{card.icon}</span>
-                </div>
-                <div className="mt-4 text-2xl font-semibold tracking-tight">{card.value}</div>
-                <p className="mt-2 text-xs text-white/70">{card.description}</p>
-              </div>
-            ))}
-          </div>
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">給油ログ</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            {activeCar ? `${activeCar.name} の給油記録` : '車両を選択してください'}
+          </p>
         </div>
-      </section>
+        <button
+          onClick={() => setShowFuelLogModal(true)}
+          className="rounded-xl bg-emerald-600 text-white px-5 py-2.5 font-medium hover:bg-emerald-500 transition-colors shadow-sm"
+        >
+          ＋ 給油を記録
+        </button>
+      </div>
 
-      <div className="flex flex-col gap-4 rounded-2xl border border-dashed border-blue-200/80 bg-blue-50/50 px-5 py-4 text-sm text-blue-700 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-          <span className="font-semibold text-blue-900">表示範囲</span>
-          <span className="text-blue-700">全期間（期間フィルターは近日追加予定です）</span>
-        </div>
-        <div className="flex items-center gap-3 text-xs font-medium text-blue-700">
-          <div className="inline-flex items-center gap-1 rounded-full border border-blue-300/60 bg-white/70 px-3 py-1 text-blue-900">
-            <span>直近の単価</span>
-            <span className="font-semibold">{lastPriceLabel}</span>
+      {/* 統計カード */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {summaryCards.map((card) => (
+          <div
+            key={card.title}
+            className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{card.title}</span>
+              <span className="text-xl">{card.icon}</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900">{card.value}</div>
+            <p className="mt-1 text-xs text-gray-500">{card.description}</p>
           </div>
-          <div className="inline-flex items-center gap-1 rounded-full border border-blue-300/60 bg-white/70 px-3 py-1 text-blue-900">
-            <span>平均給油量</span>
-            <span className="font-semibold">{averageFillSizeLabel}</span>
+        ))}
+      </div>
+
+      {/* 情報バー */}
+      <div className="bg-white rounded-xl border border-gray-200 px-5 py-3.5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-500">表示範囲:</span>
+            <span className="font-medium text-gray-900">全期間</span>
+            <span className="text-gray-400 text-xs">(フィルター機能は近日追加予定)</span>
+          </div>
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-500">直近単価:</span>
+              <span className="font-semibold text-gray-900">{lastPriceLabel}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-500">平均給油量:</span>
+              <span className="font-semibold text-gray-900">{averageFillSizeLabel}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
-        <div className="space-y-6">
-          {activeCar ? (
-            <FuelLogCard car={activeCar} />
-          ) : (
-            <div className="rounded-3xl border border-gray-200 bg-white p-10 text-center shadow-sm">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-                <svg className="h-7 w-7 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M7 10V7a5 5 0 0 1 9.9-1M12 14v8M8 18h8" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">表示できる給油データがありません</h3>
-              <p className="mt-2 text-sm text-gray-500">サイドバーから車両を選択するか、新しく車両を追加してください。</p>
-              <div className="mt-5 flex justify-center">
-                <button
-                  onClick={() => setShowFuelLogModal(true)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-                >
-                  <span>⛽</span>
-                  給油を記録
-                </button>
-              </div>
-            </div>
-          )}
+      {/* メインコンテンツ */}
+      {activeCar ? (
+        <FuelLogCard car={activeCar} />
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">表示できる給油データがありません</h3>
+          <p className="mt-2 text-sm text-gray-500">サイドバーから車両を選択するか、新しく車両を追加してください。</p>
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => setShowFuelLogModal(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white px-5 py-2.5 font-medium hover:bg-emerald-500 transition-colors shadow-sm"
+            >
+              ⛽ 給油を記録
+            </button>
+          </div>
         </div>
-
-        <aside className="space-y-4">
-          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">給油データの活用ヒント</h3>
-            <ul className="mt-3 space-y-2 text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-base">💡</span>
-                <span>満タンの記録には「満タン」フラグを付けると、燃費が自動計算されます。</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-base">📸</span>
-                <span>レシートを添付するとOCRでの自動入力がスムーズになります。</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-base">🔁</span>
-                <span>複数台をお持ちの場合は、サイドバーから車両を切り替えて比較できます。</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="rounded-3xl border border-dashed border-gray-300 bg-white/70 p-6 text-sm text-gray-500">
-            <p className="mb-2 text-sm font-semibold text-gray-800">近日追加予定の機能</p>
-            <ul className="space-y-1">
-              <li>・地域別ガソリン価格の比較</li>
-              <li>・期間フィルターとCSVエクスポート</li>
-              <li>・給油タイミングの自動提案</li>
-            </ul>
-          </div>
-        </aside>
-      </section>
+      )}
     </div>
   );
 }

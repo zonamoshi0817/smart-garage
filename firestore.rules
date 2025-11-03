@@ -11,6 +11,18 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+
+    // Helper: check owner fields in a document snapshot
+    function isOwnerDoc(data, userId) {
+      return (data.ownerUid != null && data.ownerUid == userId)
+          || (data.userId != null && data.userId == userId);
+    }
+
+    // Helper: check owner fields in request.resource data
+    function matchesOwner(reqData, userId) {
+      return (reqData.ownerUid != null && reqData.ownerUid == userId)
+          || (reqData.userId != null && reqData.userId == userId);
+    }
     
     // Helper function: Validate required fields exist
     function hasRequiredFields(fields) {
@@ -53,6 +65,11 @@ service cloud.firestore {
                       && request.resource.data.userId == userId
                       && isWithinSizeLimit(100000);
         allow delete: if isOwner(userId);
+        
+        // Customizations nested under cars
+        match /customizations/{customizationId} {
+          allow read, write: if isOwner(userId);
+        }
       }
       
       // Maintenance records subcollection
@@ -72,16 +89,8 @@ service cloud.firestore {
       
       // Fuel logs subcollection
       match /fuelLogs/{fuelLogId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId)
-                      && hasRequiredFields(['carId', 'userId', 'createdAt'])
-                      && (request.resource.data.fuelAmount == null || request.resource.data.fuelAmount >= 0)
-                      && (request.resource.data.totalCost == null || request.resource.data.totalCost >= 0)
-                      && isWithinSizeLimit(50000); // 50KB
-        allow update: if isOwner(userId)
-                      && request.resource.data.userId == userId
-                      && isWithinSizeLimit(50000);
-        allow delete: if isOwner(userId);
+        // シンプルなルール: パスベースのオーナーチェックのみ
+        allow read, write: if isOwner(userId);
       }
       
       // Customizations subcollection
@@ -146,18 +155,11 @@ service cloud.firestore {
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
     
-    // Fuel logs collection (top-level, for compatibility)
+    // Fuel logs collection (top-level, for compatibility) - DEPRECATED
+    // 新規データはすべて users/{userId}/fuelLogs に保存されます
     match /fuelLogs/{fuelLogId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn()
-                    && hasRequiredFields(['carId', 'userId', 'createdAt'])
-                    && request.resource.data.userId == request.auth.uid
-                    && isWithinSizeLimit(50000);
-      allow update: if isSignedIn()
-                    && resource.data.userId == request.auth.uid
-                    && request.resource.data.userId == request.auth.uid
-                    && isWithinSizeLimit(50000);
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.ownerUid == request.auth.uid || resource.data.userId == request.auth.uid);
+      allow write: if isSignedIn() && (request.resource.data.ownerUid == request.auth.uid || request.resource.data.userId == request.auth.uid);
     }
     
     // Customizations collection (top-level)
