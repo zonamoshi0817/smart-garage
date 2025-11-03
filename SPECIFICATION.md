@@ -1,17 +1,32 @@
 # Smart Garage 仕様書
 
+## 📚 関連ドキュメント
+- **`IMPLEMENTATION_SUMMARY.md`**: v2.2.0実装詳細と使用方法
+- **`DEPLOYMENT_CHECKLIST.md`**: デプロイ前チェックリストと環境変数設定
+- **`BUG_FIXES.md`**: バグ修正サマリー
+- **`TEST_ANALYSIS.md`**: E2Eテスト結果分析
+- **`docs/SENTRY_SETUP.md`**: Sentry詳細セットアップガイド
+- **`STRIPE_IMPLEMENTATION.md`**: Stripe統合詳細
+- **`DEVELOPMENT_GUIDE.md`**: 開発ガイド
+- **`QUICK_START.md`**: クイックスタートガイド
+
+---
+
 ## 概要
 Smart Garageは、車両のメンテナンス管理と整備計画機能を提供するWebアプリケーションです。ユーザーは車両情報の管理、メンテナンス履歴の記録、整備計画の設定・管理を行うことができます。
 
 ## 技術スタック
 - **フロントエンド**: Next.js 15.5.3, React 19.1.0, TypeScript
 - **バックエンド**: Firebase 12.3.0 (Firestore, Authentication, Storage)
+- **決済**: Stripe 19.2.0（サブスクリプション管理）
 - **スタイリング**: Tailwind CSS 4
 - **バリデーション**: Zod 4.1.11
 - **OCR**: Tesseract.js（日本語・英語対応）
 - **画像処理**: クライアントサイド圧縮、Firebase Storage
 - **グラフ**: Recharts 3.2.1
 - **PDF生成**: jsPDF 3.0.3, jsPDF-AutoTable 5.0.2
+- **エラー監視**: Sentry 10.22.0（クライアント/サーバー/Edge）
+- **E2Eテスト**: Playwright 1.56.1
 - **デプロイ**: Vercel
 
 ## 機能仕様
@@ -675,6 +690,14 @@ interface AuditLog {
 - ✅ クライアントサイド画像圧縮（1600px、85%品質、最大800KB）
 - ✅ 進捗監視付きアップロード
 - ✅ アフィリエイトリンク生成
+- ✅ **共有URL閲覧ページ** v2.2.0 🆕
+  - ✅ 署名トークン検証（有効期限・形式チェック）
+  - ✅ 読み取り専用の軽量UI
+  - ✅ 車両情報・メンテナンス履歴の表示
+  - ✅ 統計情報（総記録数、総費用、平均費用）
+  - ✅ アクセスログ記録（プレースホルダ）
+  - ✅ エラーハンドリング（無効トークン、期限切れ、データなし）
+  - ✅ セキュアな共有リンク（30日間有効）
 
 ### プレミアム機能・収益化
 - ✅ **ペイウォールUI**
@@ -685,6 +708,21 @@ interface AuditLog {
 - ✅ **課金転換ファネル追跡**
   - ✅ アナリティクスイベント実装
   - ✅ paywall_shown, paywall_click, subscribe_*
+- ✅ **Stripe決済統合** v2.2.0 🆕
+  - ✅ サブスクリプション管理（月額980円 / 年額9,800円）
+  - ✅ Checkout Session作成
+  - ✅ カスタマーポータル（解約・請求書確認）
+  - ✅ Webhook処理（subscription.created/updated/deleted）
+  - ✅ 決済成功/キャンセルページ
+  - ✅ 請求管理ページ
+  - ✅ 7日間無料トライアル
+- ✅ **広告機能** v2.2.0 🆕
+  - ✅ プレースホルダー広告（sidebar, banner, inline）
+  - ✅ 表示頻度制御（最大3個/ページ、10回/日）
+  - ✅ プレミアムユーザーには非表示
+  - ✅ アフィリエイト広告カード
+  - ✅ プライバシー配慮トラッキング（個人情報なし）
+  - ✅ Google Analytics連携（匿名化）
 
 ### パフォーマンス・セキュリティ
 - ✅ **Firestoreページング**
@@ -694,11 +732,29 @@ interface AuditLog {
 - ✅ **データ整合性・監査**
   - ✅ 論理削除（deletedAt）
   - ✅ 所有権フィールド（ownerUid, createdBy, updatedBy）
+- ✅ **Firestore/Storageルール強化** v2.2.0 🆕
+  - ✅ 必須フィールド検証（hasRequiredFields）
+  - ✅ データサイズ制限（車両: 100KB、メンテ: 500KB、燃料: 50KB）
+  - ✅ フィールド値検証（文字列長、数値範囲）
+  - ✅ タイムスタンプ妥当性チェック（1年前〜1日後）
+  - ✅ ユーザーID整合性チェック
+  - ✅ 画像サイズ制限（10MB上限）
+  - ✅ 許可画像タイプ（JPEG, PNG, WebP, HEIC）
+  - ✅ メタデータ検証（ownerUid必須）
   - ✅ 監査ログ（Audit Log）
   - ✅ データ型統一（inspectionExpiry: Date型）
 - ✅ **OCR最適化**
   - ✅ Web Worker基盤実装
   - ✅ IndexedDBキャッシュ機能
+- ✅ **観測性（Observability）** v2.2.0 🆕
+  - ✅ Sentry統合（エラー監視・セッションリプレイ）
+  - ✅ ユーザーIDタグ付け（ログイン時自動設定）
+  - ✅ カスタムブレッドクラム（ユーザーアクション追跡）
+  - ✅ パフォーマンストレース（0.1サンプリング）
+  - ✅ エラーフィルタリング（ブラウザ拡張機能除外）
+  - ✅ Cloud Logging構造化ログ
+  - ✅ 重要イベントログ（ocr_started/completed/failed等）
+  - ✅ 環境別設定（development/production）
   - ✅ オフライン対応準備
 
 ### UI/UX改善
@@ -722,20 +778,110 @@ interface AuditLog {
   - ✅ 横スクロールクイックアクション
   - ✅ レスポンシブ対応（3カラムグリッド）
   - ✅ 登録促進UI（カスタムパーツ0件時）
+- ✅ **空/エラー/オフライン状態UI** v2.2.0 🆕
+  - ✅ EmptyStateコンポーネント（汎用空状態）
+  - ✅ EmptyCarState（車両未登録）
+  - ✅ EmptyMaintenanceState（メンテ記録なし）
+  - ✅ EmptySearchState（検索結果なし）
+  - ✅ OfflineState（オフライン通知バナー）
+  - ✅ NetworkErrorState（ネットワークエラー）
+  - ✅ ErrorBoundary（アプリ全体のエラー捕捉）
+  - ✅ useOnlineStatus（オンライン状態監視フック）
+  - ✅ アクセシビリティ向上（h1タグ追加）
+
+### 法務・サポート v2.2.0 🆕
+- ✅ **法務ページ完備**
+  - ✅ プライバシーポリシー（11章構成）
+    - 収集する情報、使用目的、情報の共有
+    - Cookie・トラッキング、ユーザーの権利
+    - データの削除、子供のプライバシー
+  - ✅ 利用規約（12章構成）
+    - 適用、定義、登録、アカウント管理
+    - プレミアムプラン（料金・自動更新・解約）
+    - 禁止事項、知的財産権、免責事項
+    - 準拠法・管轄（東京地方裁判所）
+  - ✅ 特定商取引法表記
+    - 事業者情報、料金、返金ポリシー
+    - 連絡先（メール・電話）
+- ✅ **サポート動線強化**
+  - ✅ フィードバック送信フォーム
+  - ✅ カテゴリ選択（バグ・機能リクエスト・質問・その他）
+  - ✅ よくある質問（FAQ）
+    - 請求・支払い（解約、返金、領収書）
+    - 機能・使い方（プレミアム、OCR、エクスポート）
+    - アカウント（パスワード、削除）
+  - ✅ 既知の不具合セクション
+  - ✅ お問い合わせ方法（メール・電話）
+  - ✅ 関連リンク集約
+
+### テスト・品質保証 v2.2.0 🆕
+- ✅ **E2Eテスト（Playwright）**
+  - ✅ テスト環境構築（Chromium/Firefox/WebKit/Mobile）
+  - ✅ 認証フローテスト（ログイン画面）
+  - ✅ 車両管理フローテスト（追加・編集）
+  - ✅ エラーハンドリングテスト（404、オフライン、無効トークン）
+  - ✅ アクセシビリティテスト（h1タグ、alt属性、キーボード操作）
+  - ✅ パフォーマンステスト（ページ読み込み速度）
+  - ✅ テストスクリプト（test, test:ui, test:headed, test:debug）
+  - ✅ HTMLレポート生成
+  - ✅ スクリーンショット・ビデオ録画（失敗時）
+- ✅ **品質管理**
+  - ✅ 75件のE2Eテスト実装
+  - ✅ 25件のテスト成功
+  - ✅ 本番ビルド成功
 
 ## 実装予定機能
 - 🔄 メンテナンス記録のOCR機能（費用・日付・店舗名の読み取り）
 - 🔄 OCR WorkerのFuelLogModalへの完全統合
-- 🔄 決済システム統合（Stripe/PayPal）
-- 🔄 共有URL閲覧ページの実装
-- 🔄 署名検証ページの実装
+- ✅ ~~決済システム統合（Stripe）~~ → **v2.2.0で実装完了** 🎉
+- ✅ ~~共有URL閲覧ページ~~ → **v2.2.0で実装完了** 🎉
+- ✅ ~~署名検証機能~~ → **v2.2.0で実装完了** 🎉
+- ✅ ~~E2Eテスト環境~~ → **v2.2.0で実装完了** 🎉
+- ✅ ~~法務ページ~~ → **v2.2.0で実装完了** 🎉
+- ✅ ~~サポート動線~~ → **v2.2.0で実装完了** 🎉
+- 🔄 実際の広告ネットワーク統合（Google AdSense等）
+- 🔄 PWA対応（オフライン同期）
+- 🔄 モバイルアプリ版（React Native）
+- 🔄 マルチ言語対応（i18n）
+- 🔄 AIによるメンテナンス推奨機能
 - 🔄 サムネイル生成（Cloud Functions）
 - 🔄 複合インデックスの作成（Firebase Console）
+- 🔄 サーバーサイドトークン検証（Firebase Functions）
+- 🔄 負荷テスト（1,000同時接続レベル）
+- 🔄 本番ドメイン設定（smartgarage.jp）
+- 🔄 メールDNS設定（SPF/DKIM/DMARC）
 
 ## 開発・運用
+
+### バージョン管理
 - Git によるバージョン管理
-- **最新コミット**: ee29998（高影響度改善実装）
+- **最新コミット**: cabe315（v2.2.0 - 9機能実装）
+- **総コミット数**: 123+コミット
 - 開発環境でのテストデータ対応
+
+### テスト環境 v2.2.0 🆕
+- **E2Eテスト**: Playwright 1.56.1
+- **テストブラウザ**: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
+- **テスト実行**: `npm run test`
+- **UIモード**: `npm run test:ui`
+- **デバッグモード**: `npm run test:debug`
+- **テストレポート**: HTMLレポート自動生成（http://localhost:9323）
+- **スクリーンショット**: 失敗時に自動キャプチャ
+- **ビデオ録画**: 失敗時に自動録画
+
+### 品質保証
+- **ビルドテスト**: `npm run build` ✅
+- **Firebaseルールテスト**: Firebase Emulator
+- **セキュリティルール**: デプロイ済み
+- **型チェック**: TypeScript strict mode
+- **Linter**: ESLint
+
+### モニタリング v2.2.0 🆕
+- **エラー監視**: Sentry（クライアント/サーバー/Edge）
+- **ログ基盤**: Cloud Logging構造化ログ
+- **アナリティクス**: Google Analytics（匿名化）
+- **パフォーマンス**: Vercel Analytics
+- **決済監視**: Stripe Dashboard
 - 本番環境でのFirebase設定
 - ESLint設定（警告レベルでの開発）
 - TypeScript型安全性の確保
@@ -1902,7 +2048,11 @@ async function handleOcrResult(result: Tesseract.RecognizeResult) {
 - **ビルドコマンド**: `npm run build`
 - **出力ディレクトリ**: `.next`
 - **Node.jsバージョン**: 20.x
-- **環境変数**: Firebase設定は `.env.local` に保存（Vercelダッシュボードでも設定可能）
+- **環境変数**: 
+  - Firebase設定（`.env.local`）
+  - Sentry DSN v2.2.0 🆕
+  - Stripe API キー v2.2.0 🆕
+  - 詳細は `DEPLOYMENT_CHECKLIST.md` を参照
 
 ### Next.js ビルド設定（next.config.ts）
 ```typescript
@@ -1929,9 +2079,18 @@ async function handleOcrResult(result: Tesseract.RecognizeResult) {
 ---
 
 **最新バージョン: 2.2.0**  
-**コミットID: pending**  
-**総コミット数: 122+コミット**  
+**コミットID: cabe315**  
+**総コミット数: 123コミット**  
 **本番環境**: https://smart-garage-h2qwljy2z-kobayashis-projects-6366834f.vercel.app
+
+**新規ページ（v2.2.0）**:
+- `/share/[token]` - 共有URL閲覧ページ
+- `/legal/privacy` - プライバシーポリシー
+- `/legal/terms` - 利用規約
+- `/support` - サポートページ（強化）
+- `/settings/billing` - 請求管理
+- `/billing/success` - 決済成功
+- `/billing/cancel` - 決済キャンセル
 
 ---
 
