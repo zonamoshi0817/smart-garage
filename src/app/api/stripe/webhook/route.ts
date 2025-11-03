@@ -1,0 +1,236 @@
+/**
+ * Stripe Webhook ハンドラー
+ * 
+ * Stripe のイベント（サブスクリプション作成、更新、削除など）を受け取り、
+ * Firestore のユーザードキュメントを更新する
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import Stripe from 'stripe';
+import { constructWebhookEvent } from '@/lib/stripe';
+import { planFromPriceId } from '@/lib/plan';
+import {
+  getAdminFirestore,
+  updateUserDocument,
+  findUserByCustomerId,
+} from '@/lib/firebaseAdmin';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/**
+ * Webhook Secret を取得
+ */
+function getWebhookSecret(): string {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is not set');
+  }
+  return secret;
+}
+
+/**
+ * Checkout セッション完了時の処理
+ */
+async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
+  console.log('🎉 Checkout session completed:', session.id);
+
+  const uid = session.client_reference_id;
+  const customerId = session.customer as string;
+  const subscriptionId = session.subscription as string;
+
+  if (!uid) {
+    console.error('No client_reference_id (Firebase UID) found in session');
+    return;
+  }
+
+  // ユーザードキュメントに Stripe 情報を保存
+  await updateUserDocument(uid, {
+    stripeCustomerId: customerId,
+    subscriptionId: subscriptionId,
+    updatedAt: new Date(),
+  });
+
+  console.log(`✅ Updated user ${uid} with Stripe info`);
+}
+
+/**
+ * サブスクリプション作成・更新時の処理
+ */
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  console.log('🔄 Subscription updated:', subscription.id);
+
+  const customerId = subscription.customer as string;
+  const status = subscription.status;
+  const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+  const cancelAtPeriodEnd = subscription.cancel_at_period_end;
+
+  // Price ID からプランを判定
+  const priceId = subscription.items.data[0]?.price?.id;
+  const plan = priceId ? planFromPriceId(priceId) : 'free';
+
+  // Customer ID からユーザーを検索
+  const user = await findUserByCustomerId(customerId);
+  if (!user) {
+    console.error(`No user found for customer ${customerId}`);
+    return;
+  }
+
+  // ユーザードキュメントを更新
+  await updateUserDocument(user.uid, {
+    plan,
+    subscriptionStatus: status,
+    currentPeriodEnd,
+    cancelAtPeriodEnd,
+    priceId,
+    updatedAt: new Date(),
+  });
+
+  console.log(`✅ Updated user ${user.uid} with plan ${plan} and status ${status}`);
+}
+
+/**
+ * サブスクリプション削除時の処理
+ */
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  console.log('❌ Subscription deleted:', subscription.id);
+
+  const customerId = subscription.customer as string;
+
+  // Customer ID からユーザーを検索
+  const user = await findUserByCustomerId(customerId);
+  if (!user) {
+    console.error(`No user found for customer ${customerId}`);
+    return;
+  }
+
+  // ユーザードキュメントを更新（無料プランに戻す）
+  await updateUserDocument(user.uid, {
+    plan: 'free',
+    subscriptionStatus: 'canceled',
+    cancelAtPeriodEnd: false,
+    updatedAt: new Date(),
+  });
+
+  console.log(`✅ Reverted user ${user.uid} to free plan`);
+}
+
+/**
+ * 請求書支払い失敗時の処理
+ */
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  console.log('⚠️ Invoice payment failed:', invoice.id);
+
+  const customerId = invoice.customer as string;
+
+  // Customer ID からユーザーを検索
+  const user = await findUserByCustomerId(customerId);
+  if (!user) {
+    console.error(`No user found for customer ${customerId}`);
+    return;
+  }
+
+  // ユーザードキュメントを更新
+  await updateUserDocument(user.uid, {
+    subscriptionStatus: 'past_due',
+    updatedAt: new Date(),
+  });
+
+  console.log(`✅ Updated user ${user.uid} status to past_due`);
+
+  // TODO: ユーザーにメール通知を送信
+}
+
+/**
+ * Customer 更新時の処理
+ */
+async function handleCustomerUpdated(customer: Stripe.Customer) {
+  console.log('👤 Customer updated:', customer.id);
+
+  // Customer ID からユーザーを検索
+  const user = await findUserByCustomerId(customer.id);
+  if (!user) {
+    console.error(`No user found for customer ${customer.id}`);
+    return;
+  }
+
+  // メールアドレスが更新された場合など、必要に応じて情報を同期
+  await updateUserDocument(user.uid, {
+    stripeCustomerEmail: customer.email,
+    updatedAt: new Date(),
+  });
+
+  console.log(`✅ Updated user ${user.uid} customer info`);
+}
+
+/**
+ * POST ハンドラー
+ */
+export async function POST(req: NextRequest) {
+  try {
+    // リクエストボディを取得
+    const body = await req.text();
+    const signature = (await headers()).get('stripe-signature');
+
+    if (!signature) {
+      console.error('Missing stripe-signature header');
+      return new NextResponse('Missing signature', { status: 400 });
+    }
+
+    // Webhook イベントを検証
+    let event: Stripe.Event;
+    try {
+      const secret = getWebhookSecret();
+      event = constructWebhookEvent(body, signature, secret);
+    } catch (error: any) {
+      console.error('Webhook signature verification failed:', error.message);
+      return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
+    }
+
+    console.log(`📨 Received webhook event: ${event.type}`);
+
+    // イベントタイプごとに処理
+    switch (event.type) {
+      // Checkout 完了
+      case 'checkout.session.completed':
+        await handleCheckoutComplete(event.data.object as Stripe.Checkout.Session);
+        break;
+
+      // サブスクリプション作成・更新
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdate(event.data.object as Stripe.Subscription);
+        break;
+
+      // サブスクリプション削除
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
+
+      // 請求書支払い失敗
+      case 'invoice.payment_failed':
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
+
+      // Customer 更新
+      case 'customer.updated':
+        await handleCustomerUpdated(event.data.object as Stripe.Customer);
+        break;
+
+      // その他のイベント（ログのみ）
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    // 成功レスポンス
+    return NextResponse.json({ received: true });
+  } catch (error: any) {
+    console.error('Webhook handler error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+

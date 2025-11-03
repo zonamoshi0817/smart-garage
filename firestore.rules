@@ -12,23 +12,76 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
+    // Helper function: Validate required fields exist
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    // Helper function: Check data size limit
+    function isWithinSizeLimit(maxSize) {
+      return request.resource.size() < maxSize;
+    }
+    
+    // Helper function: Validate timestamp is reasonable (not too far in past/future)
+    function isReasonableTimestamp(ts) {
+      let now = request.time.toMillis();
+      let tsMillis = ts.toMillis();
+      // Allow 1 year in past, 1 day in future
+      return tsMillis > now - 365 * 24 * 60 * 60 * 1000 
+          && tsMillis < now + 24 * 60 * 60 * 1000;
+    }
+    
     // Users collection
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) 
+                    && hasRequiredFields(['createdAt'])
+                    && isWithinSizeLimit(1000000); // 1MB
+      allow update: if isOwner(userId) 
+                    && isWithinSizeLimit(1000000);
       
       // Cars subcollection
       match /cars/{carId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) 
+                      && hasRequiredFields(['name', 'userId', 'createdAt'])
+                      && request.resource.data.name is string
+                      && request.resource.data.name.size() > 0
+                      && request.resource.data.name.size() < 100
+                      && isWithinSizeLimit(100000); // 100KB
+        allow update: if isOwner(userId)
+                      && request.resource.data.userId == userId
+                      && isWithinSizeLimit(100000);
+        allow delete: if isOwner(userId);
       }
       
       // Maintenance records subcollection
       match /maintenance/{maintenanceId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && hasRequiredFields(['title', 'carId', 'userId', 'createdAt'])
+                      && request.resource.data.title is string
+                      && request.resource.data.title.size() > 0
+                      && request.resource.data.title.size() < 200
+                      && isWithinSizeLimit(500000); // 500KB
+        allow update: if isOwner(userId)
+                      && request.resource.data.userId == userId
+                      && isWithinSizeLimit(500000);
+        allow delete: if isOwner(userId);
       }
       
       // Fuel logs subcollection
       match /fuelLogs/{fuelLogId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && hasRequiredFields(['carId', 'userId', 'createdAt'])
+                      && (request.resource.data.fuelAmount == null || request.resource.data.fuelAmount >= 0)
+                      && (request.resource.data.totalCost == null || request.resource.data.totalCost >= 0)
+                      && isWithinSizeLimit(50000); // 50KB
+        allow update: if isOwner(userId)
+                      && request.resource.data.userId == userId
+                      && isWithinSizeLimit(50000);
+        allow delete: if isOwner(userId);
       }
       
       // Customizations subcollection
@@ -61,6 +114,63 @@ service cloud.firestore {
     match /auditLogs/{logId} {
       allow read: if isSignedIn() && resource.data.actorUid == request.auth.uid;
       allow write: if false; // Only via server-side SDK
+    }
+    
+    // Cars collection (top-level, for compatibility)
+    match /cars/{carId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+                    && hasRequiredFields(['name', 'userId', 'createdAt'])
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && isWithinSizeLimit(100000);
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == request.auth.uid
+                    && isWithinSizeLimit(100000);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Maintenance collection (top-level, for compatibility)
+    match /maintenance/{maintenanceId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+                    && hasRequiredFields(['title', 'carId', 'userId', 'createdAt'])
+                    && request.resource.data.userId == request.auth.uid
+                    && isWithinSizeLimit(500000);
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == request.auth.uid
+                    && isWithinSizeLimit(500000);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Fuel logs collection (top-level, for compatibility)
+    match /fuelLogs/{fuelLogId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+                    && hasRequiredFields(['carId', 'userId', 'createdAt'])
+                    && request.resource.data.userId == request.auth.uid
+                    && isWithinSizeLimit(50000);
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == request.auth.uid
+                    && isWithinSizeLimit(50000);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Customizations collection (top-level)
+    match /customizations/{customizationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+                    && hasRequiredFields(['carId', 'userId'])
+                    && request.resource.data.userId == request.auth.uid
+                    && isWithinSizeLimit(100000);
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
     
     // Deny all other access

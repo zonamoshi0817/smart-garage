@@ -21,13 +21,31 @@ service firebase.storage {
       return request.resource.contentType.matches('image/.*');
     }
     
+    function isValidImageSize() {
+      // 画像サイズ制限: 10MB
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    function isAllowedImageType() {
+      // 許可される画像タイプ
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|webp|heic)');
+    }
+    
     // Users can only access their own files
     match /users/{userId}/{allPaths=**} {
       // 読み取り: パス内のuserIdが自分
       allow read: if isOwner(userId);
       
       // 書き込み: パス内のuserIdが自分 かつ メタデータのownerUidも一致
-      allow write: if isOwner(userId) && hasValidMetadata();
+      // かつ 画像ファイルで、サイズ制限とタイプ制限を満たす
+      allow write: if isOwner(userId) 
+                   && hasValidMetadata()
+                   && isImageFile()
+                   && isValidImageSize()
+                   && isAllowedImageType();
+      
+      // 削除: パス内のuserIdが自分
+      allow delete: if isOwner(userId);
     }
     
     // Deny all other access

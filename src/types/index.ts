@@ -482,3 +482,39 @@ export interface NavItem {
   active: boolean;
   onClick: () => void;
 }
+
+// ユーザー関連の型
+export type UserPlan = 'free' | 'premium_monthly' | 'premium_yearly';
+
+export type SubscriptionStatus =
+  | 'active'        // アクティブ（支払い済み）
+  | 'trialing'      // トライアル期間中
+  | 'past_due'      // 支払い遅延
+  | 'canceled'      // キャンセル済み
+  | 'unpaid'        // 未払い
+  | 'incomplete'    // 不完全（初回支払い失敗）
+  | 'incomplete_expired'; // 不完全（期限切れ）
+
+export interface UserDocument {
+  // 基本情報
+  uid: string;
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+  
+  // プレミアムプラン情報
+  plan: UserPlan;                          // 現在のプラン
+  subscriptionStatus?: SubscriptionStatus;  // サブスクリプションステータス
+  currentPeriodEnd?: Timestamp | Date;     // 現在の期間終了日
+  cancelAtPeriodEnd?: boolean;             // 期間終了時にキャンセルするか
+  
+  // Stripe 情報
+  stripeCustomerId?: string;               // Stripe Customer ID
+  subscriptionId?: string;                 // Stripe Subscription ID
+  priceId?: string;                        // Stripe Price ID
+  stripeCustomerEmail?: string;            // Stripe に登録されたメールアドレス
+  
+  // メタデータ
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
+}

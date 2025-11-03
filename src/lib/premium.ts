@@ -58,12 +58,20 @@ export const PREMIUM_LIMITS = {
 
 // ===== ユーザープラン情報 =====
 
-export type UserPlan = 'free' | 'premium';
+// 'premium' は後方互換性のために残す
+export type UserPlan = 'free' | 'premium' | 'premium_monthly' | 'premium_yearly';
 
 export interface UserPlanInfo {
   plan: UserPlan;
   expiresAt?: Date;
   features: typeof PREMIUM_LIMITS.FREE | typeof PREMIUM_LIMITS.PREMIUM;
+}
+
+/**
+ * プランがプレミアムかどうか判定（後方互換性を保つ）
+ */
+export function isPremium(plan: UserPlan): boolean {
+  return plan === 'premium' || plan === 'premium_monthly' || plan === 'premium_yearly';
 }
 
 // ===== プレミアム機能チェック関数 =====
@@ -76,7 +84,7 @@ export function canUseFeature(
   userPlan: UserPlan,
   currentUsage?: { [key: string]: number }
 ): { canUse: boolean; reason?: string; upgradeRequired?: boolean } {
-  const limits = userPlan === 'premium' ? PREMIUM_LIMITS.PREMIUM : PREMIUM_LIMITS.FREE;
+  const limits = isPremium(userPlan) ? PREMIUM_LIMITS.PREMIUM : PREMIUM_LIMITS.FREE;
   
   switch (feature) {
     case 'multiple_cars':

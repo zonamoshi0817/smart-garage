@@ -44,12 +44,42 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
     ? [...primaryFeatures, ...secondaryFeatures] 
     : primaryFeatures;
 
-  const handleUpgradeClick = (plan: 'monthly' | 'yearly') => {
+  const handleUpgradeClick = async (plan: 'monthly' | 'yearly') => {
     logPaywallClick(feature || 'unknown', 'premium');
     logSubscribeStarted('premium', plan === 'monthly' ? 'monthly' : 'annual');
 
-    // TODO: 決済フローへ遷移
-    alert(`${plan === 'monthly' ? '月額' : '年額'}プランへのアップグレードを開始します。\n（決済システムは未実装）`);
+    try {
+      // Firebase Auth から ID Token を取得
+      const { auth } = await import('@/lib/firebase');
+      const user = auth.currentUser;
+      
+      if (!user) {
+        alert('ログインが必要です。');
+        return;
+      }
+
+      const idToken = await user.getIdToken();
+
+      // Checkout セッションを作成
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, idToken }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create checkout session');
+      }
+
+      const { url } = await response.json();
+
+      // Stripe Checkout ページへリダイレクト
+      window.location.href = url;
+    } catch (error: any) {
+      console.error('Failed to start checkout:', error);
+      alert(`エラーが発生しました: ${error.message}`);
+    }
   };
 
   // variant: minimal - シンプルな1機能訴求

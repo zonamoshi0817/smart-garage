@@ -6,11 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug"
   },
   "dependencies": {
     "@fontsource/noto-sans-jp": "^5.2.8",
+    "@sentry/nextjs": "^10.22.0",
     "firebase": "^12.3.0",
+    "firebase-admin": "^13.5.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
@@ -18,11 +24,13 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "recharts": "^3.2.1",
+    "stripe": "^19.2.0",
     "tesseract.js": "^6.0.1",
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

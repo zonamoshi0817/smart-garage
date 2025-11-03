@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { loginWithGoogle, logout, watchAuth } from "@/lib/firebase";
+import { setSentryUser, trackUserAction } from "@/lib/monitoring";
 import type { User } from "firebase/auth";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,16 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         setUser(u);
         setReady(true);
         clearTimeout(timeoutId);
+        
+        // Sentryにユーザー情報を設定
+        setSentryUser(u);
+        
+        // ユーザーアクションを追跡
+        if (u) {
+          trackUserAction.login();
+        } else {
+          trackUserAction.logout();
+        }
       });
       
       // 1秒後にタイムアウトして強制的にreadyにする
@@ -45,6 +56,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     try {
       setError(null);
       await loginWithGoogle();
+      // ログイン成功時はwatchAuthコールバックで自動的にSentryにユーザー設定される
     } catch (err) {
       console.error("Login error:", err);
       setError("ログインに失敗しました。もう一度お試しください。");

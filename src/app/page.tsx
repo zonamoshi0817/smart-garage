@@ -964,6 +964,8 @@ function DashboardContent({
   setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance' | 'my-car') => void;
   setActiveCarId: (id: string) => void;
 }) {
+  // SEO/アクセシビリティ用のh1タグ（非表示）
+  const pageTitle = `ダッシュボード${car ? ' - ' + car.name : ' - Smart Garage'}`;
 
   // 月別費用データの計算
   const monthlyExpenseData = useMemo(() => {

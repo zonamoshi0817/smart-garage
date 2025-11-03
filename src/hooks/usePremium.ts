@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { UserPlan, canUseFeature, PremiumFeature } from '@/lib/premium';
+import { isPremiumPlan, isSubscriptionActive } from '@/lib/plan';
+import type { UserDocument, SubscriptionStatus } from '@/types';
 
 // 開発者アカウント（プレミアムプラン）
 // 環境変数またはハードコードで設定
@@ -20,6 +23,10 @@ const DEVELOPER_EMAILS = (
 export function usePremium() {
   const [userPlan, setUserPlan] = useState<UserPlan>('free');
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | undefined>();
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<Date | undefined>();
+  const [stripeCustomerId, setStripeCustomerId] = useState<string | undefined>();
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState<boolean>(false);
   
   useEffect(() => {
     // 認証状態の変化を監視
@@ -33,7 +40,7 @@ export function usePremium() {
       // 開発モードで全員プレミアムにする場合（環境変数で制御）
       if (process.env.NEXT_PUBLIC_DEV_ALL_PREMIUM === 'true') {
         console.log('[Premium] Dev mode: All users are premium');
-        setUserPlan('premium');
+        setUserPlan('premium_monthly'); // 'premium' から変更
         setIsLoading(false);
         return;
       }
@@ -41,21 +48,67 @@ export function usePremium() {
       // 開発者アカウントは自動的にプレミアムプラン
       if (user.email && DEVELOPER_EMAILS.includes(user.email.toLowerCase())) {
         console.log('[Premium] Developer account detected:', user.email);
-        setUserPlan('premium');
+        setUserPlan('premium_monthly'); // 'premium' から変更
         setIsLoading(false);
         return;
       }
 
-      // TODO: Firestoreから実際のプラン情報を取得
-      // 現在は開発用として全員無料プラン
-      setUserPlan('free');
-      setIsLoading(false);
+      // Firestore からプラン情報をリアルタイム取得
+      const userDocRef = doc(db, 'users', user.uid);
+      const unsubscribeSnapshot = onSnapshot(
+        userDocRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data() as Partial<UserDocument>;
+            
+            // プラン情報を取得
+            const plan = data.plan || 'free';
+            const status = data.subscriptionStatus;
+            const periodEnd = data.currentPeriodEnd;
+            
+            // サブスクリプションがアクティブでない場合は無料プランに戻す
+            if (isPremiumPlan(plan) && status && !isSubscriptionActive(status)) {
+              console.log('[Premium] Subscription not active, reverting to free:', status);
+              setUserPlan('free');
+            } else {
+              setUserPlan(plan);
+            }
+            
+            setSubscriptionStatus(status);
+            setCurrentPeriodEnd(
+              periodEnd ? (periodEnd instanceof Date ? periodEnd : periodEnd.toDate()) : undefined
+            );
+            setStripeCustomerId(data.stripeCustomerId);
+            setCancelAtPeriodEnd(data.cancelAtPeriodEnd || false);
+          } else {
+            // ドキュメントが存在しない場合は無料プラン
+            setUserPlan('free');
+          }
+          
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error('[Premium] Error fetching user plan:', error);
+          setUserPlan('free');
+          setIsLoading(false);
+        }
+      );
+
+      return () => unsubscribeSnapshot();
     });
 
     return () => unsubscribe();
   }, []);
 
-  return { userPlan, isLoading };
+  return {
+    userPlan,
+    isLoading,
+    subscriptionStatus,
+    currentPeriodEnd,
+    stripeCustomerId,
+    cancelAtPeriodEnd,
+    isPremium: isPremiumPlan(userPlan),
+  };
 }
 
 /**
