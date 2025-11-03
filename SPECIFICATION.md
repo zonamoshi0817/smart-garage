@@ -24,8 +24,8 @@ Smart Garageは、車両のメンテナンス管理と整備計画機能を提�
 ### 2. ナビゲーション
 #### メニュー構成
 1. **ダッシュボード** - メイン画面
-2. **車両データ** - 車両詳細データページ（v2.0） 🆕
-3. **燃費** - 給油記録画面
+2. **マイカー** - 車両詳細データページ（v2.0） 🆕
+3. **ガソリン** - 給油記録画面
 4. **メンテナンス** - 整備記録画面
 5. **カスタマイズ** - カスタマイズ履歴画面
 6. **車両管理** - 車両管理画面
@@ -43,7 +43,7 @@ Smart Garageは、車両のメンテナンス管理と整備計画機能を提�
 - **非表示**: プレミアムユーザーには表示されない
 - **内容**: 「プレミアムにアップグレード」カード、詳細ボタンでペイウォール表示
 
-### 3. 車両データページ v2.0 🆕
+### 3. マイカーページ v2.0 🆕
 
 グランツーリスモ風の詳細データ表示ページ。選択中の車両の全情報を一覧で確認できます。
 
@@ -1142,17 +1142,17 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 - **ダッシュボード** = 今すぐ動くための全車横断ハブ（短期・薄く広く）
   - Job: ① 未処理の"赤/黄"をゼロにする（今日のTo-Do）、② 直近の傾向を掴み、次の1手を決める（軽い比較）
   
-- **車両データ** = 1台に深く潜る作戦室（中長期・深く狭く）
+- **マイカー** = 1台に深く潜る作戦室（中長期・深く狭く）
   - Job: ① 1台の現状を正しく把握（指標×履歴×書類）、② 次のメンテ計画を作る（テンプレ→自動入力→予約リンク）
 
 #### 基本原則
-> **ダッシュボードは「上位N件＋"すべてを見る"」まで。編集系や深堀りは必ず車両ページに委譲。**
+> **ダッシュボードは「上位N件＋"すべてを見る"」まで。編集系や深堀りは必ずマイカーページに委譲。**
 
 ---
 
 ### Ownership Matrix（機能の所有権）
 
-| 機能/情報 | ダッシュボード（全車） | 車両データ（単車） |
+| 機能/情報 | ダッシュボード（全車） | マイカー（単車） |
 |---------|-----------------|---------------|
 | **重要アラート**（車検/保険/リコール/未確認OCR） | ✅ 要約（上位3件） | ✅ 完全一覧＋根拠（残日数・履歴リンク） |
 | **次のアクション**（給油/メンテ/書類登録） | ✅ 1クリックCTA（対象車にジャンプ） | ✅ 事前入力テンプレ＋自動見積もり |
@@ -1161,7 +1161,7 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 | **カスタマイズ** | ⛔ **出さない**（カードが重くなる） | ✅ 12カテゴリ完全版 |
 | **PDF/共有** | ✅ ショートカットだけ | ✅ 実行画面（署名・オプション） |
 | **コンテキスト広告** | ✅ 全車横断1枠 | ⛔ **非表示**（プレミアム優先） |
-| **編集フォーム** | ⛔ **すべて車両ページへ** | ✅ 全モーダル |
+| **編集フォーム** | ⛔ **すべてマイカーページへ** | ✅ 全モーダル |
 
 ---
 
@@ -1169,22 +1169,22 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 
 #### 1. 深リンク必須
 ```typescript
-// ダッシュボードのカードから車両データの特定セクションへ
+// ダッシュボードのカードからマイカーの特定セクションへ
 <Card onClick={() => navigate(`/vehicle/${carId}?tab=fuel&action=add`)}>
   
 // URLパターン
 /                              // ダッシュボード（全車）
-/vehicle/{carId}               // 車両データトップ
+/vehicle/{carId}               // マイカートップ
 /vehicle/{carId}?tab=fuel      // 給油セクション
 /vehicle/{carId}?tab=maintenance&action=add  // メンテ追加モーダル直起動
 ```
 
 #### 2. 車両バッジ
 - ダッシュボードのすべてのカードに**車両バッジ**（例：🚗 FL5）
-- クリックで車両データの該当セクションへ深リンク
+- クリックでマイカーの該当セクションへ深リンク
 
 #### 3. ヘッダー車両ドロップダウンの文脈
-- **車両データページ**: 車両切り替えドロップダウン表示
+- **マイカーページ**: 車両切り替えドロップダウン表示
 - **ダッシュボード**: "全車"固定、ドロップダウン非表示（迷わせない）
 
 #### 4. パンくずナビゲーション
@@ -1273,7 +1273,7 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 
 ---
 
-#### 車両データ（単車深堀り）
+#### マイカー（単車深堀り）
 
 ##### ヘッダー：車両カード＋3バッジ
 ```typescript
@@ -1345,7 +1345,7 @@ export function SparklineChart({ data, height = 40 }) {
   return <Sparklines data={data} height={height} />;
 }
 
-// src/components/charts/ChartPro.tsx（車両データ用）
+// src/components/charts/ChartPro.tsx（マイカー用）
 export function DetailedChart({ data, annotations, period, filters }) {
   return (
     <ResponsiveContainer>
@@ -1445,7 +1445,7 @@ const fuelLogsQuery = query(
 
 #### 体感速度目標
 - **ダッシュボード**: 100ms台でスケルトン解除（集約データ読み込み）
-- **車両データ**: 段階ロード（基本情報→グラフ→履歴）
+- **マイカー**: 段階ロード（基本情報→グラフ→履歴）
 
 ---
 
@@ -1470,7 +1470,7 @@ const fuelLogsQuery = query(
   // ダッシュボード：ドロップダウン非表示
   <Header showCarSelector={false} />
 ) : currentPage === 'my-car' ? (
-  // 車両データ：ドロップダウン表示（車両切り替え）
+  // マイカー：ドロップダウン表示（車両切り替え）
   <Header showCarSelector={true} activeCars={activeCars} />
 ) : null}
 ```
@@ -1536,7 +1536,7 @@ export function logTemplateUsed(template: string, saved: boolean) {
 #### Phase 2: コンポーネント分割（2-3日）
 - [ ] ChartMini/ChartPro の分割
   - [ ] `src/components/charts/SparklineChart.tsx`作成（ダッシュボード用）
-  - [ ] `src/components/charts/DetailedChart.tsx`作成（車両データ用）
+  - [ ] `src/components/charts/DetailedChart.tsx`作成（マイカー用）
   - [ ] propsは互換性維持
 
 - [ ] "上位3件＋もっと見る" 統一ルールを全カードに適用
@@ -1790,7 +1790,7 @@ export async function addCar(data: CarInput) {
   }}
 />
 
-// 車両データページでREAD ONLYバナー表示
+// マイカーページでREAD ONLYバナー表示
 {car.status === 'sold' && (
   <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
     <div className="flex items-center gap-2 text-orange-800">
@@ -1929,9 +1929,9 @@ async function handleOcrResult(result: Tesseract.RecognizeResult) {
 ---
 
 **最新バージョン: 2.1.0**  
-**コミットID: c9715ae**  
-**総コミット数: 121コミット**  
-**本番環境**: https://smart-garage-1hbxpbfes-kobayashis-projects-6366834f.vercel.app
+**コミットID: ac2a5f5**  
+**総コミット数: 122コミット**  
+**本番環境**: https://smart-garage-h2qwljy2z-kobayashis-projects-6366834f.vercel.app
 
 ---
 
@@ -1948,10 +1948,13 @@ async function handleOcrResult(result: Tesseract.RecognizeResult) {
   4. ✅ Date/Timestamp完全統一（toTs()ヘルパー追加）
   5. ✅ 売却済み車両のREAD ONLY閲覧機能
   6. ✅ OCR信頼度ベースのペイウォール発火（65%閾値）
+- ✅ メニュー名称の実装完了（車両データ→マイカー、燃費→ガソリン）
+- ✅ 車両データページのデザイン改善（モダンなライトテーマ）
+- ✅ VehicleHeaderの背景色シンプル化（白背景に統一）
 
 ### v2.0.0 (2025-11-01)
 - ✅ 車両ステータス管理（active/sold/scrapped）
-- ✅ 車両データページ（Gran Turismo風UI）
+- ✅ マイカーページ（Gran Turismo風UI）
 - ✅ カスタムパーツ管理（折りたたみUI）
 - ✅ コスト効率評価（走行距離ベース）
 - ✅ プレミアム機能の条件分岐
