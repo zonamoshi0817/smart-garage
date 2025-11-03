@@ -286,6 +286,12 @@ export default function MyCarPage({
       onClick: () => onOpenModal('maintenance')
     },
     {
+      id: 'customization',
+      label: 'カスタム追加',
+      icon: '✨',
+      onClick: () => onOpenModal('customization')
+    },
+    {
       id: 'ocr',
       label: 'レシートOCR',
       icon: '📸',
@@ -294,9 +300,22 @@ export default function MyCarPage({
     },
     {
       id: 'insurance',
-      label: '保険証券を追加',
+      label: '保険を追加',
       icon: '🛡️',
       onClick: () => onOpenModal('insurance')
+    },
+    {
+      id: 'edit-car',
+      label: '車両情報編集',
+      icon: '📝',
+      onClick: () => onOpenModal('edit-car', { carId: car.id })
+    },
+    {
+      id: 'share',
+      label: 'PDF/共有',
+      icon: '📤',
+      isPremium: true,
+      onClick: () => onOpenModal('share', { carId: car.id })
     }
   ];
   
