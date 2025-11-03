@@ -30,6 +30,7 @@ import SellCarModal from "@/components/modals/SellCarModal";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import MyCarPage from "@/components/mycar/MyCarPage";
 import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
+import { isPremiumPlan } from "@/lib/plan";
 
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
@@ -559,14 +560,14 @@ export default function Home() {
           <aside className="lg:sticky lg:top-20 h-fit">
             <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3">
               <div className={`h-8 w-8 rounded-full grid place-items-center font-semibold text-sm ${
-                userPlan === 'premium' ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-blue-100 text-blue-600'
+                isPremiumPlan(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-blue-100 text-blue-600'
               }`}>
                 小
               </div>
               <div className="text-sm">
                 <div className="font-semibold">小林 健太</div>
-                <div className={`text-xs ${userPlan === 'premium' ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
-                  {userPlan === 'premium' ? '✨ Premium プラン' : 'Free プラン'}
+                <div className={`text-xs ${isPremiumPlan(userPlan) ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
+                  {isPremiumPlan(userPlan) ? '✨ Premium プラン' : 'Free プラン'}
                 </div>
               </div>
             </div>
