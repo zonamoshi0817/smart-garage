@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Car, MaintenanceRecord, FuelLog, Customization, InsurancePolicy } from '@/types';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import { getDisplayAmount, getDisplayCost } from '@/lib/fuelLogs';
+import { isPremiumPlan } from '@/lib/plan';
 import VehicleHeader from './VehicleHeader';
 import QuickActions from './QuickActions';
 import NextMaintenanceSuggestion from './NextMaintenanceSuggestion';
@@ -34,7 +35,7 @@ export default function MyCarPage({
   onOpenModal
 }: MyCarPageProps) {
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
-  const isPremium = userPlan === 'premium';
+  const isPremium = isPremiumPlan(userPlan);
   const searchParams = useSearchParams();
 
   const dayMs = 1000 * 60 * 60 * 24;
