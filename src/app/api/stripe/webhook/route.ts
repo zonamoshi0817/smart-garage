@@ -190,6 +190,25 @@ export async function POST(req: NextRequest) {
 
     console.log(`📨 Received webhook event: ${event.type}`);
 
+    // Idempotency: 同一イベントの重複処理を防止
+    const db = getAdminFirestore();
+    const eventRef = db.collection('stripe_webhook_events').doc(event.id);
+    try {
+      // 既存ならエラー（already-exists）になる create を使用
+      await eventRef.create({
+        createdAt: new Date(),
+        type: event.type,
+      });
+    } catch (e: any) {
+      if (e?.code === 6 || e?.code === 'already-exists') {
+        // Firestore ALREADY_EXISTS
+        console.log(`🔁 Event ${event.id} already processed. Skipping.`);
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+      console.error('Idempotency check failed:', e);
+      return NextResponse.json({ error: 'Idempotency check failed' }, { status: 500 });
+    }
+
     // イベントタイプごとに処理
     switch (event.type) {
       // Checkout 完了
@@ -233,4 +252,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
 

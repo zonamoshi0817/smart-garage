@@ -293,12 +293,13 @@ Smart Garageは、車両のメンテナンス管理と整備計画機能を提�
    - 売却済みの車両を別セクションで表示
    - 売却情報を表示（日付、価格、売却先、メモ）
    - グレーアウト表示（opacity-75）
-   - 選択不可（過去の記録として保持）
+   - カードクリックでマイカーに遷移し**閲覧専用（ReadOnly）**で表示（編集不可）
+   - PDF/共有は実行可（共通機能）
 
 3. **🏭 廃車済み**
    - 廃車済みの車両を表示
    - グレーアウト表示
-   - 選択不可
+   - カードクリックで**閲覧専用（ReadOnly）**で表示（編集不可）
 
 **売却処理モーダル:**
 - 売却日（必須、未来日不可）
@@ -354,6 +355,7 @@ Smart Garageは、車両のメンテナンス管理と整備計画機能を提�
   - 成功時の通知
   - 自動入力後の手動修正可能
 - **制限**: 無料プランでは利用不可、プレミアムプランで無制限利用
+  - 🆕 初回1枚のみ無料体験: 自動でドラフト保存（編集不可）まで実行。2回目以降はペイウォールでオートフィル提供。
 
 #### 自動機能
 - 給油記録追加時に車両の走行距離を自動更新
@@ -468,14 +470,16 @@ Smart Garageは、車両のメンテナンス管理と整備計画機能を提�
 
 ### 共通フィールド（BaseEntity）
 ```typescript
+import { Timestamp } from 'firebase/firestore';
+
 interface BaseEntity {
   id?: string;
   ownerUid?: string;        // 所有者UID（マルチテナンシー対応）
   createdBy?: string;       // 作成者UID
   updatedBy?: string;       // 更新者UID
-  deletedAt?: Date | null;  // 論理削除タイムスタンプ
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
+  deletedAt: Timestamp | null;  // 論理削除（null=未削除）
+  createdAt: Timestamp;         // 作成日時
+  updatedAt: Timestamp;         // 更新日時
 }
 ```
 
@@ -487,7 +491,7 @@ interface Car extends BaseEntity {
   year?: number;
   odoKm?: number;
   imagePath?: string;
-  inspectionExpiry?: Date;    // Date型に統一
+  inspectionExpiry?: Timestamp;    // Firestore Timestampに統一
   firstRegYm?: string;
   avgKmPerMonth?: number;     // 平均月間走行距離（リマインダー用）
   engineCode?: string;
@@ -496,25 +500,37 @@ interface Car extends BaseEntity {
     api: string;
     volumeL: number;
   };
+  status?: 'active' | 'sold' | 'scrapped' | 'other';
+  soldDate?: Timestamp;
+  soldPrice?: number;
+  soldTo?: string;
+  soldNotes?: string;
 }
 ```
 
 ### 給油記録（fuelLogs）
 ```typescript
 type FuelType = 'regular' | 'premium' | 'diesel' | 'ev';
+type EnergyUnit = 'ml' | 'wh';  // ガソリン=ml, EV=Wh
 
 interface FuelLog extends BaseEntity {
   carId: string;
-  odoKm: number;          // 走行距離（km）
-  fuelAmount: number;     // 給油量（L、小数点第1位まで）
-  cost: number;           // 金額（円）
-  pricePerLiter?: number; // L価格（円/L）
-  isFullTank: boolean;    // 満タンフラグ
-  fuelType?: FuelType;    // 燃料種別
-  stationName?: string;   // スタンド名
-  unit: string;           // 単位（デフォルト: 'JPY/L'、将来の外貨対応）
-  memo?: string;          // メモ
-  date: Date;             // 給油日時
+  odoKm: number;             // 走行距離（km）
+  // 物理量統一（新形式）
+  quantity: number;          // 量（ml or Wh）
+  unit: EnergyUnit;          // 単位
+  totalCostJpy: number;      // 総額（円）
+  pricePerUnit?: number;     // 単価（円/L or 円/kWh、表示用）
+  // メタデータ
+  isFullTank: boolean;       // 満タンフラグ（EVは100%充電）
+  fuelType: FuelType;        // 燃料種別
+  stationName?: string;      // スタンド名
+  memo?: string;
+  date: Timestamp;           // 給油日時
+  // 後方互換（非推奨）
+  fuelAmount?: number;       // @deprecated
+  cost?: number;             // @deprecated
+  pricePerLiter?: number;    // @deprecated
 }
 ```
 
@@ -772,7 +788,7 @@ interface AuditLog {
   - ✅ アナリティクスイベント実装
   - ✅ paywall_shown, paywall_click, subscribe_*
 - ✅ **Stripe決済統合** v2.2.0 🆕
-  - ✅ サブスクリプション管理（月額980円 / 年額9,800円）
+  - ✅ サブスクリプション管理（月額480円 / 年額4,800円）
   - ✅ Checkout Session作成
   - ✅ カスタマーポータル（解約・請求書確認）
   - ✅ Webhook処理（subscription.created/updated/deleted）
@@ -1409,6 +1425,16 @@ users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
 ```
 ダッシュボード > Honda Civic FL5 > メンテナンス
 ```
+
+#### 5. URLクエリ契約（型定義とガード）🆕
+- `tab`: `fuel | maintenance | custom | insurance`
+- `action`: `add | add-fuel | add-maintenance | add-customization | add-insurance`
+- `draft`: `string`（ドラフトID）
+- `template`: `string`（テンプレート識別子）
+- 挙動:
+  - 未知値は無視（安全側）
+  - `readOnly`（売却/廃車）時は `action` による編集系の実行を無効化
+  - 有効な `tab` は該当セクションにスクロール（スムーズ）
 
 ---
 

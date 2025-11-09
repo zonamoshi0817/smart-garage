@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { parseQuery } from '@/lib/urlParams';
 import { Car, MaintenanceRecord, FuelLog, Customization, InsurancePolicy } from '@/types';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import { getDisplayAmount, getDisplayCost } from '@/lib/fuelLogs';
@@ -94,13 +95,10 @@ export default function MyCarPage({
 
   // URLクエリパラメータから直接アクションを実行
   useEffect(() => {
-    const action = searchParams.get('action');
-    const tab = searchParams.get('tab');
-    
-    console.log('[MyCarPage] Deep link detected:', { action, tab });
+    const { action, tab } = parseQuery(searchParams as unknown as URLSearchParams);
+    console.log('[MyCarPage] Deep link detected (guarded):', { action, tab });
     
     if (action && !readOnly) {
-      // アクション実行（編集不可モードではスキップ）
       switch (action) {
         case 'add-fuel':
         case 'add':
@@ -118,7 +116,6 @@ export default function MyCarPage({
       }
     }
     
-    // タブへのスクロール（将来実装）
     if (tab) {
       const element = document.getElementById(`section-${tab}`);
       if (element) {

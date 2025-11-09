@@ -146,3 +146,4 @@ export async function findUserBySubscriptionId(subscriptionId: string) {
 export const adminDb = getAdminFirestore;
 export const adminAuth = getAdminAuth;
 
+

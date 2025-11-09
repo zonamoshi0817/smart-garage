@@ -19,6 +19,7 @@ import {
   getSubscriptionStatusColor,
   formatNextBillingDate,
 } from '@/lib/plan';
+import { PREMIUM_PRICING } from '@/lib/premium';
 import PaywallModal from '@/components/modals/PaywallModal';
 
 export default function BillingPage() {
@@ -194,7 +195,7 @@ export default function BillingPage() {
                 <div className="border-2 border-gray-200 rounded-xl p-6 hover:border-blue-500 transition">
                   <div className="font-bold text-gray-900 mb-2">月額プラン</div>
                   <div className="text-3xl font-bold text-gray-900 mb-2">
-                    ¥480
+                    ¥{PREMIUM_PRICING.monthly.price.toLocaleString()}
                     <span className="text-lg font-normal text-gray-500">/月</span>
                   </div>
                   <div className="text-sm text-gray-600 mb-4">毎月課金</div>
@@ -212,7 +213,7 @@ export default function BillingPage() {
                   </div>
                   <div className="font-bold text-gray-900 mb-2">年額プラン</div>
                   <div className="text-3xl font-bold text-gray-900 mb-2">
-                    ¥4,800
+                    ¥{PREMIUM_PRICING.yearly.price.toLocaleString()}
                     <span className="text-lg font-normal text-gray-500">/年</span>
                   </div>
                   <div className="text-sm text-gray-600 mb-4">月額換算 ¥400</div>
@@ -262,4 +263,5 @@ export default function BillingPage() {
     </div>
   );
 }
+
 

@@ -131,16 +131,24 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
         finalOdoKm = lastFuelLog ? lastFuelLog.odoKm + tripKm : (car.odoKm || 0) + tripKm;
       }
 
+      // 物理量の単位変換
+      const inputAmount = parseFloat(formData.fuelAmount) || 0; // L または kWh 入力
+      const isEv = formData.fuelType === 'ev';
+      const quantity = isEv
+        ? Math.round(inputAmount * 1000) // kWh → Wh
+        : Math.round(inputAmount * 1000); // L → ml
+      const unit = isEv ? 'wh' as const : 'ml' as const;
+
       const fuelLogData: FuelLogInput = {
         carId: car.id!,
         odoKm: finalOdoKm,
-        quantity: parseFloat(formData.fuelAmount) || 0,
+        quantity,
         totalCostJpy: parseInt(formData.cost) || 0,
         pricePerUnit: formData.pricePerLiter ? parseFloat(formData.pricePerLiter) : undefined,
         isFullTank: formData.isFullTank,
         fuelType: formData.fuelType as any,
         stationName: formData.stationName.trim() || undefined,
-        unit: 'ml' as const,
+        unit,
         memo: formData.memo.trim() || undefined,
         date: toTimestamp(new Date(formData.date))!,
       };
@@ -267,7 +275,31 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
           console.log('[FuelLog] Can use OCR autofill:', canUse);
           
           if (!canUse) {
-            console.log('[FuelLog] Premium required for autofill, showing paywall');
+            // 初回1回のみ無料トライアル（ドラフト保存のみ、編集不可）
+            const trialKey = 'sg_first_ocr_used';
+            const firstUsed = typeof window !== 'undefined' ? localStorage.getItem(trialKey) === 'true' : true;
+            if (!firstUsed) {
+              try {
+                const { createFuelLogDraft } = await import('@/lib/ocrDrafts');
+                await createFuelLogDraft(car.id!, {
+                  odoKm: parseInt(formData.odoKm) || undefined,
+                  quantity: parsedData.fuelAmount ? Math.round(parsedData.fuelAmount * 1000) : undefined, // L→ml
+                  unit: 'ml',
+                  totalCostJpy: parsedData.cost,
+                  pricePerUnit: parsedData.pricePerLiter
+                }, text);
+                localStorage.setItem(trialKey, 'true');
+                alert('OCRの読み取り結果をドラフトとして保存しました（初回無料）。内容を確認するにはプレミアムをご検討ください。');
+              } catch (e) {
+                console.error('Failed to save OCR draft:', e);
+                alert('ドラフト保存に失敗しました。もう一度お試しください。');
+              } finally {
+                setIsOcrProcessing(false);
+              }
+              return;
+            }
+            
+            console.log('[FuelLog] Premium required after trial, showing paywall');
             logOcrUsed('fuel', false); // ペイウォールで中断
             setIsOcrProcessing(false);
             return; // ペイウォール表示して処理中断

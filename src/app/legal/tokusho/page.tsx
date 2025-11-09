@@ -1,8 +1,11 @@
 /**
  * 特定商取引法に基づく表記
  */
+import { PREMIUM_PRICING } from "@/lib/premium";
 
 export default function TokushoPage() {
+  const monthly = PREMIUM_PRICING.monthly.price;
+  const yearly = PREMIUM_PRICING.yearly.price;
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-4xl mx-auto px-4">
@@ -52,8 +55,8 @@ export default function TokushoPage() {
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3">販売価格</h2>
             <div className="text-gray-700">
-              <p className="mb-2">月額プラン: 480円（税込）/ 月</p>
-              <p>年額プラン: 4,800円（税込）/ 年</p>
+              <p className="mb-2">月額プラン: {`¥${monthly.toLocaleString()}`}（税込）/ 月</p>
+              <p>年額プラン: {`¥${yearly.toLocaleString()}`}（税込）/ 年</p>
             </div>
           </section>
 

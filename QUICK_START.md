@@ -24,13 +24,13 @@ stripe login
 stripe products create --name="Smart Garage プレミアム（月額）" --description="すべての機能が使える月額プラン"
 
 # 上記コマンドで prod_xxx が返ってくるので、それを使って価格を作成
-stripe prices create --product=prod_xxx --unit-amount=48000 --currency=jpy --recurring-interval=month
+stripe prices create --product=prod_xxx --unit-amount=480 --currency=jpy --recurring-interval=month
 
 # 年額プランを作成
 stripe products create --name="Smart Garage プレミアム（年額）" --description="16%お得な年額プラン"
 
 # 年額の価格を作成
-stripe prices create --product=prod_yyy --unit-amount=480000 --currency=jpy --recurring-interval=year
+stripe prices create --product=prod_yyy --unit-amount=4800 --currency=jpy --recurring-interval=year
 ```
 
 ### 4️⃣ .env.local ファイルを作成
@@ -175,4 +175,5 @@ Stripe のテストモードでは以下のカード番号が使えます：
 本番環境へのデプロイ準備ができたら、**STRIPE_SETUP_GUIDE.md** の「本番デプロイ」セクションを参照してください。
 
 **Happy Coding! 🚗💳✨**
+
 

@@ -463,7 +463,7 @@ export interface CustomizationMedia extends BaseEntity {
   storagePath: string;
   thumbPath?: string;
   note?: string;
-  takenAt?: Date;
+  takenAt?: Timestamp;
 }
 
 export interface CustomizationMeta {
@@ -505,7 +505,7 @@ export interface UserDocument {
   // プレミアムプラン情報
   plan: UserPlan;                          // 現在のプラン
   subscriptionStatus?: SubscriptionStatus;  // サブスクリプションステータス
-  currentPeriodEnd?: Timestamp | Date;     // 現在の期間終了日
+  currentPeriodEnd?: Timestamp;            // 現在の期間終了日
   cancelAtPeriodEnd?: boolean;             // 期間終了時にキャンセルするか
   
   // Stripe 情報
@@ -515,6 +515,6 @@ export interface UserDocument {
   stripeCustomerEmail?: string;            // Stripe に登録されたメールアドレス
   
   // メタデータ
-  createdAt: Timestamp | Date;
-  updatedAt: Timestamp | Date;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }

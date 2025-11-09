@@ -1,5 +1,6 @@
 // src/app/legal/terms/page.tsx
 import Link from "next/link";
+import { PREMIUM_PRICING } from "@/lib/premium";
 
 export default function TermsOfServicePage() {
   return (
@@ -59,7 +60,10 @@ export default function TermsOfServicePage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">第5条（プレミアムプラン）</h2>
             <ol className="list-decimal pl-6 space-y-2 text-gray-700">
               <li>当サービスは、無料プランとプレミアムプラン（有料）を提供します。</li>
-              <li>プレミアムプランの料金は、980円/月または9,800円/年です。</li>
+              <li>
+                プレミアムプランの料金は、
+                {`¥${PREMIUM_PRICING.monthly.price.toLocaleString()}`}/月 または {`¥${PREMIUM_PRICING.yearly.price.toLocaleString()}`}/年 です。
+              </li>
               <li>料金は、Stripeを通じて事前にクレジットカードで支払うものとします。</li>
               <li>プレミアムプランは自動更新されます。</li>
               <li>解約は、設定ページからいつでも可能です。解約後、次回更新日まではプレミアム機能を利用できます。</li>

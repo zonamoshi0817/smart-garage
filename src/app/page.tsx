@@ -435,7 +435,8 @@ export default function Home() {
   );
 
   const car = useMemo(() => {
-    const foundCar = activeCars.find((c) => c.id === activeCarId);
+    // 売却/廃車含む全車から選択中IDを解決（READ ONLYはMyCarPage側で制御）
+    const foundCar = cars.find((c) => c.id === activeCarId);
     console.log("Finding car:", {
       activeCarId,
       carsCount: cars.length,
@@ -443,7 +444,7 @@ export default function Home() {
       foundCar: foundCar ? { id: foundCar.id, name: foundCar.name } : null
     });
     return foundCar;
-  }, [activeCars, activeCarId, cars]);
+  }, [cars, activeCars.length, activeCarId]);
 
 
   // デバッグ情報
@@ -3163,7 +3164,12 @@ function CarManagementContent({
                 car={car}
                 isActive={false}
                 isSold={true}
-                onSelect={() => {}}
+                onSelect={() => {
+                  if (car.id) {
+                    setActiveCarId(car.id);
+                    setCurrentPage('my-car' as any);
+                  }
+                }}
                 onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
                 onEdit={() => handleEditCar(car)}
                 onMarkAsSold={() => {}}
@@ -3193,7 +3199,12 @@ function CarManagementContent({
                 car={car}
                 isActive={false}
                 isScrapped={true}
-                onSelect={() => {}}
+                onSelect={() => {
+                  if (car.id) {
+                    setActiveCarId(car.id);
+                    setCurrentPage('my-car' as any);
+                  }
+                }}
                 onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
                 onEdit={() => handleEditCar(car)}
                 onMarkAsSold={() => {}}

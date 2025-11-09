@@ -31,8 +31,8 @@ export function planFromPriceId(priceId: string): Plan {
 /**
  * プランがプレミアムかどうか判定
  */
-export function isPremiumPlan(plan: Plan): boolean {
-  return plan === 'premium_monthly' || plan === 'premium_yearly';
+export function isPremiumPlan(plan: Plan | string): boolean {
+  return plan === 'premium' || plan === 'premium_monthly' || plan === 'premium_yearly';
 }
 
 /**
