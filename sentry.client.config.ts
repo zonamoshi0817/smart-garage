@@ -23,6 +23,8 @@ Sentry.init({
     new Sentry.Replay({
       maskAllText: true,
       blockAllMedia: true,
+      // PII除去: テキスト入力をマスク
+      maskAllInputs: true,
     }),
     new Sentry.BrowserTracing({
       // パフォーマンス監視のトレース設定
@@ -30,12 +32,40 @@ Sentry.init({
     }),
   ],
   
+  // PII（個人情報）の自動除去
+  beforeBreadcrumb(breadcrumb) {
+    // URLからクエリパラメータを除去（個人情報が含まれる可能性）
+    if (breadcrumb.category === 'navigation' && breadcrumb.data?.to) {
+      const url = new URL(breadcrumb.data.to, window.location.origin);
+      breadcrumb.data.to = url.pathname; // クエリパラメータを削除
+    }
+    
+    // フォーム入力データを除去
+    if (breadcrumb.category === 'ui.input') {
+      delete breadcrumb.message;
+      delete breadcrumb.data;
+    }
+    
+    return breadcrumb;
+  },
+  
   // エラーフィルタリング
   beforeSend(event, hint) {
     // 開発環境ではコンソールに出力のみ
     if (process.env.NODE_ENV === "development") {
       console.log("Sentry Event (Dev):", event);
       return null; // 送信しない
+    }
+    
+    // PII除去: ユーザー情報から機密情報を削除
+    if (event.user) {
+      // メールアドレスの一部をマスク
+      if (event.user.email) {
+        const [localPart, domain] = event.user.email.split('@');
+        event.user.email = `${localPart.substring(0, 2)}***@${domain}`;
+      }
+      // IPアドレスを除去
+      delete event.user.ip_address;
     }
     
     // 特定のエラーを除外

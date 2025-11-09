@@ -1,0 +1,21 @@
+# Smart Garage - Robots.txt
+# 車両メンテナンス管理アプリケーション
+
+User-agent: *
+
+# 公開ページ（クロール許可）
+Allow: /
+Allow: /legal/
+Allow: /support/
+
+# 非公開ページ（クロール拒否）
+Disallow: /share/
+Disallow: /api/
+Disallow: /settings/
+Disallow: /billing/
+Disallow: /_next/
+Disallow: /admin/
+
+# Sitemap（将来実装）
+# Sitemap: https://smartgarage.jp/sitemap.xml
+

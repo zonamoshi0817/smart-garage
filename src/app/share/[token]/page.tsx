@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Car, MaintenanceRecord } from "@/types";
@@ -15,7 +15,9 @@ interface TokenVerificationResult {
 
 export default function SharedVehicleHistoryPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const token = params.token as string;
+  const isReadOnly = searchParams.get('readOnly') === 'true';
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +132,10 @@ export default function SharedVehicleHistoryPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">🚗 メンテナンス履歴</h1>
-              <p className="text-sm text-gray-500 mt-1">Smart Garage 共有ページ（閲覧専用）</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Smart Garage 共有ページ（閲覧専用）
+                {isReadOnly && <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">📦 売却済み車両</span>}
+              </p>
             </div>
             <div className="text-right text-sm text-gray-500">
               <p>🔒 セキュアな共有リンク</p>

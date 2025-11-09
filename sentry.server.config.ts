@@ -28,6 +28,34 @@ Sentry.init({
       return null;
     }
     
+    // PII除去: リクエストヘッダーから機密情報を削除
+    if (event.request) {
+      // Authorization ヘッダーを除去
+      if (event.request.headers) {
+        delete event.request.headers['Authorization'];
+        delete event.request.headers['Cookie'];
+        delete event.request.headers['X-Firebase-Token'];
+      }
+      
+      // クエリパラメータから機密情報を除去
+      if (event.request.query_string) {
+        const params = new URLSearchParams(event.request.query_string);
+        params.delete('token');
+        params.delete('idToken');
+        params.delete('sessionId');
+        event.request.query_string = params.toString();
+      }
+    }
+    
+    // ユーザー情報のPII除去
+    if (event.user) {
+      if (event.user.email) {
+        const [localPart, domain] = event.user.email.split('@');
+        event.user.email = `${localPart.substring(0, 2)}***@${domain}`;
+      }
+      delete event.user.ip_address;
+    }
+    
     return event;
   },
   

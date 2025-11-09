@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PREMIUM_FEATURE_DESCRIPTIONS, PREMIUM_PRICING, PremiumFeature } from '@/lib/premium';
 import { logPaywallShown, logPaywallClick, logSubscribeStarted } from '@/lib/analytics';
 
@@ -13,11 +13,57 @@ interface PaywallModalProps {
 export default function PaywallModal({ onClose, feature, variant = 'default' }: PaywallModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [showAllFeatures, setShowAllFeatures] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // モーダル表示をトラッキング
   useEffect(() => {
     logPaywallShown(feature || 'unknown', 'premium');
   }, [feature]);
+
+  // Focus trap: モーダル内にフォーカスを閉じ込める
+  useEffect(() => {
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    const focusableElements = modal.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // 初期フォーカスを設定
+    firstElement?.focus();
+
+    document.addEventListener('keydown', handleTabKey);
+    document.addEventListener('keydown', handleEscapeKey);
+
+    return () => {
+      document.removeEventListener('keydown', handleTabKey);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [onClose]);
 
   // 主要機能（最初に表示）
   const primaryFeatures: PremiumFeature[] = [
@@ -88,7 +134,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
     
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60] animate-fadeIn">
-        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div ref={modalRef} className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
           <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 p-8 text-white">
             <button
               onClick={onClose}
@@ -98,7 +144,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
             </button>
             <div className="text-center">
               <div className="text-5xl mb-4">🔒</div>
-              <h2 className="text-2xl font-bold mb-2">プレミアム機能</h2>
+              <h2 id="paywall-title" className="text-2xl font-bold mb-2">プレミアム機能</h2>
               {featureDesc && (
                 <p className="text-white/90 text-sm">{featureDesc.description}</p>
               )}
@@ -152,7 +198,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
   if (variant === 'hero') {
     return (
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60] animate-fadeIn">
-        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden">
+        <div ref={modalRef} className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl z-10"
@@ -163,7 +209,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
           {/* ヒーローセクション */}
           <div className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 p-12 text-white text-center">
             <div className="text-6xl mb-4">🚗✨</div>
-            <h2 className="text-4xl font-bold mb-4">
+            <h2 id="paywall-title" className="text-4xl font-bold mb-4">
               もっと快適な<br />カーライフを
             </h2>
             <p className="text-white/90 text-lg">
@@ -245,7 +291,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
   // variant: default - 標準的なペイウォール
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60] animate-fadeIn">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div ref={modalRef} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
         <div className="sticky top-0 bg-gradient-to-br from-blue-600 to-purple-600 p-6 text-white rounded-t-3xl">
           <button
             onClick={onClose}
@@ -255,7 +301,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
           </button>
           <div className="text-center">
             <div className="text-5xl mb-3">🚀</div>
-            <h2 className="text-3xl font-bold mb-2">プレミアムプラン</h2>
+            <h2 id="paywall-title" className="text-3xl font-bold mb-2">プレミアムプラン</h2>
             <p className="text-white/90">すべての機能を無制限に使えます</p>
           </div>
         </div>

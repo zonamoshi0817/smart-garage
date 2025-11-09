@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- トップページ -->
+  <url>
+    <loc>https://smartgarage.jp/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- 法務ページ -->
+  <url>
+    <loc>https://smartgarage.jp/legal/privacy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://smartgarage.jp/legal/terms</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://smartgarage.jp/legal/tokusho</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <!-- サポートページ -->
+  <url>
+    <loc>https://smartgarage.jp/support</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- 
+    注意: 以下のページは含めない（認証必須・個人情報）
+    - /share/[token] (noindex設定済み)
+    - /settings/* (個人設定)
+    - /billing/* (決済情報)
+  -->
+</urlset>
+

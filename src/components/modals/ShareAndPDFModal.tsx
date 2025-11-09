@@ -38,8 +38,38 @@ export default function ShareAndPDFModal({ car, maintenanceRecords, onClose }: S
   const handleGenerateShareLink = async () => {
     setIsGenerating(true);
     try {
-      // TODO: 共有リンク生成機能の実装
-      alert('共有リンク生成機能は現在開発中です。プレミアム機能として近日公開予定です。');
+      // 売却済み車両の場合は確認ダイアログ
+      if (car.status === 'sold' || car.status === 'scrapped') {
+        const confirmed = confirm(
+          `この車両は${car.status === 'sold' ? '売却済み' : '廃車済み'}です。\n` +
+          '共有リンクを発行しますか？\n' +
+          '（閲覧専用として共有されます）'
+        );
+        if (!confirmed) {
+          setIsGenerating(false);
+          return;
+        }
+      }
+      
+      // 共有トークンを生成（readOnlyフラグ付き）
+      const { generateShareToken } = await import('@/lib/signatureToken');
+      const isReadOnly = car.status === 'sold' || car.status === 'scrapped';
+      const { token, expiresAt } = await generateShareToken(car.id!, Date.now(), 30 * 24 * 60 * 60 * 1000);
+      
+      const shareUrl = `${window.location.origin}/share/${token}${isReadOnly ? '?readOnly=true' : ''}`;
+      
+      // クリップボードにコピー
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+      
+      alert(
+        `✅ 共有URLを発行しました！\n\n` +
+        `${shareUrl}\n\n` +
+        `有効期限: ${new Date(expiresAt).toLocaleDateString('ja-JP')}\n` +
+        `${isReadOnly ? '\n💡 閲覧専用として共有されます（編集不可）' : ''}\n\n` +
+        `URLをクリップボードにコピーしました。`
+      );
     } catch (error) {
       console.error('共有リンク生成エラー:', error);
       alert('共有リンク生成中にエラーが発生しました。');
@@ -150,18 +180,22 @@ export default function ShareAndPDFModal({ car, maintenanceRecords, onClose }: S
             </div>
           </div>
 
-          {/* 共有URL機能について */}
-          <div className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">⭐</span>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900">共有URL機能</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  共有URL機能は現在開発中です。プレミアムプランで近日公開予定です。
-                </p>
+          {/* 売却済み車両の場合の注意 */}
+          {(car.status === 'sold' || car.status === 'scrapped') && (
+            <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-200">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📦</span>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900">
+                    {car.status === 'sold' ? '売却済み車両' : '廃車済み車両'}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    共有URLは「閲覧専用」フラグ付きで発行されます。受信者は編集できません。
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* フッター */}
