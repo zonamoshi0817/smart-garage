@@ -135,7 +135,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60] animate-fadeIn">
         <div ref={modalRef} className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
-          <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 p-8 text-white">
+          <div className="relative bg-gradient-to-br from-blue-600 to-indigo-700 p-8 text-white">
             <button
               onClick={onClose}
               className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
@@ -208,7 +208,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
 
             <button
               onClick={() => handleUpgradeClick(selectedPlan)}
-              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 font-bold text-lg hover:shadow-lg transition"
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 font-bold text-lg hover:shadow-lg transition"
             >
               {selectedPlan === 'yearly' ? '年額プラン' : '月額プラン'}で始める
             </button>
@@ -239,7 +239,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
             </button>
 
             {/* ヒーローセクション */}
-            <div className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 p-8 text-white text-center">
+            <div className="relative bg-gradient-to-br from-blue-600 to-indigo-700 p-8 text-white text-center">
               <div className="text-5xl mb-3">🚗✨</div>
               <h2 id="paywall-title" className="text-3xl font-bold mb-3">
                 もっと快適な<br />カーライフを
@@ -258,7 +258,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
                 {/* ヘッダー */}
                 <div className="bg-gray-100 px-3 py-2 font-semibold text-gray-700 text-xs">機能</div>
                 <div className="bg-gray-100 px-4 py-2 text-center font-semibold text-gray-700 border-l border-gray-200 text-xs">無料</div>
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-center font-semibold text-white border-l border-gray-200 text-xs">Premium</div>
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-center font-semibold text-white border-l border-gray-200 text-xs">Premium</div>
                 
                 {/* 主要機能の比較 */}
                 {primaryFeatures.map((feat, idx) => {
@@ -325,7 +325,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
 
             <button
               onClick={() => handleUpgradeClick(selectedPlan)}
-              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 font-bold text-lg hover:shadow-xl transition"
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 font-bold text-lg hover:shadow-xl transition"
             >
               {selectedPlan === 'yearly' ? '年額' : '月額'}プランを始める
             </button>
@@ -343,7 +343,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60] animate-fadeIn">
       <div ref={modalRef} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
-        <div className="sticky top-0 bg-gradient-to-br from-blue-600 to-purple-600 p-6 text-white rounded-t-3xl">
+        <div className="sticky top-0 bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-white rounded-t-3xl">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl"
@@ -406,7 +406,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
               {/* ヘッダー */}
               <div className="bg-gray-100 px-3 py-2.5 font-semibold text-gray-700 text-xs">機能</div>
               <div className="bg-gray-100 px-4 py-2.5 text-center font-semibold text-gray-700 border-l border-gray-200 text-xs">無料</div>
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2.5 text-center font-semibold text-white border-l border-gray-200 text-xs">Premium</div>
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-center font-semibold text-white border-l border-gray-200 text-xs">Premium</div>
               
               {/* 主要機能の比較 */}
               {primaryFeatures.map((feat, idx) => {
@@ -470,7 +470,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
           <div className="space-y-3">
             <button
               onClick={() => handleUpgradeClick(selectedPlan)}
-              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 font-bold text-lg hover:shadow-lg transition"
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 font-bold text-lg hover:shadow-lg transition"
             >
               {selectedPlan === 'yearly' ? '年額プラン' : '月額プラン'}で始める
             </button>
