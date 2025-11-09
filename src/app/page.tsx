@@ -1212,7 +1212,7 @@ function DashboardContent({
                     }}
                     className="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-500"
                   >
-                    📊 車両データを見る
+                    📊 マイカーを見る
                   </button>
                 </>
               )}
@@ -1261,7 +1261,7 @@ function DashboardContent({
                             </p>
                           )}
               </div>
-                        {/* 詳細ボタンは削除 - クリックで車両データページへ */}
+                        {/* 詳細ボタンは削除 - クリックでマイカーページへ */}
                       </div>
                     </div>
                   ))}
@@ -1284,12 +1284,12 @@ function DashboardContent({
                     </svg>
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h4>
-                  <p className="text-gray-500 mb-4">車両データページで記録を追加できます</p>
+                  <p className="text-gray-500 mb-4">マイカーページで記録を追加できます</p>
                   <button
                     onClick={() => setCurrentPage('my-car')}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
-                    車両データを見る →
+                    マイカーを見る →
                   </button>
                 </div>
               )}
@@ -1443,12 +1443,12 @@ function DashboardContent({
                         </svg>
                       </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                  <p className="text-gray-500 mb-4">車両データページで記録を追加できます</p>
+                  <p className="text-gray-500 mb-4">マイカーページで記録を追加できます</p>
                   <button
                     onClick={() => setCurrentPage('my-car')}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
-                    車両データを見る →
+                    マイカーを見る →
                   </button>
               </div>
             )}
@@ -1525,12 +1525,12 @@ function DashboardContent({
                       </svg>
                     </div>
                     <h4 className="text-lg font-medium text-gray-900 mb-2">カスタマイズ記録がありません</h4>
-                    <p className="text-gray-500 mb-4">車両データページで記録を追加できます</p>
+                    <p className="text-gray-500 mb-4">マイカーページで記録を追加できます</p>
                     <button
                       onClick={() => setCurrentPage('my-car')}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     >
-                      車両データを見る →
+                      マイカーを見る →
                     </button>
                   </div>
                 )}

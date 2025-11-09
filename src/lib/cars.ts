@@ -36,6 +36,7 @@ export async function addCar(data: CarInput) {
     
     const docRef = await addDoc(ref, {
       ...firestoreData,
+      userId: u.uid,        // セキュリティルールで必須
       ownerUid: u.uid,
       createdBy: u.uid,
       updatedBy: u.uid,

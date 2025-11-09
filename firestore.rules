@@ -117,6 +117,14 @@ service cloud.firestore {
       match /analyticsEvents/{eventId} {
         allow read, write: if isOwner(userId);
       }
+      
+      // Audit logs subcollection
+      match /auditLogs/{logId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+                      && hasRequiredFields(['entityType', 'entityId', 'action', 'actorUid'])
+                      && request.resource.data.actorUid == userId;
+      }
     }
     
     // Audit logs collection (admin only, or user can read their own)
