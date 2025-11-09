@@ -229,48 +229,49 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
   if (variant === 'hero') {
     return (
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[60] animate-fadeIn">
-        <div ref={modalRef} className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl z-10"
-          >
-            ×
-          </button>
+        <div ref={modalRef} className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="paywall-title">
+          <div className="sticky top-0 z-10">
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl z-10"
+            >
+              ×
+            </button>
 
-          {/* ヒーローセクション */}
-          <div className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 p-12 text-white text-center">
-            <div className="text-6xl mb-4">🚗✨</div>
-            <h2 id="paywall-title" className="text-4xl font-bold mb-4">
-              もっと快適な<br />カーライフを
-            </h2>
-            <p className="text-white/90 text-lg">
-              プレミアムプランで、すべての機能を無制限に
-            </p>
+            {/* ヒーローセクション */}
+            <div className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 p-8 text-white text-center">
+              <div className="text-5xl mb-3">🚗✨</div>
+              <h2 id="paywall-title" className="text-3xl font-bold mb-3">
+                もっと快適な<br />カーライフを
+              </h2>
+              <p className="text-white/90">
+                プレミアムプランで、すべての機能を無制限に
+              </p>
+            </div>
           </div>
 
           {/* 機能一覧 */}
-          <div className="p-8">
-            {/* Free vs Premium 比較表 */}
-            <div className="mb-8 overflow-hidden rounded-xl border-2 border-gray-200">
+          <div className="p-6">
+            {/* Free vs Premium 比較表（コンパクト版） */}
+            <div className="mb-6 overflow-hidden rounded-xl border-2 border-gray-200">
               <div className="grid grid-cols-[1fr_auto_auto] gap-0 text-sm">
                 {/* ヘッダー */}
-                <div className="bg-gray-100 px-4 py-3 font-semibold text-gray-700">機能</div>
-                <div className="bg-gray-100 px-6 py-3 text-center font-semibold text-gray-700 border-l border-gray-200">無料</div>
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 text-center font-semibold text-white border-l border-gray-200">プレミアム</div>
+                <div className="bg-gray-100 px-3 py-2 font-semibold text-gray-700 text-xs">機能</div>
+                <div className="bg-gray-100 px-4 py-2 text-center font-semibold text-gray-700 border-l border-gray-200 text-xs">無料</div>
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2 text-center font-semibold text-white border-l border-gray-200 text-xs">Premium</div>
                 
                 {/* 主要機能の比較 */}
                 {primaryFeatures.map((feat, idx) => {
                   const desc = PREMIUM_FEATURE_DESCRIPTIONS[feat];
                   return (
                     <React.Fragment key={feat}>
-                      <div className={`px-4 py-3 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-t border-gray-200`}>
-                        <div className="font-medium text-gray-900">{desc.title}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{desc.description}</div>
+                      <div className={`px-3 py-2 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-t border-gray-200`}>
+                        <div className="font-medium text-gray-900 text-xs">{desc.title}</div>
                       </div>
-                      <div className={`px-6 py-3 text-center ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-l border-t border-gray-200 text-sm text-gray-600`}>
+                      <div className={`px-4 py-2 text-center ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-l border-t border-gray-200 text-xs text-gray-600`}>
                         {desc.freeLimit}
                       </div>
-                      <div className={`px-6 py-3 text-center ${idx % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100/50'} border-l border-t border-gray-200 font-semibold text-blue-700`}>
+                      <div className={`px-4 py-2 text-center ${idx % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100/50'} border-l border-t border-gray-200 font-semibold text-blue-700 text-xs`}>
                         {desc.premiumBenefit}
                       </div>
                     </React.Fragment>
@@ -278,34 +279,19 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
                 })}
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              {primaryFeatures.map((feat) => {
-                const desc = PREMIUM_FEATURE_DESCRIPTIONS[feat];
-                return (
-                  <div key={feat} className="flex items-start space-x-3 bg-gray-50 rounded-xl p-4">
-                    <div className="text-2xl">✓</div>
-                    <div>
-                      <div className="font-bold text-gray-900">{desc.title}</div>
-                      <div className="text-sm text-gray-600">{desc.description}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
 
             {/* プラン選択 */}
-            <div className="flex gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
               <button
                 onClick={() => setSelectedPlan('yearly')}
-                className={`flex-1 rounded-xl border-2 p-4 transition ${
+                className={`rounded-xl border-2 p-4 transition text-left ${
                   selectedPlan === 'yearly'
                     ? 'border-blue-600 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <div className="flex justify-between items-center mb-1">
-                  <span className="font-bold text-gray-900">年額プラン</span>
+                  <span className="font-bold text-gray-900">年額</span>
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">
                     おすすめ
                   </span>
@@ -315,22 +301,23 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
                   <span className="text-sm font-normal text-gray-500">/年</span>
                 </div>
                 <div className="text-sm text-gray-500">月額¥400相当</div>
-                <div className="mt-2 text-xs font-semibold text-green-600">
-                  💰 実質2ヶ月分無料（¥{(PREMIUM_PRICING.monthly.price * 12 - PREMIUM_PRICING.yearly.price).toLocaleString()}お得）
+                <div className="mt-1 text-xs font-semibold text-green-600">
+                  💰 2ヶ月分無料
                 </div>
               </button>
 
               <button
                 onClick={() => setSelectedPlan('monthly')}
-                className={`flex-1 rounded-xl border-2 p-4 transition ${
+                className={`rounded-xl border-2 p-4 transition text-left ${
                   selectedPlan === 'monthly'
                     ? 'border-blue-600 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <div className="font-bold text-gray-900 mb-1">月額プラン</div>
+                <div className="font-bold text-gray-900 mb-1">月額</div>
                 <div className="text-2xl font-bold text-gray-900">
                   ¥{PREMIUM_PRICING.monthly.price.toLocaleString()}
+                  <span className="text-sm font-normal text-gray-500">/月</span>
                 </div>
                 <div className="text-sm text-gray-500">毎月課金</div>
               </button>
@@ -338,12 +325,12 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
 
             <button
               onClick={() => handleUpgradeClick(selectedPlan)}
-              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 font-bold text-lg hover:shadow-xl transition"
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 font-bold text-lg hover:shadow-xl transition"
             >
               {selectedPlan === 'yearly' ? '年額' : '月額'}プランを始める
             </button>
 
-            <div className="text-center text-xs text-gray-500 mt-4">
+            <div className="text-center text-xs text-gray-500 mt-3">
               7日間無料トライアル • いつでもキャンセル可能
             </div>
           </div>
