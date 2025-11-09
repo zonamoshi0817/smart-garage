@@ -94,7 +94,7 @@ firebase deploy --only functions
 # JWT秘密鍵を設定（本番環境で必須）
 firebase functions:config:set jwt.secret="your-super-secret-key-change-this"
 
-# アプリURLを設定
+# アプリURLを設定（本番: https://garagelog.jp）
 firebase functions:config:set app.url="https://your-app.web.app"
 
 # 設定を確認
@@ -139,6 +139,8 @@ NEXT_PUBLIC_DEVELOPER_EMAILS=your-email@gmail.com
 ```
 
 ## Deploy on Vercel
+
+**本番ドメイン**: https://garagelog.jp
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 

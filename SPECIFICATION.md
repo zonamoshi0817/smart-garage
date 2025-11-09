@@ -930,7 +930,7 @@ interface AuditLog {
 - 🔄 複合インデックスの作成（Firebase Console）
 - 🔄 サーバーサイドトークン検証（Firebase Functions）
 - 🔄 負荷テスト（1,000同時接続レベル）
-- 🔄 本番ドメイン設定（smartgarage.jp）
+- ✅ 本番ドメイン設定（garagelog.jp） 🆕
 - 🔄 メールDNS設定（SPF/DKIM/DMARC）
 
 ## 開発・運用
@@ -2183,7 +2183,7 @@ async function handleOcrResult(result: Tesseract.RecognizeResult) {
 - `4a91b0c` - SPECIFICATION.md更新
 - `cabe315` - v2.2.0メイン実装（9機能）
 **総コミット数: 125コミット**  
-**本番環境**: https://smart-garage-h2qwljy2z-kobayashis-projects-6366834f.vercel.app
+**本番環境**: https://garagelog.jp（Vercel: https://smart-garage-r6awgu5qp-kobayashis-projects-6366834f.vercel.app）
 
 **新規ページ（v2.2.0）**:
 - `/share/[token]` - 共有URL閲覧ページ

@@ -253,7 +253,7 @@ STRIPE_WEBHOOK_SECRET=whsec_... # 本番環境の Webhook Secret
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_... # 本番環境の Publishable Key
 NEXT_PUBLIC_PRICE_MONTHLY=price_XXXXXXXX # 本番環境の月額 Price ID
 NEXT_PUBLIC_PRICE_YEARLY=price_YYYYYYYY # 本番環境の年額 Price ID
-NEXT_PUBLIC_APP_URL=https://your-domain.com # 本番ドメイン
+NEXT_PUBLIC_APP_URL=https://garagelog.jp # 本番ドメイン
 FIREBASE_SERVICE_ACCOUNT_BASE64=... # Firebase Service Account (Base64)
 FIREBASE_PROJECT_ID=your-project-id # Firebase Project ID
 ```

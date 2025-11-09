@@ -187,6 +187,12 @@
 - [ ] iOS実機でのHEICアップロードテスト
 - [ ] 課金フローの全パターンE2Eテスト
 - [ ] ドキュメントの最終整合性チェック
+- [ ] カスタムドメイン設定（garagelog.jp）
+  - [ ] Vercel Domains設定
+  - [ ] DNS設定（Aレコード/CNAME）
+  - [ ] Firebase Authorized domains追加
+  - [ ] Stripe リダイレクトURL更新
+  - [ ] Stripe Webhook URL更新
 
 ---
 

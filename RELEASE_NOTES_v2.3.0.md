@@ -1,8 +1,9 @@
 # 🚀 Smart Garage v2.3.0 リリースノート
 
 **リリース日**: 2025年11月9日  
-**デプロイURL**: https://smart-garage-83c7xes7w-kobayashis-projects-6366834f.vercel.app  
-**コミット範囲**: `d055aba` → `67b286e` (5コミット)
+**本番ドメイン**: https://garagelog.jp  
+**Vercel URL**: https://smart-garage-r6awgu5qp-kobayashis-projects-6366834f.vercel.app  
+**コミット範囲**: `d055aba` → `56a95eb` (8コミット)
 
 ---
 
@@ -179,7 +180,7 @@ restoreDowngradedVehicles() → すべてactive復帰
 ## 🎯 デプロイ後の確認事項
 
 ### 即座に確認
-1. [ ] サイトが表示される（https://smart-garage-83c7xes7w-kobayashis-projects-6366834f.vercel.app）
+1. [ ] サイトが表示される（https://garagelog.jp）
 2. [ ] ログインできる
 3. [ ] PaywallModalが表示される（比較表・年額割引表記）
 4. [ ] 車両追加・編集が動作する

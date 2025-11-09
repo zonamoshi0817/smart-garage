@@ -166,10 +166,10 @@ export default function SupportPage() {
                 <div>
                   <div className="font-bold text-gray-900">メール</div>
                   <a 
-                    href="mailto:support@smartgarage.jp" 
+                    href="mailto:support@garagelog.jp" 
                     className="text-blue-600 hover:underline"
                   >
-                    support@smartgarage.jp
+                    support@garagelog.jp
                   </a>
                   <p className="text-sm text-gray-600 mt-1">
                     24時間以内に返信いたします

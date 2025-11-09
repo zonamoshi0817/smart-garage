@@ -58,7 +58,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY
 NEXT_PUBLIC_PRICE_MONTHLY=price_YOUR_MONTHLY_ID
 NEXT_PUBLIC_PRICE_YEARLY=price_YOUR_YEARLY_ID
 
-# アプリURL
+# アプリURL（本番: https://garagelog.jp）
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # ==========================================
