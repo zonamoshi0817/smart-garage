@@ -27,6 +27,8 @@ import CustomizationModal from "@/components/modals/CustomizationModal";
 import PaywallModal from "@/components/modals/PaywallModal";
 import InsuranceModal from "@/components/modals/InsuranceModal";
 import SellCarModal from "@/components/modals/SellCarModal";
+import ShareAndPDFModal from "@/components/modals/ShareAndPDFModal";
+import OCRModal from "@/components/modals/OCRModal";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import MyCarPage from "@/components/mycar/MyCarPage";
 import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
@@ -58,6 +60,8 @@ export default function Home() {
   const [showInsuranceNotificationSettings, setShowInsuranceNotificationSettings] = useState(false);
   const [showFuelLogModal, setShowFuelLogModal] = useState(false);
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
+  const [showShareAndPDFModal, setShowShareAndPDFModal] = useState(false);
+  const [showOCRModal, setShowOCRModal] = useState(false);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
 
@@ -679,6 +683,19 @@ export default function Home() {
                         setShowEditCarModal(true);
                         setEditingCar(car);
                         break;
+                      case 'edit-car':
+                        // 車両情報編集
+                        setShowEditCarModal(true);
+                        setEditingCar(car);
+                        break;
+                      case 'share':
+                        // PDF/共有機能
+                        setShowShareAndPDFModal(true);
+                        break;
+                      case 'ocr':
+                        // OCR機能
+                        setShowOCRModal(true);
+                        break;
                       // その他のモーダルは今後実装
                       default:
                         console.log('Modal not implemented:', modalType, data);
@@ -932,6 +949,26 @@ export default function Home() {
         />
       )}
 
+      {/* PDF/共有モーダル */}
+      {showShareAndPDFModal && car && (
+        <ShareAndPDFModal
+          car={car}
+          onClose={() => setShowShareAndPDFModal(false)}
+        />
+      )}
+
+      {/* OCRモーダル */}
+      {showOCRModal && car && (
+        <OCRModal
+          car={car}
+          onClose={() => setShowOCRModal(false)}
+          onRecordCreated={() => {
+            // OCRで記録が作成されたらモーダルを閉じる
+            setShowOCRModal(false);
+          }}
+        />
+      )}
+
       {/* ペイウォールモーダル */}
       {showPaywall && (
         <PaywallModal
@@ -1042,7 +1079,7 @@ function DashboardContent({
     <>
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">ガレージ</h1>
+        <h1 className="text-2xl font-bold">ダッシュボード</h1>
       </div>
 
 

@@ -69,10 +69,10 @@ export function captureMessage(
 }
 
 /**
- * パフォーマンストランザクションを開始
+ * パフォーマンススパンを開始（Sentry v8+）
  */
-export function startTransaction(name: string, op: string) {
-  return Sentry.startTransaction({ name, op });
+export function startSpan(name: string, op: string, callback: () => void | Promise<void>) {
+  return Sentry.startSpan({ name, op }, callback);
 }
 
 /**

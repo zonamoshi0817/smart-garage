@@ -32,11 +32,11 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         }
       });
       
-      // 1秒後にタイムアウトして強制的にreadyにする
+      // 3秒後にタイムアウトして強制的にreadyにする
       timeoutId = setTimeout(() => {
         console.warn("AuthGate: Auth state check timed out, proceeding without authentication");
         setReady(true);
-      }, 1000);
+      }, 3000);
       
       return () => {
         console.log("AuthGate: Cleaning up auth listener");
