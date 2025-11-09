@@ -4,8 +4,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
-import { Car } from './cars';
-import { MaintenanceRecord } from './maintenance';
+import type { Car, MaintenanceRecord } from '@/types';
 import { generateCombinedProof, ProofData } from './proof';
 import { logPdfExported, logShareLinkCreated } from './analytics';
 import { generatePdfExportToken, generateShareTokenSecure } from './cloudFunctions';
@@ -28,6 +27,31 @@ export interface PDFExportOptions {
   };
 }
 
+// 日付を安全にフォーマットする
+function formatDate(date: any): string {
+  if (!date) return '-';
+  
+  try {
+    // Timestampオブジェクトの場合
+    if (date && typeof date === 'object' && 'toDate' in date) {
+      return date.toDate().toLocaleDateString('ja-JP');
+    }
+    // Dateオブジェクトの場合
+    if (date instanceof Date) {
+      return date.toLocaleDateString('ja-JP');
+    }
+    // 文字列やミリ秒の場合
+    const dateObj = new Date(date);
+    if (!isNaN(dateObj.getTime())) {
+      return dateObj.toLocaleDateString('ja-JP');
+    }
+  } catch (error) {
+    console.error('日付フォーマットエラー:', error);
+  }
+  
+  return '-';
+}
+
 export async function generateMaintenancePDF(options: PDFExportOptions): Promise<Blob> {
   const { car, maintenanceRecords, includeImages = true, dateRange } = options;
   
@@ -35,7 +59,19 @@ export async function generateMaintenancePDF(options: PDFExportOptions): Promise
   let filteredRecords = maintenanceRecords;
   if (dateRange) {
     filteredRecords = maintenanceRecords.filter(record => {
-      const recordDate = record.date;
+      if (!record.date) return false;
+      
+      let recordDate: Date;
+      const date = record.date as any;
+      
+      if (typeof date === 'object' && date !== null && 'toDate' in date && typeof date.toDate === 'function') {
+        recordDate = date.toDate();
+      } else if (date instanceof Date) {
+        recordDate = date;
+      } else {
+        recordDate = new Date(date);
+      }
+      
       return recordDate >= dateRange.start && recordDate <= dateRange.end;
     });
   }
@@ -271,7 +307,7 @@ function generateHTMLContent(
         ${car.inspectionExpiry ? `
         <div class="info-row">
           <div class="info-label">車検期限:</div>
-          <div class="info-value">${new Date(car.inspectionExpiry).toLocaleDateString('ja-JP')}</div>
+          <div class="info-value">${formatDate(car.inspectionExpiry)}</div>
         </div>
         ` : ''}
         <div class="info-row">
@@ -298,7 +334,7 @@ function generateHTMLContent(
             <tbody>
               ${records.map(record => `
                 <tr>
-                  <td>${record.date.toLocaleDateString('ja-JP')}</td>
+                  <td>${formatDate(record.date)}</td>
                   <td>${record.title}</td>
                   <td>${record.cost ? `¥${record.cost.toLocaleString()}` : '-'}</td>
                   <td>${record.mileage ? `${record.mileage.toLocaleString()} km` : '-'}</td>
