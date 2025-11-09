@@ -653,6 +653,9 @@ export default function Home() {
                 customizations={customizations}
                 setCurrentPage={setCurrentPage}
                 setActiveCarId={setActiveCarId}
+                setShowMaintenanceModal={setShowMaintenanceModal}
+                setShowFuelLogModal={setShowFuelLogModal}
+                setShowCustomizationModal={setShowCustomizationModal}
               />
             ) : currentPage === 'my-car' ? (
               // 新しいマイカーページ（全車両を表示、売却済み・廃車済みはREAD ONLYモード）
@@ -991,7 +994,10 @@ function DashboardContent({
   fuelLogs,
   customizations,
   setCurrentPage,
-  setActiveCarId
+  setActiveCarId,
+  setShowMaintenanceModal,
+  setShowFuelLogModal,
+  setShowCustomizationModal
 }: {
   cars: Car[];
   activeCarId?: string;
@@ -1001,6 +1007,9 @@ function DashboardContent({
   customizations: Customization[];
   setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance' | 'my-car') => void;
   setActiveCarId: (id: string) => void;
+  setShowMaintenanceModal: (show: boolean) => void;
+  setShowFuelLogModal: (show: boolean) => void;
+  setShowCustomizationModal: (show: boolean) => void;
 }) {
   // SEO/アクセシビリティ用のh1タグ（非表示）
   const pageTitle = `ダッシュボード${car ? ' - ' + car.name : ' - Smart Garage'}`;
@@ -1284,12 +1293,13 @@ function DashboardContent({
                     </svg>
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h4>
-                  <p className="text-gray-500 mb-4">マイカーページで記録を追加できます</p>
+                  <p className="text-gray-500 mb-4">最初の記録を追加してみましょう</p>
                   <button
-                    onClick={() => setCurrentPage('my-car')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    onClick={() => setShowMaintenanceModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
                   >
-                    マイカーを見る →
+                    <span>+</span>
+                    <span>メンテナンスを追加</span>
                   </button>
                 </div>
               )}
@@ -1443,12 +1453,13 @@ function DashboardContent({
                         </svg>
                       </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                  <p className="text-gray-500 mb-4">マイカーページで記録を追加できます</p>
+                  <p className="text-gray-500 mb-4">最初の給油を記録してみましょう</p>
                   <button
-                    onClick={() => setCurrentPage('my-car')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    onClick={() => setShowFuelLogModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
                   >
-                    マイカーを見る →
+                    <span>+</span>
+                    <span>給油を記録</span>
                   </button>
               </div>
             )}
@@ -1525,12 +1536,13 @@ function DashboardContent({
                       </svg>
                     </div>
                     <h4 className="text-lg font-medium text-gray-900 mb-2">カスタマイズ記録がありません</h4>
-                    <p className="text-gray-500 mb-4">マイカーページで記録を追加できます</p>
+                    <p className="text-gray-500 mb-4">最初のカスタムを記録してみましょう</p>
                     <button
-                      onClick={() => setCurrentPage('my-car')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      onClick={() => setShowCustomizationModal(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
                     >
-                      マイカーを見る →
+                      <span>+</span>
+                      <span>カスタムを追加</span>
                     </button>
                   </div>
                 )}
