@@ -2,28 +2,11 @@
 
 import React from "react";
 import { Check, Shield, Gauge, Wrench, FileText, Share2, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 // Smart Garage LP — clean, data-first personal management LP patterns
 
 export default function LandingPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  // 認証済みユーザーはダッシュボードへリダイレクト
-  useEffect(() => {
-    if (!loading && user) {
-      router.replace("/dashboard");
-    }
-  }, [user, loading, router]);
-
-  // 認証済みユーザーはリダイレクト中なので何も表示しない
-  if (!loading && user) {
-    return null;
-  }
-
+  // 認証済みでもLPを表示（自動リダイレクトなし）
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <Header />
