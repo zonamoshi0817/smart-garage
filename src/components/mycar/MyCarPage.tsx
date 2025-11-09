@@ -13,7 +13,6 @@ import ContextualAd from './ContextualAd';
 import VehicleSpecsPanel from './VehicleSpecsPanel';
 import CustomPartsPanel from './CustomPartsPanel';
 import PaywallModal from '../modals/PaywallModal';
-import Breadcrumbs from '../Breadcrumbs';
 
 interface MyCarPageProps {
   car: Car;
@@ -345,13 +344,6 @@ export default function MyCarPage({
       )}
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-10">
-        <Breadcrumbs
-          items={[
-            { label: 'ダッシュボード', onClick: () => window.history.back() },
-            { label: `${car.name}${car.modelCode ? ` (${car.modelCode})` : ''}` },
-          ]}
-        />
-
         <section className="relative overflow-hidden rounded-[32px] border border-gray-200 bg-white shadow-xl">
           <div className="absolute -top-32 -right-28 h-64 w-64 rounded-full bg-emerald-100/50 blur-3xl" />
           <div className="absolute -bottom-28 -left-32 h-72 w-72 rounded-full bg-sky-100/50 blur-3xl" />

@@ -62,6 +62,7 @@ export default function VehicleHeader({
                   src={car.imagePath}
                   alt={car.name}
                   fill
+                  sizes="(max-width: 1024px) 100vw, 256px"
                   className="object-contain"
                   onError={() => setImageError(true)}
                 />
