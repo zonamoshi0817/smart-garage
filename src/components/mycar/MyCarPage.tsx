@@ -10,7 +10,6 @@ import VehicleHeader from './VehicleHeader';
 import QuickActions from './QuickActions';
 import NextMaintenanceSuggestion from './NextMaintenanceSuggestion';
 import ContextualAd from './ContextualAd';
-import VehicleSpecsPanel from './VehicleSpecsPanel';
 import CustomPartsPanel from './CustomPartsPanel';
 import PaywallModal from '../modals/PaywallModal';
 
@@ -348,40 +347,42 @@ export default function MyCarPage({
           <div className="absolute -top-32 -right-28 h-64 w-64 rounded-full bg-emerald-100/50 blur-3xl" />
           <div className="absolute -bottom-28 -left-32 h-72 w-72 rounded-full bg-sky-100/50 blur-3xl" />
 
-          <div className="relative z-10 grid gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] p-6 sm:p-8">
-            <div className="space-y-6">
-              <VehicleHeader
-                car={car}
-                latestMaintenance={latestMaintenance}
-                activeInsurance={activeInsurance}
-                onImageChange={handleImageChange}
-              />
+          <div className="relative z-10 p-6 sm:p-8">
+            <VehicleHeader
+              car={car}
+              latestMaintenance={latestMaintenance}
+              activeInsurance={activeInsurance}
+              onImageChange={handleImageChange}
+            />
+          </div>
+        </section>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {highlightCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg ${card.iconBg}`}>
-                        {card.icon}
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{card.label}</p>
-                        <p className="mt-1 text-xl font-semibold text-gray-900">{card.value}</p>
-                      </div>
-                    </div>
-                    {card.description && (
-                      <p className="mt-3 text-sm leading-snug text-gray-500">{card.description}</p>
-                    )}
-                  </div>
-                ))}
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+          {/* 左カラム: 次回メンテナンス提案 + カスタムパーツ */}
+          <div className="space-y-8">
+            {!readOnly && (
+              <div id="section-maintenance" className="scroll-mt-24">
+                <NextMaintenanceSuggestion
+                  car={car}
+                  maintenanceRecords={maintenanceRecords}
+                  onCreateFromTemplate={handleCreateFromTemplate}
+                />
               </div>
+            )}
+            
+            <div id="section-custom" className="scroll-mt-24">
+              <CustomPartsPanel
+                customizations={customizations}
+                onAddCustomization={(category) => {
+                  onOpenModal('customization', { category });
+                }}
+              />
             </div>
+          </div>
 
-            <div className="space-y-6">
-              {readOnly ? (
+          {/* 右カラム: クイック操作 + サマリーカード + 状況サマリー */}
+          <div className="space-y-6">
+            {readOnly ? (
                 <div className="rounded-2xl border border-orange-200 bg-orange-50/90 p-6 text-orange-800 shadow-sm">
                   <div className="flex items-start gap-3">
                     <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -425,49 +426,51 @@ export default function MyCarPage({
                 </div>
               )}
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">状況サマリー</p>
-                <ul className="mt-4 space-y-4">
-                  {insightItems.map((item) => (
-                    <li key={item.id} className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">{item.label}</p>
-                        {item.helper && (
-                          <p className="mt-1 text-xs leading-snug text-gray-500">{item.helper}</p>
-                        )}
+            {/* サマリーカード */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-4">車両サマリー</p>
+              <div className="grid grid-cols-1 gap-3">
+                {highlightCards.map((card) => (
+                  <div
+                    key={card.id}
+                    className="group relative overflow-hidden rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-all duration-200 hover:bg-white hover:shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-base ${card.iconBg}`}>
+                        {card.icon}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-gray-500">{card.label}</p>
+                        <p className="mt-0.5 text-base font-semibold text-gray-900 truncate">{card.value}</p>
                       </div>
-                      <span className={`text-sm font-semibold ${item.tone}`}>{item.value}</span>
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                    {card.description && (
+                      <p className="mt-2 text-xs leading-snug text-gray-500">{card.description}</p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </section>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          <div className="space-y-8">
-            <div id="section-specs" className="scroll-mt-24">
-              <VehicleSpecsPanel car={car} maintenanceRecords={maintenanceRecords} fuelLogs={fuelLogs} />
+            {/* 状況サマリー */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">状況サマリー</p>
+              <ul className="mt-4 space-y-4">
+                {insightItems.map((item) => (
+                  <li key={item.id} className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">{item.label}</p>
+                      {item.helper && (
+                        <p className="mt-1 text-xs leading-snug text-gray-500">{item.helper}</p>
+                      )}
+                    </div>
+                    <span className={`text-sm font-semibold ${item.tone}`}>{item.value}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div id="section-custom" className="scroll-mt-24">
-              <CustomPartsPanel
-                customizations={customizations}
-                onAddCustomization={(category) => {
-                  onOpenModal('customization', { category });
-                }}
-              />
-            </div>
-          </div>
 
-          <div className="space-y-8">
-            <div id="section-maintenance" className="scroll-mt-24">
-              <NextMaintenanceSuggestion
-                car={car}
-                maintenanceRecords={maintenanceRecords}
-                onCreateFromTemplate={handleCreateFromTemplate}
-              />
-            </div>
+            {/* 広告 */}
             <div>
               <ContextualAd car={car} isPremium={isPremium} />
             </div>
