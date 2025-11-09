@@ -177,21 +177,7 @@ export default function SupportPage() {
                 </div>
               </div>
 
-              <div className="flex items-start space-x-3">
-                <div className="text-2xl">📞</div>
-                <div>
-                  <div className="font-bold text-gray-900">電話</div>
-                  <a 
-                    href="tel:09073200064" 
-                    className="text-blue-600 hover:underline"
-                  >
-                    090-7320-0064
-                  </a>
-                  <p className="text-sm text-gray-600 mt-1">
-                    平日 10:00 - 18:00（土日祝除く）
-                  </p>
-                </div>
-              </div>
+              {/* 電話サポートは準備中 */}
             </div>
           </div>
 
