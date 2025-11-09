@@ -171,9 +171,6 @@ export default function SupportPage() {
                   >
                     support@garagelog.jp
                   </a>
-                  <p className="text-sm text-gray-600 mt-1">
-                    24時間以内に返信いたします
-                  </p>
                 </div>
               </div>
 
