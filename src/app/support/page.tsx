@@ -230,6 +230,30 @@ export default function SupportPage() {
 
                   <details className="border-b border-gray-200 pb-3">
                     <summary className="font-medium text-gray-900 cursor-pointer">
+                      無料プランに戻したら、2台目以降の車両はどうなりますか？
+                    </summary>
+                    <div className="mt-2 text-gray-600 space-y-2">
+                      <p>
+                        プレミアムプランから無料プランにダウングレードした場合、
+                        <strong className="text-gray-900">最初に登録した1台のみ編集可能</strong>になります。
+                      </p>
+                      <p>
+                        2台目以降の車両は<strong className="text-orange-600">「閲覧専用」</strong>になりますが、
+                        以下の操作は引き続き可能です：
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 ml-4">
+                        <li>過去のメンテナンス履歴・給油記録の閲覧</li>
+                        <li>PDF出力（プレミアム機能として利用可能）</li>
+                        <li>共有URL生成（プレミアム機能として利用可能）</li>
+                      </ul>
+                      <p className="font-semibold text-blue-600 mt-3">
+                        💡 プレミアムプランに再登録すると、すべての車両がすぐに編集可能になります。
+                      </p>
+                    </div>
+                  </details>
+
+                  <details className="border-b border-gray-200 pb-3">
+                    <summary className="font-medium text-gray-900 cursor-pointer">
                       返金してほしい
                     </summary>
                     <p className="mt-2 text-gray-600">

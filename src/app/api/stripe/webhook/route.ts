@@ -77,6 +77,18 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     return;
   }
 
+  // 既存プランを確認（アップグレード/ダウングレード検知）
+  const userData = user.data as any;
+  const previousPlan = userData?.plan || 'free';
+  const isPreviousPremium = previousPlan !== 'free';
+  const isNowPremium = plan !== 'free';
+
+  // プレミアムからの復帰時: downgraded車両を自動的にactiveに戻す
+  if (!isPreviousPremium && isNowPremium) {
+    console.log(`User ${user.uid} upgraded to premium, restoring downgraded vehicles`);
+    await restoreDowngradedVehicles(user.uid);
+  }
+
   // ユーザードキュメントを更新
   await updateUserDocument(user.uid, {
     plan,
@@ -105,6 +117,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     return;
   }
 
+  // ダウングレード時の車両処理: 2台目以降を自動的にReadOnlyに
+  await handleDowngradeVehicles(user.uid);
+
   // ユーザードキュメントを更新（無料プランに戻す）
   await updateUserDocument(user.uid, {
     plan: 'free',
@@ -113,7 +128,113 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     updatedAt: new Date(),
   });
 
-  console.log(`✅ Reverted user ${user.uid} to free plan`);
+  console.log(`✅ Reverted user ${user.uid} to free plan with downgrade handling`);
+}
+
+/**
+ * ダウングレード時の車両処理
+ * 2台目以降の車両を自動的にReadOnly状態にする
+ */
+async function handleDowngradeVehicles(userId: string) {
+  const db = getAdminFirestore();
+  
+  try {
+    // ユーザーの全車両を取得（アクティブな車両のみ）
+    const carsSnapshot = await db
+      .collection('users')
+      .doc(userId)
+      .collection('cars')
+      .where('deletedAt', '==', null)
+      .orderBy('createdAt', 'asc')
+      .get();
+    
+    if (carsSnapshot.empty || carsSnapshot.size <= 1) {
+      console.log(`User ${userId} has ${carsSnapshot.size} cars, no downgrade action needed`);
+      return;
+    }
+    
+    // アクティブな車両のみをフィルタ（sold/scrappedは除外）
+    const activeCars = carsSnapshot.docs.filter(doc => {
+      const data = doc.data();
+      return !data.status || data.status === 'active';
+    });
+    
+    if (activeCars.length <= 1) {
+      console.log(`User ${userId} has only ${activeCars.length} active cars, no downgrade action needed`);
+      return;
+    }
+    
+    // 1台目以外をReadOnlyステータスに（売却済みとは異なる新ステータス）
+    const batch = db.batch();
+    let downgradedCount = 0;
+    
+    activeCars.forEach((doc, index) => {
+      if (index === 0) {
+        // 1台目はそのまま（アクティブ維持）
+        return;
+      }
+      
+      // 2台目以降: downgraded_premiumステータスに変更
+      // 注意: 'sold'/'scrapped'とは別の専用ステータス
+      const carRef = db.collection('users').doc(userId).collection('cars').doc(doc.id);
+      batch.update(carRef, {
+        status: 'downgraded_premium', // 新ステータス
+        downgradedAt: new Date(),
+        updatedAt: new Date(),
+      });
+      downgradedCount++;
+    });
+    
+    if (downgradedCount > 0) {
+      await batch.commit();
+      console.log(`✅ Downgraded ${downgradedCount} vehicles for user ${userId} (2nd+ cars marked as downgraded_premium)`);
+    }
+  } catch (error) {
+    console.error(`Failed to handle downgrade for user ${userId}:`, error);
+    // エラーでも処理は続行（車両のダウングレードは補助的な処理）
+  }
+}
+
+/**
+ * アップグレード時の車両復元処理
+ * downgraded_premiumステータスの車両をactiveに戻す
+ */
+async function restoreDowngradedVehicles(userId: string) {
+  const db = getAdminFirestore();
+  
+  try {
+    // downgraded_premium ステータスの車両を取得
+    const carsSnapshot = await db
+      .collection('users')
+      .doc(userId)
+      .collection('cars')
+      .where('status', '==', 'downgraded_premium')
+      .where('deletedAt', '==', null)
+      .get();
+    
+    if (carsSnapshot.empty) {
+      console.log(`User ${userId} has no downgraded vehicles to restore`);
+      return;
+    }
+    
+    const batch = db.batch();
+    let restoredCount = 0;
+    
+    carsSnapshot.docs.forEach((doc) => {
+      const carRef = db.collection('users').doc(userId).collection('cars').doc(doc.id);
+      batch.update(carRef, {
+        status: 'active',
+        downgradedAt: null,
+        updatedAt: new Date(),
+      });
+      restoredCount++;
+    });
+    
+    await batch.commit();
+    console.log(`✅ Restored ${restoredCount} downgraded vehicles for user ${userId}`);
+  } catch (error) {
+    console.error(`Failed to restore vehicles for user ${userId}:`, error);
+  }
 }
 
 /**

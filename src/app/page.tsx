@@ -667,7 +667,7 @@ export default function Home() {
                   fuelLogs={fuelLogs}
                   customizations={customizations}
                   insurancePolicies={insurancePolicies}
-                  readOnly={car.status === 'sold' || car.status === 'scrapped'} // READ ONLYモード
+                  readOnly={car.status === 'sold' || car.status === 'scrapped' || car.status === 'downgraded_premium'} // READ ONLYモード
                   onOpenModal={(modalType, data) => {
                     // モーダル表示ハンドラー
                     switch (modalType) {
@@ -3048,6 +3048,7 @@ function CarManagementContent({
   const activeCars = cars.filter(car => !car.status || car.status === 'active');
   const soldCars = cars.filter(car => car.status === 'sold');
   const scrappedCars = cars.filter(car => car.status === 'scrapped');
+  const downgradedCars = cars.filter(car => car.status === 'downgraded_premium');
 
   return (
     <>
@@ -3186,7 +3187,7 @@ function CarManagementContent({
 
       {/* 廃車済み車両 */}
       {scrappedCars.length > 0 && (
-        <div>
+        <div className="mb-8">
           <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
             <span>🏭</span>
             <span>廃車済み</span>
@@ -3218,6 +3219,53 @@ function CarManagementContent({
           </div>
         </div>
       )}
+
+      {/* ダウングレード車両（プラン制限） */}
+      {downgradedCars.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+            <span>🔒</span>
+            <span>閲覧専用（プラン制限）</span>
+            <span className="text-sm font-normal text-gray-500">({downgradedCars.length}台)</span>
+          </h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">💡</span>
+              <div className="text-sm text-blue-800">
+                <p className="font-semibold mb-1">無料プランでは1台のみ編集可能です</p>
+                <p>
+                  プレミアムプランに再登録すると、これらの車両もすぐに編集できるようになります。
+                  過去データの閲覧・PDF出力は引き続き可能です。
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {downgradedCars.map((car) => (
+              <CarCard
+                key={car.id}
+                car={car}
+                isActive={false}
+                isDowngraded={true}
+                onSelect={() => {
+                  if (car.id) {
+                    setActiveCarId(car.id);
+                    setCurrentPage('my-car' as any);
+                  }
+                }}
+                onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
+                onEdit={() => handleEditCar(car)}
+                onMarkAsSold={() => {}}
+                maintenanceRecords={maintenanceRecords}
+                fuelLogs={fuelLogs}
+                onAddFuel={handleAddFuel}
+                onAddMaintenance={handleAddMaintenance}
+                onAddCustomization={handleAddCustomization}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -3227,6 +3275,7 @@ function CarCard({
   isActive, 
   isSold = false,
   isScrapped = false,
+  isDowngraded = false,
   onSelect,
   onDelete,
   onEdit,
@@ -3241,6 +3290,7 @@ function CarCard({
   isActive: boolean;
   isSold?: boolean;
   isScrapped?: boolean;
+  isDowngraded?: boolean;
   onSelect: () => void;
   onDelete: () => void;
   onEdit: () => void;
@@ -3362,14 +3412,14 @@ function CarCard({
   return (
     <div 
       className={`bg-white rounded-2xl border p-4 transition relative ${
-        isSold || isScrapped 
+        isSold || isScrapped || isDowngraded
           ? 'border-gray-300 opacity-75'
           : isActive 
           ? 'border-blue-500 ring-2 ring-blue-100' 
           : 'border-gray-200 hover:border-gray-300'
       }`}
     >
-      {/* ステータスバッジ（売却済み・廃車済み） */}
+      {/* ステータスバッジ（売却済み・廃車済み・ダウングレード） */}
       {isSold && (
         <div className="absolute top-2 left-2 z-10">
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 border border-orange-300">
@@ -3381,6 +3431,13 @@ function CarCard({
         <div className="absolute top-2 left-2 z-10">
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300">
             🏭 廃車済み
+          </span>
+        </div>
+      )}
+      {isDowngraded && (
+        <div className="absolute top-2 left-2 z-10">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-300">
+            🔒 閲覧専用
           </span>
         </div>
       )}
@@ -3418,7 +3475,7 @@ function CarCard({
                   </svg>
                   <span>編集</span>
                 </button>
-                {!isSold && !isScrapped ? (
+                {!isSold && !isScrapped && !isDowngraded ? (
                   <>
                     <div className="h-px bg-gray-200 my-1"></div>
                     <button
@@ -3435,7 +3492,7 @@ function CarCard({
                       <span>売却済みにする</span>
                     </button>
                   </>
-                ) : (
+                ) : isSold || isScrapped ? (
                   <>
                     <div className="h-px bg-gray-200 my-1"></div>
                     <button
@@ -3459,6 +3516,27 @@ function CarCard({
                       </svg>
                       <span>現在保有中に戻す</span>
                     </button>
+                  </>
+                ) : isDowngraded ? (
+                  <>
+                    <div className="h-px bg-gray-200 my-1"></div>
+                    <div className="px-4 py-3 text-sm text-blue-700 bg-blue-50 rounded-lg mx-2">
+                      <p className="font-semibold mb-1">🚀 編集するには</p>
+                      <p className="text-xs text-blue-600 mb-2">
+                        プレミアムプランに再登録すると、この車両を編集できるようになります。
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // ペイウォール表示（将来実装）
+                          checkFeature('multiple_cars', { carCount: 999 }, 'hero');
+                          setShowDropdown(false);
+                        }}
+                        className="text-xs font-semibold text-blue-700 hover:text-blue-800 underline"
+                      >
+                        プレミアムを見る →
+                      </button>
+                    </div>
                   </>
                 )}
                 <div className="h-px bg-gray-200 my-1"></div>

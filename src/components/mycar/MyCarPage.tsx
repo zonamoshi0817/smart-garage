@@ -387,7 +387,13 @@ export default function MyCarPage({
                     </svg>
                     <div className="space-y-2">
                       <div className="font-semibold text-lg">
-                        {car.status === 'sold' ? '売却済み車両（閲覧専用）' : '廃車済み車両（閲覧専用）'}
+                        {car.status === 'sold' 
+                          ? '売却済み車両（閲覧専用）' 
+                          : car.status === 'scrapped' 
+                          ? '廃車済み車両（閲覧専用）'
+                          : car.status === 'downgraded_premium'
+                          ? '閲覧専用（プラン制限）'
+                          : '閲覧専用'}
                       </div>
                       {car.status === 'sold' && car.soldDate && (
                         <p className="text-sm text-orange-700">
@@ -396,8 +402,22 @@ export default function MyCarPage({
                           {car.soldTo && ` / 売却先: ${car.soldTo}`}
                         </p>
                       )}
+                      {car.status === 'downgraded_premium' && car.downgradedAt && (
+                        <p className="text-sm text-orange-700">
+                          💡 無料プランでは1台のみ編集可能です。この車両は閲覧専用になりました。
+                          <br />
+                          <span className="text-xs">
+                            （ダウングレード日: {formatDateLabel(toJsDate(car.downgradedAt))}）
+                          </span>
+                        </p>
+                      )}
                       <p className="text-sm text-orange-700">
-                        💡 過去データの閲覧は可能ですが、新規登録や編集はできません。
+                        💡 過去データの閲覧・PDF出力は可能ですが、新規登録や編集はできません。
+                        {car.status === 'downgraded_premium' && (
+                          <span className="block mt-1 font-semibold">
+                            🚀 プレミアムプランに再登録すると、すぐに編集可能になります。
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>

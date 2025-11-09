@@ -22,7 +22,7 @@ export interface BaseEntity {
 }
 
 // 車両ステータス
-export type CarStatus = 'active' | 'sold' | 'scrapped' | 'other';
+export type CarStatus = 'active' | 'sold' | 'scrapped' | 'downgraded_premium' | 'other';
 
 // 車両関連の型
 export type VehicleClass = '軽自動車' | 'コンパクト' | 'Cセグメント' | 'Dセグメント' | 'ミニバン' | 'SUV' | 'スポーツ' | 'スーパーカー';
@@ -42,6 +42,7 @@ export interface Car extends BaseEntity {
   soldPrice?: number; // 売却価格
   soldTo?: string; // 売却先
   soldNotes?: string; // 売却メモ
+  downgradedAt?: Timestamp; // ダウングレード日時（downgraded_premium時のみ）
 }
 
 export interface CarInput {
