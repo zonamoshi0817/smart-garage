@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PREMIUM_FEATURE_DESCRIPTIONS, PREMIUM_PRICING, PremiumFeature } from '@/lib/premium';
 import { logPaywallShown, logPaywallClick, logSubscribeStarted } from '@/lib/analytics';
 
@@ -165,21 +165,52 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
               </div>
             )}
 
-            <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">
-                ¥{PREMIUM_PRICING.monthly.price.toLocaleString()}
-                <span className="text-lg font-normal text-gray-500">/月</span>
-              </div>
-              <div className="text-sm text-gray-500 mt-1">
-                または年額¥{PREMIUM_PRICING.yearly.price.toLocaleString()}（16%お得）
-              </div>
+            {/* プラン選択カード */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <button
+                onClick={() => setSelectedPlan('yearly')}
+                className={`rounded-xl border-2 p-3 transition text-left ${
+                  selectedPlan === 'yearly'
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-gray-900">年額</span>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                    お得
+                  </span>
+                </div>
+                <div className="text-xl font-bold text-gray-900">
+                  ¥{PREMIUM_PRICING.yearly.price.toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500">月額換算 ¥400</div>
+                <div className="text-xs font-semibold text-green-600 mt-1">
+                  2ヶ月分無料
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setSelectedPlan('monthly')}
+                className={`rounded-xl border-2 p-3 transition text-left ${
+                  selectedPlan === 'monthly'
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="text-xs font-bold text-gray-900 mb-1">月額</div>
+                <div className="text-xl font-bold text-gray-900">
+                  ¥{PREMIUM_PRICING.monthly.price.toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500">毎月課金</div>
+              </button>
             </div>
 
             <button
-              onClick={() => handleUpgradeClick('monthly')}
+              onClick={() => handleUpgradeClick(selectedPlan)}
               className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 font-bold text-lg hover:shadow-lg transition"
             >
-              今すぐアップグレード
+              {selectedPlan === 'yearly' ? '年額プラン' : '月額プラン'}で始める
             </button>
 
             <button
@@ -219,6 +250,35 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
 
           {/* 機能一覧 */}
           <div className="p-8">
+            {/* Free vs Premium 比較表 */}
+            <div className="mb-8 overflow-hidden rounded-xl border-2 border-gray-200">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-0 text-sm">
+                {/* ヘッダー */}
+                <div className="bg-gray-100 px-4 py-3 font-semibold text-gray-700">機能</div>
+                <div className="bg-gray-100 px-6 py-3 text-center font-semibold text-gray-700 border-l border-gray-200">無料</div>
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 text-center font-semibold text-white border-l border-gray-200">プレミアム</div>
+                
+                {/* 主要機能の比較 */}
+                {primaryFeatures.map((feat, idx) => {
+                  const desc = PREMIUM_FEATURE_DESCRIPTIONS[feat];
+                  return (
+                    <React.Fragment key={feat}>
+                      <div className={`px-4 py-3 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-t border-gray-200`}>
+                        <div className="font-medium text-gray-900">{desc.title}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{desc.description}</div>
+                      </div>
+                      <div className={`px-6 py-3 text-center ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-l border-t border-gray-200 text-sm text-gray-600`}>
+                        {desc.freeLimit}
+                      </div>
+                      <div className={`px-6 py-3 text-center ${idx % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100/50'} border-l border-t border-gray-200 font-semibold text-blue-700`}>
+                        {desc.premiumBenefit}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               {primaryFeatures.map((feat) => {
                 const desc = PREMIUM_FEATURE_DESCRIPTIONS[feat];
@@ -247,13 +307,17 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
                 <div className="flex justify-between items-center mb-1">
                   <span className="font-bold text-gray-900">年額プラン</span>
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">
-                    16%お得
+                    おすすめ
                   </span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900">
                   ¥{PREMIUM_PRICING.yearly.price.toLocaleString()}
+                  <span className="text-sm font-normal text-gray-500">/年</span>
                 </div>
                 <div className="text-sm text-gray-500">月額¥400相当</div>
+                <div className="mt-2 text-xs font-semibold text-green-600">
+                  💰 実質2ヶ月分無料（¥{(PREMIUM_PRICING.monthly.price * 12 - PREMIUM_PRICING.yearly.price).toLocaleString()}お得）
+                </div>
               </button>
 
               <button
@@ -325,8 +389,12 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
               </div>
               <div className="text-2xl font-bold text-gray-900">
                 ¥{PREMIUM_PRICING.yearly.price.toLocaleString()}
+                <span className="text-sm font-normal text-gray-500">/年</span>
               </div>
               <div className="text-sm text-gray-500">月額換算 ¥400</div>
+              <div className="mt-2 text-xs font-semibold text-green-600">
+                💰 実質2ヶ月分無料（¥{(PREMIUM_PRICING.monthly.price * 12 - PREMIUM_PRICING.yearly.price).toLocaleString()}お得）
+              </div>
             </button>
 
             <button
@@ -345,10 +413,47 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
             </button>
           </div>
 
+          {/* Free vs Premium 比較表 */}
+          <div className="overflow-hidden rounded-xl border-2 border-gray-200">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-0 text-sm">
+              {/* ヘッダー */}
+              <div className="bg-gray-100 px-3 py-2.5 font-semibold text-gray-700 text-xs">機能</div>
+              <div className="bg-gray-100 px-4 py-2.5 text-center font-semibold text-gray-700 border-l border-gray-200 text-xs">無料</div>
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2.5 text-center font-semibold text-white border-l border-gray-200 text-xs">Premium</div>
+              
+              {/* 主要機能の比較 */}
+              {primaryFeatures.map((feat, idx) => {
+                const desc = PREMIUM_FEATURE_DESCRIPTIONS[feat];
+                const isHighlighted = feat === feature;
+                return (
+                  <React.Fragment key={feat}>
+                    <div className={`px-3 py-2.5 ${isHighlighted ? 'bg-blue-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-t border-gray-200 ${isHighlighted ? 'border-l-4 border-l-blue-500' : ''}`}>
+                      <div className="font-medium text-gray-900 text-xs">{desc.title}</div>
+                    </div>
+                    <div className={`px-4 py-2.5 text-center ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-l border-t border-gray-200 text-xs text-gray-600`}>
+                      {desc.freeLimit}
+                    </div>
+                    <div className={`px-4 py-2.5 text-center ${idx % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100/50'} border-l border-t border-gray-200 font-semibold text-blue-700 text-xs`}>
+                      {desc.premiumBenefit}
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+
           {/* 機能一覧 */}
           <div className="space-y-3">
-            <h3 className="font-bold text-gray-900 text-lg">プレミアム機能</h3>
-            {displayedFeatures.map((feat) => {
+            {!showAllFeatures && (
+              <button
+                onClick={() => setShowAllFeatures(true)}
+                className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2"
+              >
+                さらに{secondaryFeatures.length}個の機能を見る ↓
+              </button>
+            )}
+            
+            {showAllFeatures && secondaryFeatures.map((feat) => {
               const desc = PREMIUM_FEATURE_DESCRIPTIONS[feat];
               const isHighlighted = feat === feature;
               
@@ -372,15 +477,6 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
                 </div>
               );
             })}
-
-            {!showAllFeatures && (
-              <button
-                onClick={() => setShowAllFeatures(true)}
-                className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2"
-              >
-                さらに{secondaryFeatures.length}個の機能を見る ↓
-              </button>
-            )}
           </div>
 
           {/* アップグレードボタン */}
