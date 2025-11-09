@@ -19,8 +19,9 @@ export default function LandingPage() {
     }
   }, [user, loading, router]);
 
-  if (loading || user) {
-    return null; // リダイレクト中は何も表示しない
+  // 認証済みユーザーはリダイレクト中なので何も表示しない
+  if (!loading && user) {
+    return null;
   }
 
   return (
