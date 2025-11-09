@@ -956,6 +956,7 @@ export default function Home() {
       {showShareAndPDFModal && car && (
         <ShareAndPDFModal
           car={car}
+          maintenanceRecords={maintenanceRecords}
           onClose={() => setShowShareAndPDFModal(false)}
         />
       )}

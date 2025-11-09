@@ -1,22 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import { Car } from '@/types';
+import { Car, MaintenanceRecord } from '@/types';
+import { downloadMaintenancePDF } from '@/lib/pdfExport';
 
 interface ShareAndPDFModalProps {
   car: Car;
+  maintenanceRecords: MaintenanceRecord[];
   onClose: () => void;
 }
 
-export default function ShareAndPDFModal({ car, onClose }: ShareAndPDFModalProps) {
+export default function ShareAndPDFModal({ car, maintenanceRecords, onClose }: ShareAndPDFModalProps) {
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGeneratePDF = async () => {
+    if (maintenanceRecords.length === 0) {
+      alert('メンテナンス履歴がありません。先にメンテナンス記録を追加してください。');
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      // TODO: PDF生成機能の実装
-      alert('PDF生成機能は現在開発中です。プレミアム機能として近日公開予定です。');
+      await downloadMaintenancePDF({
+        car,
+        maintenanceRecords
+      });
+      alert('✅ PDFを出力しました！');
     } catch (error) {
       console.error('PDF生成エラー:', error);
       alert('PDF生成中にエラーが発生しました。');
@@ -78,14 +88,23 @@ export default function ShareAndPDFModal({ car, onClose }: ShareAndPDFModalProps
               <span>📄</span>
               <span>車両履歴PDF</span>
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 mb-2">
               全メンテナンス履歴・給油記録を証跡付きPDFで出力します
             </p>
+            {maintenanceRecords.length > 0 ? (
+              <p className="text-xs text-indigo-700 mb-4">
+                📊 {maintenanceRecords.length}件のメンテナンス記録をPDFに含めます
+              </p>
+            ) : (
+              <p className="text-xs text-orange-700 mb-4">
+                ⚠️ メンテナンス記録がありません。先に記録を追加してください。
+              </p>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={handleGeneratePDF}
-                disabled={isGenerating}
-                className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                disabled={isGenerating || maintenanceRecords.length === 0}
+                className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
               >
                 <span>📥</span>
                 <span>{isGenerating ? 'PDF生成中...' : 'PDF発行'}</span>
@@ -131,14 +150,14 @@ export default function ShareAndPDFModal({ car, onClose }: ShareAndPDFModalProps
             </div>
           </div>
 
-          {/* プレミアム機能バッジ */}
+          {/* 共有URL機能について */}
           <div className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200">
             <div className="flex items-center gap-3">
               <span className="text-2xl">⭐</span>
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">プレミアム機能</p>
+                <p className="font-semibold text-gray-900">共有URL機能</p>
                 <p className="text-sm text-gray-600 mt-1">
-                  この機能は現在開発中です。プレミアムプランで近日公開予定です。
+                  共有URL機能は現在開発中です。プレミアムプランで近日公開予定です。
                 </p>
               </div>
             </div>
