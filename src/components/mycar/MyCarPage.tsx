@@ -9,7 +9,6 @@ import { getDisplayAmount, getDisplayCost } from '@/lib/fuelLogs';
 import { isPremiumPlan } from '@/lib/plan';
 import VehicleHeader from './VehicleHeader';
 import QuickActions from './QuickActions';
-import NextMaintenanceSuggestion from './NextMaintenanceSuggestion';
 import ContextualAd from './ContextualAd';
 import CustomPartsPanel from './CustomPartsPanel';
 import PaywallModal from '../modals/PaywallModal';
@@ -355,18 +354,8 @@ export default function MyCarPage({
         </section>
 
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          {/* 左カラム: 次回メンテナンス提案 + カスタムパーツ */}
+          {/* 左カラム: カスタムパーツ */}
           <div className="space-y-8">
-            {!readOnly && (
-              <div id="section-maintenance" className="scroll-mt-24">
-                <NextMaintenanceSuggestion
-                  car={car}
-                  maintenanceRecords={maintenanceRecords}
-                  onCreateFromTemplate={handleCreateFromTemplate}
-                />
-              </div>
-            )}
-            
             <div id="section-custom" className="scroll-mt-24">
               <CustomPartsPanel
                 customizations={customizations}

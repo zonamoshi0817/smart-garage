@@ -31,6 +31,7 @@ import ShareAndPDFModal from "@/components/modals/ShareAndPDFModal";
 import OCRModal from "@/components/modals/OCRModal";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import MyCarPage from "@/components/mycar/MyCarPage";
+import NextMaintenanceSuggestion from "@/components/mycar/NextMaintenanceSuggestion";
 import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 
@@ -1737,6 +1738,14 @@ function MaintenanceHistoryContent({
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // 選択されている車両を取得
+  const selectedCar = selectedCarId !== 'all' ? cars.find(c => c.id === selectedCarId) : null;
+  
+  // 選択されている車両のメンテナンス記録のみを取得（提案用）
+  const selectedCarMaintenanceRecords = selectedCarId !== 'all' 
+    ? maintenanceRecords.filter(r => r.carId === selectedCarId)
+    : [];
+
   // メンテナンスカテゴリの定義
   const MAINTENANCE_CATEGORIES = {
     'all': 'すべてのカテゴリ',
@@ -1970,6 +1979,20 @@ function MaintenanceHistoryContent({
                   </button>
                 </div>
       </div>
+
+      {/* メンテナンス提案（車両が選択されている場合のみ） */}
+      {selectedCar && (
+        <NextMaintenanceSuggestion
+          car={selectedCar}
+          maintenanceRecords={selectedCarMaintenanceRecords}
+          onCreateFromTemplate={(templateId) => {
+            // テンプレートからメンテナンスを作成
+            // TODO: テンプレート機能の実装
+            console.log('Create from template:', templateId);
+            setShowMaintenanceModal(true);
+          }}
+        />
+      )}
 
       {/* フィルター・検索 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
