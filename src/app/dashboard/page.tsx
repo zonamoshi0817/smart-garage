@@ -1750,7 +1750,6 @@ function CompactSuggestionCard({
       {/* ヘッダー行 */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-xl flex-shrink-0">{suggestion.icon}</span>
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-gray-900 text-sm truncate">
               {suggestion.title}
@@ -1766,18 +1765,18 @@ function CompactSuggestionCard({
       <div className="text-xs text-gray-700 mb-2 space-y-1">
         {suggestion.dueInfo.remainKm !== Infinity && suggestion.dueInfo.remainDays !== Infinity ? (
           <div className="flex items-center gap-2">
-            <span>🚗 {Math.round(suggestion.dueInfo.remainKm).toLocaleString()}km</span>
+            <span>残り {Math.round(suggestion.dueInfo.remainKm).toLocaleString()}km</span>
             <span className="text-gray-400">•</span>
-            <span>📅 {suggestion.dueInfo.remainDays}日</span>
+            <span>{suggestion.dueInfo.remainDays}日</span>
           </div>
         ) : suggestion.dueInfo.remainKm !== Infinity ? (
-          <div>🚗 残り {Math.round(suggestion.dueInfo.remainKm).toLocaleString()}km</div>
+          <div>残り {Math.round(suggestion.dueInfo.remainKm).toLocaleString()}km</div>
         ) : (
-          <div>📅 残り {suggestion.dueInfo.remainDays}日</div>
+          <div>残り {suggestion.dueInfo.remainDays}日</div>
         )}
         
         {suggestion.dueInfo.isOverdue && (
-          <div className="text-red-600 font-semibold">⚠️ 期限超過</div>
+          <div className="text-red-600 font-semibold">期限超過</div>
         )}
       </div>
 
@@ -2100,7 +2099,7 @@ function MaintenanceHistoryContent({
             }`}
           >
             <span className="flex items-center justify-center gap-2">
-              💡 提案
+              次回メンテ
               {selectedCar && suggestions.length > 0 && (
                 <span className={`px-2 py-0.5 text-xs rounded-full ${
                   criticalSuggestions.length > 0
@@ -2126,7 +2125,7 @@ function MaintenanceHistoryContent({
             }`}
           >
             <span className="flex items-center justify-center gap-2">
-              📋 履歴
+              履歴
               {filteredRecords.length > 0 && (
                 <span className="px-2 py-0.5 text-xs rounded-full bg-gray-200 text-gray-700">
                   {filteredRecords.length}
@@ -2234,27 +2233,21 @@ function MaintenanceHistoryContent({
             <>
               {(!selectedCar.odoKm || selectedCar.odoKm === 0) && (
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-blue-500 text-xl">ℹ️</span>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-blue-900 text-sm mb-1">走行距離（ODO）未登録</h4>
-                      <p className="text-xs text-blue-700">
-                        時間ベースで提案しています。ODOを登録すると、より正確なメンテナンス提案ができます。
-                      </p>
-                    </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-blue-900 text-sm mb-1">走行距離（ODO）未登録</h4>
+                    <p className="text-xs text-blue-700">
+                      時間ベースで提案しています。ODOを登録すると、より正確なメンテナンス提案ができます。
+                    </p>
                   </div>
                 </div>
               )}
               {selectedCar.odoKm && selectedCar.odoKm > 0 && (!selectedCar.avgKmPerMonth || selectedCar.avgKmPerMonth === 0) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="text-amber-500 text-xl">💡</span>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-amber-900 text-sm mb-1">平均走行距離未登録</h4>
-                      <p className="text-xs text-amber-700">
-                        車両設定で月間走行距離を登録すると、残り日数の推定精度が向上します。
-                      </p>
-                    </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-amber-900 text-sm mb-1">平均走行距離未登録</h4>
+                    <p className="text-xs text-amber-700">
+                      車両設定で月間走行距離を登録すると、残り日数の推定精度が向上します。
+                    </p>
                   </div>
                 </div>
               )}
@@ -2283,7 +2276,7 @@ function MaintenanceHistoryContent({
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                ✨ すべて良好です！
+                すべて良好です
               </h3>
               <p className="text-gray-500">
                 近いうちに必要なメンテナンスはありません
@@ -2292,12 +2285,12 @@ function MaintenanceHistoryContent({
           ) : (
             // カンバン風レイアウト
             <div className="grid gap-4 md:grid-cols-3">
-              {/* 🔴 緊急 */}
+              {/* 緊急 */}
               <div className="bg-white rounded-2xl border-2 border-red-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 border-b border-red-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-red-900 flex items-center gap-2">
-                      🔴 緊急
+                    <h3 className="font-bold text-red-900">
+                      緊急
                     </h3>
                     <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
                       {criticalSuggestions.length}
@@ -2321,12 +2314,12 @@ function MaintenanceHistoryContent({
                 </div>
               </div>
 
-              {/* 🟡 近日 */}
+              {/* 近日 */}
               <div className="bg-white rounded-2xl border-2 border-yellow-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 px-4 py-3 border-b border-yellow-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-yellow-900 flex items-center gap-2">
-                      🟡 近日
+                    <h3 className="font-bold text-yellow-900">
+                      近日
                     </h3>
                     <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs font-bold rounded-full">
                       {[...soonSuggestions, ...upcomingSuggestions].length}
@@ -2350,12 +2343,12 @@ function MaintenanceHistoryContent({
                 </div>
               </div>
 
-              {/* 🟢 余裕あり */}
+              {/* 余裕あり */}
               <div className="bg-white rounded-2xl border-2 border-green-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-green-50 to-green-100 px-4 py-3 border-b border-green-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-green-900 flex items-center gap-2">
-                      🟢 余裕あり
+                    <h3 className="font-bold text-green-900">
+                      余裕あり
                     </h3>
                     <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">
                       {okSuggestions.length}
@@ -2443,15 +2436,15 @@ function MaintenanceHistoryContent({
                       <p className="text-gray-600 mb-2">{record.description}</p>
                     )}
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>📅 {(record.date?.toDate ? record.date.toDate() : new Date()).toLocaleDateString('ja-JP')}</span>
+                      <span>{(record.date?.toDate ? record.date.toDate() : new Date()).toLocaleDateString('ja-JP')}</span>
                       {record.cost && (
-                        <span>💰 ¥{record.cost.toLocaleString()}</span>
+                        <span>¥{record.cost.toLocaleString()}</span>
                       )}
                       {record.mileage && (
-                        <span>🛣️ {record.mileage.toLocaleString()} km</span>
+                        <span>{record.mileage.toLocaleString()} km</span>
                       )}
                       {record.location && (
-                        <span>📍 {record.location}</span>
+                        <span>{record.location}</span>
                       )}
                     </div>
                     </div>
