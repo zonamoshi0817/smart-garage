@@ -14,7 +14,7 @@ import {
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
-import type { FuelLogDraft, MaintenanceDraft, InsurancePolicyDraft, FieldMetadata } from '@/types';
+import type { FuelLogDraft, MaintenanceDraft, FieldMetadata } from '@/types';
 
 /**
  * 信頼度スコアの計算
@@ -71,38 +71,6 @@ export async function createFuelLogDraft(
 }
 
 /**
- * InsurancePolicyDraftを作成
- */
-export async function createInsurancePolicyDraft(
-  carId: string,
-  ocrData: Partial<InsurancePolicyDraft>,
-  rawText: string
-): Promise<string> {
-  const user = auth.currentUser;
-  if (!user) throw new Error('ユーザーが認証されていません');
-
-  const draftData: Partial<InsurancePolicyDraft> = {
-    carId,
-    ...ocrData,
-    status: 'pending_review',
-    ocrRawText: rawText,
-    ownerUid: user.uid,
-    createdBy: user.uid,
-    updatedBy: user.uid,
-    deletedAt: null,
-    createdAt: serverTimestamp() as Timestamp,
-    updatedAt: serverTimestamp() as Timestamp,
-  };
-
-  const docRef = await addDoc(
-    collection(db, 'users', user.uid, 'insurancePolicyDrafts'),
-    draftData
-  );
-
-  return docRef.id;
-}
-
-/**
  * MaintenanceDraftを作成
  */
 export async function createMaintenanceDraft(
@@ -137,15 +105,13 @@ export async function createMaintenanceDraft(
 /**
  * ドラフトを確定（正式データとして保存）
  */
-export async function confirmDraft(draftId: string, draftType: 'fuel' | 'maintenance' | 'insurance'): Promise<void> {
+export async function confirmDraft(draftId: string, draftType: 'fuel' | 'maintenance'): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error('ユーザーが認証されていません');
 
   const collectionName = draftType === 'fuel' 
     ? 'fuelLogDrafts' 
-    : draftType === 'maintenance' 
-    ? 'maintenanceDrafts' 
-    : 'insurancePolicyDrafts';
+    : 'maintenanceDrafts';
 
   await updateDoc(doc(db, 'users', user.uid, collectionName, draftId), {
     status: 'confirmed',
@@ -157,15 +123,13 @@ export async function confirmDraft(draftId: string, draftType: 'fuel' | 'mainten
 /**
  * ドラフトを拒否（削除）
  */
-export async function rejectDraft(draftId: string, draftType: 'fuel' | 'maintenance' | 'insurance'): Promise<void> {
+export async function rejectDraft(draftId: string, draftType: 'fuel' | 'maintenance'): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error('ユーザーが認証されていません');
 
   const collectionName = draftType === 'fuel' 
     ? 'fuelLogDrafts' 
-    : draftType === 'maintenance' 
-    ? 'maintenanceDrafts' 
-    : 'insurancePolicyDrafts';
+    : 'maintenanceDrafts';
 
   // 論理削除
   await updateDoc(doc(db, 'users', user.uid, collectionName, draftId), {
@@ -179,7 +143,7 @@ export async function rejectDraft(draftId: string, draftType: 'fuel' | 'maintena
  * ドラフトを監視
  */
 export function watchDrafts<T>(
-  draftType: 'fuel' | 'maintenance' | 'insurance',
+  draftType: 'fuel' | 'maintenance',
   callback: (drafts: T[]) => void
 ): () => void {
   const user = auth.currentUser;
@@ -190,9 +154,7 @@ export function watchDrafts<T>(
 
   const collectionName = draftType === 'fuel' 
     ? 'fuelLogDrafts' 
-    : draftType === 'maintenance' 
-    ? 'maintenanceDrafts' 
-    : 'insurancePolicyDrafts';
+    : 'maintenanceDrafts';
 
   const q = query(
     collection(db, 'users', user.uid, collectionName),
