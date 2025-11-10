@@ -32,6 +32,7 @@ import OCRModal from "@/components/modals/OCRModal";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import MyCarPage from "@/components/mycar/MyCarPage";
 import NextMaintenanceSuggestion from "@/components/mycar/NextMaintenanceSuggestion";
+import { generateMaintenanceSuggestions } from "@/lib/maintenanceSuggestions";
 import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 
@@ -1716,6 +1717,99 @@ function CarHeaderDropdown({
   );
 }
 
+// コンパクトな提案カードコンポーネント
+function CompactSuggestionCard({
+  suggestion,
+  onCreateFromTemplate
+}: {
+  suggestion: any;
+  onCreateFromTemplate: (templateId: string) => void;
+}) {
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'critical': return '🔴';
+      case 'soon': return '🟠';
+      case 'upcoming': return '🟡';
+      case 'ok': return '🟢';
+      default: return '⚪';
+    }
+  };
+
+  const getConfidenceStars = (confidence: string) => {
+    switch (confidence) {
+      case 'high': return '★★★';
+      case 'medium': return '★★☆';
+      case 'low': return '★☆☆';
+      default: return '☆☆☆';
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow group">
+      {/* ヘッダー行 */}
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-xl flex-shrink-0">{suggestion.icon}</span>
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-gray-900 text-sm truncate">
+              {suggestion.title}
+            </div>
+            <div className="text-xs text-gray-500">
+              {getConfidenceStars(suggestion.confidence)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 情報行 */}
+      <div className="text-xs text-gray-700 mb-2 space-y-1">
+        {suggestion.dueInfo.remainKm !== Infinity && suggestion.dueInfo.remainDays !== Infinity ? (
+          <div className="flex items-center gap-2">
+            <span>🚗 {Math.round(suggestion.dueInfo.remainKm).toLocaleString()}km</span>
+            <span className="text-gray-400">•</span>
+            <span>📅 {suggestion.dueInfo.remainDays}日</span>
+          </div>
+        ) : suggestion.dueInfo.remainKm !== Infinity ? (
+          <div>🚗 残り {Math.round(suggestion.dueInfo.remainKm).toLocaleString()}km</div>
+        ) : (
+          <div>📅 残り {suggestion.dueInfo.remainDays}日</div>
+        )}
+        
+        {suggestion.dueInfo.isOverdue && (
+          <div className="text-red-600 font-semibold">⚠️ 期限超過</div>
+        )}
+      </div>
+
+      {/* 進捗バー＋ボタン */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all ${
+                suggestion.status === 'critical'
+                  ? 'bg-red-500 animate-pulse'
+                  : suggestion.status === 'soon'
+                  ? 'bg-orange-500'
+                  : suggestion.status === 'upcoming'
+                  ? 'bg-yellow-500'
+                  : 'bg-green-500'
+              }`}
+              style={{ width: `${Math.min(suggestion.score, 100)}%` }}
+            />
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">{suggestion.score}%</div>
+        </div>
+        <button
+          onClick={() => onCreateFromTemplate(suggestion.templateId)}
+          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors whitespace-nowrap"
+        >
+          作成
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MaintenanceHistoryContent({
   cars,
   maintenanceRecords,
@@ -1729,6 +1823,7 @@ function MaintenanceHistoryContent({
   setShowEditMaintenanceModal: (show: boolean) => void;
   setEditingMaintenanceRecord: (record: MaintenanceRecord | null) => void;
 }) {
+  const [activeTab, setActiveTab] = useState<'suggestions' | 'history'>('suggestions');
   const [selectedCarId, setSelectedCarId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -1745,6 +1840,17 @@ function MaintenanceHistoryContent({
   const selectedCarMaintenanceRecords = selectedCarId !== 'all' 
     ? maintenanceRecords.filter(r => r.carId === selectedCarId)
     : [];
+
+  // 提案を取得（車両が選択されている場合のみ）
+  const suggestions = selectedCar 
+    ? generateMaintenanceSuggestions(selectedCar, selectedCarMaintenanceRecords)
+    : [];
+
+  // 優先度別に提案を分類
+  const criticalSuggestions = suggestions.filter(s => s.status === 'critical');
+  const soonSuggestions = suggestions.filter(s => s.status === 'soon');
+  const upcomingSuggestions = suggestions.filter(s => s.status === 'upcoming');
+  const okSuggestions = suggestions.filter(s => s.status === 'ok');
 
   // メンテナンスカテゴリの定義
   const MAINTENANCE_CATEGORIES = {
@@ -1980,6 +2086,58 @@ function MaintenanceHistoryContent({
                 </div>
       </div>
 
+      {/* タブナビゲーション */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('suggestions')}
+            className={`flex-1 px-6 py-4 font-medium transition-colors relative ${
+              activeTab === 'suggestions'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              💡 提案
+              {selectedCar && suggestions.length > 0 && (
+                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                  criticalSuggestions.length > 0
+                    ? 'bg-red-500 text-white'
+                    : soonSuggestions.length > 0
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-200 text-gray-700'
+                }`}>
+                  {suggestions.length}
+                </span>
+              )}
+            </span>
+            {activeTab === 'suggestions' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 px-6 py-4 font-medium transition-colors relative ${
+              activeTab === 'history'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              📋 履歴
+              {filteredRecords.length > 0 && (
+                <span className="px-2 py-0.5 text-xs rounded-full bg-gray-200 text-gray-700">
+                  {filteredRecords.length}
+                </span>
+              )}
+            </span>
+            {activeTab === 'history' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* フィルター・検索 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2082,21 +2240,166 @@ function MaintenanceHistoryContent({
         </div>
       </div>
 
-      {/* メンテナンス提案（車両が選択されている場合のみ） */}
-      {selectedCar && (
-        <NextMaintenanceSuggestion
-          car={selectedCar}
-          maintenanceRecords={selectedCarMaintenanceRecords}
-          onCreateFromTemplate={(templateId) => {
-            // テンプレートからメンテナンスを作成
-            // TODO: テンプレート機能の実装
-            console.log('Create from template:', templateId);
-            setShowMaintenanceModal(true);
-          }}
-        />
-      )}
+      {/* タブコンテンツ */}
+      {activeTab === 'suggestions' ? (
+        // 提案タブ：カンバン風レイアウト
+        <div className="space-y-4">
+          {/* ODO/平均走行距離の警告バナー */}
+          {selectedCar && (
+            <>
+              {(!selectedCar.odoKm || selectedCar.odoKm === 0) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-blue-500 text-xl">ℹ️</span>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-blue-900 text-sm mb-1">走行距離（ODO）未登録</h4>
+                      <p className="text-xs text-blue-700">
+                        時間ベースで提案しています。ODOを登録すると、より正確なメンテナンス提案ができます。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {selectedCar.odoKm && selectedCar.odoKm > 0 && (!selectedCar.avgKmPerMonth || selectedCar.avgKmPerMonth === 0) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-amber-500 text-xl">💡</span>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-amber-900 text-sm mb-1">平均走行距離未登録</h4>
+                      <p className="text-xs text-amber-700">
+                        車両設定で月間走行距離を登録すると、残り日数の推定精度が向上します。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
-      {/* 履歴一覧 */}
+          {!selectedCar ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                車両を選択してください
+              </h3>
+              <p className="text-gray-500">
+                フィルターから車両を選択すると、メンテナンス提案が表示されます
+              </p>
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+              <div className="text-green-400 mb-4">
+                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                ✨ すべて良好です！
+              </h3>
+              <p className="text-gray-500">
+                近いうちに必要なメンテナンスはありません
+              </p>
+            </div>
+          ) : (
+            // カンバン風レイアウト
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* 🔴 緊急 */}
+              <div className="bg-white rounded-2xl border-2 border-red-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 border-b border-red-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-red-900 flex items-center gap-2">
+                      🔴 緊急
+                    </h3>
+                    <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                      {criticalSuggestions.length}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 space-y-2 min-h-[200px]">
+                  {criticalSuggestions.map((suggestion) => (
+                    <CompactSuggestionCard
+                      key={suggestion.id}
+                      suggestion={suggestion}
+                      onCreateFromTemplate={(id) => {
+                        console.log('Create from template:', id);
+                        setShowMaintenanceModal(true);
+                      }}
+                    />
+                  ))}
+                  {criticalSuggestions.length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-8">該当なし</p>
+                  )}
+                </div>
+              </div>
+
+              {/* 🟡 近日 */}
+              <div className="bg-white rounded-2xl border-2 border-yellow-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 px-4 py-3 border-b border-yellow-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-yellow-900 flex items-center gap-2">
+                      🟡 近日
+                    </h3>
+                    <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs font-bold rounded-full">
+                      {[...soonSuggestions, ...upcomingSuggestions].length}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 space-y-2 min-h-[200px]">
+                  {[...soonSuggestions, ...upcomingSuggestions].map((suggestion) => (
+                    <CompactSuggestionCard
+                      key={suggestion.id}
+                      suggestion={suggestion}
+                      onCreateFromTemplate={(id) => {
+                        console.log('Create from template:', id);
+                        setShowMaintenanceModal(true);
+                      }}
+                    />
+                  ))}
+                  {[...soonSuggestions, ...upcomingSuggestions].length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-8">該当なし</p>
+                  )}
+                </div>
+              </div>
+
+              {/* 🟢 余裕あり */}
+              <div className="bg-white rounded-2xl border-2 border-green-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-green-50 to-green-100 px-4 py-3 border-b border-green-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-green-900 flex items-center gap-2">
+                      🟢 余裕あり
+                    </h3>
+                    <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">
+                      {okSuggestions.length}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 space-y-2 min-h-[200px]">
+                  {okSuggestions.map((suggestion) => (
+                    <CompactSuggestionCard
+                      key={suggestion.id}
+                      suggestion={suggestion}
+                      onCreateFromTemplate={(id) => {
+                        console.log('Create from template:', id);
+                        setShowMaintenanceModal(true);
+                      }}
+                    />
+                  ))}
+                  {okSuggestions.length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-8">該当なし</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        // 履歴タブ：既存の履歴一覧
+        <>
+          {/* 履歴一覧 */}
       <div className="bg-white rounded-2xl border border-gray-200">
         {filteredRecords.length === 0 ? (
           <div className="p-8 text-center">
@@ -2188,6 +2491,8 @@ function MaintenanceHistoryContent({
           </div>
         )}
       </div>
+        </>
+      )}
     </>
   );
 }
