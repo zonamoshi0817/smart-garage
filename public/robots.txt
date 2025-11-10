@@ -1,4 +1,4 @@
-# Smart Garage - Robots.txt
+# garage log - Robots.txt
 # 車両メンテナンス管理アプリケーション
 
 User-agent: *

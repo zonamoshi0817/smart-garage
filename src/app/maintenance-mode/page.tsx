@@ -62,7 +62,7 @@ export default function MaintenanceModePage() {
 
         {/* フッター */}
         <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} Smart Garage. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} garage log. All rights reserved.</p>
         </div>
       </div>
     </div>

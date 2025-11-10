@@ -46,7 +46,7 @@ export default function TokushoPage() {
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3">サービス内容</h2>
             <p className="text-gray-700">
-              Smart Garage プレミアムプラン<br />
+              garage log プレミアムプラン<br />
               車両メンテナンス管理サービス
             </p>
           </section>

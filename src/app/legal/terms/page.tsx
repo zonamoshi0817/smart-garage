@@ -9,7 +9,7 @@ export default function TermsOfServicePage() {
         {/* ヘッダー */}
         <div className="mb-8">
           <Link href="/" className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
-            ← Smart Garageに戻る
+            ← garage logに戻る
           </Link>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             利用規約
@@ -22,7 +22,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">第1条（適用）</h2>
             <p className="text-gray-700 leading-relaxed">
-              本規約は、Smart Garage（以下「当サービス」）の提供条件および当サービスの利用に関する当社とユーザーとの間の権利義務関係を定めることを目的とし、
+              本規約は、garage log（以下「当サービス」）の提供条件および当サービスの利用に関する当社とユーザーとの間の権利義務関係を定めることを目的とし、
               ユーザーと当社との間の当サービスの利用に関わる一切の関係に適用されます。
             </p>
           </section>
@@ -31,7 +31,7 @@ export default function TermsOfServicePage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">第2条（定義）</h2>
             <p className="text-gray-700 mb-3">本規約において使用する用語の定義は、次のとおりとします。</p>
             <ol className="list-decimal pl-6 space-y-2 text-gray-700">
-              <li>「当サービス」とは、Smart Garageという名称のWebアプリケーションおよび関連サービスを意味します。</li>
+              <li>「当サービス」とは、garage logという名称のWebアプリケーションおよび関連サービスを意味します。</li>
               <li>「ユーザー」とは、当サービスを利用する個人または法人を意味します。</li>
               <li>「登録情報」とは、ユーザーが当サービスに登録した情報を意味します。</li>
               <li>「コンテンツ」とは、ユーザーが当サービスに投稿・アップロードした情報を意味します。</li>

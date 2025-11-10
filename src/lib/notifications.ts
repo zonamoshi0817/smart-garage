@@ -47,7 +47,7 @@ export async function sendTestNotification(): Promise<void> {
   }
 
   const notificationData: NotificationData = {
-    title: 'Smart Garage',
+    title: 'garage log',
     body: 'テスト通知です',
     icon: '/favicon.ico',
     badge: '/favicon.ico',

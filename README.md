@@ -1,4 +1,4 @@
-# Smart Garage
+# garage log
 
 車両のメンテナンス管理と整備計画機能を提供するWebアプリケーション
 

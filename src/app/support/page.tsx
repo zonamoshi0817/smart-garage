@@ -21,7 +21,7 @@ export default function SupportPage() {
     setSubmitStatus("idle");
 
     // メールto:リンクを使用した簡易実装
-    const subject = encodeURIComponent(`[Smart Garage] ${getCategoryLabel(feedbackForm.category)}`);
+    const subject = encodeURIComponent(`[garage log] ${getCategoryLabel(feedbackForm.category)}`);
     const body = encodeURIComponent(
       `名前: ${feedbackForm.name}\nメール: ${feedbackForm.email}\n\n${feedbackForm.message}`
     );
@@ -198,7 +198,7 @@ export default function SupportPage() {
                       クレジットカードの明細に「スマートガレージ」と表示されています
                     </summary>
                     <p className="mt-2 text-gray-600">
-                      これは Smart Garage プレミアムプランの月額または年額料金です。
+                      これは garage log プレミアムプランの月額または年額料金です。
                       ご登録いただいたクレジットカードから自動的に課金されます。
                     </p>
                   </details>

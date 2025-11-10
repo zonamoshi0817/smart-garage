@@ -8,7 +8,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/');
     
     // ログインページが表示されることを確認
-    await expect(page.getByText('Smart Garage')).toBeVisible();
+    await expect(page.getByText('garage log')).toBeVisible();
     await expect(page.getByText('Googleでログイン')).toBeVisible();
   });
 
@@ -16,7 +16,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/');
     
     // ページタイトルを確認
-    await expect(page).toHaveTitle(/Smart Garage/);
+    await expect(page).toHaveTitle(/garage log/);
   });
 
   // 注: 実際のGoogle認証テストはモック/スタブが必要

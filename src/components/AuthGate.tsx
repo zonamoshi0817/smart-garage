@@ -67,7 +67,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen grid place-items-center bg-gray-50">
         <div className="bg-white rounded-2xl border p-8 text-center">
-          <h1 className="text-2xl font-bold">Smart Garage</h1>
+          <h1 className="text-2xl font-bold">garage log</h1>
           <p className="mt-2 text-gray-600">Googleでログインして始めましょう</p>
           {error && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">

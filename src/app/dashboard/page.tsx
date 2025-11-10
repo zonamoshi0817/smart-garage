@@ -530,7 +530,7 @@ export default function Home() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <span className="text-2xl font-extrabold tracking-tight text-blue-600">
-                Smart Garage
+                garage log
               </span>
             </div>
             <div className="flex items-center gap-4">
@@ -1014,7 +1014,7 @@ function DashboardContent({
   setShowCustomizationModal: (show: boolean) => void;
 }) {
   // SEO/アクセシビリティ用のh1タグ（非表示）
-  const pageTitle = `ダッシュボード${car ? ' - ' + car.name : ' - Smart Garage'}`;
+  const pageTitle = `ダッシュボード${car ? ' - ' + car.name : ' - garage log'}`;
 
   // 月別費用データの計算
   const monthlyExpenseData = useMemo(() => {
@@ -2621,14 +2621,14 @@ function NotificationsContent({
   const testNotification = () => {
     if ('Notification' in window) {
       if (Notification.permission === 'granted') {
-        new Notification('Smart Garage', {
+        new Notification('garage log', {
           body: 'これはテスト通知です。通知機能が正常に動作しています。',
           icon: '/favicon.ico'
         });
       } else if (Notification.permission !== 'denied') {
         Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
-            new Notification('Smart Garage', {
+            new Notification('garage log', {
               body: 'これはテスト通知です。通知機能が正常に動作しています。',
               icon: '/favicon.ico'
             });

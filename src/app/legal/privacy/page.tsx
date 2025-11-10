@@ -8,7 +8,7 @@ export default function PrivacyPolicyPage() {
         {/* ヘッダー */}
         <div className="mb-8">
           <Link href="/" className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
-            ← Smart Garageに戻る
+            ← garage logに戻る
           </Link>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             プライバシーポリシー
@@ -21,7 +21,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">1. はじめに</h2>
             <p className="text-gray-700 leading-relaxed">
-              Smart Garage（以下「当サービス」）は、ユーザーの皆様のプライバシーを尊重し、個人情報の保護に最大限の注意を払います。
+              garage log（以下「当サービス」）は、ユーザーの皆様のプライバシーを尊重し、個人情報の保護に最大限の注意を払います。
               本プライバシーポリシーは、当サービスがどのように個人情報を収集、使用、保護するかを説明します。
             </p>
           </section>

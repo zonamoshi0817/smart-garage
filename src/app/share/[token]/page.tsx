@@ -133,7 +133,7 @@ export default function SharedVehicleHistoryPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">🚗 メンテナンス履歴</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Smart Garage 共有ページ（閲覧専用）
+                garage log 共有ページ（閲覧専用）
                 {isReadOnly && <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">📦 売却済み車両</span>}
               </p>
             </div>
@@ -263,7 +263,7 @@ export default function SharedVehicleHistoryPage() {
         {/* フッター */}
         <div className="mt-8 text-center text-sm text-gray-500">
           <p className="mb-2">
-            このページは Smart Garage から共有されたメンテナンス履歴です
+            このページは garage log から共有されたメンテナンス履歴です
           </p>
           <p className="text-xs">
             データは暗号化され、署名検証済みです 🔒
@@ -273,7 +273,7 @@ export default function SharedVehicleHistoryPage() {
               href="/"
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
-              Smart Garage でメンテナンス管理を始める →
+              garage log でメンテナンス管理を始める →
             </a>
           </div>
         </div>

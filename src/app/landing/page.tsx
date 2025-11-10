@@ -34,7 +34,7 @@ function Header() {
             <Car className="h-5 w-5 text-white" />
           </div>
           <div className="leading-tight">
-            <p className="font-bold text-gray-900">Smart Garage</p>
+            <p className="font-bold text-gray-900">garage log</p>
             <p className="text-[12px] text-gray-500 -mt-0.5">Turn Your Car History into Value</p>
           </div>
         </div>
@@ -88,7 +88,7 @@ function Hero() {
                 <div className="h-3 w-3 rounded-full bg-red-400" />
                 <div className="h-3 w-3 rounded-full bg-yellow-400" />
                 <div className="h-3 w-3 rounded-full bg-green-400" />
-                <span className="text-sm text-gray-500 ml-2">Smart Garage Demo</span>
+                <span className="text-sm text-gray-500 ml-2">garage log Demo</span>
               </div>
               <div className="p-6 grid sm:grid-cols-2 gap-6">
                 <div className="rounded-2xl p-4 bg-blue-50 border border-blue-100">
@@ -142,7 +142,7 @@ function PainGain() {
           </ul>
         </div>
         <div>
-          <h3 className="text-2xl sm:text-3xl font-bold">Smart Garage なら</h3>
+          <h3 className="text-2xl sm:text-3xl font-bold">garage log なら</h3>
           <ul className="mt-6 space-y-4 text-gray-700">
             <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> すべてを1か所で一元管理（車ごとに整理）</li>
             <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> 自動グラフ化で &quot;見るだけで価値&quot;</li>
@@ -290,7 +290,7 @@ function Security() {
         </div>
         <div className="rounded-2xl border border-gray-200 p-6">
           <div className="flex items-center gap-2 text-gray-900 font-semibold"><Shield className="h-5 w-5 text-blue-600"/> 安心して使える仕組み</div>
-          <p className="mt-2 text-sm text-gray-600">Smart Garageは、あなたの愛車データを安全に守ります。リンク共有時も、期限つきの署名トークンで第三者への過剰な公開を防ぎます。</p>
+          <p className="mt-2 text-sm text-gray-600">garage logは、あなたの愛車データを安全に守ります。リンク共有時も、期限つきの署名トークンで第三者への過剰な公開を防ぎます。</p>
         </div>
       </div>
     </section>
@@ -352,8 +352,8 @@ function Footer() {
               <Car className="h-4 w-4 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-gray-900">Smart Garage</p>
-              <p className="text-xs text-gray-500">© {new Date().getFullYear()} Smart Garage</p>
+              <p className="font-semibold text-gray-900">garage log</p>
+              <p className="text-xs text-gray-500">© {new Date().getFullYear()} garage log</p>
             </div>
           </div>
           <div className="flex items-center gap-6">
