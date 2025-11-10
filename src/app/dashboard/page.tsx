@@ -3450,6 +3450,7 @@ function CarManagementContent({
                   onAddFuel={handleAddFuel}
                   onAddMaintenance={handleAddMaintenance}
                   onAddCustomization={handleAddCustomization}
+                  checkFeature={checkFeature}
                 />
               ))}
               
@@ -3612,7 +3613,8 @@ function CarCard({
   fuelLogs,
   onAddFuel,
   onAddMaintenance,
-  onAddCustomization
+  onAddCustomization,
+  checkFeature
 }: { 
   car: Car; 
   isActive: boolean;
@@ -3628,6 +3630,7 @@ function CarCard({
   onAddFuel: (carId: string) => void;
   onAddMaintenance: (carId: string) => void;
   onAddCustomization: (carId: string) => void;
+  checkFeature: (feature: any, currentUsage?: any, variant?: any) => boolean;
 }) {
   // テスト車両でも編集・削除を許可（デバッグ用）
   const isTestCar = false; // car.id?.startsWith('test');
