@@ -408,8 +408,9 @@ export function generateMaintenanceSuggestions(
     // メッセージ生成
     const message = generateMessage(dueInfo, status, confidence);
 
-    // 提案を追加（「余裕あり」でスコアが低すぎる場合は除外）
-    if (status !== 'ok' || score >= 50) {
+    // 提案を追加（すべての項目を表示）
+    // 履歴がある項目は必ず表示、履歴がない項目は除外
+    if (hasHistory || status !== 'ok') {
       suggestions.push({
         id: item.id,
         title: item.title,
