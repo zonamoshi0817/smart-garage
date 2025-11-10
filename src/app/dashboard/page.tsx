@@ -666,6 +666,7 @@ export default function Home() {
                 setEditingCustomization={setEditingCustomization}
                 setCustomizations={setCustomizations}
               />
+            ) : currentPage === 'data-management' ? (
               <DataManagementContent 
                 cars={cars}
                 maintenanceRecords={allMaintenanceRecords}
