@@ -2140,7 +2140,8 @@ function MaintenanceHistoryContent({
         </div>
       </div>
 
-      {/* フィルター・検索 */}
+      {/* フィルター・検索（履歴タブでのみ表示） */}
+      {activeTab === 'history' && (
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 検索 */}
@@ -2222,6 +2223,7 @@ function MaintenanceHistoryContent({
           </div>
         </div>
       </div>
+      )}
 
       {/* タブコンテンツ */}
       {activeTab === 'suggestions' ? (
