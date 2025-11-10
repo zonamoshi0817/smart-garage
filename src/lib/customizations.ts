@@ -62,6 +62,7 @@ export async function addCustomization(
       ...customization,
       date: dateField,  // Timestamp型で保存
       carId,
+      userId: userId,       // セキュリティルールで必須
       ownerUid: userId,
       createdBy: userId,
       updatedBy: userId,
@@ -155,6 +156,8 @@ export async function updateCustomization(
     }
 
     const docRef = doc(db, 'users', userId, 'cars', carId, CUSTOMIZATIONS_COLLECTION, customizationId);
+    // userIdを追加
+    cleanUpdates.userId = userId;
     await updateDoc(docRef, cleanUpdates);
     
     // 監査ログを記録
@@ -184,6 +187,7 @@ export async function deleteCustomization(
     
     // 論理削除を実装
     await updateDoc(docRef, {
+      userId: userId,       // セキュリティルールで必須
       deletedAt: Timestamp.now(),
       updatedBy: userId,
       updatedAt: Timestamp.now(),

@@ -35,6 +35,7 @@ export async function addInsurancePolicy(policy: Omit<InsurancePolicy, 'id' | 'c
     startDate,
     endDate,
     contractDate,
+    userId: user.uid,     // セキュリティルールで必須
     ownerUid: user.uid,
     createdBy: user.uid,
     updatedBy: user.uid,
@@ -67,6 +68,7 @@ export async function updateInsurancePolicy(
 
   const updateData = {
     ...updates,
+    userId: user.uid,     // セキュリティルールで必須
     updatedAt: serverTimestamp(),
   };
 
@@ -99,6 +101,7 @@ export async function removeInsurancePolicy(policyId: string): Promise<void> {
 
   // 論理削除を実装
   await updateDoc(doc(db, 'users', user.uid, 'policies', policyId), {
+    userId: user.uid,     // セキュリティルールで必須
     deletedAt: serverTimestamp(),
     updatedBy: user.uid,
     updatedAt: serverTimestamp(),
@@ -205,6 +208,11 @@ export async function addInsuranceClaim(claim: Omit<InsuranceClaim, 'id' | 'crea
 
   const claimData = {
     ...claim,
+    userId: user.uid,     // セキュリティルールで必須
+    ownerUid: user.uid,
+    createdBy: user.uid,
+    updatedBy: user.uid,
+    deletedAt: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -223,6 +231,7 @@ export async function updateInsuranceClaim(
 
   const updateData = {
     ...updates,
+    userId: user.uid,     // セキュリティルールで必須
     updatedAt: serverTimestamp(),
   };
 

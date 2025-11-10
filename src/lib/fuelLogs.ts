@@ -132,6 +132,7 @@ export const addFuelLog = async (fuelLogData: FuelLogInput): Promise<string> => 
     
     const docRef = await addDoc(collection(db, "users", user.uid, "fuelLogs"), {
       ...cleanData,
+      userId: user.uid,     // セキュリティルールで必須
       ownerUid: user.uid,
       createdBy: user.uid,
       updatedBy: user.uid,
@@ -189,6 +190,7 @@ export const updateFuelLog = async (id: string, fuelLogData: Partial<FuelLogInpu
     const docRef = doc(db, "users", user.uid, "fuelLogs", id);
     await updateDoc(docRef, {
       ...cleanData,
+      userId: user.uid,     // セキュリティルールで必須
       updatedBy: user.uid,
       updatedAt: Timestamp.now(),
     });
@@ -218,6 +220,7 @@ export const deleteFuelLog = async (id: string): Promise<void> => {
   try {
     // 論理削除を実装
     await updateDoc(doc(db, "users", user.uid, "fuelLogs", id), {
+      userId: user.uid,     // セキュリティルールで必須
       deletedAt: Timestamp.now(),
       updatedBy: user.uid,
       updatedAt: Timestamp.now(),

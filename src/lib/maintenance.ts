@@ -111,6 +111,7 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
       mileage: data.mileage || null,
       date: dateField,  // Timestamp型で保存
       location: data.location || null,
+      userId: u.uid,       // セキュリティルールで必須
       ownerUid: u.uid,
       createdBy: u.uid,
       updatedBy: u.uid,
