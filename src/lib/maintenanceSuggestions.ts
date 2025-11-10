@@ -376,6 +376,12 @@ export function generateMaintenanceSuggestions(
   const currentOdo = car.odoKm;
   const avgKmPerMonth = car.avgKmPerMonth;
   const fallbackStartDate = getCarStartDate(car);
+  
+  // 車の登録からの経過月数を計算
+  const now = new Date();
+  const monthsSinceCarStart = Math.floor(
+    (now.getTime() - fallbackStartDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+  );
 
   for (const item of MAINTENANCE_ITEMS) {
     // 最終メンテナンス記録を取得
@@ -408,9 +414,24 @@ export function generateMaintenanceSuggestions(
     // メッセージ生成
     const message = generateMessage(dueInfo, status, confidence);
 
-    // 提案を追加（すべての項目を表示）
-    // 履歴がある項目は必ず表示、履歴がない項目は除外
-    if (hasHistory || status !== 'ok') {
+    // 提案を追加するかの判定
+    let shouldInclude = false;
+    
+    if (hasHistory) {
+      // 履歴がある項目は常に表示（スコアに関係なく）
+      shouldInclude = true;
+    } else {
+      // 履歴がない項目：車の登録からサイクルの50%以上経過していれば表示
+      if (item.cycle.months && monthsSinceCarStart >= item.cycle.months * 0.5) {
+        shouldInclude = true;
+      }
+      // または緊急/近日の場合は表示
+      else if (status !== 'ok') {
+        shouldInclude = true;
+      }
+    }
+    
+    if (shouldInclude) {
       suggestions.push({
         id: item.id,
         title: item.title,
