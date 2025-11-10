@@ -2,7 +2,6 @@
 
 import { Car } from '@/types';
 import { MaintenanceRecord } from '@/types';
-import { InsurancePolicy, getDaysUntilExpiry, getExpiryStatus } from '@/lib/insurance';
 import { useState } from 'react';
 import Image from 'next/image';
 import { daysFromNow, toDate } from './utils';
@@ -10,25 +9,18 @@ import { daysFromNow, toDate } from './utils';
 interface VehicleHeaderProps {
   car: Car;
   latestMaintenance?: MaintenanceRecord;
-  activeInsurance?: InsurancePolicy;
   onImageChange: () => void;
 }
 
 export default function VehicleHeader({ 
   car, 
   latestMaintenance, 
-  activeInsurance,
   onImageChange 
 }: VehicleHeaderProps) {
   const [imageError, setImageError] = useState(false);
   
   // 車検期限までの日数
   const inspectionDaysLeft = daysFromNow(car.inspectionExpiry);
-  
-  // 保険期限までの日数
-  const insuranceDaysLeft = activeInsurance 
-    ? getDaysUntilExpiry(toDate(activeInsurance.endDate) || new Date())
-    : null;
   
   // バッジの色を決定
   const getBadgeColor = (daysLeft: number | null) => {
@@ -128,17 +120,6 @@ export default function VehicleHeader({
                   {inspectionDaysLeft < 0 
                     ? ` 期限切れ (${Math.abs(inspectionDaysLeft)}日超過)` 
                     : ` あと${inspectionDaysLeft}日`
-                  }
-                </span>
-              )}
-
-              {/* 保険期限バッジ */}
-              {insuranceDaysLeft !== null && (
-                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getBadgeColor(insuranceDaysLeft)}`}>
-                  🛡️ 保険: 
-                  {insuranceDaysLeft < 0 
-                    ? ` 期限切れ (${Math.abs(insuranceDaysLeft)}日超過)` 
-                    : ` あと${insuranceDaysLeft}日`
                   }
                 </span>
               )}

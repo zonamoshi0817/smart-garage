@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { parseQuery } from '@/lib/urlParams';
-import { Car, MaintenanceRecord, FuelLog, Customization, InsurancePolicy } from '@/types';
+import { Car, MaintenanceRecord, FuelLog, Customization } from '@/types';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import { getDisplayAmount, getDisplayCost } from '@/lib/fuelLogs';
 import { isPremiumPlan } from '@/lib/plan';
@@ -18,7 +18,6 @@ interface MyCarPageProps {
   maintenanceRecords: MaintenanceRecord[];
   fuelLogs: FuelLog[];
   customizations: Customization[];
-  insurancePolicies: InsurancePolicy[];
   readOnly?: boolean; // READ ONLYモード（売却済み・廃車済み車両用）
   onOpenModal: (modalType: string, data?: any) => void;
 }
@@ -28,7 +27,6 @@ export default function MyCarPage({
   maintenanceRecords,
   fuelLogs,
   customizations,
-  insurancePolicies,
   readOnly = false,
   onOpenModal
 }: MyCarPageProps) {
@@ -109,9 +107,6 @@ export default function MyCarPage({
         case 'add-customization':
           onOpenModal('customization');
           break;
-        case 'add-insurance':
-          onOpenModal('insurance');
-          break;
       }
     }
     
@@ -134,19 +129,6 @@ export default function MyCarPage({
       })[0];
   }, [maintenanceRecords]);
   
-  // アクティブな保険を取得
-  const activeInsurance = useMemo(() => {
-    if (insurancePolicies.length === 0) return undefined;
-    const now = Date.now();
-    return [...insurancePolicies]
-      .filter((policy) => (toJsDate(policy.endDate)?.getTime() || 0) >= now)
-      .sort((a, b) => {
-        const aTime = toJsDate(a.startDate)?.getTime() || 0;
-        const bTime = toJsDate(b.startDate)?.getTime() || 0;
-        return bTime - aTime;
-      })[0];
-  }, [insurancePolicies]);
-
   const sortedFuelLogs = useMemo(() => {
     if (fuelLogs.length === 0) return [] as FuelLog[];
     return [...fuelLogs].sort((a, b) => {
@@ -172,8 +154,6 @@ export default function MyCarPage({
 
   const inspectionDate = toJsDate(car.inspectionExpiry);
   const inspectionDaysLeft = inspectionDate ? Math.ceil((inspectionDate.getTime() - Date.now()) / dayMs) : null;
-  const insuranceEndDate = activeInsurance ? toJsDate(activeInsurance.endDate) : null;
-  const insuranceDaysLeft = insuranceEndDate ? Math.ceil((insuranceEndDate.getTime() - Date.now()) / dayMs) : null;
 
   const latestMaintenanceDate = latestMaintenance ? toJsDate(latestMaintenance.date) : null;
 
@@ -222,20 +202,6 @@ export default function MyCarPage({
   ];
 
   const insightItems = [
-    {
-      id: 'insurance',
-      label: '保険満了',
-      value: insuranceEndDate ? formatDateLabel(insuranceEndDate) : '未登録',
-      tone:
-        insuranceEndDate && insuranceDaysLeft !== null
-          ? insuranceDaysLeft <= 0
-            ? 'text-red-600'
-            : insuranceDaysLeft <= 30
-            ? 'text-orange-600'
-            : 'text-gray-900'
-          : 'text-gray-400',
-      helper: insuranceEndDate ? formatCountdown(insuranceEndDate) : '保険証券を登録すると期限を追跡します',
-    },
     {
       id: 'maintenance-count',
       label: '登録済みメンテ',
@@ -293,12 +259,6 @@ export default function MyCarPage({
       onClick: () => onOpenModal('ocr')
     },
     {
-      id: 'insurance',
-      label: '保険を追加',
-      icon: '🛡️',
-      onClick: () => onOpenModal('insurance')
-    },
-    {
       id: 'edit-car',
       label: '車両情報編集',
       icon: '📝',
@@ -347,7 +307,6 @@ export default function MyCarPage({
             <VehicleHeader
               car={car}
               latestMaintenance={latestMaintenance}
-              activeInsurance={activeInsurance}
               onImageChange={handleImageChange}
             />
           </div>
