@@ -753,6 +753,7 @@ export default function Home() {
             ) : currentPage === 'maintenance-history' ? (
               <MaintenanceHistoryContent 
                 cars={cars}
+                activeCarId={activeCarId}
                 maintenanceRecords={allMaintenanceRecords}
                 setShowMaintenanceModal={setShowMaintenanceModal}
                 setShowEditMaintenanceModal={setShowEditMaintenanceModal}
@@ -1812,19 +1813,20 @@ function CompactSuggestionCard({
 
 function MaintenanceHistoryContent({
   cars,
+  activeCarId,
   maintenanceRecords,
   setShowMaintenanceModal,
   setShowEditMaintenanceModal,
   setEditingMaintenanceRecord
 }: {
   cars: Car[];
+  activeCarId?: string;
   maintenanceRecords: MaintenanceRecord[];
   setShowMaintenanceModal: (show: boolean) => void;
   setShowEditMaintenanceModal: (show: boolean) => void;
   setEditingMaintenanceRecord: (record: MaintenanceRecord | null) => void;
 }) {
   const [activeTab, setActiveTab] = useState<'suggestions' | 'history'>('suggestions');
-  const [selectedCarId, setSelectedCarId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -1833,13 +1835,13 @@ function MaintenanceHistoryContent({
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 選択されている車両を取得
-  const selectedCar = selectedCarId !== 'all' ? cars.find(c => c.id === selectedCarId) : null;
+  // ヘッダーで選択された車両を使用
+  const selectedCar = activeCarId ? cars.find(c => c.id === activeCarId) : null;
   
-  // 選択されている車両のメンテナンス記録のみを取得（提案用）
-  const selectedCarMaintenanceRecords = selectedCarId !== 'all' 
-    ? maintenanceRecords.filter(r => r.carId === selectedCarId)
-    : [];
+  // 選択されている車両のメンテナンス記録のみを取得
+  const selectedCarMaintenanceRecords = activeCarId 
+    ? maintenanceRecords.filter(r => r.carId === activeCarId)
+    : maintenanceRecords;
 
   // 提案を取得（車両が選択されている場合のみ）
   const suggestions = selectedCar 
@@ -1882,7 +1884,7 @@ function MaintenanceHistoryContent({
   const filteredRecords = useMemo(() => {
     console.log("Filtering maintenance records:", {
       totalRecords: maintenanceRecords.length,
-      selectedCarId,
+      activeCarId,
       searchTerm,
       selectedCategory,
       selectedStatus,
@@ -1893,11 +1895,11 @@ function MaintenanceHistoryContent({
     
     let filtered = maintenanceRecords;
 
-    // 車両でフィルタリング
-    if (selectedCarId !== 'all') {
-      console.log("Filtering by car ID:", selectedCarId);
+    // ヘッダーで選択された車両でフィルタリング
+    if (activeCarId) {
+      console.log("Filtering by car ID:", activeCarId);
       const beforeCount = filtered.length;
-      filtered = filtered.filter(record => record.carId === selectedCarId);
+      filtered = filtered.filter(record => record.carId === activeCarId);
       console.log(`Car filter: ${beforeCount} -> ${filtered.length} records`);
     }
 
@@ -1987,7 +1989,7 @@ function MaintenanceHistoryContent({
 
     console.log("Final filtered records:", filtered.length);
     return filtered;
-  }, [maintenanceRecords, selectedCarId, searchTerm, selectedCategory, selectedStatus, sortBy, sortOrder]);
+  }, [maintenanceRecords, activeCarId, searchTerm, selectedCategory, selectedStatus, sortBy, sortOrder]);
 
   // 車両名を取得する関数
   const getCarName = (carId: string) => {
@@ -2140,26 +2142,26 @@ function MaintenanceHistoryContent({
 
       {/* フィルター・検索 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 車両選択 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              車両でフィルター
-            </label>
-            <select
-              value={selectedCarId}
-              onChange={(e) => setSelectedCarId(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
-            >
-              <option value="all">すべての車両</option>
-              {cars.map((car) => (
-                <option key={car.id} value={car.id}>
-                  {car.name}
-                </option>
-              ))}
-            </select>
+        {/* 車両情報表示 */}
+        {selectedCar && (
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <span className="text-xl">🚗</span>
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900">{selectedCar.name}</div>
+                <div className="text-xs text-gray-500">
+                  {selectedCar.year && `${selectedCar.year}年式`}
+                  {selectedCar.year && selectedCar.odoKm && ' • '}
+                  {selectedCar.odoKm && `${selectedCar.odoKm.toLocaleString()}km`}
+                </div>
+              </div>
+            </div>
           </div>
-
+        )}
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 検索 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
