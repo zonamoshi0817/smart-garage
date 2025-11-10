@@ -12,11 +12,8 @@ import type { MaintenanceRecord } from "@/types";
 import { downloadMaintenancePDF, generateMaintenanceURL, type PDFExportOptions } from "@/lib/pdfExport";
 import { uploadCarImageWithProgress, isImageFile } from "@/lib/storage";
 import { compressImage, getCompressionInfo } from "@/lib/imageCompression";
-import { addInsurancePolicy, watchInsurancePolicies, updateInsurancePolicy, removeInsurancePolicy, watchInsuranceClaims, type InsurancePolicy, type InsuranceClaim, getDaysUntilExpiry, getExpiryStatus } from "@/lib/insurance";
 import { addCustomization, getCustomizations, updateCustomization, deleteCustomization, CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/customizations";
 import type { Customization } from "@/types";
-import { watchInsuranceNotifications, type InsuranceNotification } from "@/lib/insuranceNotifications";
-import InsuranceNotificationSettings from "@/components/InsuranceNotificationSettings";
 import { watchFuelLogs, calculateFuelEfficiency, calculateAverageFuelEfficiency, getDisplayAmount, getDisplayCost } from "@/lib/fuelLogs";
 import type { FuelLog } from "@/types";
 import { Bar as RechartsBar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart } from 'recharts';
@@ -25,7 +22,6 @@ import AddCarModal from "@/components/modals/AddCarModal";
 import FuelLogCard from "@/components/dashboard/FuelLogCard";
 import CustomizationModal from "@/components/modals/CustomizationModal";
 import PaywallModal from "@/components/modals/PaywallModal";
-import InsuranceModal from "@/components/modals/InsuranceModal";
 import SellCarModal from "@/components/modals/SellCarModal";
 import ShareAndPDFModal from "@/components/modals/ShareAndPDFModal";
 import OCRModal from "@/components/modals/OCRModal";
@@ -48,24 +44,17 @@ export default function Home() {
   const [editingMaintenanceRecord, setEditingMaintenanceRecord] = useState<MaintenanceRecord | null>(null);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [allMaintenanceRecords, setAllMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
-  const [insurancePolicies, setInsurancePolicies] = useState<InsurancePolicy[]>([]);
-  const [insuranceClaims, setInsuranceClaims] = useState<InsuranceClaim[]>([]);
-  const [insuranceNotifications, setInsuranceNotifications] = useState<InsuranceNotification[]>([]);
-  const [showInsuranceModal, setShowInsuranceModal] = useState(false);
   const [customizations, setCustomizations] = useState<Customization[]>([]);
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [showSellCarModal, setShowSellCarModal] = useState(false);
   const [carToSell, setCarToSell] = useState<Car | null>(null);
   const [editingCustomization, setEditingCustomization] = useState<Customization | null>(null);
-  const [showEditInsuranceModal, setShowEditInsuranceModal] = useState(false);
-  const [editingInsurancePolicy, setEditingInsurancePolicy] = useState<InsurancePolicy | null>(null);
-  const [showInsuranceNotificationSettings, setShowInsuranceNotificationSettings] = useState(false);
   const [showFuelLogModal, setShowFuelLogModal] = useState(false);
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
   const [showShareAndPDFModal, setShowShareAndPDFModal] = useState(false);
   const [showOCRModal, setShowOCRModal] = useState(false);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications'>('dashboard');
 
   // プレミアムガード
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
@@ -97,8 +86,6 @@ export default function Home() {
         setActiveCarId(undefined);
         setMaintenanceRecords([]);
         setAllMaintenanceRecords([]);
-        setInsurancePolicies([]);
-        setInsuranceClaims([]);
         setFuelLogs([]);
         
         // 認証トリガーを更新してデータ取得を促す
@@ -115,8 +102,6 @@ export default function Home() {
         setActiveCarId(undefined);
         setMaintenanceRecords([]);
         setAllMaintenanceRecords([]);
-        setInsurancePolicies([]);
-        setInsuranceClaims([]);
         setFuelLogs([]);
         setAuthTrigger(0);
       }
@@ -288,91 +273,6 @@ export default function Home() {
       setAllMaintenanceRecords([]);
     }
   }, [auth.currentUser, authTrigger]);
-
-  // 保険契約の監視
-  useEffect(() => {
-    // 認証されていない場合は何もしない
-    if (!auth.currentUser) {
-      console.log("No user authenticated, skipping insurance policies watch");
-      setInsurancePolicies([]);
-      return;
-    }
-    
-    console.log("Setting up insurance policies watcher");
-    console.log("Current user:", auth.currentUser.email);
-    
-    try {
-      const off = watchInsurancePolicies((policies) => {
-        console.log("Insurance policies received:", policies.length, "policies");
-        setInsurancePolicies(policies);
-      });
-      console.log("Insurance policies watcher set up successfully");
-      return () => {
-        console.log("Cleaning up insurance policies watcher");
-        off && off();
-      };
-    } catch (error) {
-      console.error("Error watching insurance policies:", error);
-      setInsurancePolicies([]);
-    }
-  }, [auth.currentUser, authTrigger]);
-
-  // 事故記録の監視
-  useEffect(() => {
-    // 認証されていない場合は何もしない
-    if (!auth.currentUser) {
-      console.log("No user authenticated, skipping insurance claims watch");
-      setInsuranceClaims([]);
-      return;
-    }
-    
-    console.log("Setting up insurance claims watcher");
-    console.log("Current user:", auth.currentUser.email);
-    
-    try {
-      const off = watchInsuranceClaims((claims) => {
-        console.log("Insurance claims received:", claims.length, "claims");
-        setInsuranceClaims(claims);
-      });
-      console.log("Insurance claims watcher set up successfully");
-      return () => {
-        console.log("Cleaning up insurance claims watcher");
-        off && off();
-      };
-    } catch (error) {
-      console.error("Error watching insurance claims:", error);
-      setInsuranceClaims([]);
-    }
-  }, [auth.currentUser, authTrigger]);
-
-  // 保険通知の監視
-  useEffect(() => {
-    // 認証されていない場合は何もしない
-    if (!auth.currentUser) {
-      console.log("No user authenticated, skipping insurance notifications watch");
-      setInsuranceNotifications([]);
-      return;
-    }
-    
-    console.log("Setting up insurance notifications watcher");
-    console.log("Current user:", auth.currentUser.email);
-    
-    try {
-      const off = watchInsuranceNotifications((notifications) => {
-        console.log("Insurance notifications received:", notifications.length, "notifications");
-        setInsuranceNotifications(notifications);
-      });
-      console.log("Insurance notifications watcher set up successfully");
-      return () => {
-        console.log("Cleaning up insurance notifications watcher");
-        off && off();
-      };
-    } catch (error) {
-      console.error("Error watching insurance notifications:", error);
-      setInsuranceNotifications([]);
-    }
-  }, [auth.currentUser, authTrigger]);
-
 
   // 給油ログの監視
   useEffect(() => {
@@ -614,11 +514,6 @@ export default function Home() {
               onClick={() => setCurrentPage('car-management')}
             />
             <NavItem 
-              label="自動車保険" 
-              active={currentPage === 'insurance'} 
-              onClick={() => setCurrentPage('insurance')}
-            />
-            <NavItem 
               label="データ" 
               active={currentPage === 'data-management'} 
               onClick={() => setCurrentPage('data-management')}
@@ -668,7 +563,6 @@ export default function Home() {
                   maintenanceRecords={maintenanceRecords}
                   fuelLogs={fuelLogs}
                   customizations={customizations}
-                  insurancePolicies={insurancePolicies}
                   readOnly={car.status === 'sold' || car.status === 'scrapped' || car.status === 'downgraded_premium'} // READ ONLYモード
                   onOpenModal={(modalType, data) => {
                     // モーダル表示ハンドラー
@@ -678,9 +572,6 @@ export default function Home() {
                         break;
                       case 'maintenance':
                         setShowMaintenanceModal(true);
-                        break;
-                      case 'insurance':
-                        setShowInsuranceModal(true);
                         break;
                       case 'customization':
                         setShowCustomizationModal(true);
@@ -775,17 +666,6 @@ export default function Home() {
                 setEditingCustomization={setEditingCustomization}
                 setCustomizations={setCustomizations}
               />
-            ) : currentPage === 'insurance' ? (
-            <InsuranceContent
-              cars={cars}
-              insurancePolicies={insurancePolicies}
-              insuranceClaims={insuranceClaims}
-              setShowInsuranceModal={setShowInsuranceModal}
-              setShowEditInsuranceModal={setShowEditInsuranceModal}
-              setEditingInsurancePolicy={setEditingInsurancePolicy}
-              setShowInsuranceNotificationSettings={setShowInsuranceNotificationSettings}
-            />
-            ) : currentPage === 'data-management' ? (
               <DataManagementContent 
                 cars={cars}
                 maintenanceRecords={allMaintenanceRecords}
@@ -903,19 +783,6 @@ export default function Home() {
         />
       )}
 
-      {/* 保険契約追加モーダル */}
-      {showInsuranceModal && activeCarId && (
-        <InsuranceModal
-          carId={activeCarId}
-          carName={car?.name || "車"}
-          onClose={() => setShowInsuranceModal(false)}
-          onAdded={() => {
-            console.log("Insurance policy added, closing modal");
-            setShowInsuranceModal(false);
-          }}
-        />
-      )}
-
       {/* 車両売却モーダル */}
       {showSellCarModal && carToSell && (
         <SellCarModal
@@ -930,29 +797,6 @@ export default function Home() {
             setShowSellCarModal(false);
             setCarToSell(null);
           }}
-        />
-      )}
-
-      {/* 保険契約編集モーダル */}
-      {showEditInsuranceModal && editingInsurancePolicy && (
-        <EditInsuranceModal
-          policy={editingInsurancePolicy}
-          cars={cars}
-          onClose={() => {
-            setShowEditInsuranceModal(false);
-            setEditingInsurancePolicy(null);
-          }}
-          onUpdated={() => {
-            setShowEditInsuranceModal(false);
-            setEditingInsurancePolicy(null);
-          }}
-        />
-      )}
-
-      {/* 保険通知設定モーダル */}
-      {showInsuranceNotificationSettings && (
-        <InsuranceNotificationSettings
-          onClose={() => setShowInsuranceNotificationSettings(false)}
         />
       )}
 
@@ -1010,7 +854,7 @@ function DashboardContent({
   maintenanceRecords: MaintenanceRecord[];
   fuelLogs: FuelLog[];
   customizations: Customization[];
-  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance' | 'my-car') => void;
+  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'my-car') => void;
   setActiveCarId: (id: string) => void;
   setShowMaintenanceModal: (show: boolean) => void;
   setShowFuelLogModal: (show: boolean) => void;
@@ -3301,7 +3145,7 @@ function CarManagementContent({
   customizations: Customization[];
   setShowSellCarModal: (show: boolean) => void;
   setCarToSell: (car: Car | null) => void;
-  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'insurance') => void;
+  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications') => void;
   setShowFuelLogModal: (show: boolean) => void;
   setShowMaintenanceModal: (show: boolean) => void;
   setShowCustomizationModal: (show: boolean) => void;
@@ -4924,514 +4768,6 @@ function FuelLogsContent({
 }
 
 // 保険管理コンテンツ
-function InsuranceContent({
-  cars,
-  insurancePolicies,
-  insuranceClaims,
-  setShowInsuranceModal,
-  setShowEditInsuranceModal,
-  setEditingInsurancePolicy,
-  setShowInsuranceNotificationSettings
-}: {
-  cars: Car[];
-  insurancePolicies: InsurancePolicy[];
-  insuranceClaims: InsuranceClaim[];
-  setShowInsuranceModal: (show: boolean) => void;
-  setShowEditInsuranceModal: (show: boolean) => void;
-  setEditingInsurancePolicy: (policy: InsurancePolicy | null) => void;
-  setShowInsuranceNotificationSettings: (show: boolean) => void;
-}) {
-  const [selectedCarId, setSelectedCarId] = useState<string>('all');
-
-  // フィルタリングされた保険契約
-  const filteredPolicies = useMemo(() => {
-    let filtered = insurancePolicies;
-    
-    if (selectedCarId !== 'all') {
-      filtered = filtered.filter(policy => policy.carId === selectedCarId);
-    }
-    
-    return filtered.sort((a, b) => toMillis(a.endDate) - toMillis(b.endDate));
-  }, [insurancePolicies, selectedCarId]);
-
-  // 編集ボタンのハンドラー
-  const handleEditPolicy = (policy: InsurancePolicy) => {
-    setEditingInsurancePolicy(policy);
-    setShowEditInsuranceModal(true);
-  };
-
-  // 削除ボタンのハンドラー
-  const handleDeletePolicy = async (policy: InsurancePolicy) => {
-    if (!policy.id) return;
-    
-    if (confirm(`「${policy.provider}」の保険契約を削除しますか？`)) {
-      try {
-        await removeInsurancePolicy(policy.id);
-        console.log("Insurance policy deleted successfully");
-      } catch (error) {
-        console.error("Error deleting insurance policy:", error);
-        alert('保険契約の削除に失敗しました。');
-      }
-    }
-  };
-
-  return (
-    <>
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">保険</h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => setShowInsuranceNotificationSettings(true)}
-            className="rounded-xl border border-gray-300 text-gray-700 px-4 py-2 font-medium hover:bg-gray-50 transition"
-          >
-            🔔 通知設定
-          </button>
-          <button
-            onClick={() => setShowInsuranceModal(true)}
-            className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-          >
-            ＋ 保険契約を追加
-          </button>
-        </div>
-      </div>
-
-      {/* フィルター */}
-      <div className="mt-6 bg-white rounded-2xl border border-gray-200 p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">車両:</label>
-            <select
-              value={selectedCarId}
-              onChange={(e) => setSelectedCarId(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
-            >
-              <option value="all">全ての車両</option>
-              {cars.map((car) => (
-                <option key={car.id} value={car.id}>
-                  {car.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* 保険契約一覧 */}
-      <div className="mt-6">
-        {filteredPolicies.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-            <div className="text-gray-500 mb-4">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">保険契約がありません</h3>
-            <p className="text-gray-500 mb-4">最初の保険契約を登録しましょう。</p>
-            <button
-              onClick={() => setShowInsuranceModal(true)}
-              className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-            >
-              保険契約を追加
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredPolicies.map((policy) => {
-              const car = cars.find(c => c.id === policy.carId);
-              const daysUntilExpiry = getDaysUntilExpiry(toDate(policy.endDate) || new Date());
-              const expiryStatus = getExpiryStatus(toDate(policy.endDate) || new Date());
-              
-              return (
-                <div key={policy.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-md transition">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{policy.provider}</h3>
-                      <p className="text-sm text-gray-500">{car?.name || '不明な車両'}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleEditPolicy(policy)}
-                        className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs"
-                        aria-label="Edit policy"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => handleDeletePolicy(policy)}
-                        className="p-1 rounded-full bg-red-100 hover:bg-red-200 text-red-600 text-xs"
-                        aria-label="Delete policy"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">証券番号:</span>
-                      <span className="font-medium">{policy.policyNumber}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">保険料:</span>
-                      <span className="font-medium">¥{policy.premiumAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">支払い周期:</span>
-                      <span className="font-medium">{policy.paymentCycle === 'annual' ? '年払い' : '月払い'}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t pt-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">満期日:</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                          expiryStatus === 'expired' ? 'bg-red-100 text-red-700' :
-                          expiryStatus === 'danger' ? 'bg-red-100 text-red-700' :
-                          expiryStatus === 'warning' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                          {daysUntilExpiry < 0 ? '期限切れ' : 
-                           daysUntilExpiry === 0 ? '今日' :
-                           `D-${daysUntilExpiry}`}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {(policy.endDate?.toDate ? policy.endDate.toDate() : new Date()).toLocaleDateString('ja-JP')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-// 保険契約編集モーダル
-function EditInsuranceModal({
-  policy,
-  cars,
-  onClose,
-  onUpdated
-}: {
-  policy: InsurancePolicy;
-  cars: Car[];
-  onClose: () => void;
-  onUpdated: () => void;
-}) {
-  const [provider, setProvider] = useState(policy.provider);
-  const [policyNumber, setPolicyNumber] = useState(policy.policyNumber);
-  const [startDate, setStartDate] = useState((toDate(policy.startDate) || new Date()).toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState((toDate(policy.endDate) || new Date()).toISOString().split('T')[0]);
-  const [paymentCycle, setPaymentCycle] = useState(policy.paymentCycle);
-  const [premiumAmount, setPremiumAmount] = useState(policy.premiumAmount.toString());
-  const [bodilyInjuryLimit, setBodilyInjuryLimit] = useState(policy.coverages?.bodilyInjury?.limit || '無制限');
-  const [propertyDamageLimit, setPropertyDamageLimit] = useState(policy.coverages?.propertyDamage?.limit || '無制限');
-  const [personalInjuryLimit, setPersonalInjuryLimit] = useState(policy.coverages?.personalInjury?.limit || '');
-  const [vehicleType, setVehicleType] = useState<'general' | 'economy' | 'none'>(policy.coverages?.vehicle?.type || 'none');
-  const [deductible, setDeductible] = useState(policy.coverages?.vehicle?.deductible || '');
-  const [riders, setRiders] = useState(policy.coverages?.riders?.join(', ') || '');
-  const [ageLimit, setAgeLimit] = useState(policy.drivers?.ageLimit || '');
-  const [familyOnly, setFamilyOnly] = useState(policy.drivers?.familyOnly || false);
-  const [purpose, setPurpose] = useState<'private' | 'business' | 'commute'>(policy.usage?.purpose || 'private');
-  const [annualMileageKm, setAnnualMileageKm] = useState((policy.usage?.annualMileageKm || 0).toString());
-  const [notes, setNotes] = useState(policy.notes);
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!provider || !policyNumber || !startDate || !endDate || !premiumAmount) {
-      alert('必須項目を入力してください。');
-      return;
-    }
-
-    try {
-      const updateData = {
-        provider,
-        policyNumber,
-        startDate: Timestamp.fromDate(new Date(startDate)),
-        endDate: Timestamp.fromDate(new Date(endDate)),
-        paymentCycle,
-        premiumAmount: parseInt(premiumAmount),
-        coverages: {
-          bodilyInjury: { limit: bodilyInjuryLimit },
-          propertyDamage: { limit: propertyDamageLimit },
-          personalInjury: { limit: personalInjuryLimit },
-          vehicle: { type: vehicleType, deductible },
-          riders: riders.split(',').map(r => r.trim()).filter(r => r)
-        },
-        drivers: {
-          ageLimit,
-          familyOnly
-        },
-        usage: {
-          purpose,
-          annualMileageKm: parseInt(annualMileageKm) || 0
-        },
-        notes
-      };
-
-      if (!policy.id) return;
-      await updateInsurancePolicy(policy.id, updateData);
-      onUpdated();
-    } catch (error) {
-      console.error('Error updating insurance policy:', error);
-      alert('保険契約の更新に失敗しました。');
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">保険契約を編集</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
-          >
-            ×
-          </button>
-        </div>
-
-        <form onSubmit={handleUpdate} className="space-y-4">
-          {/* 基本情報 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">保険会社 *</label>
-              <input
-                type="text"
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-                placeholder="例: 東京海上日動火災保険"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">証券番号 *</label>
-              <input
-                type="text"
-                value={policyNumber}
-                onChange={(e) => setPolicyNumber(e.target.value)}
-                placeholder="例: ABC123456789"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">契約開始日 *</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">満期日 *</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">支払い周期</label>
-              <select
-                value={paymentCycle}
-                onChange={(e) => setPaymentCycle(e.target.value as 'annual' | 'monthly')}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              >
-                <option value="annual">年払い</option>
-                <option value="monthly">月払い</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">保険料（円） *</label>
-              <input
-                type="number"
-                value={premiumAmount}
-                onChange={(e) => setPremiumAmount(e.target.value)}
-                placeholder="例: 50000"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                required
-              />
-            </div>
-          </div>
-
-          {/* 補償内容 */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">補償内容</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">対人無制限</label>
-                <input
-                  type="text"
-                  value={bodilyInjuryLimit}
-                  onChange={(e) => setBodilyInjuryLimit(e.target.value)}
-                  placeholder="例: 無制限"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">対物無制限</label>
-                <input
-                  type="text"
-                  value={propertyDamageLimit}
-                  onChange={(e) => setPropertyDamageLimit(e.target.value)}
-                  placeholder="例: 無制限"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">人身傷害</label>
-                <input
-                  type="text"
-                  value={personalInjuryLimit}
-                  onChange={(e) => setPersonalInjuryLimit(e.target.value)}
-                  placeholder="例: 3000万円"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">車両保険</label>
-                <select
-                  value={vehicleType}
-                  onChange={(e) => setVehicleType(e.target.value as 'general' | 'economy' | 'none')}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="none">なし</option>
-                  <option value="general">一般型</option>
-                  <option value="economy">エコノミー型</option>
-                </select>
-              </div>
-            </div>
-            {vehicleType !== 'none' && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">免責金額</label>
-                <input
-                  type="text"
-                  value={deductible}
-                  onChange={(e) => setDeductible(e.target.value)}
-                  placeholder="例: 5万円"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-            )}
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">特約</label>
-              <input
-                type="text"
-                value={riders}
-                onChange={(e) => setRiders(e.target.value)}
-                placeholder="例: 弁護士特約, ファミリーバイク特約（カンマ区切り）"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-          </div>
-
-          {/* 使用条件 */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">使用条件</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">年齢制限</label>
-                <input
-                  type="text"
-                  value={ageLimit}
-                  onChange={(e) => setAgeLimit(e.target.value)}
-                  placeholder="例: 30歳以上"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">年間走行距離（km）</label>
-                <input
-                  type="number"
-                  value={annualMileageKm}
-                  onChange={(e) => setAnnualMileageKm(e.target.value)}
-                  placeholder="例: 10000"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">使用目的</label>
-                <select
-                  value={purpose}
-                  onChange={(e) => setPurpose(e.target.value as 'private' | 'business')}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="private">個人使用</option>
-                  <option value="business">業務使用</option>
-                </select>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="editFamilyOnly"
-                  checked={familyOnly}
-                  onChange={(e) => setFamilyOnly(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="editFamilyOnly" className="ml-2 text-sm text-gray-700">
-                  家族限定
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* メモ */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">メモ</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="特記事項や注意点があれば記入してください"
-              rows={3}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-
-          {/* ボタン */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-2 font-medium text-gray-900 hover:bg-gray-50 transition"
-            >
-              キャンセル
-            </button>
-            <button
-              type="submit"
-              className="flex-1 rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-            >
-              更新
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 // リマインダータイトルの選択肢
 const REMINDER_TITLE_OPTIONS = [
   { value: 'オイル交換', label: 'オイル交換', category: 'メンテナンス' },
