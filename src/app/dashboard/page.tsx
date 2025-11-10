@@ -1980,20 +1980,6 @@ function MaintenanceHistoryContent({
                 </div>
       </div>
 
-      {/* メンテナンス提案（車両が選択されている場合のみ） */}
-      {selectedCar && (
-        <NextMaintenanceSuggestion
-          car={selectedCar}
-          maintenanceRecords={selectedCarMaintenanceRecords}
-          onCreateFromTemplate={(templateId) => {
-            // テンプレートからメンテナンスを作成
-            // TODO: テンプレート機能の実装
-            console.log('Create from template:', templateId);
-            setShowMaintenanceModal(true);
-          }}
-        />
-      )}
-
       {/* フィルター・検索 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2095,6 +2081,20 @@ function MaintenanceHistoryContent({
           </div>
         </div>
       </div>
+
+      {/* メンテナンス提案（車両が選択されている場合のみ） */}
+      {selectedCar && (
+        <NextMaintenanceSuggestion
+          car={selectedCar}
+          maintenanceRecords={selectedCarMaintenanceRecords}
+          onCreateFromTemplate={(templateId) => {
+            // テンプレートからメンテナンスを作成
+            // TODO: テンプレート機能の実装
+            console.log('Create from template:', templateId);
+            setShowMaintenanceModal(true);
+          }}
+        />
+      )}
 
       {/* 履歴一覧 */}
       <div className="bg-white rounded-2xl border border-gray-200">
