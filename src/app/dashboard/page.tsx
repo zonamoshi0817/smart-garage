@@ -2142,25 +2142,6 @@ function MaintenanceHistoryContent({
 
       {/* フィルター・検索 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
-        {/* 車両情報表示 */}
-        {selectedCar && (
-          <div className="mb-4 pb-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <span className="text-xl">🚗</span>
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900">{selectedCar.name}</div>
-                <div className="text-xs text-gray-500">
-                  {selectedCar.year && `${selectedCar.year}年式`}
-                  {selectedCar.year && selectedCar.odoKm && ' • '}
-                  {selectedCar.odoKm && `${selectedCar.odoKm.toLocaleString()}km`}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 検索 */}
           <div>
