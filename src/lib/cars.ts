@@ -169,8 +169,10 @@ export async function updateCar(carId: string, data: Partial<Car>) {
     }
   }
   
+  // Firestoreセキュリティルールの要件を満たすため、userIdを明示的に含める
   await updateDoc(doc(db, "users", u.uid, "cars", carId), {
     ...firestoreData,
+    userId: u.uid,        // セキュリティルールで必須
     updatedBy: u.uid,
     updatedAt: serverTimestamp(),
   });
@@ -190,6 +192,7 @@ export async function removeCar(carId: string) {
   
   // 論理削除を実装（物理削除の代わり）
   await updateDoc(doc(db, "users", u.uid, "cars", carId), {
+    userId: u.uid,        // セキュリティルールで必須
     deletedAt: serverTimestamp(),
     updatedBy: u.uid,
     updatedAt: serverTimestamp(),
@@ -218,6 +221,7 @@ export async function updateCarMileage(carId: string, newMileage: number) {
   
   const carRef = doc(db, "users", u.uid, "cars", carId);
   await updateDoc(carRef, {
+    userId: u.uid,        // セキュリティルールで必須
     odoKm: newMileage,
     updatedAt: serverTimestamp()
   });
@@ -242,6 +246,7 @@ export async function markCarAsSold(
   
   // undefinedのフィールドを除外（Firestoreはundefinedを許容しない）
   const updateData: any = {
+    userId: u.uid,        // セキュリティルールで必須
     status: 'sold',
     soldDate: soldData.soldDate,
     updatedBy: u.uid,
@@ -282,6 +287,7 @@ export async function restoreCarToActive(carId: string) {
   
   const carRef = doc(db, "users", u.uid, "cars", carId);
   await updateDoc(carRef, {
+    userId: u.uid,        // セキュリティルールで必須
     status: 'active',
     soldDate: null,
     soldPrice: null,

@@ -236,6 +236,7 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
   try {
     // undefinedの値をnullに変換またはフィールドから除外
     const updateData: any = {
+      userId: u.uid,        // セキュリティルールで必須
       updatedBy: u.uid,
       updatedAt: serverTimestamp(),
     };
@@ -289,6 +290,7 @@ export async function deleteMaintenanceRecord(recordId: string) {
   try {
     // 論理削除を実装
     await updateDoc(doc(db, "users", u.uid, "maintenance", recordId), {
+      userId: u.uid,        // セキュリティルールで必須
       deletedAt: serverTimestamp(),
       updatedBy: u.uid,
       updatedAt: serverTimestamp(),
