@@ -10,8 +10,11 @@ interface ShareAndPDFModalProps {
   onClose: () => void;
 }
 
+/**
+ * PDF出力モーダル（共有URL機能は削除済み）
+ * 車両履歴のPDF出力のみを提供
+ */
 export default function ShareAndPDFModal({ car, maintenanceRecords, onClose }: ShareAndPDFModalProps) {
-  const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGeneratePDF = async () => {
@@ -35,48 +38,6 @@ export default function ShareAndPDFModal({ car, maintenanceRecords, onClose }: S
     }
   };
 
-  const handleGenerateShareLink = async () => {
-    setIsGenerating(true);
-    try {
-      // 売却済み車両の場合は確認ダイアログ
-      if (car.status === 'sold' || car.status === 'scrapped') {
-        const confirmed = confirm(
-          `この車両は${car.status === 'sold' ? '売却済み' : '廃車済み'}です。\n` +
-          '共有リンクを発行しますか？\n' +
-          '（閲覧専用として共有されます）'
-        );
-        if (!confirmed) {
-          setIsGenerating(false);
-          return;
-        }
-      }
-      
-      // 共有トークンを生成（readOnlyフラグ付き）
-      const { generateShareToken } = await import('@/lib/signatureToken');
-      const isReadOnly = car.status === 'sold' || car.status === 'scrapped';
-      const { token, expiresAt } = await generateShareToken(car.id!, Date.now(), 30 * 24 * 60 * 60 * 1000);
-      
-      const shareUrl = `${window.location.origin}/share/${token}${isReadOnly ? '?readOnly=true' : ''}`;
-      
-      // クリップボードにコピー
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-      
-      alert(
-        `✅ 共有URLを発行しました！\n\n` +
-        `${shareUrl}\n\n` +
-        `有効期限: ${new Date(expiresAt).toLocaleDateString('ja-JP')}\n` +
-        `${isReadOnly ? '\n💡 閲覧専用として共有されます（編集不可）' : ''}\n\n` +
-        `URLをクリップボードにコピーしました。`
-      );
-    } catch (error) {
-      console.error('共有リンク生成エラー:', error);
-      alert('共有リンク生成中にエラーが発生しました。');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   return (
     <div 
@@ -92,8 +53,8 @@ export default function ShareAndPDFModal({ car, maintenanceRecords, onClose }: S
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <span>📤</span>
-                <span>PDF/共有</span>
+                <span>📄</span>
+                <span>PDF出力</span>
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 {car.name}{car.modelCode ? ` (${car.modelCode})` : ''}
@@ -147,25 +108,6 @@ export default function ShareAndPDFModal({ car, maintenanceRecords, onClose }: S
             </div>
           </div>
           
-          {/* 共有URL */}
-          <div className="p-5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-            <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-              <span>🌐</span>
-              <span>共有URL</span>
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              車両情報を他の人と安全に共有できます（有効期限付き）
-            </p>
-            <button
-              onClick={handleGenerateShareLink}
-              disabled={isGenerating}
-              className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
-            >
-              <span>🔗</span>
-              <span>{isGenerating ? '生成中...' : '共有URLを発行'}</span>
-            </button>
-          </div>
-          
           {/* 証跡について */}
           <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
             <div className="flex items-start gap-3">
@@ -173,29 +115,13 @@ export default function ShareAndPDFModal({ car, maintenanceRecords, onClose }: S
               <div className="text-sm text-gray-600 space-y-2">
                 <p className="font-medium text-gray-900">証跡機能について</p>
                 <p>
-                  PDFと共有URLには、すべてのデータに対するブロックチェーン検証IDが含まれています。
+                  PDFには、すべてのデータに対するブロックチェーン検証IDが含まれています。
                   データの改ざんがないことを第三者が検証できます。
                 </p>
               </div>
             </div>
           </div>
 
-          {/* 売却済み車両の場合の注意 */}
-          {(car.status === 'sold' || car.status === 'scrapped') && (
-            <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-200">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📦</span>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900">
-                    {car.status === 'sold' ? '売却済み車両' : '廃車済み車両'}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    共有URLは「閲覧専用」フラグ付きで発行されます。受信者は編集できません。
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* フッター */}

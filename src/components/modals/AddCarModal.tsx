@@ -26,7 +26,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
   const [inspectionExpiry, setInspectionExpiry] = useState("");
   const [firstRegYm, setFirstRegYm] = useState("");
   const [avgKmPerMonth, setAvgKmPerMonth] = useState<string>("");
-  const [vehicleClass, setVehicleClass] = useState<VehicleClass>('Cセグメント'); // デフォルトは標準クラス
+  // vehicleClassは削除（UIから削除、デフォルト値で保存）
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -103,8 +103,9 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
     if (value && value.trim()) {
       const yearNum = Number(value);
       const currentYear = new Date().getFullYear();
-      if (isNaN(yearNum) || yearNum < 1990 || yearNum > currentYear) {
-        setYearError(`年式は1990～${currentYear}年の範囲で入力してください`);
+      // 年式は1900年以降、現在年以下を許可（古い車両も登録可能）
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear) {
+        setYearError(`年式は1900～${currentYear}年の範囲で入力してください`);
       } else {
         setYearError("");
       }
@@ -208,8 +209,8 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
         carData.avgKmPerMonth = Number(avgKmPerMonth);
       }
       
-      // 車種クラスは常に保存（デフォルト値あり）
-      carData.vehicleClass = vehicleClass;
+      // 車種クラスはデフォルト値で保存（UIから削除）
+      carData.vehicleClass = 'Cセグメント';
       
       // undefined を null に正規化（Firestore 対策）
       const clean = <T extends object>(o: T): T => {
@@ -224,7 +225,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
       // 完了トースト（将来的に実装）
       console.log(`✅ ${name} を追加しました`);
       
-      setName(""); setModel(""); setYear(""); setOdo(""); setInspectionExpiry(""); setFirstRegYm(""); setAvgKmPerMonth(""); setVehicleClass('Cセグメント'); setSelectedFile(null); setImagePreview(null); setCompressionInfo(null);
+      setName(""); setModel(""); setYear(""); setOdo(""); setInspectionExpiry(""); setFirstRegYm(""); setAvgKmPerMonth(""); setSelectedFile(null); setImagePreview(null); setCompressionInfo(null);
       onAdded?.();
     } catch (error) {
       console.error("Error adding car:", error);
@@ -280,7 +281,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                   車名 <span className="text-red-500">*</span>
                 </label>
                 <input
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
                   placeholder="例：シビック Type R"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -294,7 +295,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                     型式
                   </label>
                   <input
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
                     placeholder="例：FL5"
                     value={modelCode}
                     onChange={(e) => setModel(e.target.value)}
@@ -305,7 +306,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                     年式
                   </label>
                   <input
-                    className={`w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 placeholder:text-gray-600 ${
+                    className={`w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 placeholder:text-gray-400 text-gray-900 ${
                       yearError 
                         ? 'border-red-300 focus:ring-red-100' 
                         : 'border-gray-300 focus:ring-blue-100'
@@ -328,7 +329,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600"
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
                     placeholder="例：10000"
                     inputMode="numeric"
                     value={odoKm}
@@ -412,26 +413,6 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                     value={inspectionExpiry}
                     onChange={(e) => setInspectionExpiry(e.target.value)}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    車種クラス
-                  </label>
-                  <select
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
-                    value={vehicleClass}
-                    onChange={(e) => setVehicleClass(e.target.value as VehicleClass)}
-                  >
-                    <option value="軽自動車">軽自動車</option>
-                    <option value="コンパクト">コンパクト</option>
-                    <option value="Cセグメント">Cセグメント（標準）</option>
-                    <option value="Dセグメント">Dセグメント</option>
-                    <option value="ミニバン">ミニバン</option>
-                    <option value="SUV">SUV</option>
-                    <option value="スポーツ">スポーツ</option>
-                    <option value="スーパーカー">スーパーカー</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">コスト効率評価の補正に使用されます</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

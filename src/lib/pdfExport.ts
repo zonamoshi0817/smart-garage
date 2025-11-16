@@ -6,8 +6,8 @@ import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import type { Car, MaintenanceRecord } from '@/types';
 import { generateCombinedProof, ProofData } from './proof';
-import { logPdfExported, logShareLinkCreated } from './analytics';
-import { generatePdfExportToken, generateShareTokenSecure } from './cloudFunctions';
+import { logPdfExported } from './analytics';
+import { generatePdfExportToken } from './cloudFunctions';
 import { shortenSignature } from './signatureToken';
 
 // 日本語フォントの設定
@@ -427,19 +427,4 @@ export async function downloadMaintenancePDF(options: PDFExportOptions): Promise
   }
 }
 
-export async function generateMaintenanceURL(car: Car, maintenanceRecords: MaintenanceRecord[]): Promise<string> {
-  // Cloud Functionsで署名付きトークンを生成
-  const tokenResponse = await generateShareTokenSecure({
-    carId: car.id || '',
-    scope: 'share:vehicle-history',
-    expiresInDays: 30
-  });
-  
-  // アナリティクスイベントを記録
-  if (car.id) {
-    logShareLinkCreated(car.id);
-  }
-  
-  // Cloud Functions発行のセキュアなURLを返す
-  return tokenResponse.shareUrl;
-}
+// generateMaintenanceURL関数は削除（共有URL機能削除のため）

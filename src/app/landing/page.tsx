@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, Shield, Gauge, Wrench, FileText, Share2, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer } from "lucide-react";
+import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer } from "lucide-react";
 
 // Smart Garage LP — clean, data-first personal management LP patterns
 
@@ -66,7 +66,7 @@ function Hero() {
               愛車の履歴を、資産に。
             </h1>
             <p className="mt-5 text-lg text-gray-600 leading-relaxed">
-              給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDF・共有で、愛車の価値を正しく伝えます。
+              給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDFで、愛車の価値を正しく伝えます。
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <a href="#cta" className="inline-flex justify-center items-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 text-white font-semibold shadow-sm hover:bg-blue-700">
@@ -104,8 +104,8 @@ function Hero() {
                   <p className="mt-2 text-sm text-amber-800">距離/期間から &quot;次にやること&quot; を提示。</p>
                 </div>
                 <div className="rounded-2xl p-4 bg-fuchsia-50 border border-fuchsia-100">
-                  <div className="flex items-center gap-2 text-fuchsia-700 font-semibold"><Share2 className="h-4 w-4" /> PDF/共有</div>
-                  <p className="mt-2 text-sm text-fuchsia-800">履歴を証明書として出力・共有。</p>
+                  <div className="flex items-center gap-2 text-fuchsia-700 font-semibold"><FileText className="h-4 w-4" /> PDF出力</div>
+                  <p className="mt-2 text-sm text-fuchsia-800">履歴を証明書として出力。</p>
                 </div>
               </div>
             </div>
@@ -121,7 +121,7 @@ function TrustBar() {
     <section className="border-y border-gray-100 bg-gray-50/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
         <div className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> 記録×可視化×意思決定支援</div>
-        <div className="flex items-center gap-2"><Shield className="h-4 w-4" /> 共有URLは署名付き&有効期限</div>
+        <div className="flex items-center gap-2"><Shield className="h-4 w-4" /> PDF署名埋め込みで改ざん防止</div>
         <div className="flex items-center gap-2"><Download className="h-4 w-4" /> PDF出力で売却時の&quot;証明&quot;に</div>
       </div>
     </section>
@@ -147,7 +147,7 @@ function PainGain() {
             <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> すべてを1か所で一元管理（車ごとに整理）</li>
             <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> 自動グラフ化で &quot;見るだけで価値&quot;</li>
             <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> 走行距離/期間から次回メンテを自動提案</li>
-            <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> PDF/共有リンクで第三者にも&quot;証明&quot;できる</li>
+            <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> PDF出力で第三者にも&quot;証明&quot;できる</li>
           </ul>
         </div>
       </div>
@@ -160,7 +160,7 @@ function HowItWorks() {
     { icon: <Camera className="h-5 w-5" />, title: "記録する", desc: "テンプレ or レシートOCRで最短10秒。" },
     { icon: <LineChart className="h-5 w-5" />, title: "見える化", desc: "費用・燃費を自動でグラフ化。" },
     { icon: <Wrench className="h-5 w-5" />, title: "次の一手", desc: "次回メンテナンスを提案＆リマインド。" },
-    { icon: <Share2 className="h-5 w-5" />, title: "資産化", desc: 'PDF/共有URLで履歴を"価値"に。' },
+    { icon: <FileText className="h-5 w-5" />, title: "資産化", desc: 'PDF出力で履歴を"価値"に。' },
   ];
   return (
     <section id="how" className="bg-gray-50">
@@ -185,9 +185,8 @@ function Features() {
     { icon: <Gauge className="h-5 w-5" />, title: "ダッシュボード", desc: "今月のコスト・燃費・やることを一目で。" },
     { icon: <Wrench className="h-5 w-5" />, title: "メンテ記録", desc: "テンプレで素早く、走行距離も自動更新。" },
     { icon: <FileText className="h-5 w-5" />, title: "履歴証明PDF", desc: "売却や引き継ぎに使える書式で出力。" },
-    { icon: <Share2 className="h-5 w-5" />, title: "共有URL", desc: '署名付きリンクで安全に "見せられる"。' },
     { icon: <Camera className="h-5 w-5" />, title: "レシートOCR", desc: "給油や保険証券の自動読み取り。" },
-    { icon: <Lock className="h-5 w-5" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・共有・OCRが使い放題。" },
+    { icon: <Lock className="h-5 w-5" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・OCRが使い放題。" },
   ];
   return (
     <section id="features" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
@@ -209,7 +208,7 @@ function ValueBlocks() {
   const blocks = [
     {
       title: '&quot;見せられる履歴&quot;で価値が上がる',
-      desc: "記録は自己満で終わらせない。PDF/共有URLで第三者にも伝わる形に。中古車の信頼性と売却価値を底上げします。",
+      desc: "記録は自己満で終わらせない。PDF出力で第三者にも伝わる形に。中古車の信頼性と売却価値を底上げします。",
     },
     {
       title: "続けられるUX",
@@ -249,7 +248,7 @@ function Pricing() {
               <li className="flex gap-2"><Check className="h-4 w-4 text-green-600"/> 車両登録 1台</li>
               <li className="flex gap-2"><Check className="h-4 w-4 text-green-600"/> 給油・メンテ・カスタムの記録</li>
               <li className="flex gap-2"><Check className="h-4 w-4 text-green-600"/> グラフ・ダッシュボード</li>
-              <li className="flex gap-2"><Lock className="h-4 w-4 text-gray-400"/> OCR / PDF / 共有URL</li>
+              <li className="flex gap-2"><Lock className="h-4 w-4 text-gray-400"/> OCR / PDF</li>
             </ul>
             <a href="#cta" className="mt-6 inline-flex items-center justify-center w-full rounded-xl border border-gray-200 py-2.5 hover:bg-gray-50">無料ではじめる</a>
           </div>
@@ -263,7 +262,6 @@ function Pricing() {
               <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600"/> 複数台登録 無制限</li>
               <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600"/> レシートOCR（給油/保険）</li>
               <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600"/> 履歴証明PDF出力</li>
-              <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600"/> 署名付き共有URL（有効期限つき）</li>
               <li className="flex gap-2"><Check className="h-4 w-4 text-blue-600"/> 広告非表示・高度なリマインダー</li>
             </ul>
             <a href="#cta" className="mt-6 inline-flex items-center justify-center w-full rounded-xl bg-blue-600 text-white py-2.5 hover:bg-blue-700">7日間無料トライアル</a>
@@ -283,14 +281,13 @@ function Security() {
           <h2 className="text-2xl sm:text-3xl font-bold">セキュリティ & プライバシー</h2>
           <ul className="mt-6 space-y-3 text-gray-700 text-sm">
             <li className="flex items-start gap-3"><Shield className="mt-0.5 h-5 w-5 text-blue-600"/> Firebase認証・権限管理（ユーザー毎に分離）</li>
-            <li className="flex items-start gap-3"><Shield className="mt-0.5 h-5 w-5 text-blue-600"/> 共有リンクは署名付きトークン＋有効期限</li>
             <li className="flex items-start gap-3"><Shield className="mt-0.5 h-5 w-5 text-blue-600"/> PDFに署名埋め込み（改ざん防止）</li>
             <li className="flex items-start gap-3"><Shield className="mt-0.5 h-5 w-5 text-blue-600"/> データの所有権はユーザーに</li>
           </ul>
         </div>
         <div className="rounded-2xl border border-gray-200 p-6">
           <div className="flex items-center gap-2 text-gray-900 font-semibold"><Shield className="h-5 w-5 text-blue-600"/> 安心して使える仕組み</div>
-          <p className="mt-2 text-sm text-gray-600">garage logは、あなたの愛車データを安全に守ります。リンク共有時も、期限つきの署名トークンで第三者への過剰な公開を防ぎます。</p>
+          <p className="mt-2 text-sm text-gray-600">garage logは、あなたの愛車データを安全に守ります。PDFには署名を埋め込み、データの改ざんを防ぎます。</p>
         </div>
       </div>
     </section>
@@ -300,9 +297,9 @@ function Security() {
 function FAQ() {
   const faqs = [
     { q: "自動連携はありますか？", a: "銀行連携のような外部APIはありませんが、代わりにレシートOCR・テンプレ・前回コピーで入力負担を最小化しています。" },
-    { q: "無料プランでも十分使えますか？", a: "1台までなら主要機能はすべて利用可能です。2台目以降・OCR・PDF・共有URLはプレミアムで提供します。" },
+    { q: "無料プランでも十分使えますか？", a: "1台までなら主要機能はすべて利用可能です。2台目以降・OCR・PDFはプレミアムで提供します。" },
     { q: "データはエクスポートできますか？", a: "CSV/JSON/PDFでいつでもエクスポート可能です。PDFには署名を埋め込みます。" },
-    { q: "安全面は？", a: "Firebase認証・権限管理、署名付き共有リンク、有効期限など多層防御を採用しています。" },
+    { q: "安全面は？", a: "Firebase認証・権限管理、PDF署名埋め込みなど多層防御を採用しています。" },
   ];
   return (
     <section id="faq" className="bg-gray-50">

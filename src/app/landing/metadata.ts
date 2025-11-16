@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'garage log - 愛車の履歴を、資産に。',
-  description: '給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDF・共有で、愛車の価値を正しく伝えます。レシートOCRで最短10秒、続けられるUX設計。',
-  keywords: ['車両管理', '車メンテナンス', '給油記録', 'カスタム記録', 'PDF出力', '共有リンク', 'OCR', '車歴書', '整備記録'],
+  description: '給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDFで、愛車の価値を正しく伝えます。レシートOCRで最短10秒、続けられるUX設計。',
+  keywords: ['車両管理', '車メンテナンス', '給油記録', 'カスタム記録', 'PDF出力', 'OCR', '車歴書', '整備記録'],
   authors: [{ name: 'garage log' }],
   openGraph: {
     type: 'website',
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     url: 'https://garagelog.jp/',
     siteName: 'garage log',
     title: 'garage log - 愛車の履歴を、資産に。',
-    description: '給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDF・共有で、愛車の価値を正しく伝えます。',
+    description: '給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDFで、愛車の価値を正しく伝えます。',
     images: [
       {
         url: 'https://garagelog.jp/og-image.jpg',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'garage log - 愛車の履歴を、資産に。',
-    description: '給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDF・共有で、愛車の価値を正しく伝えます。',
+    description: '給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDFで、愛車の価値を正しく伝えます。',
     images: ['https://garagelog.jp/og-image.jpg'],
   },
   alternates: {

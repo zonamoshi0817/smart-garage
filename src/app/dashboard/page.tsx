@@ -9,7 +9,7 @@ import type { Car, CarInput } from "@/types";
 import { auth, watchAuth } from "@/lib/firebase";
 import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords } from "@/lib/maintenance";
 import type { MaintenanceRecord } from "@/types";
-import { downloadMaintenancePDF, generateMaintenanceURL, type PDFExportOptions } from "@/lib/pdfExport";
+import { downloadMaintenancePDF, type PDFExportOptions } from "@/lib/pdfExport";
 import { uploadCarImageWithProgress, isImageFile } from "@/lib/storage";
 import { compressImage, getCompressionInfo } from "@/lib/imageCompression";
 import { addCustomization, getCustomizations, updateCustomization, deleteCustomization, CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/customizations";
@@ -2537,36 +2537,7 @@ function DataManagementContent({
   };
 
   // URL共有機能
-  const handleGenerateURL = async (carId?: string) => {
-    // プレミアム機能チェック
-    if (!checkFeature('share_links', undefined, 'default')) {
-      return;
-    }
-
-    try {
-      if (carId) {
-        const car = cars.find(c => c.id === carId);
-        if (!car) {
-          alert('車両が見つかりません。');
-          return;
-        }
-        
-        const carMaintenanceRecords = maintenanceRecords.filter(record => record.carId === carId);
-        const url = await generateMaintenanceURL(car, carMaintenanceRecords);
-        
-        navigator.clipboard.writeText(url).then(() => {
-          alert('URLをクリップボードにコピーしました。');
-        }).catch(() => {
-          alert(`共有URL: ${url}`);
-        });
-      } else {
-        alert('車両を選択してください。');
-      }
-    } catch (error) {
-      console.error('URL生成エラー:', error);
-      alert('URLの生成に失敗しました。');
-    }
-  };
+  // handleGenerateURL関数は削除（共有URL機能削除のため）
 
   return (
     <>
@@ -2672,9 +2643,9 @@ function DataManagementContent({
           </div>
         </div>
 
-        {/* 履歴証明書・共有機能 */}
+        {/* 履歴証明書（PDF出力） */}
         <div>
-          <h4 className="text-md font-medium text-gray-700 mb-3">履歴証明書・共有</h4>
+          <h4 className="text-md font-medium text-gray-700 mb-3">履歴証明書 (PDF)</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={() => handleExportPDF()}
@@ -2684,16 +2655,6 @@ function DataManagementContent({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
               <span className="font-medium text-red-700">全車両履歴書 (PDF)</span>
-            </button>
-
-            <button
-              onClick={() => handleGenerateURL()}
-              className="flex items-center justify-center gap-2 p-4 border border-orange-300 bg-orange-50 rounded-xl hover:bg-orange-100 transition"
-            >
-              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-              <span className="font-medium text-orange-700">履歴共有URL生成</span>
             </button>
           </div>
         </div>
@@ -2734,7 +2695,6 @@ function DataManagementContent({
           <li>• CSVファイルはExcelやGoogleスプレッドシートで開くことができます</li>
           <li>• JSONファイルは完全なバックアップとして使用できます</li>
           <li>• <strong>PDF履歴書</strong>は売却時や整備工場への提示に最適です</li>
-          <li>• <strong>共有URL</strong>で第三者に履歴を簡単に共有できます</li>
           <li>• データは暗号化されてFirebaseに保存されています</li>
                 </ul>
               </div>
