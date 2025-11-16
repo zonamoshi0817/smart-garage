@@ -32,6 +32,25 @@ import { generateMaintenanceSuggestions } from "@/lib/maintenanceSuggestions";
 import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 
+// セクション見出しの統一コンポーネント
+function SectionHeader({ title, subtitle, size = 'md', right }: { title: string; subtitle?: string; size?: 'sm' | 'md'; right?: React.ReactNode }) {
+  const titleClass = size === 'sm'
+    ? "text-sm font-medium text-gray-700"
+    : "text-lg font-semibold text-gray-900";
+  const subClass = size === 'sm'
+    ? "text-xs text-gray-500"
+    : "text-sm text-gray-500";
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div>
+        <div className={titleClass}>{title}</div>
+        {subtitle && <div className={subClass}>{subtitle}</div>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
   const [cars, setCars] = useState<Car[]>([]);
@@ -593,6 +612,52 @@ export default function Home() {
                 </div>
               )}
             </>
+          );
+        })()}
+
+        {/* 軽量アラート（車検期限など） */}
+        {(() => {
+          const alerts: Array<React.ReactNode> = [];
+          if (car?.inspectionExpiry) {
+            const expiryDate = toDate(car.inspectionExpiry) || new Date();
+            const today = new Date();
+            const diffMs = expiryDate.getTime() - today.getTime();
+            const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            if (days < 0) {
+              alerts.push(
+                <div key="inspection-overdue" className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-3 py-2">
+                  <div className="text-sm text-red-800">
+                    車検期限が過ぎています（{Math.abs(days)}日前）。早めに更新手続きを行ってください。
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage('maintenance-history')}
+                    className="text-xs px-2 py-1 rounded-md bg-white border border-red-200 text-red-700 hover:bg-red-100"
+                  >
+                    対応する
+                  </button>
+                </div>
+              );
+            } else if (days <= 60) {
+              alerts.push(
+                <div key="inspection-soon" className="flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2">
+                  <div className="text-sm text-yellow-900">
+                    車検期限まで残り {days}日です。点検や準備を進めましょう。
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage('maintenance-history')}
+                    className="text-xs px-2 py-1 rounded-md bg-white border border-yellow-200 text-yellow-800 hover:bg-yellow-100"
+                  >
+                    対応する
+                  </button>
+                </div>
+              );
+            }
+          }
+          if (alerts.length === 0) return null;
+          return (
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-3">
+              <div className="space-y-2">{alerts}</div>
+            </div>
           );
         })()}
 
@@ -1230,15 +1295,18 @@ function DashboardContent({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               {/* メンテナンス */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">最近のメンテナンス</h3>
-                  <button
-                    onClick={() => setCurrentPage('maintenance-history')}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    すべて見る →
-                  </button>
-                  </div>
+                <SectionHeader
+                  title="最近のメンテナンス"
+                  size="md"
+                  right={
+                    <button
+                      onClick={() => setCurrentPage('maintenance-history')}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      すべて見る →
+                    </button>
+                  }
+                />
               
               {maintenanceRecords.length > 0 ? (
                 <div className="space-y-3">
@@ -1289,14 +1357,21 @@ function DashboardContent({
                     </svg>
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h4>
-                  <p className="text-gray-500 mb-4">マイカーページから追加できます</p>
-                  <button
-                    onClick={() => setCurrentPage('my-car')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
-                  >
-                    <span>→</span>
-                    <span>マイカーで追加する</span>
-                  </button>
+                  <p className="text-gray-500 mb-4">まずはメンテナンスを1件追加しましょう</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => activeCarId ? setShowMaintenanceModal(true) : setCurrentPage('my-car')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      メンテナンスを追加
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('my-car')}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                    >
+                      マイカーで追加する
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1318,7 +1393,7 @@ function DashboardContent({
                     <div className="space-y-4">
                       {/* 最新の給油情報 */}
                       <div className="bg-gray-50 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">最新の給油</h4>
+                        <SectionHeader title="最新の給油" size="sm" />
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="text-center">
@@ -1461,14 +1536,21 @@ function DashboardContent({
                         </svg>
                       </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                  <p className="text-gray-500 mb-4">マイカーページから記録できます</p>
-                  <button
-                    onClick={() => setCurrentPage('my-car')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
-                  >
-                    <span>→</span>
-                    <span>マイカーで記録する</span>
-                  </button>
+                  <p className="text-gray-500 mb-4">1件目の給油を記録しましょう</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => activeCarId ? setShowFuelLogModal(true) : setCurrentPage('my-car')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      給油を記録
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage('my-car')}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                    >
+                      マイカーで記録する
+                    </button>
+                  </div>
               </div>
             )}
                 </div>
@@ -1544,14 +1626,21 @@ function DashboardContent({
                       </svg>
                     </div>
                     <h4 className="text-lg font-medium text-gray-900 mb-2">カスタマイズ記録がありません</h4>
-                    <p className="text-gray-500 mb-4">マイカーページから追加できます</p>
-                    <button
-                      onClick={() => setCurrentPage('my-car')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
-                    >
-                      <span>→</span>
-                      <span>マイカーで追加する</span>
-                    </button>
+                    <p className="text-gray-500 mb-4">まずは1件追加してみましょう</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => (activeCarId && auth.currentUser) ? setShowCustomizationModal(true) : setCurrentPage('my-car')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      >
+                        カスタマイズを追加
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage('my-car')}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                      >
+                        マイカーで追加する
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
