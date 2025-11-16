@@ -55,6 +55,15 @@ export default function Home() {
   const [showOCRModal, setShowOCRModal] = useState(false);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications'>('dashboard');
+  // はじめてガイドの表示制御
+  const [onboardingHiddenExplicit, setOnboardingHiddenExplicit] = useState(false);
+  // 軽量トースト（成功フィードバック）
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toastMessage) return;
+    const t = setTimeout(() => setToastMessage(null), 1800);
+    return () => clearTimeout(t);
+  }, [toastMessage]);
 
   // プレミアムガード
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
@@ -287,6 +296,37 @@ export default function Home() {
     };
   }, [auth.currentUser, activeCarId, authTrigger]);
 
+  // はじめてガイドの表示状態の初期化と永続化
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const uid = auth.currentUser?.uid || "anon";
+    const storageKey = `onboardingHidden:v1:${uid}`;
+    const saved = window.localStorage.getItem(storageKey);
+    if (saved === 'true') {
+      setOnboardingHiddenExplicit(true);
+    } else if (saved === 'false') {
+      setOnboardingHiddenExplicit(false);
+    }
+  }, [auth.currentUser?.uid]);
+
+  // ステップが未達になったら自動的に再表示（新規車追加/データ削除など）
+  useEffect(() => {
+    const hasCar = cars.length > 0;
+    const hasFuel = fuelLogs.length > 0;
+    const hasMaintenance = maintenanceRecords.length > 0 || allMaintenanceRecords.length > 0;
+    const isComplete = hasCar && hasFuel && hasMaintenance;
+    if (!isComplete) {
+      // 未達になったら再表示
+      if (onboardingHiddenExplicit) {
+        setOnboardingHiddenExplicit(false);
+        if (typeof window !== 'undefined') {
+          const uid = auth.currentUser?.uid || "anon";
+          window.localStorage.setItem(`onboardingHidden:v1:${uid}`, 'false');
+        }
+      }
+    }
+  }, [cars.length, fuelLogs.length, maintenanceRecords.length, allMaintenanceRecords.length, onboardingHiddenExplicit, auth.currentUser?.uid]);
+
   // カスタマイズデータの監視
   useEffect(() => {
     if (!auth.currentUser || !activeCarId) {
@@ -453,6 +493,108 @@ export default function Home() {
             </div>
           </div>
         </header>
+
+        {/* 進捗インジケーター（目標勾配効果 / 認知負荷低減） */}
+        {(() => {
+          const hasCar = cars.length > 0;
+          const hasFuel = fuelLogs.length > 0;
+          const hasMaintenance = maintenanceRecords.length > 0 || allMaintenanceRecords.length > 0;
+          const steps = [
+            { label: '車登録', done: hasCar },
+            { label: '給油記録', done: hasFuel },
+            { label: 'メンテ記録', done: hasMaintenance },
+          ];
+          const doneCount = steps.filter(s => s.done).length;
+          const total = steps.length;
+          const isComplete = doneCount === total;
+          const uid = auth.currentUser?.uid || "anon";
+          const storageKey = `onboardingHidden:v1:${uid}`;
+
+          // 保存された明示的非表示を読み込み
+          if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem(storageKey);
+            const savedBool = saved === 'true';
+            if (savedBool !== onboardingHiddenExplicit) {
+              // 状態差異がある場合のみ反映（レンダー中は副作用を避けるため後段useEffectでも補完）
+              // ここでは何もしない
+            }
+          }
+
+          const shouldShowBar = !isComplete || !onboardingHiddenExplicit;
+
+          return (
+            <>
+              {shouldShowBar && (
+                <div className="bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
+                  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex flex-col gap-2 w-full">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium text-gray-800">はじめてガイド</div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-gray-500">{doneCount}/{total} 完了</div>
+                            <button
+                              onClick={() => {
+                                setOnboardingHiddenExplicit(true);
+                                if (typeof window !== 'undefined') {
+                                  window.localStorage.setItem(storageKey, 'true');
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
+                            >
+                              閉じる
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {steps.map((s) => (
+                            <span
+                              key={s.label}
+                              className={
+                                "inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs " +
+                                (s.done
+                                  ? "bg-green-50 text-green-700 border-green-200"
+                                  : "bg-gray-50 text-gray-600 border-gray-200")
+                              }
+                            >
+                              <span
+                                className={
+                                  "h-1.5 w-1.5 rounded-full " + (s.done ? "bg-green-500" : "bg-gray-300")
+                                }
+                              />
+                              {s.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* 再表示チップ（完了時に閉じた場合） */}
+              {!shouldShowBar && isComplete && (
+                <div className="bg-white/0">
+                  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2">
+                    <button
+                      onClick={() => {
+                        setOnboardingHiddenExplicit(false);
+                        if (typeof window !== 'undefined') {
+                          const uid2 = auth.currentUser?.uid || "anon";
+                          window.localStorage.setItem(`onboardingHidden:v1:${uid2}`, 'false');
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-600 hover:bg-white bg-gray-50"
+                      title="はじめてガイドを再表示"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      はじめてガイド（完了しました）— 再表示
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* レイアウト */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6">
@@ -720,6 +862,7 @@ export default function Home() {
             console.log("Maintenance record added, closing modal");
             console.log("Current allMaintenanceRecords count:", allMaintenanceRecords.length);
             setShowMaintenanceModal(false);
+            setToastMessage("メンテナンス記録を追加しました");
             // 少し待ってから再度確認
             setTimeout(() => {
               console.log("After timeout - allMaintenanceRecords count:", allMaintenanceRecords.length);
@@ -753,6 +896,7 @@ export default function Home() {
           car={car}
           onSuccess={() => {
             console.log("Fuel log added successfully");
+            setToastMessage("給油を記録しました");
           }}
         />
       )}
@@ -775,6 +919,15 @@ export default function Home() {
             }
           }}
         />
+      )}
+
+      {/* トースト（右下） */}
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 z-[60]">
+          <div className="rounded-xl bg-gray-900 text-white shadow-lg px-4 py-2 text-sm">
+            {toastMessage}
+          </div>
+        </div>
       )}
 
       {/* 車両売却モーダル */}
@@ -1175,17 +1328,29 @@ function DashboardContent({
                           <div className="text-xs text-gray-500">日時</div>
                         </div>
                         <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">{((fuelLogs[0].quantity || 0) / 1000 || fuelLogs[0].fuelAmount || 0)}L</div>
+                              <div className="text-lg font-bold text-gray-900">
+                                {(() => {
+                                  const amt = getDisplayAmount(fuelLogs[0]);
+                                  return `${(amt.value || 0).toLocaleString()}${amt.unit}`;
+                                })()}
+                              </div>
                               <div className="text-xs text-gray-500">給油量</div>
                         </div>
                         <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">¥{(fuelLogs[0].totalCostJpy || fuelLogs[0].cost || 0).toLocaleString()}</div>
+                              <div className="text-lg font-bold text-gray-900">
+                                ¥{getDisplayCost(fuelLogs[0]).toLocaleString()}
+                              </div>
                           <div className="text-xs text-gray-500">金額</div>
                         </div>
                       </div>
                       <div className="text-right">
                             <div className="text-sm font-bold text-gray-900">
-                          ¥{Math.round((fuelLogs[0].totalCostJpy || fuelLogs[0].cost || 0) / ((fuelLogs[0].quantity || 0) / 1000 || fuelLogs[0].fuelAmount || 1)).toLocaleString()}
+                          {(() => {
+                            const amt = getDisplayAmount(fuelLogs[0]);
+                            const cost = getDisplayCost(fuelLogs[0]);
+                            const unitPrice = amt.value > 0 ? Math.round(cost / amt.value) : 0;
+                            return `¥${unitPrice.toLocaleString()}/${amt.unit}`;
+                          })()}
                         </div>
                             <div className="text-xs text-gray-500">単価</div>
                       </div>
