@@ -8,6 +8,8 @@ import {
 import { logAudit } from "./auditLog";
 import { logCarAdded, logCarDeleted } from "./analytics";
 import type { Car, CarInput } from "@/types";
+// 統一変換ヘルパーをインポート（唯一の経路）
+import { toTimestamp, normalizeDeletedAt } from "./converters";
 
 // 追加
 export async function addCar(data: CarInput) {
@@ -20,19 +22,19 @@ export async function addCar(data: CarInput) {
   try {
     const ref = collection(db, "users", u.uid, "cars");
     
-    // Timestamp型の処理
-    const firestoreData: any = {};
-    for (const [key, value] of Object.entries(data)) {
-      if (value === undefined) {
+    // 統一変換ヘルパーを使用（唯一の経路）
+    const firestoreData: any = {
+      ...data,
+      inspectionExpiry: toTimestamp(data.inspectionExpiry),
+      soldDate: toTimestamp(data.soldDate),
+    };
+    
+    // undefinedをnullに変換
+    Object.keys(firestoreData).forEach(key => {
+      if (firestoreData[key] === undefined) {
         firestoreData[key] = null;
-      } else if (key === 'inspectionExpiry' && value instanceof Date) {
-        // Date（旧形式）をTimestampに変換（後方互換性）
-        firestoreData[key] = Timestamp.fromDate(value);
-      } else {
-        // Timestampはそのまま保存
-        firestoreData[key] = value;
       }
-    }
+    });
     
     const docRef = await addDoc(ref, {
       ...firestoreData,
@@ -40,7 +42,7 @@ export async function addCar(data: CarInput) {
       ownerUid: u.uid,
       createdBy: u.uid,
       updatedBy: u.uid,
-      deletedAt: null,
+      deletedAt: null,      // 未削除はnullで統一
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -118,15 +120,17 @@ export function watchCars(cb: (cars: Car[]) => void, limitCount: number = 50) {
             inspectionExpiry: data.inspectionExpiry,
             firstRegYm: data.firstRegYm,
             avgKmPerMonth: data.avgKmPerMonth,
+            vehicleClass: data.vehicleClass,
             status: data.status,
             soldDate: data.soldDate,
             soldPrice: data.soldPrice,
             soldTo: data.soldTo,
             soldNotes: data.soldNotes,
+            downgradedAt: data.downgradedAt,
             ownerUid: data.ownerUid,
             createdBy: data.createdBy,
             updatedBy: data.updatedBy,
-            deletedAt: data.deletedAt || null,  // null統一
+            deletedAt: normalizeDeletedAt(data.deletedAt),  // 統一ヘルパー使用
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
           };
@@ -155,19 +159,28 @@ export async function updateCar(carId: string, data: Partial<Car>) {
   const u = auth.currentUser;
   if (!u) throw new Error("not signed in");
   
-  // Timestamp型の処理、undefined値をnullに変換
-  const firestoreData: any = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (value === undefined) {
-      firestoreData[key] = null;
-    } else if (key === 'inspectionExpiry' && value instanceof Date) {
-      // Date（旧形式）をTimestampに変換（後方互換性）
-      firestoreData[key] = Timestamp.fromDate(value);
-    } else {
-      // Timestampはそのまま保存
-      firestoreData[key] = value;
-    }
+  // 統一変換ヘルパーを使用（唯一の経路）
+  const firestoreData: any = {
+    ...data,
+  };
+  
+  // 日付フィールドの変換
+  if (firestoreData.inspectionExpiry) {
+    firestoreData.inspectionExpiry = toTimestamp(firestoreData.inspectionExpiry);
   }
+  if (firestoreData.soldDate) {
+    firestoreData.soldDate = toTimestamp(firestoreData.soldDate);
+  }
+  if (firestoreData.downgradedAt) {
+    firestoreData.downgradedAt = toTimestamp(firestoreData.downgradedAt);
+  }
+  
+  // undefinedをnullに変換
+  Object.keys(firestoreData).forEach(key => {
+    if (firestoreData[key] === undefined) {
+      firestoreData[key] = null;
+    }
+  });
   
   // Firestoreセキュリティルールの要件を満たすため、userIdを明示的に含める
   await updateDoc(doc(db, "users", u.uid, "cars", carId), {
@@ -233,7 +246,7 @@ export async function updateCarMileage(carId: string, newMileage: number) {
 export async function markCarAsSold(
   carId: string,
   soldData: {
-    soldDate: Timestamp;
+    soldDate: Date | Timestamp;  // Date | Timestamp 両対応
     soldPrice?: number;
     soldTo?: string;
     soldNotes?: string;
@@ -244,11 +257,11 @@ export async function markCarAsSold(
   
   console.log(`Marking car ${carId} as sold`);
   
-  // undefinedのフィールドを除外（Firestoreはundefinedを許容しない）
+  // 統一変換ヘルパーを使用（唯一の経路）
   const updateData: any = {
     userId: u.uid,        // セキュリティルールで必須
     status: 'sold',
-    soldDate: soldData.soldDate,
+    soldDate: toTimestamp(soldData.soldDate),  // Date/Timestamp統一
     updatedBy: u.uid,
     updatedAt: serverTimestamp(),
   };

@@ -24,6 +24,8 @@ import {
 } from '@/types';
 import { logAudit } from './auditLog';
 import { logCustomizationCreated } from './analytics';
+// 統一変換ヘルパーをインポート（唯一の経路）
+import { toTimestamp, normalizeDeletedAt } from './converters';
 
 const CUSTOMIZATIONS_COLLECTION = 'customizations';
 const CUSTOMIZATION_MEDIA_COLLECTION = 'customization_media';
@@ -51,35 +53,29 @@ export async function addCustomization(
     const collectionPath = `users/${userId}/cars/${carId}/${CUSTOMIZATIONS_COLLECTION}`;
     console.log('Collection path:', collectionPath);
 
-    // Timestamp変換、undefinedの値をnullに変換
-    let dateField = customization.date;
-    if (customization.date instanceof Date) {
-      // Date → Timestamp変換（後方互換性）
-      dateField = Timestamp.fromDate(customization.date);
-    }
+    // 統一変換ヘルパーを使用（唯一の経路）
+    const cleanData: any = {
+      ...customization,
+      date: toTimestamp(customization.date),  // Date/Timestamp統一
+      carId,
+    };
+    
+    // undefinedをnullに変換
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key] === undefined) {
+        cleanData[key] = null;
+      }
+    });
     
     const cleanCustomization = {
-      ...customization,
-      date: dateField,  // Timestamp型で保存
-      carId,
+      ...cleanData,
       userId: userId,       // セキュリティルールで必須
       ownerUid: userId,
       createdBy: userId,
       updatedBy: userId,
-      deletedAt: null,
+      deletedAt: null,      // 未削除はnullで統一
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
-      // undefinedの値をnullに変換
-      odoKm: customization.odoKm ?? null,
-      brand: customization.brand ?? null,
-      modelCode: customization.modelCode ?? null,
-      vendorType: customization.vendorType ?? null,
-      vendorName: customization.vendorName ?? null,
-      partsCostJpy: customization.partsCostJpy ?? null,
-      laborCostJpy: customization.laborCostJpy ?? null,
-      otherCostJpy: customization.otherCostJpy ?? null,
-      link: customization.link ?? null,
-      memo: customization.memo ?? null,
     };
 
     const docRef = await addDoc(
@@ -127,37 +123,31 @@ export async function updateCustomization(
   updates: Partial<CustomizationInput>
 ): Promise<void> {
   try {
-    // Timestamp変換、undefinedの値をnullに変換
-    let dateField = updates.date;
-    if (updates.date && updates.date instanceof Date) {
-      // Date → Timestamp変換（後方互換性）
-      dateField = Timestamp.fromDate(updates.date);
-    }
-    
-    const cleanUpdates: any = {
+    // 統一変換ヘルパーを使用（唯一の経路）
+    const cleanData: any = {
       ...updates,
-      updatedBy: userId,
-      updatedAt: Timestamp.now(),
-      // undefinedの値をnullに変換
-      odoKm: updates.odoKm ?? null,
-      brand: updates.brand ?? null,
-      modelCode: updates.modelCode ?? null,
-      vendorType: updates.vendorType ?? null,
-      vendorName: updates.vendorName ?? null,
-      partsCostJpy: updates.partsCostJpy ?? null,
-      laborCostJpy: updates.laborCostJpy ?? null,
-      otherCostJpy: updates.otherCostJpy ?? null,
-      link: updates.link ?? null,
-      memo: updates.memo ?? null,
     };
     
-    if (dateField) {
-      cleanUpdates.date = dateField;
+    // dateフィールドがある場合は変換
+    if (cleanData.date) {
+      cleanData.date = toTimestamp(cleanData.date);
     }
+    
+    // undefinedをnullに変換
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key] === undefined) {
+        cleanData[key] = null;
+      }
+    });
+    
+    const cleanUpdates = {
+      ...cleanData,
+      userId: userId,       // セキュリティルールで必須
+      updatedBy: userId,
+      updatedAt: Timestamp.now(),
+    };
 
     const docRef = doc(db, 'users', userId, 'cars', carId, CUSTOMIZATIONS_COLLECTION, customizationId);
-    // userIdを追加
-    cleanUpdates.userId = userId;
     await updateDoc(docRef, cleanUpdates);
     
     // 監査ログを記録
@@ -242,7 +232,7 @@ export async function getCustomizations(
         id: doc.id,
         ...doc.data(),
         date: doc.data().date,  // Timestampをそのまま返す
-        deletedAt: doc.data().deletedAt || null,  // null統一
+        deletedAt: normalizeDeletedAt(doc.data().deletedAt),  // 統一ヘルパー使用
         createdAt: doc.data().createdAt,
         updatedAt: doc.data().updatedAt,
       })) as Customization[];

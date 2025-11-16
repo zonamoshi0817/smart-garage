@@ -12,8 +12,33 @@ Sentry.init({
   // 環境設定
   environment: SENTRY_ENVIRONMENT,
   
-  // トレースサンプリング率（1.0 = 100%）
-  tracesSampleRate: SENTRY_ENVIRONMENT === "production" ? 0.1 : 1.0,
+  // 動的トレースサンプリング: 重要イベントは100%、一般は10%
+  tracesSampler: (samplingContext) => {
+    // 開発環境は全て100%
+    if (SENTRY_ENVIRONMENT !== "production") {
+      return 1.0;
+    }
+    
+    const transactionName = samplingContext.transactionContext?.name || samplingContext.name || "";
+    
+    // 重要イベント: 100%サンプリング
+    const criticalPaths = [
+      "/api/stripe",       // Stripe決済関連
+      "billing",           // 請求関連
+      "ocr",               // OCR処理
+      "/share/",           // 共有URL
+      "payment",           // 決済フロー
+      "checkout",          // チェックアウト
+    ];
+    
+    // 重要パスに一致する場合は100%
+    if (criticalPaths.some(path => transactionName.includes(path))) {
+      return 1.0;
+    }
+    
+    // 一般イベント: 10%サンプリング
+    return 0.1;
+  },
   
   // セッションリプレイ設定
   replaysSessionSampleRate: 0.1, // 10%のセッションを記録
@@ -32,8 +57,26 @@ Sentry.init({
     }),
   ],
   
-  // PII（個人情報）の自動除去
+  // Breadcrumb強化（重要イベントは詳細記録）
   beforeBreadcrumb(breadcrumb) {
+    // 重要イベントのBreadcrumbは必ず残す
+    const criticalCategories = ['fetch', 'xhr', 'navigation'];
+    if (criticalCategories.includes(breadcrumb.category || '')) {
+      // URLチェック
+      const url = breadcrumb.data?.url || '';
+      if (
+        url.includes('/api/stripe') ||
+        url.includes('ocr') ||
+        url.includes('/share/') ||
+        url.includes('billing')
+      ) {
+        // 重要イベントのBreadcrumbにマーキング
+        breadcrumb.level = 'info';
+        breadcrumb.data = breadcrumb.data || {};
+        breadcrumb.data.__critical = true;
+      }
+    }
+    
     // URLからクエリパラメータを除去（個人情報が含まれる可能性）
     if (breadcrumb.category === 'navigation' && breadcrumb.data?.to) {
       const url = new URL(breadcrumb.data.to, window.location.origin);

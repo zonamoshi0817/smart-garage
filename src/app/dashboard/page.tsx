@@ -1143,13 +1143,13 @@ function DashboardContent({
                     </svg>
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h4>
-                  <p className="text-gray-500 mb-4">最初の記録を追加してみましょう</p>
+                  <p className="text-gray-500 mb-4">マイカーページから追加できます</p>
                   <button
-                    onClick={() => setShowMaintenanceModal(true)}
+                    onClick={() => setCurrentPage('my-car')}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
                   >
-                    <span>+</span>
-                    <span>メンテナンスを追加</span>
+                    <span>→</span>
+                    <span>マイカーで追加する</span>
                   </button>
                 </div>
               )}
@@ -1303,13 +1303,13 @@ function DashboardContent({
                         </svg>
                       </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                  <p className="text-gray-500 mb-4">最初の給油を記録してみましょう</p>
+                  <p className="text-gray-500 mb-4">マイカーページから記録できます</p>
                   <button
-                    onClick={() => setShowFuelLogModal(true)}
+                    onClick={() => setCurrentPage('my-car')}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
                   >
-                    <span>+</span>
-                    <span>給油を記録</span>
+                    <span>→</span>
+                    <span>マイカーで記録する</span>
                   </button>
               </div>
             )}
@@ -1386,13 +1386,13 @@ function DashboardContent({
                       </svg>
                     </div>
                     <h4 className="text-lg font-medium text-gray-900 mb-2">カスタマイズ記録がありません</h4>
-                    <p className="text-gray-500 mb-4">最初のカスタムを記録してみましょう</p>
+                    <p className="text-gray-500 mb-4">マイカーページから追加できます</p>
                     <button
-                      onClick={() => setShowCustomizationModal(true)}
+                      onClick={() => setCurrentPage('my-car')}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 mx-auto"
                     >
-                      <span>+</span>
-                      <span>カスタムを追加</span>
+                      <span>→</span>
+                      <span>マイカーで追加する</span>
                     </button>
                   </div>
                 )}

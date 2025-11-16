@@ -9,7 +9,8 @@ import { getDisplayAmount, getDisplayCost } from '@/lib/fuelLogs';
 import { isPremiumPlan } from '@/lib/plan';
 import VehicleHeader from './VehicleHeader';
 import QuickActions from './QuickActions';
-import ContextualAd from './ContextualAd';
+// 広告はマイカーページから削除（意思決定面をクリーンに保つ）
+// 広告はダッシュボードのみに表示
 import CustomPartsPanel from './CustomPartsPanel';
 import PaywallModal from '../modals/PaywallModal';
 
@@ -435,10 +436,8 @@ export default function MyCarPage({
               </ul>
             </div>
 
-            {/* 広告 */}
-            <div>
-              <ContextualAd car={car} isPremium={isPremium} />
-            </div>
+            {/* 広告削除: マイカーページ（意思決定面）は広告非表示
+                広告はダッシュボードの全車横断セクションのみに表示 */}
           </div>
         </div>
       </div>

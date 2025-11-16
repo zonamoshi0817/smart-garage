@@ -12,6 +12,8 @@ import { logAudit } from "./auditLog";
 import { logMaintenanceCreated } from "./analytics";
 import { fetchPaginatedData, PaginationState } from "./pagination";
 import type { MaintenanceRecord, MaintenanceInput } from "@/types";
+// 統一変換ヘルパーをインポート（唯一の経路）
+import { toTimestamp, timestampToDate, normalizeDeletedAt } from "./converters";
 
 // 車両の現在走行距離を取得
 async function getCurrentCarMileage(carId: string): Promise<number> {
@@ -51,11 +53,11 @@ async function getExistingMaintenanceRecords(carId: string): Promise<Array<{ mil
     
     const records: Array<{ mileage: number; date: Date }> = [];
     snapshot.forEach((doc: any) => {
-      const data = doc.data() as { mileage?: number; date?: { toDate?: () => Date } | Date };
+      const data = doc.data() as { mileage?: number; date?: Timestamp };
       if (data.mileage && data.date) {
-        // Timestampを Date に変換（バリデーション用）
-        const date = data.date?.toDate ? data.date.toDate() : 
-                     (data.date instanceof Date ? data.date : new Date());
+        // ✅ この関数のみ例外的にDate型を使用（バリデーション用）
+        // timestampToDate()ヘルパーを使用
+        const date = timestampToDate(data.date) || new Date();
         records.push({
           mileage: data.mileage,
           date: date
@@ -95,27 +97,32 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
     
     const ref = collection(db, "users", u.uid, "maintenance");
     
-    // Timestamp型への変換
-    let dateField = data.date;
-    if (data.date instanceof Date) {
-      // Date → Timestamp変換（後方互換性）
-      dateField = Timestamp.fromDate(data.date);
-    }
+    // 統一変換ヘルパーを使用（唯一の経路）
+    const cleanData: any = {
+      carId: data.carId,
+      title: data.title,
+      description: data.description,
+      cost: data.cost,
+      mileage: data.mileage,
+      date: toTimestamp(data.date),  // Date/Timestamp統一
+      location: data.location,
+    };
+    
+    // undefinedをnullに変換
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key] === undefined) {
+        cleanData[key] = null;
+      }
+    });
     
     // データを準備
     const recordData = {
-      carId: data.carId,
-      title: data.title,
-      description: data.description || null,
-      cost: data.cost || null,
-      mileage: data.mileage || null,
-      date: dateField,  // Timestamp型で保存
-      location: data.location || null,
+      ...cleanData,
       userId: u.uid,       // セキュリティルールで必須
       ownerUid: u.uid,
       createdBy: u.uid,
       updatedBy: u.uid,
-      deletedAt: null,
+      deletedAt: null,     // 未削除はnullで統一
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -208,7 +215,7 @@ export function watchMaintenanceRecords(carId: string, cb: (records: Maintenance
             id: d.id, 
             ...data,
             date: data.date,  // Timestampをそのまま返す（BaseEntity完全統一）
-            deletedAt: data.deletedAt || null,  // null統一
+            deletedAt: normalizeDeletedAt(data.deletedAt),  // 統一ヘルパー使用
           } as MaintenanceRecord;
         });
       // クライアント側でソート（Timestampの秒数で比較）
@@ -235,24 +242,26 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
   if (!u) throw new Error("not signed in");
   
   try {
-    // undefinedの値をnullに変換またはフィールドから除外
-    const updateData: any = {
+    // 統一変換ヘルパーを使用（唯一の経路）
+    const cleanData: any = {};
+    
+    // 各フィールドをチェックしてundefinedでないもののみ追加
+    if (data.carId !== undefined) cleanData.carId = data.carId;
+    if (data.title !== undefined) cleanData.title = data.title;
+    if (data.description !== undefined) cleanData.description = data.description || null;
+    if (data.cost !== undefined) cleanData.cost = data.cost || null;
+    if (data.mileage !== undefined) cleanData.mileage = data.mileage || null;
+    if (data.date !== undefined) {
+      cleanData.date = toTimestamp(data.date);  // Date/Timestamp統一
+    }
+    if (data.location !== undefined) cleanData.location = data.location || null;
+    
+    const updateData = {
+      ...cleanData,
       userId: u.uid,        // セキュリティルールで必須
       updatedBy: u.uid,
       updatedAt: serverTimestamp(),
     };
-    
-    // 各フィールドをチェックしてundefinedでないもののみ追加
-    if (data.carId !== undefined) updateData.carId = data.carId;
-    if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined) updateData.description = data.description || null;
-    if (data.cost !== undefined) updateData.cost = data.cost || null;
-    if (data.mileage !== undefined) updateData.mileage = data.mileage || null;
-    if (data.date !== undefined) {
-      // Date → Timestamp変換（後方互換性）
-      updateData.date = data.date instanceof Date ? Timestamp.fromDate(data.date) : data.date;
-    }
-    if (data.location !== undefined) updateData.location = data.location || null;
     
     console.log("Updating maintenance record with data:", updateData);
     await updateDoc(doc(db, "users", u.uid, "maintenance", recordId), updateData);
@@ -404,7 +413,7 @@ export function watchAllMaintenanceRecords(cb: (records: MaintenanceRecord[]) =>
             id: d.id, 
             ...data,
             date: data.date,  // Timestampをそのまま返す
-            deletedAt: data.deletedAt || null,  // null統一
+            deletedAt: normalizeDeletedAt(data.deletedAt),  // 統一ヘルパー使用
           } as MaintenanceRecord;
         });
       // クライアント側でソート（Timestampの秒数で比較）

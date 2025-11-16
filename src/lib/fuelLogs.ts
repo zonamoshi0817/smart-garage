@@ -23,86 +23,33 @@ import { logAudit } from "./auditLog";
 import { logFuelCreated } from "./analytics";
 import { fetchPaginatedData } from "./pagination";
 
+// 統一変換ヘルパーをインポート（唯一の経路）
+import {
+  toTimestamp,
+  getDisplayFuelAmount,
+  getDisplayFuelCost,
+  migrateLegacyFuelLog,
+  getFuelAmountInLiters,
+  normalizeDeletedAt,
+} from "./converters";
+
 // 型をエクスポート
 export type { FuelLog, FuelLogInput };
 
 /**
- * L → ml 変換ヘルパー
- */
-function litersToMilliliters(liters: number): number {
-  return Math.round(liters * 1000);
-}
-
-/**
- * ml → L 変換ヘルパー
- */
-function millilitersToLiters(ml: number): number {
-  return Math.round(ml / 1000 * 10) / 10;  // 小数点第1位
-}
-
-/**
- * Wh → kWh 変換ヘルパー
- */
-function watthourToKilowatthour(wh: number): number {
-  return Math.round(wh / 1000 * 10) / 10;  // 小数点第1位
-}
-
-/**
  * 表示用の量を取得（L or kWh）
+ * @deprecated converters.tsのgetDisplayFuelAmountを使用してください
  */
 export function getDisplayAmount(log: FuelLog): { value: number; unit: string } {
-  // 新形式
-  if (log.quantity !== undefined && log.unit) {
-    if (log.unit === 'ml') {
-      return { value: millilitersToLiters(log.quantity), unit: 'L' };
-    } else if (log.unit === 'wh') {
-      return { value: watthourToKilowatthour(log.quantity), unit: 'kWh' };
-    }
-  }
-  
-  // 旧形式（後方互換性）
-  if (log.fuelAmount !== undefined) {
-    const isEv = log.fuelType === 'ev';
-    return { value: log.fuelAmount, unit: isEv ? 'kWh' : 'L' };
-  }
-  
-  return { value: 0, unit: 'L' };
+  return getDisplayFuelAmount(log);
 }
 
 /**
  * 表示用の費用を取得
+ * @deprecated converters.tsのgetDisplayFuelCostを使用してください
  */
 export function getDisplayCost(log: FuelLog): number {
-  return log.totalCostJpy ?? log.cost ?? 0;
-}
-
-/**
- * 後方互換性: 旧形式（fuelAmount）を新形式（quantity/unit）に変換
- */
-function migrateLegacyFuelLog(data: any): any {
-  // 既に新形式の場合はそのまま
-  if (data.quantity !== undefined && data.unit !== undefined) {
-    return data;
-  }
-  
-  // 旧形式（fuelAmount）を新形式に変換
-  if (data.fuelAmount !== undefined) {
-    const isEv = data.fuelType === 'ev';
-    
-    return {
-      ...data,
-      quantity: isEv ? data.fuelAmount : litersToMilliliters(data.fuelAmount),
-      unit: isEv ? 'wh' : 'ml',
-      totalCostJpy: data.cost,
-      pricePerUnit: data.pricePerLiter,
-      // 後方互換用に旧フィールドも保持
-      fuelAmount: data.fuelAmount,
-      cost: data.cost,
-      pricePerLiter: data.pricePerLiter,
-    };
-  }
-  
-  return data;
+  return getDisplayFuelCost(log);
 }
 
 // 給油ログを追加
@@ -117,18 +64,18 @@ export const addFuelLog = async (fuelLogData: FuelLogInput): Promise<string> => 
   console.log("Collection path:", `users/${user.uid}/fuelLogs`);
 
   try {
-    // undefined値をnullに変換、Timestamp変換
-    const cleanData: any = {};
-    for (const [key, value] of Object.entries(fuelLogData)) {
-      if (value === undefined) {
+    // 統一変換ヘルパーを使用（唯一の経路）
+    const cleanData: any = {
+      ...fuelLogData,
+      date: toTimestamp(fuelLogData.date),  // Date/Timestamp統一
+    };
+    
+    // undefinedをnullに変換
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key] === undefined) {
         cleanData[key] = null;
-      } else if (key === 'date' && value instanceof Date) {
-        // Date → Timestamp変換（後方互換性）
-        cleanData[key] = Timestamp.fromDate(value);
-      } else {
-        cleanData[key] = value;
       }
-    }
+    });
     
     const docRef = await addDoc(collection(db, "users", user.uid, "fuelLogs"), {
       ...cleanData,
@@ -136,7 +83,7 @@ export const addFuelLog = async (fuelLogData: FuelLogInput): Promise<string> => 
       ownerUid: user.uid,
       createdBy: user.uid,
       updatedBy: user.uid,
-      deletedAt: null,
+      deletedAt: null,      // 未削除はnullで統一
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
@@ -174,18 +121,22 @@ export const updateFuelLog = async (id: string, fuelLogData: Partial<FuelLogInpu
   }
 
   try {
-    // undefined値をnullに変換、Timestamp変換
-    const cleanData: any = {};
-    for (const [key, value] of Object.entries(fuelLogData)) {
-      if (value === undefined) {
-        cleanData[key] = null;
-      } else if (key === 'date' && value instanceof Date) {
-        // Date → Timestamp変換（後方互換性）
-        cleanData[key] = Timestamp.fromDate(value);
-      } else {
-        cleanData[key] = value;
-      }
+    // 統一変換ヘルパーを使用（唯一の経路）
+    const cleanData: any = {
+      ...fuelLogData,
+    };
+    
+    // date フィールドがある場合は変換
+    if (cleanData.date) {
+      cleanData.date = toTimestamp(cleanData.date);
     }
+    
+    // undefinedをnullに変換
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key] === undefined) {
+        cleanData[key] = null;
+      }
+    });
     
     const docRef = doc(db, "users", user.uid, "fuelLogs", id);
     await updateDoc(docRef, {
@@ -269,11 +220,14 @@ export async function fetchFuelLogsPaginated(
     // ページング適用
     const result = await fetchPaginatedData<any>(baseQuery, lastDoc, { pageSize });
 
-    // Timestampを変換
-    const items = result.items.map((item) => ({
-      ...item,
-      date: item.date?.toDate ? item.date.toDate() : new Date(item.date)
-    })) as FuelLog[];
+    // 後方互換性マイグレーション（Timestampはそのまま保持）
+    const items = result.items.map((item) => {
+      const migratedItem = migrateLegacyFuelLog(item);
+      return {
+        ...migratedItem,
+        deletedAt: normalizeDeletedAt(migratedItem.deletedAt),
+      };
+    }) as FuelLog[];
 
     return {
       items,
@@ -303,12 +257,11 @@ export const getFuelLogs = async (carId: string): Promise<FuelLog[]> => {
     const snapshot = await getDocs(q);
     const fuelLogs: FuelLog[] = snapshot.docs.map((doc) => {
       const data = doc.data();
+      const migratedData = migrateLegacyFuelLog(data);
       return {
         id: doc.id,
-        ...data,
-        date: data.date?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        ...migratedData,
+        deletedAt: normalizeDeletedAt(migratedData.deletedAt),
       } as FuelLog;
     });
     
@@ -413,12 +366,11 @@ export const watchAllFuelLogs = (
   return onSnapshot(q, (snapshot) => {
     const fuelLogs: FuelLog[] = snapshot.docs.map((doc) => {
       const data = doc.data();
+      const migratedData = migrateLegacyFuelLog(data);
       return {
         id: doc.id,
-        ...data,
-        date: data.date?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        ...migratedData,
+        deletedAt: normalizeDeletedAt(migratedData.deletedAt),
       } as FuelLog;
     });
     
@@ -435,29 +387,7 @@ export const watchAllFuelLogs = (
   });
 };
 
-/**
- * 給油量を取得（物理量統一対応）
- * 新形式: quantity/unit → L変換
- * 旧形式: fuelAmount → そのまま使用
- */
-function getFuelAmountInLiters(log: FuelLog): number | null {
-  // 新形式
-  if (log.quantity !== undefined && log.unit) {
-    if (log.unit === 'ml') {
-      return millilitersToLiters(log.quantity);
-    } else if (log.unit === 'wh') {
-      // EVの場合はkWh → L相当に変換（燃費計算不可のため null）
-      return null;
-    }
-  }
-  
-  // 旧形式（後方互換性）
-  if (log.fuelAmount !== undefined) {
-    return log.fuelAmount;
-  }
-  
-  return null;
-}
+// getFuelAmountInLiters は converters.ts に移動
 
 // 燃費計算（満タン間の燃費）
 export const calculateFuelEfficiency = (fuelLogs: FuelLog[]): number | null => {

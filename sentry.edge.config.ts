@@ -12,8 +12,30 @@ Sentry.init({
   // 環境設定
   environment: SENTRY_ENVIRONMENT,
   
-  // トレースサンプリング率（Edge環境では低めに）
-  tracesSampleRate: SENTRY_ENVIRONMENT === "production" ? 0.05 : 1.0,
+  // 動的トレースサンプリング: Edge環境でも重要イベントは100%
+  tracesSampler: (samplingContext) => {
+    // 開発環境は全て100%
+    if (SENTRY_ENVIRONMENT !== "production") {
+      return 1.0;
+    }
+    
+    const transactionName = samplingContext.transactionContext?.name || samplingContext.name || "";
+    
+    // Middlewareの重要パス: 100%サンプリング
+    const criticalMiddlewarePaths = [
+      "/api/stripe",
+      "/share/",
+      "/billing",
+    ];
+    
+    // 重要パスに一致する場合は100%
+    if (criticalMiddlewarePaths.some(path => transactionName.includes(path))) {
+      return 1.0;
+    }
+    
+    // 一般Middleware: 5%サンプリング（Edge環境はコスト考慮で低め）
+    return 0.05;
+  },
   
   // エラーフィルタリング
   beforeSend(event, hint) {

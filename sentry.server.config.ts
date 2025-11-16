@@ -12,8 +12,32 @@ Sentry.init({
   // 環境設定
   environment: SENTRY_ENVIRONMENT,
   
-  // トレースサンプリング率
-  tracesSampleRate: SENTRY_ENVIRONMENT === "production" ? 0.1 : 1.0,
+  // 動的トレースサンプリング: 重要イベントは100%、一般は10%
+  tracesSampler: (samplingContext) => {
+    // 開発環境は全て100%
+    if (SENTRY_ENVIRONMENT !== "production") {
+      return 1.0;
+    }
+    
+    const transactionName = samplingContext.transactionContext?.name || samplingContext.name || "";
+    
+    // 重要エンドポイント: 100%サンプリング
+    const criticalEndpoints = [
+      "POST /api/stripe",
+      "GET /api/stripe",
+      "/api/stripe/webhook",
+      "/api/stripe/checkout",
+      "/api/stripe/portal",
+    ];
+    
+    // 重要エンドポイントに一致する場合は100%
+    if (criticalEndpoints.some(endpoint => transactionName.includes(endpoint))) {
+      return 1.0;
+    }
+    
+    // 一般エンドポイント: 10%サンプリング
+    return 0.1;
+  },
   
   // サーバーサイドでのトレース設定
   integrations: [
