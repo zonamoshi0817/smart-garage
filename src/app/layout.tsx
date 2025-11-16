@@ -19,6 +19,16 @@ export const metadata: Metadata = {
   description: '給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDF・共有で、愛車の価値を正しく伝えます。レシートOCRで最短10秒、続けられるUX設計。',
   keywords: "車両管理,車メンテナンス,給油記録,カスタム記録,PDF出力,共有リンク,OCR,車歴書,整備記録",
   authors: [{ name: "garage log" }],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180" },
+    ],
+    shortcut: ["/favicon.ico"],
+  },
   openGraph: {
     type: "website",
     locale: "ja_JP",
