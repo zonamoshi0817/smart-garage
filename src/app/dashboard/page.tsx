@@ -90,12 +90,6 @@ export default function Home() {
         
         // 認証トリガーを更新してデータ取得を促す
         setAuthTrigger(prev => prev + 1);
-        
-        // 少し待ってからデータを再取得（認証状態が完全に確立されるまで待つ）
-        setTimeout(() => {
-          console.log("Triggering data refresh after authentication");
-          setAuthTrigger(prev => prev + 1);
-        }, 500);
       } else {
         console.log("User not authenticated, clearing all data");
         setCars([]);
@@ -430,10 +424,9 @@ export default function Home() {
         {/* ヘッダー */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-2xl font-extrabold tracking-tight text-blue-600">
-                garage log
-              </span>
+            <div className="flex items-center gap-3">
+              <img src="/icon.png" alt="garage log" className="h-8 w-8 rounded-lg shadow-sm ring-1 ring-black/5" />
+              <span className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900">garage log</span>
             </div>
             <div className="flex items-center gap-4">
               {/* ヘッダー車両セレクター（右上に配置） */}
@@ -3282,16 +3275,17 @@ function CarManagementContent({
                     setActiveCarId(car.id);
                     setCurrentPage('my-car' as any);
                   }
-                }}
+                } }
                 onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
                 onEdit={() => handleEditCar(car)}
-                onMarkAsSold={() => {}}
+                onMarkAsSold={() => { } }
                 maintenanceRecords={maintenanceRecords}
                 fuelLogs={fuelLogs}
                 onAddFuel={handleAddFuel}
                 onAddMaintenance={handleAddMaintenance}
-                onAddCustomization={handleAddCustomization}
-              />
+                onAddCustomization={handleAddCustomization} checkFeature={function (feature: any, currentUsage?: any, variant?: any): boolean {
+                  throw new Error("Function not implemented.");
+                } }              />
             ))}
           </div>
         </div>
@@ -3317,16 +3311,17 @@ function CarManagementContent({
                     setActiveCarId(car.id);
                     setCurrentPage('my-car' as any);
                   }
-                }}
+                } }
                 onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
                 onEdit={() => handleEditCar(car)}
-                onMarkAsSold={() => {}}
+                onMarkAsSold={() => { } }
                 maintenanceRecords={maintenanceRecords}
                 fuelLogs={fuelLogs}
                 onAddFuel={handleAddFuel}
                 onAddMaintenance={handleAddMaintenance}
-                onAddCustomization={handleAddCustomization}
-              />
+                onAddCustomization={handleAddCustomization} checkFeature={function (feature: any, currentUsage?: any, variant?: any): boolean {
+                  throw new Error("Function not implemented.");
+                } }              />
             ))}
           </div>
         </div>
@@ -3364,16 +3359,17 @@ function CarManagementContent({
                     setActiveCarId(car.id);
                     setCurrentPage('my-car' as any);
                   }
-                }}
+                } }
                 onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
                 onEdit={() => handleEditCar(car)}
-                onMarkAsSold={() => {}}
+                onMarkAsSold={() => { } }
                 maintenanceRecords={maintenanceRecords}
                 fuelLogs={fuelLogs}
                 onAddFuel={handleAddFuel}
                 onAddMaintenance={handleAddMaintenance}
-                onAddCustomization={handleAddCustomization}
-              />
+                onAddCustomization={handleAddCustomization} checkFeature={function (feature: any, currentUsage?: any, variant?: any): boolean {
+                  throw new Error("Function not implemented.");
+                } }              />
             ))}
           </div>
         </div>

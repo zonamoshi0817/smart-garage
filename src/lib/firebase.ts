@@ -1,7 +1,7 @@
 "use client";
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import {
+import { 
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
   onAuthStateChanged, type User
 } from "firebase/auth";
@@ -91,11 +91,41 @@ export const logout = async () => {
   }
 };
 
-// 認証状態の監視（ログイン/ログアウト時に反応）
+// 認証状態の監視（ログイン/ログアウト時に反応） - シングルトン購読で重複を回避
+let authCallbacks: Array<(user: User | null) => void> = [];
+let unsubscribeInternalAuth: (() => void) | null = null;
+
 export const watchAuth = (cb: (user: User | null) => void) => {
-  console.log("watchAuth: Setting up auth state listener");
-  return onAuthStateChanged(auth, (user) => {
-    console.log("watchAuth: Auth state changed:", user ? "logged in" : "logged out");
-    cb(user);
-  });
+  // コールバックを登録
+  authCallbacks.push(cb);
+
+  // 内部のonAuthStateChangedを一度だけ設定
+  if (!unsubscribeInternalAuth) {
+    console.log("watchAuth: Initializing singleton auth state listener");
+    unsubscribeInternalAuth = onAuthStateChanged(auth, (user) => {
+      console.log("watchAuth: Auth state changed:", user ? "logged in" : "logged out");
+      // 登録された全コールバックに配信
+      authCallbacks.forEach(fn => {
+        try {
+          fn(user);
+        } catch (e) {
+          console.error("watchAuth: callback error", e);
+        }
+      });
+    });
+  } else {
+    console.log("watchAuth: Reusing existing auth state listener");
+  }
+
+  // 解除関数（コールバック登録解除）。最後の一つが解除されたら内部購読も解除
+  return () => {
+    authCallbacks = authCallbacks.filter(fn => fn !== cb);
+    if (authCallbacks.length === 0 && unsubscribeInternalAuth) {
+      try {
+        unsubscribeInternalAuth();
+      } catch {}
+      unsubscribeInternalAuth = null;
+      console.log("watchAuth: All callbacks removed, auth listener disposed");
+    }
+  };
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { watchFuelLogs, calculateFuelEfficiency, calculateMonthlyFuelCosts, calculateAverageFuelEfficiency, updateFuelLog, deleteFuelLog } from "@/lib/fuelLogs";
 import type { FuelLog, Car } from "@/types";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -40,9 +40,9 @@ export default function FuelLogCard({ car }: FuelLogCardProps) {
     return unsubscribe;
   }, [car.id]);
 
-  const currentFuelEfficiency = calculateFuelEfficiency(fuelLogs);
-  const averageFuelEfficiency = calculateAverageFuelEfficiency(fuelLogs);
-  const monthlyCosts = calculateMonthlyFuelCosts(fuelLogs);
+  const currentFuelEfficiency = useMemo(() => calculateFuelEfficiency(fuelLogs), [fuelLogs]);
+  const averageFuelEfficiency = useMemo(() => calculateAverageFuelEfficiency(fuelLogs), [fuelLogs]);
+  const monthlyCosts = useMemo(() => calculateMonthlyFuelCosts(fuelLogs), [fuelLogs]);
 
   // 個別の給油ログの燃費を計算する関数
   const calculateIndividualFuelEfficiency = (log: FuelLog, index: number) => {
