@@ -76,7 +76,7 @@ export default function VehicleSwitcher({
       {/* メイン表示（常時表示） */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-sm hover:shadow-md"
+        className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
       >
         {/* アクティブな車両の表示 */}
         {activeCar ? (
@@ -85,17 +85,17 @@ export default function VehicleSwitcher({
               <img
                 src={activeCar.imagePath}
                 alt={activeCar.name}
-                className="w-8 h-8 object-cover rounded-lg"
+                className="w-7 h-7 object-cover rounded"
               />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             )}
             <div className="text-left min-w-0">
-              <div className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">
+              <div className="text-sm font-medium text-gray-900 truncate max-w-[140px]">
                 {activeCar.name}
               </div>
               {activeCar.modelCode && (
@@ -105,13 +105,13 @@ export default function VehicleSwitcher({
           </>
         ) : (
           <>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div className="text-left min-w-0">
-              <div className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">
+              <div className="text-sm font-medium text-gray-900 truncate max-w-[140px]">
                 車両を選択
               </div>
             </div>
@@ -131,10 +131,10 @@ export default function VehicleSwitcher({
 
       {/* ドロップダウンメニュー */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden transition-all duration-200 ease-out opacity-100">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
           {/* ヘッダー */}
-          <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-            <div className="flex items-center justify-between mb-2">
+          <div className="px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-900">車両を選択</h3>
               <span className="text-xs text-gray-500">{filteredCars.length}台</span>
             </div>
@@ -142,23 +142,23 @@ export default function VehicleSwitcher({
             {/* 検索バー */}
             {cars.length > 3 && (
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="車両を検索..."
+                  placeholder="検索..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
                 />
               </div>
             )}
           </div>
           
           {/* 車両リスト */}
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto">
             {filteredCars.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-gray-500">
                 該当する車両が見つかりません
@@ -172,8 +172,8 @@ export default function VehicleSwitcher({
                     setIsOpen(false);
                     setSearchQuery('');
                   }}
-                  className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
-                    car.id === activeCarId ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                  className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
+                    car.id === activeCarId ? 'bg-gray-50' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -182,30 +182,30 @@ export default function VehicleSwitcher({
                       <img
                         src={car.imagePath}
                         alt={car.name}
-                        className="w-12 h-12 object-cover rounded-lg border border-gray-200"
+                        className="w-10 h-10 object-cover rounded border border-gray-200"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                     )}
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="text-sm font-medium text-gray-900 truncate">
                           {car.name}
                         </p>
                         {car.id === activeCarId && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            選択中
-                          </span>
+                          <svg className="w-4 h-4 text-gray-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         {car.modelCode && (
-                          <span className="bg-gray-100 px-2 py-0.5 rounded">
+                          <span className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">
                             {car.modelCode}
                           </span>
                         )}
@@ -217,13 +217,6 @@ export default function VehicleSwitcher({
                         )}
                       </div>
                     </div>
-                    
-                    {/* 選択状態インジケーター */}
-                    {car.id === activeCarId && (
-                      <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
                   </div>
                 </button>
               ))
@@ -231,13 +224,13 @@ export default function VehicleSwitcher({
           </div>
           
           {/* フッター（車両管理へのリンク） */}
-          <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
+          <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
             <button
               onClick={() => {
                 router.push('/cars');
                 setIsOpen(false);
               }}
-              className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2"
+              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

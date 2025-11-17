@@ -519,13 +519,48 @@ export default function Home() {
           const hasFuel = fuelLogs.length > 0;
           const hasMaintenance = maintenanceRecords.length > 0 || allMaintenanceRecords.length > 0;
           const steps = [
-            { label: '車登録', done: hasCar },
-            { label: '給油記録', done: hasFuel },
-            { label: 'メンテ記録', done: hasMaintenance },
+            { 
+              label: '車登録', 
+              done: hasCar, 
+              icon: '🚗',
+              action: () => setShowAddCarModal(true),
+              description: '愛車を登録しましょう'
+            },
+            { 
+              label: '給油記録', 
+              done: hasFuel,
+              icon: '⛽',
+              action: () => {
+                if (activeCarId) {
+                  setCurrentPage('fuel-logs');
+                  setShowFuelLogModal(true);
+                } else if (cars.length > 0) {
+                  setActiveCarId(cars[0].id);
+                  setCurrentPage('fuel-logs');
+                  setShowFuelLogModal(true);
+                }
+              },
+              description: '給油を記録して燃費を管理'
+            },
+            { 
+              label: 'メンテ記録', 
+              done: hasMaintenance,
+              icon: '🔧',
+              action: () => {
+                if (activeCarId) {
+                  setShowMaintenanceModal(true);
+                } else if (cars.length > 0) {
+                  setActiveCarId(cars[0].id);
+                  setShowMaintenanceModal(true);
+                }
+              },
+              description: 'メンテナンス履歴を記録'
+            },
           ];
           const doneCount = steps.filter(s => s.done).length;
           const total = steps.length;
           const isComplete = doneCount === total;
+          const progressPercentage = (doneCount / total) * 100;
           const uid = auth.currentUser?.uid || "anon";
           const storageKey = `onboardingHidden:v1:${uid}`;
 
@@ -544,52 +579,121 @@ export default function Home() {
           return (
             <>
               {shouldShowBar && (
-                <div className="bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
-                  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex flex-col gap-2 w-full">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium text-gray-800">はじめてガイド</div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-gray-500">{doneCount}/{total} 完了</div>
-                            <button
-                              onClick={() => {
-                                setOnboardingHiddenExplicit(true);
-                                if (typeof window !== 'undefined') {
-                                  window.localStorage.setItem(storageKey, 'true');
-                                }
-                              }}
-                              className="px-2.5 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50"
-                            >
-                              閉じる
-                            </button>
+                <div className="bg-white border-b border-gray-200">
+                  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+                    <div className="flex items-start justify-between gap-6">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-900">はじめてガイド</h3>
+                            <p className="text-xs text-gray-500 mt-0.5">GarageLogを始める3ステップ</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-gray-500 mb-1">進捗</div>
+                            <div className="text-sm font-semibold text-gray-900">{doneCount}/{total}</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {steps.map((s) => (
-                            <span
-                              key={s.label}
-                              className={
-                                "inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs " +
-                                (s.done
-                                  ? "bg-green-50 text-green-700 border-green-200"
-                                  : "bg-gray-50 text-gray-600 border-gray-200")
-                              }
+                        
+                        {/* プログレスバー */}
+                        <div className="mb-4">
+                          <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className="bg-gray-900 h-1.5 rounded-full transition-all duration-300"
+                              style={{ width: `${progressPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* ステップリスト */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          {steps.map((step, index) => (
+                            <button
+                              key={step.label}
+                              onClick={step.done ? undefined : step.action}
+                              disabled={step.done}
+                              className={`flex-1 p-4 rounded-lg border transition-all text-left ${
+                                step.done
+                                  ? 'bg-gray-50 border-gray-200 cursor-default'
+                                  : 'bg-white border-gray-300 hover:border-gray-400 hover:shadow-sm cursor-pointer'
+                              }`}
                             >
-                              <span
-                                className={
-                                  "h-1.5 w-1.5 rounded-full " + (s.done ? "bg-green-500" : "bg-gray-300")
-                                }
-                              />
-                              {s.label}
-                            </span>
+                              <div className="flex items-start gap-3">
+                                <div className={`flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center ${
+                                  step.done ? 'bg-gray-900' : 'bg-gray-100'
+                                }`}>
+                                  {step.done ? (
+                                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  ) : (
+                                    <span className="text-xs font-semibold text-gray-600">{index + 1}</span>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 mb-0.5">
+                                    {step.label}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {step.description}
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
                           ))}
                         </div>
                       </div>
+                      
+                      <button
+                        onClick={() => {
+                          setOnboardingHiddenExplicit(true);
+                          if (typeof window !== 'undefined') {
+                            window.localStorage.setItem(storageKey, 'true');
+                          }
+                        }}
+                        className="flex-shrink-0 p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="閉じる"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
               )}
+              
+              {/* 完了時の祝福メッセージ */}
+              {isComplete && !onboardingHiddenExplicit && (
+                <div className="bg-gray-50 border-b border-gray-200">
+                  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">すべてのステップを完了しました</div>
+                          <div className="text-xs text-gray-500 mt-0.5">GarageLogを活用して、クルマとずっといい関係を続けましょう</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setOnboardingHiddenExplicit(true);
+                          if (typeof window !== 'undefined') {
+                            window.localStorage.setItem(storageKey, 'true');
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-md bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors"
+                      >
+                        閉じる
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* 再表示チップ（完了時に閉じた場合） */}
               {!shouldShowBar && isComplete && (
                 <div className="bg-white/0">
@@ -602,7 +706,7 @@ export default function Home() {
                           window.localStorage.setItem(`onboardingHidden:v1:${uid2}`, 'false');
                         }
                       }}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-600 hover:bg-white bg-gray-50"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-600 hover:bg-white bg-gray-50 shadow-sm transition-all hover:shadow-md"
                       title="はじめてガイドを再表示"
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -1376,18 +1480,20 @@ function DashboardContent({
               )}
             </div>
 
-              {/* 給油情報 */}
+              {/* 最近の給油 */}
               {car && (
                 <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">給油情報</h3>
-                    <button
-                      onClick={() => setCurrentPage('fuel-logs')}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      詳細を見る →
-                    </button>
-                  </div>
+                  <SectionHeader
+                    title="最近の給油"
+                    right={
+                      <button
+                        onClick={() => setCurrentPage('fuel-logs')}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        詳細を見る →
+                      </button>
+                    }
+                  />
                   
                   {fuelLogs.length > 0 ? (
                     <div className="space-y-4">
