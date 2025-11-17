@@ -434,11 +434,15 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
    * 普通車: 8個、軽自動車: 3個のQRコードが横並びに配置されている
    */
   const scanMultipleQRCodes = async (file: File): Promise<string[]> => {
-    const scanner = new Html5Qrcode(scannerElementId);
     const results: string[] = [];
     const seenTexts = new Set<string>(); // 重複チェック用
+    let scanner: Html5Qrcode | null = null;
     
     try {
+      // 一時的なスキャナーインスタンスを作成
+      // scanFileメソッドはDOM要素を必要としないため、存在しないIDでも問題なし
+      scanner = new Html5Qrcode('temp-qr-scanner-' + Date.now());
+      
       // まず全体をスキャン（1つのQRコードが見つかる可能性がある）
       try {
         const decodedText = await scanner.scanFile(file, true);
@@ -455,17 +459,26 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
       const img = new Image();
       const imageUrl = URL.createObjectURL(file);
       
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = reject;
-        img.src = imageUrl;
-      });
+      try {
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = (err) => {
+            URL.revokeObjectURL(imageUrl);
+            reject(new Error('画像の読み込みに失敗しました'));
+          };
+          img.src = imageUrl;
+        });
+      } catch (imgErr) {
+        URL.revokeObjectURL(imageUrl);
+        if (scanner) scanner.clear();
+        throw new Error('画像ファイルの読み込みに失敗しました。有効な画像ファイルを選択してください。');
+      }
       
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         URL.revokeObjectURL(imageUrl);
-        scanner.clear();
+        if (scanner) scanner.clear();
         return results;
       }
       
@@ -528,26 +541,46 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
           if (!blob) continue;
           
           const regionFile = new File([blob], `region-${i}.png`, { type: 'image/png' });
-          const decodedText = await scanner.scanFile(regionFile, true);
-          if (decodedText && !seenTexts.has(decodedText)) {
-            results.push(decodedText);
-            seenTexts.add(decodedText);
-            console.log(`QRコード${results.length}読み取り成功（領域${i + 1}）:`, decodedText.substring(0, 50) + '...');
+          if (scanner) {
+            const decodedText = await scanner.scanFile(regionFile, true);
+            if (decodedText && !seenTexts.has(decodedText)) {
+              results.push(decodedText);
+              seenTexts.add(decodedText);
+              console.log(`QRコード${results.length}読み取り成功（領域${i + 1}）:`, decodedText.substring(0, 50) + '...');
+            }
           }
-        } catch (e) {
+        } catch (e: any) {
           // この領域にはQRコードがない可能性（エラーは無視）
+          const errorMsg = e?.message || String(e);
+          if (!errorMsg.includes('No QR code found') && !errorMsg.includes('NotFoundException')) {
+            // QRコードが見つからない以外のエラーのみログに記録
+            console.log(`領域${i + 1}のスキャン失敗:`, errorMsg);
+          }
         }
       }
       
       URL.revokeObjectURL(imageUrl);
-      scanner.clear();
+      if (scanner) {
+        scanner.clear();
+      }
       
       console.log(`合計${results.length}個のQRコードを検出`);
       return results;
-    } catch (err) {
+    } catch (err: any) {
       console.error('複数QRコードスキャンエラー:', err);
-      scanner.clear();
-      return results;
+      const errorMessage = err?.message || String(err);
+      console.error('エラー詳細:', errorMessage);
+      
+      if (scanner) {
+        try {
+          scanner.clear();
+        } catch (clearErr) {
+          console.error('スキャナークリアエラー:', clearErr);
+        }
+      }
+      
+      // エラーを再スローして、呼び出し元で処理できるようにする
+      throw new Error(`QRコードスキャン中にエラーが発生しました: ${errorMessage}`);
     }
   };
 
@@ -557,6 +590,12 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
 
     try {
       setError(null);
+      
+      // ファイルサイズチェック（10MB制限）
+      if (file.size > 10 * 1024 * 1024) {
+        setError('画像ファイルが大きすぎます。10MB以下のファイルを選択してください。');
+        return;
+      }
       
       // 複数のQRコードをスキャン
       const decodedTexts = await scanMultipleQRCodes(file);
@@ -646,7 +685,8 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
       onScanSuccess(parsedData);
     } catch (err: any) {
       console.error('QRコード読み取りエラー:', err);
-      setError('QRコードの読み取りに失敗しました。画像にQRコードが含まれているか確認してください。');
+      const errorMessage = err?.message || '不明なエラー';
+      setError(`QRコードの読み取りに失敗しました: ${errorMessage}。画像にQRコードが含まれているか確認してください。`);
     }
   };
 
