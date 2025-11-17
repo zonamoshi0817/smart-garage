@@ -43,9 +43,9 @@ export default function VehicleHeader({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200">
-      <div className="p-6">
-        <div className="flex flex-col lg:flex-row gap-6">
+    <div className="bg-white rounded-xl sm:rounded-2xl shadow-md overflow-hidden border border-gray-200">
+      <div className="p-4 sm:p-5 lg:p-6">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 lg:gap-6">
           {/* 左側：車両画像 */}
           <div className="flex-shrink-0">
             <div className="relative w-full lg:w-64 h-48 bg-white rounded-xl overflow-hidden group border border-gray-200">
@@ -81,9 +81,9 @@ export default function VehicleHeader({
           {/* 右側：車両情報 */}
           <div className="flex-1 min-w-0">
             {/* 車名と基本情報 */}
-            <div className="mb-4">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{car.name}</h1>
-              <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+            <div className="mb-3 sm:mb-4">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2">{car.name}</h1>
+              <div className="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
                 {car.year && (
                   <span className="flex items-center gap-1">
                     <span className="font-medium">年式:</span>
@@ -112,10 +112,10 @@ export default function VehicleHeader({
             </div>
 
             {/* バッジエリア */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {/* 車検期限バッジ */}
               {inspectionDaysLeft !== null && (
-                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getBadgeColor(inspectionDaysLeft)}`}>
+                <span className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold border ${getBadgeColor(inspectionDaysLeft)}`}>
                   🔧 車検: 
                   {inspectionDaysLeft < 0 
                     ? ` 期限切れ (${Math.abs(inspectionDaysLeft)}日超過)` 

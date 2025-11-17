@@ -75,10 +75,10 @@ export default function CustomPartsPanel({
   const installedCount = customizations.filter(c => c.status === 'installed').length;
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+    <div className="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-5 lg:p-6 border border-gray-100">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
           <span>🔧</span>
           <span>カスタムパーツ一覧</span>
           {installedCount > 0 && (
@@ -106,14 +106,14 @@ export default function CustomPartsPanel({
       {/* パーツリスト */}
       <div className="space-y-1">
         {installedCount === 0 && (
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-dashed border-blue-300 rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">💡</div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-blue-700 mb-1">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-dashed border-blue-300 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="text-2xl sm:text-3xl flex-shrink-0">💡</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-semibold text-blue-700 mb-0.5 sm:mb-1">
                   カスタマイズを記録してみましょう！
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-[10px] sm:text-xs text-gray-600">
                   パーツ交換や改造の履歴を記録すると、車両の詳細データとして一覧表示されます
                 </p>
               </div>
@@ -168,21 +168,21 @@ function PartAccordion({
       {/* ヘッダー（クリック可能） */}
       <button
         onClick={onToggle}
-        className="w-full flex justify-between items-center py-3 px-2 hover:bg-gray-50 transition-colors rounded-lg"
+        className="w-full flex justify-between items-center py-2.5 sm:py-3 px-3 sm:px-2 hover:bg-gray-50 transition-colors rounded-lg"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-900">{categoryInfo.name}</span>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="text-xs sm:text-sm font-bold text-gray-900 truncate">{categoryInfo.name}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {isStock ? (
-            <span className="text-sm text-gray-500 italic">純正</span>
+            <span className="text-xs sm:text-sm text-gray-500 italic whitespace-nowrap">純正</span>
           ) : (
-            <span className="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded-full font-semibold">
+            <span className="text-[10px] sm:text-xs bg-cyan-600 text-white px-1.5 sm:px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
               カスタム {parts.length}
             </span>
           )}
           <svg 
-            className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
@@ -194,15 +194,15 @@ function PartAccordion({
       
       {/* 展開コンテンツ */}
       {isExpanded && (
-        <div className="pb-3 px-2 space-y-2">
+        <div className="pb-2.5 sm:pb-3 px-2 sm:px-2 space-y-2">
           {isStock ? (
-            <div className="ml-6 py-3">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <p className="text-sm text-gray-600 mb-2">
+            <div className="ml-4 sm:ml-6 py-2.5 sm:py-3">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 sm:p-3">
+                <p className="text-xs sm:text-sm text-gray-600 mb-1.5 sm:mb-2">
                   このカテゴリは全て純正パーツです
                 </p>
                 {categoryInfo.subcategories.length > 0 && (
-                  <div className="text-xs text-gray-500 mb-3">
+                  <div className="text-xs text-gray-500 mb-2 sm:mb-3">
                     <span className="font-medium">例: </span>
                     {categoryInfo.subcategories.join('、')}
                   </div>
@@ -213,7 +213,7 @@ function PartAccordion({
                       e.stopPropagation();
                       onAdd();
                     }}
-                    className="w-full px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors"
                   >
                     + カスタマイズを登録
                   </button>
@@ -221,24 +221,24 @@ function PartAccordion({
               </div>
             </div>
           ) : (
-            <div className="ml-6 space-y-3">
+            <div className="ml-4 sm:ml-6 space-y-2 sm:space-y-3">
               {parts.map((part, index) => (
-                <div key={part.id || index} className="bg-cyan-50 rounded-lg p-3 border border-cyan-200">
+                <div key={part.id || index} className="bg-cyan-50 rounded-lg p-2.5 sm:p-3 border border-cyan-200">
                   {/* パーツ名 */}
-                  <div className="flex items-start gap-2 mb-2">
-                    <span className="text-cyan-600 mt-0.5 font-bold">▸</span>
+                  <div className="flex items-start gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                    <span className="text-cyan-600 mt-0.5 font-bold text-xs sm:text-sm">▸</span>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-cyan-700 mb-1">
+                      <div className="font-bold text-xs sm:text-sm text-cyan-700 mb-0.5 sm:mb-1 break-words">
                         {part.brand ? `${part.brand} ${part.modelCode || ''}` : part.title}
                       </div>
-                      <div className="text-sm text-gray-700 font-semibold mb-1">
+                      <div className="text-xs sm:text-sm text-gray-700 font-semibold mb-0.5 sm:mb-1 break-words">
                         {part.title}
                       </div>
                     </div>
                   </div>
                   
                   {/* 詳細情報 */}
-                  <div className="ml-6 space-y-1 text-xs text-gray-600">
+                  <div className="ml-4 sm:ml-6 space-y-0.5 sm:space-y-1 text-[10px] sm:text-xs text-gray-600">
                     {part.odoKm && (
                       <div>装着時走行距離: <span className="font-semibold text-gray-800">{part.odoKm.toLocaleString()} km</span></div>
                     )}

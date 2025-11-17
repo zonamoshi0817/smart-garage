@@ -40,13 +40,13 @@ export default function MyCarPage({
   // 見出しの統一
   function SectionHeader({ title, subtitle, right, size = 'md' }: { title: string; subtitle?: string; right?: React.ReactNode; size?: 'sm' | 'md' }) {
     const titleClass = size === 'sm'
-      ? "text-sm font-medium text-gray-700"
-      : "text-lg font-semibold text-gray-900";
+      ? "text-xs sm:text-sm font-medium text-gray-700"
+      : "text-base sm:text-lg font-semibold text-gray-900";
     const subClass = size === 'sm'
       ? "text-xs text-gray-500"
-      : "text-sm text-gray-500";
+      : "text-xs sm:text-sm text-gray-500";
     return (
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div>
           <div className={titleClass}>{title}</div>
           {subtitle && <div className={subClass}>{subtitle}</div>}
@@ -318,7 +318,7 @@ export default function MyCarPage({
         />
       )}
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-10 space-y-4 sm:space-y-6 lg:space-y-10">
         {/* 軽量アラート（車検・メンテ期限など） */}
         {(() => {
           const alerts: Array<React.ReactNode> = [];
@@ -328,13 +328,13 @@ export default function MyCarPage({
             if (days !== null) {
               if (days < 0) {
                 alerts.push(
-                  <div key="inspection-overdue" className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-3 py-2">
-                    <div className="text-sm text-red-800">
+                  <div key="inspection-overdue" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg sm:rounded-xl border border-red-200 bg-red-50 px-3 py-2">
+                    <div className="text-xs sm:text-sm text-red-800">
                       車検期限が過ぎています（{Math.abs(days)}日前）。早めに更新手続きを行ってください。
                     </div>
                     <button
                       onClick={() => onOpenModal('maintenance')}
-                      className="text-xs px-2 py-1 rounded-md bg-white border border-red-200 text-red-700 hover:bg-red-100"
+                      className="text-xs px-2 py-1 rounded-md bg-white border border-red-200 text-red-700 hover:bg-red-100 whitespace-nowrap self-start sm:self-auto"
                     >
                       対応する
                     </button>
@@ -342,13 +342,13 @@ export default function MyCarPage({
                 );
               } else if (days <= 60) {
                 alerts.push(
-                  <div key="inspection-soon" className="flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2">
-                    <div className="text-sm text-yellow-900">
+                  <div key="inspection-soon" className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg sm:rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2">
+                    <div className="text-xs sm:text-sm text-yellow-900">
                       車検期限まで残り {days}日です。点検や準備を進めましょう。
                     </div>
                     <button
                       onClick={() => onOpenModal('maintenance')}
-                      className="text-xs px-2 py-1 rounded-md bg-white border border-yellow-200 text-yellow-800 hover:bg-yellow-100"
+                      className="text-xs px-2 py-1 rounded-md bg-white border border-yellow-200 text-yellow-800 hover:bg-yellow-100 whitespace-nowrap self-start sm:self-auto"
                     >
                       点検を記録
                     </button>
@@ -361,11 +361,11 @@ export default function MyCarPage({
           return <div className="space-y-2">{alerts}</div>;
         })()}
 
-        <section className="relative overflow-hidden rounded-[32px] border border-gray-200 bg-white shadow-xl">
+        <section className="relative overflow-hidden rounded-2xl sm:rounded-[32px] border border-gray-200 bg-white shadow-xl">
           <div className="absolute -top-32 -right-28 h-64 w-64 rounded-full bg-emerald-100/50 blur-3xl" />
           <div className="absolute -bottom-28 -left-32 h-72 w-72 rounded-full bg-sky-100/50 blur-3xl" />
 
-          <div className="relative z-10 p-6 sm:p-8">
+          <div className="relative z-10 p-4 sm:p-6 lg:p-8">
             <VehicleHeader
               car={car}
               latestMaintenance={latestMaintenance}
@@ -374,9 +374,9 @@ export default function MyCarPage({
           </div>
         </section>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 sm:gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           {/* 左カラム: カスタムパーツ */}
-          <div className="space-y-8">
+          <div className="space-y-4 sm:space-y-6 lg:space-y-8">
             <div id="section-custom" className="scroll-mt-24">
               <CustomPartsPanel
                 customizations={customizations}
@@ -388,15 +388,15 @@ export default function MyCarPage({
           </div>
 
           {/* 右カラム: クイック操作 + サマリーカード + 状況サマリー */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {readOnly ? (
-                <div className="rounded-2xl border border-orange-200 bg-orange-50/90 p-6 text-orange-800 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="rounded-xl sm:rounded-2xl border border-orange-200 bg-orange-50/90 p-4 sm:p-5 lg:p-6 text-orange-800 shadow-sm">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <div className="space-y-2">
-                      <div className="font-semibold text-lg">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <div className="font-semibold text-base sm:text-lg">
                         {car.status === 'sold' 
                           ? '売却済み車両（閲覧専用）' 
                           : car.status === 'scrapped' 
@@ -433,13 +433,13 @@ export default function MyCarPage({
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 lg:p-5 shadow-sm">
                   <SectionHeader
                     title="クイック操作"
                     subtitle="よく使う操作に素早くアクセス"
                     right={<div className="hidden sm:flex items-center gap-1 text-xs font-medium text-emerald-600"><span>ショートカット</span></div>}
                   />
-                  <div className="mt-4 -mx-1">
+                  <div className="mt-3 sm:mt-4 -mx-1">
                     <QuickActions
                       actions={quickActions}
                       isPremium={isPremium}
@@ -450,25 +450,25 @@ export default function MyCarPage({
               )}
 
             {/* サマリーカード */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 lg:p-5 shadow-sm">
             <SectionHeader title="車両サマリー" size="md" />
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-2 sm:gap-3">
                 {highlightCards.map((card) => (
                   <div
                     key={card.id}
-                    className="group relative overflow-hidden rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-all duration-200 hover:bg-white hover:shadow-sm"
+                    className="group relative overflow-hidden rounded-lg sm:rounded-xl border border-gray-100 bg-gray-50/50 p-3 sm:p-4 transition-all duration-200 hover:bg-white hover:shadow-sm"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-base ${card.iconBg}`}>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className={`flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-lg text-sm sm:text-base ${card.iconBg}`}>
                         {card.icon}
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-medium text-gray-500">{card.label}</p>
-                        <p className="mt-0.5 text-base font-semibold text-gray-900 truncate">{card.value}</p>
+                        <p className="mt-0.5 text-sm sm:text-base font-semibold text-gray-900 truncate">{card.value}</p>
                       </div>
                     </div>
                     {card.description && (
-                      <p className="mt-2 text-xs leading-snug text-gray-500">{card.description}</p>
+                      <p className="mt-1.5 sm:mt-2 text-xs leading-snug text-gray-500">{card.description}</p>
                     )}
                   </div>
                 ))}
@@ -476,18 +476,18 @@ export default function MyCarPage({
             </div>
 
             {/* 状況サマリー */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 lg:p-6 shadow-sm">
             <SectionHeader title="状況サマリー" size="md" />
-              <ul className="mt-4 space-y-4">
+              <ul className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
                 {insightItems.map((item) => (
-                  <li key={item.id} className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">{item.label}</p>
+                  <li key={item.id} className="flex items-start justify-between gap-2 sm:gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">{item.label}</p>
                       {item.helper && (
-                        <p className="mt-1 text-xs leading-snug text-gray-500">{item.helper}</p>
+                        <p className="mt-0.5 sm:mt-1 text-xs leading-snug text-gray-500">{item.helper}</p>
                       )}
                     </div>
-                    <span className={`text-sm font-semibold ${item.tone}`}>{item.value}</span>
+                    <span className={`text-xs sm:text-sm font-semibold flex-shrink-0 ${item.tone}`}>{item.value}</span>
                   </li>
                 ))}
               </ul>

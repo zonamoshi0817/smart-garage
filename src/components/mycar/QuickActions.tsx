@@ -59,7 +59,7 @@ export default function QuickActions({ actions, isPremium, onLockedClick }: Quic
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex gap-4 overflow-x-auto scrollbar-hide py-2 px-1"
+        className="flex gap-2.5 sm:gap-3 lg:gap-4 overflow-x-auto scrollbar-hide py-2 px-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {actions.map((action) => {
@@ -75,20 +75,20 @@ export default function QuickActions({ actions, isPremium, onLockedClick }: Quic
                   action.onClick();
                 }
               }}
-              className="relative flex-shrink-0 w-24 h-24 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 flex flex-col items-center justify-center gap-2 border border-gray-100 hover:border-indigo-300 group"
+              className="relative flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 flex flex-col items-center justify-center gap-1.5 sm:gap-2 border border-gray-100 hover:border-indigo-300 group"
             >
               {/* ロックアイコン */}
               {(isLocked || action.isLocked) && (
-                <div className="absolute top-2 right-2 w-5 h-5 bg-gray-900 bg-opacity-75 rounded-full flex items-center justify-center">
-                  <span className="text-xs">🔒</span>
+                <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-4 h-4 sm:w-5 sm:h-5 bg-gray-900 bg-opacity-75 rounded-full flex items-center justify-center">
+                  <span className="text-[10px] sm:text-xs">🔒</span>
                 </div>
               )}
               
               {/* アイコン */}
-              <span className="text-3xl">{action.icon}</span>
+              <span className="text-2xl sm:text-3xl">{action.icon}</span>
               
               {/* ラベル */}
-              <span className="text-xs font-medium text-gray-700 text-center px-2 leading-tight">
+              <span className="text-[10px] sm:text-xs font-medium text-gray-700 text-center px-1.5 sm:px-2 leading-tight">
                 {action.label}
               </span>
             </button>
