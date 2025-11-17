@@ -240,6 +240,13 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementId = 'qr-reader';
 
+  // モーダルが開いたことをログに記録し、自動的にカメラを起動
+  useEffect(() => {
+    console.log('[QRScanner] Modal opened');
+    // モーダルが開いたら自動的にカメラを起動
+    setIsScanning(true);
+  }, []);
+
   // カメラの初期化
   useEffect(() => {
     if (!isScanning) return;
@@ -317,7 +324,8 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
     };
   }, [isScanning, scannerElementId, onScanSuccess]);
 
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
+    console.log('[QRScanner] Start scan button clicked');
     setError(null);
     setIsScanning(true);
   };
@@ -360,7 +368,7 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 p-4"
       onClick={onClose}
     >
       <div 
