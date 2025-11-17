@@ -27,13 +27,98 @@ interface ParsedQRData {
 }
 
 /**
+ * 分割QRコードの結合処理
+ * 普通車のA4車検証では、1つの情報を複数のQRに分割した「分割（連結）QR」が使用される
+ * 先頭に「これは分割QRだよ」「何分割中の何番目だよ」というヘッダが入っている
+ */
+function parseSplitQRHeader(qrText: string): { isSplit: boolean; totalParts: number; partNumber: number; content: string } | null {
+  // 分割QRのヘッダパターンを検出
+  // 例: "01/03/..." や "1/3/..." などの形式
+  const splitMatch = qrText.match(/^(\d+)\/(\d+)\/(.+)$/);
+  if (splitMatch) {
+    const partNumber = parseInt(splitMatch[1]);
+    const totalParts = parseInt(splitMatch[2]);
+    const content = splitMatch[3];
+    if (partNumber > 0 && totalParts > 0 && partNumber <= totalParts) {
+      return {
+        isSplit: true,
+        totalParts,
+        partNumber,
+        content
+      };
+    }
+  }
+  return null;
+}
+
+/**
  * 車検証QRコードのデータをパース
  * 日本の車検証QRコードは複数のフォーマットがあるため、複数のパターンに対応
+ * 国交省の仕様に基づく固定長＋区切り文字 `/` の形式に対応
  */
 function parseInspectionQRCode(qrText: string): ParsedQRData {
   const result: ParsedQRData = {};
 
   try {
+    // パターン0: 国交省仕様の固定長＋区切り文字 `/` 形式（二次元コード2/3）
+    // 例: "帳票種別/自動車登録番号/車両番号/車台番号/原動機型式/..."
+    if (qrText.includes('/') && qrText.split('/').length >= 3) {
+      const fields = qrText.split('/');
+      
+      // 国交省の仕様PDFに基づくフィールドマッピング（簡易版）
+      // 実際の仕様PDFを参照して正確な位置を確認する必要があります
+      if (fields.length >= 2 && fields[1]) {
+        // 自動車登録番号（ナンバー）
+        result.registrationNumber = fields[1].trim();
+      }
+      if (fields.length >= 4 && fields[3]) {
+        // 車台番号（VIN）
+        result.chassisNumber = fields[3].trim();
+      }
+      if (fields.length >= 5 && fields[4]) {
+        // 原動機型式
+        // 型式として扱う（実際の仕様に合わせて調整が必要）
+        if (!result.modelCode) {
+          result.modelCode = fields[4].trim();
+        }
+      }
+      
+      // 日付フィールドの検出（YYYYMMDD形式）
+      for (const field of fields) {
+        const trimmed = field.trim();
+        // 車検期限（8桁の数字、YYYYMMDD形式）
+        if (/^\d{8}$/.test(trimmed)) {
+          const year = parseInt(trimmed.substring(0, 4));
+          const month = parseInt(trimmed.substring(4, 6));
+          const day = parseInt(trimmed.substring(6, 8));
+          if (year >= 2000 && year <= 2100 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            if (!result.inspectionExpiry) {
+              result.inspectionExpiry = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            }
+          }
+        }
+        // 初度登録年月（6桁の数字、YYYYMM形式）
+        if (/^\d{6}$/.test(trimmed) && trimmed.length === 6) {
+          const year = parseInt(trimmed.substring(0, 4));
+          const month = parseInt(trimmed.substring(4, 6));
+          if (year >= 1900 && year <= 2100 && month >= 1 && month <= 12) {
+            if (!result.firstRegYm) {
+              result.firstRegYm = `${year}-${String(month).padStart(2, '0')}`;
+            }
+            // 年式としても使用
+            if (!result.year) {
+              result.year = year;
+            }
+          }
+        }
+      }
+      
+      // 区切り文字形式でデータが取得できた場合は、ここで返す
+      if (result.chassisNumber || result.registrationNumber || result.inspectionExpiry) {
+        return result;
+      }
+    }
+
     // パターン1: JSON形式のQRコード
     if (qrText.startsWith('{') || qrText.startsWith('[')) {
       try {
@@ -343,22 +428,221 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
     setIsScanning(false);
   };
 
+  /**
+   * 画像から複数のQRコードを検出して結合
+   * 車検証にはQRコードが横並びに複数あるため、画像を複数領域に分割してスキャン
+   * 普通車: 8個、軽自動車: 3個のQRコードが横並びに配置されている
+   */
+  const scanMultipleQRCodes = async (file: File): Promise<string[]> => {
+    const scanner = new Html5Qrcode(scannerElementId);
+    const results: string[] = [];
+    const seenTexts = new Set<string>(); // 重複チェック用
+    
+    try {
+      // まず全体をスキャン（1つのQRコードが見つかる可能性がある）
+      try {
+        const decodedText = await scanner.scanFile(file, true);
+        if (decodedText && !seenTexts.has(decodedText)) {
+          results.push(decodedText);
+          seenTexts.add(decodedText);
+          console.log('QRコード（全体）読み取り成功:', decodedText);
+        }
+      } catch (e) {
+        console.log('全体スキャン失敗、領域分割スキャンを試行');
+      }
+      
+      // 画像を読み込んで領域を分割
+      const img = new Image();
+      const imageUrl = URL.createObjectURL(file);
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = imageUrl;
+      });
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(imageUrl);
+        scanner.clear();
+        return results;
+      }
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      // 車検証のQRコードは横並びに配置されているため、縦方向は全体、横方向を細かく分割
+      // 各QRコードの幅を推定（画像幅を8-10分割程度）
+      const estimatedQRWidth = Math.floor(img.width / 10); // QRコード1つの推定幅
+      const stepSize = Math.floor(estimatedQRWidth * 0.7); // 重複を考慮したステップサイズ
+      const regions: Array<{ x: number; y: number; width: number; height: number }> = [];
+      
+      // 横方向にスライディングウィンドウでスキャン
+      for (let x = 0; x < img.width - estimatedQRWidth; x += stepSize) {
+        regions.push({
+          x: x,
+          y: 0,
+          width: estimatedQRWidth,
+          height: img.height,
+        });
+      }
+      
+      // 最後の領域も確実に含める
+      if (regions.length > 0) {
+        const lastRegion = regions[regions.length - 1];
+        if (lastRegion.x + lastRegion.width < img.width) {
+          regions.push({
+            x: img.width - estimatedQRWidth,
+            y: 0,
+            width: estimatedQRWidth,
+            height: img.height,
+          });
+        }
+      }
+      
+      console.log(`スキャン領域数: ${regions.length}`);
+      
+      // 各領域をスキャン（順次実行）
+      for (let i = 0; i < regions.length; i++) {
+        const region = regions[i];
+        const regionCanvas = document.createElement('canvas');
+        const regionCtx = regionCanvas.getContext('2d');
+        if (!regionCtx) continue;
+        
+        regionCanvas.width = region.width;
+        regionCanvas.height = region.height;
+        regionCtx.drawImage(
+          canvas,
+          region.x, region.y, region.width, region.height,
+          0, 0, region.width, region.height
+        );
+        
+        try {
+          // CanvasをBlobに変換（Promise化）
+          const blob = await new Promise<Blob | null>((resolve) => {
+            regionCanvas.toBlob(resolve, 'image/png');
+          });
+          
+          if (!blob) continue;
+          
+          const regionFile = new File([blob], `region-${i}.png`, { type: 'image/png' });
+          const decodedText = await scanner.scanFile(regionFile, true);
+          if (decodedText && !seenTexts.has(decodedText)) {
+            results.push(decodedText);
+            seenTexts.add(decodedText);
+            console.log(`QRコード${results.length}読み取り成功（領域${i + 1}）:`, decodedText.substring(0, 50) + '...');
+          }
+        } catch (e) {
+          // この領域にはQRコードがない可能性（エラーは無視）
+        }
+      }
+      
+      URL.revokeObjectURL(imageUrl);
+      scanner.clear();
+      
+      console.log(`合計${results.length}個のQRコードを検出`);
+      return results;
+    } catch (err) {
+      console.error('複数QRコードスキャンエラー:', err);
+      scanner.clear();
+      return results;
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
       setError(null);
-      const scanner = new Html5Qrcode(scannerElementId);
       
-      // ファイルからQRコードを読み取る
-      const decodedText = await scanner.scanFile(file, true);
-      console.log('QRコード読み取り成功:', decodedText);
+      // 複数のQRコードをスキャン
+      const decodedTexts = await scanMultipleQRCodes(file);
       
-      // データをパース
-      const parsedData = parseInspectionQRCode(decodedText);
+      if (decodedTexts.length === 0) {
+        setError('QRコードが見つかりませんでした。画像にQRコードが含まれているか確認してください。');
+        return;
+      }
       
-      scanner.clear();
+      console.log('検出されたQRコード数:', decodedTexts.length);
+      
+      // 分割QRコードの処理
+      const splitQRParts: Array<{ partNumber: number; totalParts: number; content: string }> = [];
+      const normalQRTexts: string[] = [];
+      
+      for (const text of decodedTexts) {
+        const splitInfo = parseSplitQRHeader(text);
+        if (splitInfo && splitInfo.isSplit) {
+          splitQRParts.push({
+            partNumber: splitInfo.partNumber,
+            totalParts: splitInfo.totalParts,
+            content: splitInfo.content
+          });
+        } else {
+          normalQRTexts.push(text);
+        }
+      }
+      
+      // 分割QRコードを結合
+      let combinedSplitQR = '';
+      if (splitQRParts.length > 0) {
+        // パート番号でソート
+        splitQRParts.sort((a, b) => a.partNumber - b.partNumber);
+        
+        // すべてのパートが揃っているか確認
+        const totalParts = splitQRParts[0].totalParts;
+        const hasAllParts = splitQRParts.length === totalParts && 
+                           splitQRParts.every((part, index) => part.partNumber === index + 1);
+        
+        if (hasAllParts) {
+          // すべてのパートを結合
+          combinedSplitQR = splitQRParts.map(part => part.content).join('');
+          console.log('分割QRコードを結合:', combinedSplitQR.substring(0, 100) + '...');
+        } else {
+          console.warn(`分割QRコードのパートが不完全です。検出: ${splitQRParts.length}/${totalParts}`);
+        }
+      }
+      
+      // すべてのQRコードのテキストを結合してパース
+      const allTexts = combinedSplitQR ? [combinedSplitQR, ...normalQRTexts] : normalQRTexts;
+      const combinedText = allTexts.join('\n');
+      console.log('結合されたQRコードテキスト:', combinedText.substring(0, 200) + '...');
+      
+      // データをパース（結合された分割QRを優先）
+      const parsedData = combinedSplitQR 
+        ? parseInspectionQRCode(combinedSplitQR)
+        : parseInspectionQRCode(combinedText);
+      
+      // 各QRコードのデータも個別にパースしてマージ
+      for (const text of allTexts) {
+        const individualData = parseInspectionQRCode(text);
+        // データをマージ（既存の値がない場合のみ上書き）
+        if (individualData.chassisNumber && !parsedData.chassisNumber) {
+          parsedData.chassisNumber = individualData.chassisNumber;
+        }
+        if (individualData.registrationNumber && !parsedData.registrationNumber) {
+          parsedData.registrationNumber = individualData.registrationNumber;
+        }
+        if (individualData.inspectionExpiry && !parsedData.inspectionExpiry) {
+          parsedData.inspectionExpiry = individualData.inspectionExpiry;
+        }
+        if (individualData.firstRegYm && !parsedData.firstRegYm) {
+          parsedData.firstRegYm = individualData.firstRegYm;
+        }
+        if (individualData.modelCode && !parsedData.modelCode) {
+          parsedData.modelCode = individualData.modelCode;
+        }
+        if (individualData.year && !parsedData.year) {
+          parsedData.year = individualData.year;
+        }
+        if (individualData.bodyType && !parsedData.bodyType) {
+          parsedData.bodyType = individualData.bodyType;
+        }
+      }
+      
+      console.log('パース結果:', parsedData);
       onScanSuccess(parsedData);
     } catch (err: any) {
       console.error('QRコード読み取りエラー:', err);
@@ -407,7 +691,7 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
               <div className="text-xs sm:text-sm text-gray-700 space-y-1 sm:space-y-2">
                 <p className="font-medium text-gray-900">車検証QRコードとは？</p>
                 <p>
-                  車検証に記載されているQRコードをスキャンすることで、以下の情報を自動的に入力できます。
+                  車検証に記載されているQRコード（複数可）をスキャンすることで、以下の情報を自動的に入力できます。
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-gray-600">
                   <li>車台番号（車体番号）</li>
@@ -416,6 +700,9 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
                   <li>型式</li>
                   <li>年式</li>
                 </ul>
+                <p className="text-xs text-blue-600 font-medium mt-2">
+                  💡 車検証にQRコードが横並びに複数ある場合も自動的に検出します
+                </p>
               </div>
             </div>
           </div>
