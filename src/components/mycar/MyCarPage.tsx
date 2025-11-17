@@ -309,7 +309,7 @@ export default function MyCarPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-16">
+    <div className="min-h-screen bg-slate-100 pb-16 overflow-x-hidden">
       {showPaywall && (
         <PaywallModal
           onClose={closePaywall}
@@ -376,7 +376,7 @@ export default function MyCarPage({
 
         <div className="grid gap-4 sm:gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           {/* 左カラム: カスタムパーツ */}
-          <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+          <div className="space-y-4 sm:space-y-6 lg:space-y-8 min-w-0">
             <div id="section-custom" className="scroll-mt-24">
               <CustomPartsPanel
                 customizations={customizations}
@@ -388,7 +388,7 @@ export default function MyCarPage({
           </div>
 
           {/* 右カラム: クイック操作 + サマリーカード + 状況サマリー */}
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-6 min-w-0">
             {readOnly ? (
                 <div className="rounded-xl sm:rounded-2xl border border-orange-200 bg-orange-50/90 p-4 sm:p-5 lg:p-6 text-orange-800 shadow-sm">
                   <div className="flex items-start gap-2 sm:gap-3">

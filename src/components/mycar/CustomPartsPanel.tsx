@@ -77,29 +77,34 @@ export default function CustomPartsPanel({
   return (
     <div className="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-5 lg:p-6 border border-gray-100">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2">
-          <span>🔧</span>
-          <span>カスタムパーツ一覧</span>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+        <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="flex-shrink-0">🔧</span>
+          <span className="break-words">カスタムパーツ一覧</span>
           {installedCount > 0 && (
-            <span className="text-sm font-normal text-gray-500">
+            <span className="text-xs sm:text-sm font-normal text-gray-500 flex-shrink-0 hidden sm:inline">
               ({installedCount}件のカスタマイズ)
             </span>
           )}
         </h2>
         {installedCount > 0 && (
-          <button
-            onClick={() => {
-              if (expandedCategories.size > 0) {
-                setExpandedCategories(new Set());
-              } else {
-                setExpandedCategories(new Set(Object.keys(customizationsByCategory)));
-              }
-            }}
-            className="text-sm text-cyan-600 hover:text-cyan-800 font-semibold transition-colors"
-          >
-            {expandedCategories.size > 0 ? '全て閉じる' : '全て開く'}
-          </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0">
+            <span className="text-xs text-gray-500 sm:hidden">
+              ({installedCount}件のカスタマイズ)
+            </span>
+            <button
+              onClick={() => {
+                if (expandedCategories.size > 0) {
+                  setExpandedCategories(new Set());
+                } else {
+                  setExpandedCategories(new Set(Object.keys(customizationsByCategory)));
+                }
+              }}
+              className="text-xs sm:text-sm text-cyan-600 hover:text-cyan-800 font-semibold transition-colors whitespace-nowrap"
+            >
+              {expandedCategories.size > 0 ? '全て閉じる' : '全て開く'}
+            </button>
+          </div>
         )}
       </div>
       
@@ -107,13 +112,13 @@ export default function CustomPartsPanel({
       <div className="space-y-1">
         {installedCount === 0 && (
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-dashed border-blue-300 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-start gap-2 sm:gap-3">
               <div className="text-2xl sm:text-3xl flex-shrink-0">💡</div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-semibold text-blue-700 mb-0.5 sm:mb-1">
+                <p className="text-xs sm:text-sm font-semibold text-blue-700 mb-0.5 sm:mb-1 break-words">
                   カスタマイズを記録してみましょう！
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-600">
+                <p className="text-[10px] sm:text-xs text-gray-600 break-words leading-relaxed">
                   パーツ交換や改造の履歴を記録すると、車両の詳細データとして一覧表示されます
                 </p>
               </div>
@@ -168,12 +173,12 @@ function PartAccordion({
       {/* ヘッダー（クリック可能） */}
       <button
         onClick={onToggle}
-        className="w-full flex justify-between items-center py-2.5 sm:py-3 px-3 sm:px-2 hover:bg-gray-50 transition-colors rounded-lg"
+        className="w-full flex justify-between items-center py-2.5 sm:py-3 px-3 sm:px-2 hover:bg-gray-50 transition-colors rounded-lg min-w-0"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="text-xs sm:text-sm font-bold text-gray-900 truncate">{categoryInfo.name}</span>
+          <span className="text-xs sm:text-sm font-bold text-gray-900 break-words">{categoryInfo.name}</span>
         </div>
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-2">
           {isStock ? (
             <span className="text-xs sm:text-sm text-gray-500 italic whitespace-nowrap">純正</span>
           ) : (

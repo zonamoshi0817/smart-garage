@@ -44,7 +44,7 @@ export default function VehicleHeader({
 
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl shadow-md overflow-hidden border border-gray-200">
-      <div className="p-4 sm:p-5 lg:p-6">
+      <div className="p-4 sm:p-5 lg:p-6 overflow-x-hidden">
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 lg:gap-6">
           {/* 左側：車両画像 */}
           <div className="flex-shrink-0">
@@ -81,8 +81,8 @@ export default function VehicleHeader({
           {/* 右側：車両情報 */}
           <div className="flex-1 min-w-0">
             {/* 車名と基本情報 */}
-            <div className="mb-3 sm:mb-4">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2">{car.name}</h1>
+            <div className="mb-3 sm:mb-4 overflow-hidden">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2 break-words">{car.name}</h1>
               <div className="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
                 {car.year && (
                   <span className="flex items-center gap-1">
