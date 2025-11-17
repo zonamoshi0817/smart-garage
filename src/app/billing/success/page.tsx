@@ -93,7 +93,7 @@ function SuccessContent() {
 
         {/* リダイレクトメッセージ */}
         <div className="text-sm text-gray-500 mb-6">
-          {countdown}秒後にダッシュボードに戻ります...
+          {countdown}秒後にホームに戻ります...
         </div>
 
         {/* ボタン */}

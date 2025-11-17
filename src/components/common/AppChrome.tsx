@@ -65,7 +65,7 @@ export function AppSidebar({ activeCarId }: { activeCarId?: string }) {
   return (
     <aside className="lg:sticky lg:top-20 h-fit">
       <nav className="bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
-        <SidebarLink href="/dashboard">ダッシュボード</SidebarLink>
+        <SidebarLink href="/home">ホーム</SidebarLink>
         <SidebarLink href={carPath}>マイカー</SidebarLink>
         <SidebarLink href={carPath + "/fuel"}>ガソリン</SidebarLink>
         <SidebarLink href={carPath + "/maintenance"}>メンテナンス</SidebarLink>
@@ -81,7 +81,7 @@ export function AppShell({
   children,
   activeCarId,
   showBack = false,
-  backFallback = "/dashboard",
+  backFallback = "/home",
 }: {
   children: React.ReactNode;
   activeCarId?: string;

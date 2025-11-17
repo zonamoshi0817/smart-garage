@@ -62,7 +62,7 @@ export default function ImprovedDashboard({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">ダッシュボード</h1>
+        <h1 className="text-2xl font-bold text-gray-900">ホーム</h1>
         
         <div className="mt-4 sm:mt-0">
           <UnifiedCTA

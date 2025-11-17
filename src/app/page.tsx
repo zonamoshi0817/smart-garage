@@ -180,7 +180,7 @@ function HowItWorks() {
 
 function Features() {
   const feats = [
-    { icon: <Gauge className="h-5 w-5" />, title: "ダッシュボード", desc: "今月のコスト・燃費・やることを一目で。" },
+    { icon: <Gauge className="h-5 w-5" />, title: "ホーム", desc: "今月のコスト・燃費・やることを一目で。" },
     { icon: <Wrench className="h-5 w-5" />, title: "メンテ記録", desc: "テンプレで素早く、走行距離も自動更新。" },
     { icon: <FileText className="h-5 w-5" />, title: "履歴証明PDF", desc: "売却や引き継ぎに使える書式で出力。" },
     { icon: <Share2 className="h-5 w-5" />, title: "共有URL", desc: '署名付きリンクで安全に "見せられる"。' },
@@ -246,7 +246,7 @@ function Pricing() {
             <ul className="mt-4 space-y-2 text-sm text-gray-700">
               <li className="flex gap-2"><Check className="h-4 w-4 text-green-600"/> 車両登録 1台</li>
               <li className="flex gap-2"><Check className="h-4 w-4 text-green-600"/> 給油・メンテ・カスタムの記録</li>
-              <li className="flex gap-2"><Check className="h-4 w-4 text-green-600"/> グラフ・ダッシュボード</li>
+              <li className="flex gap-2"><Check className="h-4 w-4 text-green-600"/> グラフ・ホーム</li>
               <li className="flex gap-2"><Lock className="h-4 w-4 text-gray-400"/> OCR / PDF / 共有URL</li>
             </ul>
             <button disabled className="mt-6 inline-flex items-center justify-center w-full rounded-xl border border-gray-200 bg-gray-50 text-gray-400 py-2.5 cursor-not-allowed">近日公開</button>

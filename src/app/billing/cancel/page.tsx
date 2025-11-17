@@ -71,7 +71,7 @@ export default function BillingCancelPage() {
             onClick={() => router.push('/')}
             className="rounded-xl bg-blue-600 text-white px-8 py-3 font-bold hover:bg-blue-700 transition"
           >
-            ダッシュボードに戻る
+            ホームに戻る
           </button>
           <button
             onClick={() => router.push('/settings/billing')}

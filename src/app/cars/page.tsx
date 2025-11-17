@@ -18,7 +18,7 @@ export default function CarsIndexPage() {
       <h1 className="text-lg sm:text-xl font-semibold mb-4">車両管理</h1>
       {cars.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 p-6 text-gray-600 bg-white">
-          まだ車両がありません。ダッシュボードから追加してください。
+          まだ車両がありません。ホームから追加してください。
         </div>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
