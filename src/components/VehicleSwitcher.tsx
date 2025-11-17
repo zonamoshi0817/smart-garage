@@ -17,11 +17,16 @@ export default function VehicleSwitcher({
 }: VehicleSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   
   const activeCar = cars.find(car => car.id === activeCarId);
+  
+  const handleImageError = (carId: string) => {
+    setImageErrors(prev => new Set(prev).add(carId));
+  };
   
   // 検索フィルタリング
   const filteredCars = cars.filter(car => {
@@ -177,23 +182,24 @@ export default function VehicleSwitcher({
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    {/* 車両画像 */}
-                    {car.imagePath ? (
+                    {/* 車両画像サムネイル */}
+                    {car.imagePath && !imageErrors.has(car.id!) ? (
                       <img
                         src={car.imagePath}
                         alt={car.name}
-                        className="w-10 h-10 object-cover rounded border border-gray-200"
+                        className="w-14 h-14 object-cover rounded border border-gray-200 flex-shrink-0"
+                        onError={() => handleImageError(car.id!)}
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-14 h-14 rounded bg-gray-100 flex items-center justify-center flex-shrink-0 border border-gray-200">
+                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                     )}
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-1">
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {car.name}
                         </p>

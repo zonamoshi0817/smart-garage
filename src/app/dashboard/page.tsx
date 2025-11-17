@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Timestamp } from "firebase/firestore";
 import AuthGate from "@/components/AuthGate";
 import { addCar, watchCars, updateCar } from "@/lib/cars";
@@ -1866,23 +1866,96 @@ function CarHeaderDropdown({
   onAddCar: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const activeCar = cars.find(c => c.id === activeCarId) || cars[0];
 
+  // クリックアウトサイドで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
+
+  // ESCキーで閉じる
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && open) {
+        setOpen(false);
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open]);
+
+  const handleImageError = (carId: string) => {
+    setImageErrors(prev => new Set(prev).add(carId));
+  };
+
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="h-10 px-3 rounded-lg border border-gray-300 bg-white flex items-center gap-2 shadow-sm hover:bg-gray-50"
       >
+        {/* アクティブ車両のサムネイル */}
+        {activeCar && (
+          <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
+            {activeCar.imagePath && !imageErrors.has(activeCar.id!) ? (
+              <img
+                src={activeCar.imagePath}
+                alt={activeCar.name}
+                className="w-full h-full object-cover"
+                onError={() => handleImageError(activeCar.id!)}
+              />
+            ) : (
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
+          </div>
+        )}
         <span className="truncate max-w-[200px] text-sm font-medium text-gray-900">
           {activeCar?.name}
           {activeCar?.modelCode ? ` (${activeCar.modelCode})` : ''}
         </span>
-        <span className="text-gray-400">▾</span>
+        <svg 
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
       {open && (
-        <div className="absolute z-40 mt-2 w-[320px] rounded-xl border border-gray-200 bg-white shadow-lg">
-          <div className="max-h-80 overflow-auto py-2">
+        <>
+          <div 
+            className="fixed inset-0 z-30" 
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute z-40 mt-2 right-0 w-80 bg-white rounded-lg border border-gray-200 shadow-xl">
+            {/* ヘッダー */}
+            <div className="px-4 py-3 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900">車両を選択</h3>
+                <span className="text-xs text-gray-500">{cars.length}台</span>
+              </div>
+            </div>
+            
+            {/* 車両リスト */}
+            <div className="max-h-80 overflow-auto py-2">
             {cars.map((car) => (
               <button
                 key={car.id}
@@ -1890,27 +1963,69 @@ function CarHeaderDropdown({
                   onSelectCar(car.id!);
                   setOpen(false);
                 }}
-                className={`w-full text-left px-4 py-3 hover:bg-gray-50 ${car.id === activeCarId ? 'bg-gray-100' : ''}`}
+                className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                  car.id === activeCarId ? 'bg-gray-50' : ''
+                }`}
               >
-                <div className="font-medium text-gray-900">
-                  {car.name}
-                  {car.modelCode && <span className="ml-1 text-gray-500">{car.modelCode}</span>}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {car.year ? `${car.year}年式` : ''}
-                  {car.odoKm ? `${car.year ? '・' : ''}${car.odoKm.toLocaleString()}km` : ''}
+                <div className="flex items-center gap-3">
+                  {/* 車両画像サムネイル */}
+                  <div className="w-14 h-14 rounded border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
+                    {car.imagePath && !imageErrors.has(car.id!) ? (
+                      <img
+                        src={car.imagePath}
+                        alt={car.name}
+                        className="w-full h-full object-cover"
+                        onError={() => handleImageError(car.id!)}
+                      />
+                    ) : (
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="font-medium text-gray-900 truncate">
+                        {car.name}
+                      </div>
+                      {car.id === activeCarId && (
+                        <svg className="w-4 h-4 text-gray-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      {car.modelCode && (
+                        <span className="bg-gray-100 px-1.5 py-0.5 rounded">
+                          {car.modelCode}
+                        </span>
+                      )}
+                      {car.year && <span>{car.year}年式</span>}
+                      {car.odoKm && <span>• {car.odoKm.toLocaleString()}km</span>}
+                    </div>
+                  </div>
                 </div>
               </button>
             ))}
-            <div className="my-2 mx-4 h-px bg-gray-200" />
-            <button
-              onClick={() => { setOpen(false); onAddCar(); }}
-              className="w-full text-left px-4 py-3 text-blue-600 hover:bg-blue-50 rounded-b-xl"
-            >
-              ＋ 車両を追加
-            </button>
+            </div>
+            
+            {/* フッター */}
+            <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={() => { 
+                  setOpen(false); 
+                  onAddCar(); 
+                }}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                車両を追加
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
