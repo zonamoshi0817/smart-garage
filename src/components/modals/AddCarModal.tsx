@@ -348,8 +348,8 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
         />
       )}
       
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-2xl h-[90vh] flex flex-col overflow-hidden">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 w-full max-w-2xl h-[95vh] sm:h-[90vh] flex flex-col overflow-hidden">
         {/* アップロード中のオーバーレイ */}
         {isUploading && (
           <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center z-10">
@@ -361,28 +361,28 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
         )}
         
         {/* ヘッダー */}
-        <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
-          <h2 className="text-xl font-semibold text-gray-900">車を追加</h2>
+        <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">車を追加</h2>
           <button
             onClick={onClose}
             disabled={isUploading}
-            className="text-gray-400 hover:text-gray-600 text-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-gray-400 hover:text-gray-600 text-xl sm:text-2xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ×
           </button>
         </div>
         
         {/* ボディ - スクロール可能 */}
-        <div className="flex-1 overflow-y-auto px-6">
-          <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* 基本情報 */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">基本情報</h3>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900">基本情報</h3>
                 <button
                   type="button"
                   onClick={() => setShowQRScanner(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors border border-indigo-200"
+                  className="flex items-center justify-center gap-2 px-3 py-1.5 text-xs sm:text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors border border-indigo-200"
                 >
                   <span>📱</span>
                   <span>QRコード読み取り</span>
@@ -391,11 +391,11 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
               
               {/* 車名 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   車名 <span className="text-red-500">*</span>
                 </label>
                 <input
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
+                  className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
                   placeholder="例：シビック Type R"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -403,13 +403,13 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
               </div>
 
               {/* 型式・年式 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     型式
                   </label>
                   <input
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
+                    className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
                     placeholder="例：FL5"
                     value={modelCode}
                     onChange={(e) => setModel(e.target.value)}
@@ -417,11 +417,11 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                   <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     年式
                   </label>
                   <input
-                    className={`w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 placeholder:text-gray-400 text-gray-900 ${
+                    className={`w-full rounded-lg sm:rounded-xl border px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 placeholder:text-gray-400 text-gray-900 ${
                       yearError 
                         ? 'border-red-300 focus:ring-red-100' 
                         : 'border-gray-300 focus:ring-blue-100'
@@ -441,25 +441,25 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
 
               {/* 走行距離 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   走行距離
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
+                    className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 pr-8 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
                     placeholder="例：10000"
                     inputMode="numeric"
                     value={odoKm}
                     onChange={(e) => setOdo(e.target.value)}
                   />
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">km</span>
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs sm:text-sm text-gray-500">km</span>
                 </div>
               </div>
             </div>
             
             {/* 車両画像 */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900">車両画像</h3>
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">車両画像</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <input
@@ -472,15 +472,15 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                   />
                   <label
                     htmlFor="image-upload"
-                    className="flex-1 rounded-xl border-2 border-dashed border-gray-300 p-6 text-center hover:border-gray-400 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 rounded-lg sm:rounded-xl border-2 border-dashed border-gray-300 p-4 sm:p-6 text-center hover:border-gray-400 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       <div className="text-gray-400">
-                        <svg className="mx-auto h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="mx-auto h-6 w-6 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
                       </div>
-                      <p className="text-sm text-gray-600">画像を選択</p>
+                      <p className="text-xs sm:text-sm text-gray-600">画像を選択</p>
                       <p className="text-xs text-gray-500">JPG, PNG, WebP (最大50MB)</p>
                     </div>
                   </label>
@@ -516,29 +516,29 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
             </div>
 
             {/* 詳細情報 */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900">詳細情報 (任意)</h3>
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">詳細情報 (任意)</h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     車検期限
                   </label>
                   <input
                     type="date"
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                    className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
                     value={inspectionExpiry}
                     onChange={(e) => setInspectionExpiry(e.target.value)}
                   />
                   <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     初度登録年月
                   </label>
                   <input
                     type="month"
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                    className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
                     value={firstRegYm}
                     onChange={(e) => setFirstRegYm(e.target.value)}
                     placeholder="例: 2020-03"
@@ -548,13 +548,13 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
               </div>
               
               {/* 登録番号・車台番号 */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     登録番号（ナンバー）
                   </label>
                   <input
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
+                    className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
                     placeholder="例：品川500 あ1234"
                     value={registrationNumber}
                     onChange={(e) => setRegistrationNumber(e.target.value)}
@@ -562,11 +562,11 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                   <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     車台番号
                   </label>
                   <input
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
+                    className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
                     placeholder="例：ABC1234567890"
                     value={chassisNumber}
                     onChange={(e) => setChassisNumber(e.target.value)}
@@ -577,11 +577,11 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
               
               {/* 平均月間走行距離 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   平均月間走行距離
                 </label>
                 <select
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                  className="w-full rounded-lg sm:rounded-xl border border-gray-300 px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
                   value={avgKmPerMonth}
                   onChange={(e) => setAvgKmPerMonth(e.target.value)}
                 >
@@ -597,10 +597,10 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
         </div>
         
         {/* フッター - 固定 */}
-        <div className="flex gap-3 p-6 pt-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl flex-shrink-0">
+        <div className="flex gap-2 sm:gap-3 p-4 sm:p-6 pt-3 sm:pt-4 border-t border-gray-200 bg-gray-50 rounded-b-xl sm:rounded-b-2xl flex-shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 rounded-xl border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 transition text-gray-900"
+            className="flex-1 rounded-lg sm:rounded-xl border border-gray-300 px-3 sm:px-4 py-2 text-sm sm:text-base font-medium hover:bg-gray-50 transition text-gray-900"
           >
             キャンセル
           </button>
@@ -611,7 +611,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
               handleAdd();
             }}
             disabled={isUploading}
-            className="flex-1 rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-lg sm:rounded-xl bg-blue-600 text-white px-3 sm:px-4 py-2 text-sm sm:text-base font-medium hover:bg-blue-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isUploading ? "アップロード中..." : "追加"}
           </button>

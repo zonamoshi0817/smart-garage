@@ -368,30 +368,30 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
 
   return (
     <div 
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ヘッダー */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <span>📱</span>
-                <span>車検証QRコード読み取り</span>
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 rounded-t-xl sm:rounded-t-2xl">
+          <div className="flex items-start sm:items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="flex-shrink-0">📱</span>
+                <span className="break-words">車検証QRコード読み取り</span>
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
                 車検証のQRコードをスキャンして車両情報を自動入力
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -399,12 +399,12 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
         </div>
 
         {/* コンテンツ */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* 説明 */}
-          <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-            <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 text-2xl">💡</span>
-              <div className="text-sm text-gray-700 space-y-2">
+          <div className="p-3 sm:p-4 bg-blue-50 rounded-lg sm:rounded-xl border border-blue-200">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <span className="flex-shrink-0 text-xl sm:text-2xl">💡</span>
+              <div className="text-xs sm:text-sm text-gray-700 space-y-1 sm:space-y-2">
                 <p className="font-medium text-gray-900">車検証QRコードとは？</p>
                 <p>
                   車検証に記載されているQRコードをスキャンすることで、以下の情報を自動的に入力できます。
@@ -452,12 +452,12 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
 
                 {/* ファイルアップロード */}
                 <label className="block">
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all">
-                    <div className="space-y-3">
-                      <div className="text-4xl">📄</div>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg sm:rounded-xl p-6 sm:p-8 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all">
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="text-3xl sm:text-4xl">📄</div>
                       <div>
-                        <p className="text-gray-700 font-medium">画像から読み取る</p>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm sm:text-base text-gray-700 font-medium">画像から読み取る</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">
                           車検証のQRコードが写った画像を選択
                         </p>
                       </div>
@@ -489,10 +489,10 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
           </div>
 
           {/* 使い方のヒント */}
-          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-            <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 text-xl">📋</span>
-              <div className="text-sm text-gray-600 space-y-2">
+          <div className="p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl border border-gray-200">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <span className="flex-shrink-0 text-lg sm:text-xl">📋</span>
+              <div className="text-xs sm:text-sm text-gray-600 space-y-1 sm:space-y-2">
                 <p className="font-medium text-gray-900">スキャンのコツ</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>QRコードが画面の中央に来るように調整</li>
@@ -506,10 +506,10 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
         </div>
 
         {/* フッター */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-2xl">
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 rounded-b-xl sm:rounded-b-2xl">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full px-4 py-2.5 sm:py-2 bg-white border border-gray-300 text-sm sm:text-base text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
           >
             閉じる
           </button>
