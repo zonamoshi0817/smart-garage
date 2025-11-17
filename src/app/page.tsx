@@ -30,9 +30,7 @@ function Header() {
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm">
-            <Car className="h-5 w-5 text-white" />
-            </div>
+          <img src="/icon.png" alt="GarageLog" className="h-9 w-9 rounded-xl shadow-sm ring-1 ring-black/5" />
           <div className="leading-tight">
             <p className="font-bold text-gray-900">GarageLog</p>
             <p className="text-[12px] text-gray-500 -mt-0.5">クルマと、ずっといい関係。</p>

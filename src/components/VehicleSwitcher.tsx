@@ -79,7 +79,7 @@ export default function VehicleSwitcher({
         className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-all shadow-sm hover:shadow-md"
       >
         {/* アクティブな車両の表示 */}
-        {activeCar && (
+        {activeCar ? (
           <>
             {activeCar.imagePath ? (
               <img
@@ -101,6 +101,19 @@ export default function VehicleSwitcher({
               {activeCar.modelCode && (
                 <div className="text-xs text-gray-500">{activeCar.modelCode}</div>
               )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="text-left min-w-0">
+              <div className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">
+                車両を選択
+              </div>
             </div>
           </>
         )}
