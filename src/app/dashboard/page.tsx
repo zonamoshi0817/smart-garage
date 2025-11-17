@@ -449,12 +449,12 @@ export default function Home() {
       <div className="min-h-screen bg-gray-50 text-gray-900">
         {/* ヘッダー */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src="/icon.png" alt="garage log" className="h-8 w-8 rounded-lg shadow-sm ring-1 ring-black/5" />
-              <span className="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900">garage log</span>
+          <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
+              <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
+              <span className="text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight text-gray-900 truncate">garage log</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               {/* ヘッダー車両セレクター（右上に配置） */}
               {activeCars.length > 0 && (
                 <div className="relative">
@@ -472,7 +472,7 @@ export default function Home() {
                     auth.signOut();
                   }
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
               >
                 ログアウト
               </button>
@@ -1629,8 +1629,19 @@ function CarHeaderDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const activeCar = cars.find(c => c.id === activeCarId) || cars[0];
+
+  // モバイル判定
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // クリックアウトサイドで閉じる
   useEffect(() => {
@@ -1669,11 +1680,11 @@ function CarHeaderDropdown({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="h-10 px-3 rounded-lg border border-gray-300 bg-white flex items-center gap-2 shadow-sm hover:bg-gray-50"
+        className="h-9 sm:h-10 px-2 sm:px-3 rounded-lg border border-gray-300 bg-white flex items-center gap-1.5 sm:gap-2 shadow-sm hover:bg-gray-50 min-w-0"
       >
         {/* アクティブ車両のサムネイル */}
         {activeCar && (
-          <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
             {activeCar.imagePath && !imageErrors.has(activeCar.id!) ? (
               <img
                 src={activeCar.imagePath}
@@ -1682,18 +1693,18 @@ function CarHeaderDropdown({
                 onError={() => handleImageError(activeCar.id!)}
               />
             ) : (
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             )}
           </div>
         )}
-        <span className="truncate max-w-[200px] text-sm font-medium text-gray-900">
+        <span className="truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[200px] text-xs sm:text-sm font-medium text-gray-900">
           {activeCar?.name}
-          {activeCar?.modelCode ? ` (${activeCar.modelCode})` : ''}
+          {activeCar?.modelCode && !isMobile ? ` (${activeCar.modelCode})` : ''}
         </span>
         <svg 
-          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} 
+          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`} 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -1707,17 +1718,17 @@ function CarHeaderDropdown({
             className="fixed inset-0 z-30" 
             onClick={() => setOpen(false)}
           />
-          <div className="absolute z-40 mt-2 right-0 w-80 bg-white rounded-lg border border-gray-200 shadow-xl">
+          <div className="absolute z-40 mt-2 right-0 w-[calc(100vw-2rem)] sm:w-80 max-w-[320px] bg-white rounded-lg border border-gray-200 shadow-xl">
             {/* ヘッダー */}
-            <div className="px-4 py-3 border-b border-gray-200">
+            <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-900">車両を選択</h3>
+                <h3 className="text-xs sm:text-sm font-semibold text-gray-900">車両を選択</h3>
                 <span className="text-xs text-gray-500">{cars.length}台</span>
               </div>
             </div>
             
             {/* 車両リスト */}
-            <div className="max-h-80 overflow-auto py-2">
+            <div className="max-h-80 overflow-auto py-1 sm:py-2">
             {cars.map((car) => (
               <button
                 key={car.id}
@@ -1725,13 +1736,13 @@ function CarHeaderDropdown({
                   onSelectCar(car.id!);
                   setOpen(false);
                 }}
-                className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
+                className={`w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
                   car.id === activeCarId ? 'bg-gray-50' : ''
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   {/* 車両画像サムネイル */}
-                  <div className="w-14 h-14 rounded border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
                     {car.imagePath && !imageErrors.has(car.id!) ? (
                       <img
                         src={car.imagePath}
@@ -1772,13 +1783,13 @@ function CarHeaderDropdown({
             </div>
             
             {/* フッター */}
-            <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
+            <div className="px-3 sm:px-4 py-2 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={() => { 
                   setOpen(false); 
                   onAddCar(); 
                 }}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
+                className="w-full text-left px-3 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
