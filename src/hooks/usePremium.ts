@@ -11,6 +11,7 @@ import type { UserDocument, SubscriptionStatus } from '@/types';
 // 環境変数またはハードコードで設定
 const DEVELOPER_EMAILS = (
   process.env.NEXT_PUBLIC_DEVELOPER_EMAILS?.split(',').map(e => e.trim()) || [
+    'kobayashi0817@gmail.com',
     'kentakobayashi@example.com',
     'kentakobayashi@gmail.com',
     // 他の開発者メールアドレスをここに追加
