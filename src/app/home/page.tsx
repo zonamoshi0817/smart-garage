@@ -955,7 +955,7 @@ function DashboardContent({
       // その月のメンテナンス費用を計算
       const maintenanceCost = maintenanceRecords
         .filter(record => {
-          const recordDate = record.date?.toDate ? record.date.toDate() : new Date();
+          const recordDate = toDate(record.date) || new Date();
           return recordDate.getFullYear() === date.getFullYear() && 
                  recordDate.getMonth() === date.getMonth();
         })
@@ -964,16 +964,16 @@ function DashboardContent({
       // その月の給油費用を計算
       const fuelCost = fuelLogs
         .filter(log => {
-          const logDate = log.date?.toDate ? log.date.toDate() : new Date();
+          const logDate = toDate(log.date) || new Date();
           return logDate.getFullYear() === date.getFullYear() && 
                  logDate.getMonth() === date.getMonth();
         })
-        .reduce((sum, log) => sum + (log.cost || 0), 0);
+        .reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
       
       // その月のカスタマイズ費用を計算
       const customizationCost = customizations
         .filter(custom => {
-          const customDate = custom.date?.toDate ? custom.date.toDate() : new Date();
+          const customDate = toDate(custom.date) || new Date();
           return customDate.getFullYear() === date.getFullYear() && 
                  customDate.getMonth() === date.getMonth();
         })
@@ -1005,7 +1005,7 @@ function DashboardContent({
     });
     
     return months;
-  }, [maintenanceRecords, fuelLogs]);
+  }, [maintenanceRecords, fuelLogs, customizations]);
 
 
 
@@ -1146,9 +1146,18 @@ function DashboardContent({
                       console.log("Navigate to vehicle data, activeCarId:", activeCarId);
                       setCurrentPage('my-car');
                     }}
-                    className="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-500"
+                    className="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-500 flex-1 sm:flex-none"
                   >
                     📊 マイカーを見る
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowFuelLogModal(true);
+                    }}
+                    className="rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:bg-emerald-500 flex-1 sm:flex-none flex items-center justify-center gap-1.5"
+                  >
+                    <span>⛽</span>
+                    <span>給油を登録</span>
                   </button>
                 </>
               )}
@@ -1684,7 +1693,7 @@ function CarHeaderDropdown({
       >
         {/* アクティブ車両のサムネイル */}
         {activeCar && (
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
             {activeCar.imagePath && !imageErrors.has(activeCar.id!) ? (
               <img
                 src={activeCar.imagePath}
@@ -1693,7 +1702,7 @@ function CarHeaderDropdown({
                 onError={() => handleImageError(activeCar.id!)}
               />
             ) : (
-              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             )}

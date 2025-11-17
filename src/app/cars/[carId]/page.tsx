@@ -78,7 +78,9 @@ export default function CarDetailShell({ params }: Props) {
 
   return (
     <AppShell activeCarId={car?.id} showBack={false} backFallback="/cars">
-      <h1 className="text-lg sm:text-xl font-semibold mb-4">マイカー</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">マイカー</h1>
+      </div>
       <div>
         {loading ? (
           <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>

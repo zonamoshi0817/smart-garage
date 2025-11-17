@@ -75,7 +75,7 @@ export default function CustomPartsPanel({
   const installedCount = customizations.filter(c => c.status === 'installed').length;
 
   return (
-    <div className="bg-white rounded-lg sm:rounded-xl shadow-md p-4 sm:p-5 lg:p-6 border border-gray-100">
+    <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200">
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
         <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 min-w-0">

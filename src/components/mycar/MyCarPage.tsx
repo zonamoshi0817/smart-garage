@@ -309,7 +309,7 @@ export default function MyCarPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-16 overflow-x-hidden">
+    <div className="bg-gray-50 pb-16 overflow-x-hidden">
       {showPaywall && (
         <PaywallModal
           onClose={closePaywall}
@@ -361,18 +361,11 @@ export default function MyCarPage({
           return <div className="space-y-2">{alerts}</div>;
         })()}
 
-        <section className="relative overflow-hidden rounded-2xl sm:rounded-[32px] border border-gray-200 bg-white shadow-xl">
-          <div className="absolute -top-32 -right-28 h-64 w-64 rounded-full bg-emerald-100/50 blur-3xl" />
-          <div className="absolute -bottom-28 -left-32 h-72 w-72 rounded-full bg-sky-100/50 blur-3xl" />
-
-          <div className="relative z-10 p-4 sm:p-6 lg:p-8">
-            <VehicleHeader
-              car={car}
-              latestMaintenance={latestMaintenance}
-              onImageChange={handleImageChange}
-            />
-          </div>
-        </section>
+        <VehicleHeader
+          car={car}
+          latestMaintenance={latestMaintenance}
+          onImageChange={handleImageChange}
+        />
 
         <div className="grid gap-4 sm:gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           {/* 左カラム: カスタムパーツ */}
@@ -433,11 +426,11 @@ export default function MyCarPage({
                   </div>
                 </div>
               ) : (
-                <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 lg:p-5 shadow-sm">
+                <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50/30 p-3 sm:p-4 lg:p-5 shadow-sm">
                   <SectionHeader
                     title="クイック操作"
                     subtitle="よく使う操作に素早くアクセス"
-                    right={<div className="hidden sm:flex items-center gap-1 text-xs font-medium text-emerald-600"><span>ショートカット</span></div>}
+                    right={<div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md"><span>⚡ ショートカット</span></div>}
                   />
                   <div className="mt-3 sm:mt-4 -mx-1">
                     <QuickActions
@@ -452,24 +445,24 @@ export default function MyCarPage({
             {/* サマリーカード */}
             <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 lg:p-5 shadow-sm">
             <SectionHeader title="車両サマリー" size="md" />
-              <div className="grid grid-cols-1 gap-2 sm:gap-3">
+              <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
                 {highlightCards.map((card) => (
                   <div
                     key={card.id}
-                    className="group relative overflow-hidden rounded-lg sm:rounded-xl border border-gray-100 bg-gray-50/50 p-3 sm:p-4 transition-all duration-200 hover:bg-white hover:shadow-sm"
+                    className="group relative overflow-hidden rounded-lg sm:rounded-xl border border-gray-100 bg-gradient-to-br from-white to-gray-50/50 p-3.5 sm:p-4 transition-all duration-200 hover:bg-white hover:shadow-md hover:border-gray-200"
                   >
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <span className={`flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-lg text-sm sm:text-base ${card.iconBg}`}>
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className={`flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl text-base sm:text-lg shadow-sm ${card.iconBg}`}>
                         {card.icon}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-gray-500">{card.label}</p>
-                        <p className="mt-0.5 text-sm sm:text-base font-semibold text-gray-900 truncate">{card.value}</p>
+                      </div>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">{card.label}</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-900 mb-1.5 break-words">{card.value}</p>
+                        {card.description && (
+                          <p className="text-xs leading-relaxed text-gray-600">{card.description}</p>
+                        )}
                       </div>
                     </div>
-                    {card.description && (
-                      <p className="mt-1.5 sm:mt-2 text-xs leading-snug text-gray-500">{card.description}</p>
-                    )}
                   </div>
                 ))}
               </div>
@@ -478,19 +471,21 @@ export default function MyCarPage({
             {/* 状況サマリー */}
             <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 lg:p-6 shadow-sm">
             <SectionHeader title="状況サマリー" size="md" />
-              <ul className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
+              <div className="mt-3 sm:mt-4 space-y-2.5 sm:space-y-3">
                 {insightItems.map((item) => (
-                  <li key={item.id} className="flex items-start justify-between gap-2 sm:gap-4">
+                  <div key={item.id} className="flex items-start justify-between gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-gray-700">{item.label}</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-800 mb-0.5">{item.label}</p>
                       {item.helper && (
-                        <p className="mt-0.5 sm:mt-1 text-xs leading-snug text-gray-500">{item.helper}</p>
+                        <p className="text-xs leading-relaxed text-gray-500">{item.helper}</p>
                       )}
                     </div>
-                    <span className={`text-xs sm:text-sm font-semibold flex-shrink-0 ${item.tone}`}>{item.value}</span>
-                  </li>
+                    <span className={`text-sm sm:text-base font-bold flex-shrink-0 px-2 py-1 rounded-md ${item.tone === 'text-gray-900' ? 'bg-gray-100 text-gray-900' : 'text-gray-400'}`}>
+                      {item.value}
+                    </span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
 
             {/* 広告削除: マイカーページ（意思決定面）は広告非表示
