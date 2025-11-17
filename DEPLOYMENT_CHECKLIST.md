@@ -49,6 +49,8 @@ Vercelダッシュボード → Settings → Environment Variables で設定:
 | `NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY` | Stripe Product から取得 | Production |
 | `NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY` | Stripe Product から取得 | Production |
 
+> 補足: オンボーディング/アラート等のUX改善は環境変数に依存しません。`/public/icon.png` はビルドに含まれるため追加設定不要です。
+
 ---
 
 ## 2. Firebaseルールのデプロイ ✅

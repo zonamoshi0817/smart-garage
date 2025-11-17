@@ -37,6 +37,25 @@ export default function MyCarPage({
 
   const dayMs = 1000 * 60 * 60 * 24;
 
+  // 見出しの統一
+  function SectionHeader({ title, subtitle, right, size = 'md' }: { title: string; subtitle?: string; right?: React.ReactNode; size?: 'sm' | 'md' }) {
+    const titleClass = size === 'sm'
+      ? "text-sm font-medium text-gray-700"
+      : "text-lg font-semibold text-gray-900";
+    const subClass = size === 'sm'
+      ? "text-xs text-gray-500"
+      : "text-sm text-gray-500";
+    return (
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <div className={titleClass}>{title}</div>
+          {subtitle && <div className={subClass}>{subtitle}</div>}
+        </div>
+        {right}
+      </div>
+    );
+  }
+
   const toJsDate = (input: any): Date | null => {
     if (!input) return null;
     if (input instanceof Date) return input;
@@ -300,6 +319,48 @@ export default function MyCarPage({
       )}
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+        {/* 軽量アラート（車検・メンテ期限など） */}
+        {(() => {
+          const alerts: Array<React.ReactNode> = [];
+          // 車検期限アラート
+          if (inspectionDate) {
+            const days = inspectionDaysLeft ?? null;
+            if (days !== null) {
+              if (days < 0) {
+                alerts.push(
+                  <div key="inspection-overdue" className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-3 py-2">
+                    <div className="text-sm text-red-800">
+                      車検期限が過ぎています（{Math.abs(days)}日前）。早めに更新手続きを行ってください。
+                    </div>
+                    <button
+                      onClick={() => onOpenModal('maintenance')}
+                      className="text-xs px-2 py-1 rounded-md bg-white border border-red-200 text-red-700 hover:bg-red-100"
+                    >
+                      対応する
+                    </button>
+                  </div>
+                );
+              } else if (days <= 60) {
+                alerts.push(
+                  <div key="inspection-soon" className="flex items-center justify-between rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2">
+                    <div className="text-sm text-yellow-900">
+                      車検期限まで残り {days}日です。点検や準備を進めましょう。
+                    </div>
+                    <button
+                      onClick={() => onOpenModal('maintenance')}
+                      className="text-xs px-2 py-1 rounded-md bg-white border border-yellow-200 text-yellow-800 hover:bg-yellow-100"
+                    >
+                      点検を記録
+                    </button>
+                  </div>
+                );
+              }
+            }
+          }
+          if (alerts.length === 0) return null;
+          return <div className="space-y-2">{alerts}</div>;
+        })()}
+
         <section className="relative overflow-hidden rounded-[32px] border border-gray-200 bg-white shadow-xl">
           <div className="absolute -top-32 -right-28 h-64 w-64 rounded-full bg-emerald-100/50 blur-3xl" />
           <div className="absolute -bottom-28 -left-32 h-72 w-72 rounded-full bg-sky-100/50 blur-3xl" />
@@ -373,15 +434,11 @@ export default function MyCarPage({
                 </div>
               ) : (
                 <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">クイック操作</p>
-                      <p className="mt-1 text-sm text-gray-500">よく使う操作に素早くアクセス</p>
-                    </div>
-                    <div className="hidden sm:flex items-center gap-1 text-xs font-medium text-emerald-600">
-                      <span>ショートカット</span>
-                    </div>
-                  </div>
+                  <SectionHeader
+                    title="クイック操作"
+                    subtitle="よく使う操作に素早くアクセス"
+                    right={<div className="hidden sm:flex items-center gap-1 text-xs font-medium text-emerald-600"><span>ショートカット</span></div>}
+                  />
                   <div className="mt-4 -mx-1">
                     <QuickActions
                       actions={quickActions}
@@ -394,7 +451,7 @@ export default function MyCarPage({
 
             {/* サマリーカード */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-4">車両サマリー</p>
+            <SectionHeader title="車両サマリー" size="md" />
               <div className="grid grid-cols-1 gap-3">
                 {highlightCards.map((card) => (
                   <div
@@ -420,7 +477,7 @@ export default function MyCarPage({
 
             {/* 状況サマリー */}
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">状況サマリー</p>
+            <SectionHeader title="状況サマリー" size="md" />
               <ul className="mt-4 space-y-4">
                 {insightItems.map((item) => (
                   <li key={item.id} className="flex items-start justify-between gap-4">
