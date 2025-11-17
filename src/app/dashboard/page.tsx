@@ -1677,7 +1677,7 @@ function CarHeaderDropdown({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative flex-shrink-0" ref={dropdownRef}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="h-9 sm:h-10 px-2 sm:px-3 rounded-lg border border-gray-300 bg-white flex items-center gap-1.5 sm:gap-2 shadow-sm hover:bg-gray-50 min-w-0"
@@ -1718,7 +1718,7 @@ function CarHeaderDropdown({
             className="fixed inset-0 z-30" 
             onClick={() => setOpen(false)}
           />
-          <div className="absolute z-40 mt-2 right-0 w-[calc(100vw-2rem)] sm:w-80 max-w-[320px] bg-white rounded-lg border border-gray-200 shadow-xl">
+          <div className="fixed sm:absolute z-40 top-[3.5rem] sm:top-full right-2 sm:right-0 left-2 sm:left-auto mt-0 sm:mt-2 w-[calc(100vw-1rem)] sm:w-80 max-w-[calc(100vw-1rem)] sm:max-w-[320px] bg-white rounded-lg border border-gray-200 shadow-xl">
             {/* ヘッダー */}
             <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200">
               <div className="flex items-center justify-between">
