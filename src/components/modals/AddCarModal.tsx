@@ -7,8 +7,10 @@ import { compressImage, getCompressionInfo } from '@/lib/imageCompression';
 import { isImageFile, uploadCarImageWithProgress } from '@/lib/storage';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import PaywallModal from '@/components/modals/PaywallModal';
+import QRCodeScannerModal from '@/components/modals/QRCodeScannerModal';
 import { toTimestamp } from '@/lib/dateUtils';
 import { VehicleClass } from '@/types';
+import { findCarNameByModelCode, mapBodyTypeStringToVehicleClass } from '@/lib/carLookup';
 
 interface AddCarModalProps {
   onClose: () => void;
@@ -26,6 +28,8 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
   const [inspectionExpiry, setInspectionExpiry] = useState("");
   const [firstRegYm, setFirstRegYm] = useState("");
   const [avgKmPerMonth, setAvgKmPerMonth] = useState<string>("");
+  const [chassisNumber, setChassisNumber] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
   // vehicleClassは削除（UIから削除、デフォルト値で保存）
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -36,6 +40,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
     compressedSize: string;
     compressionRatio: string;
   } | null>(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   // 車両数をリアルタイムで監視
   useEffect(() => {
@@ -111,6 +116,67 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
       }
     } else {
       setYearError("");
+    }
+  };
+
+  // QRコードスキャン成功時の処理
+  const handleQRScanSuccess = (data: {
+    chassisNumber?: string;
+    registrationNumber?: string;
+    inspectionExpiry?: string;
+    firstRegYm?: string;
+    modelCode?: string;
+    year?: number;
+    bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other';
+  }) => {
+    console.log('QRコードスキャン成功:', data);
+    
+    // データをフォームに反映
+    if (data.modelCode && !modelCode) {
+      setModel(data.modelCode);
+      
+      // modelCodeから車名を自動検索
+      if (!name) {
+        findCarNameByModelCode(data.modelCode, data.year).then((carInfo) => {
+          if (carInfo) {
+            setName(`${carInfo.manufacturer} ${carInfo.name}`);
+            console.log('車名を自動入力:', `${carInfo.manufacturer} ${carInfo.name}`);
+          }
+        }).catch((error) => {
+          console.error('車名検索エラー:', error);
+        });
+      }
+    }
+    
+    if (data.year && !year) {
+      setYear(data.year.toString());
+      handleYearChange(data.year.toString());
+    }
+    
+    if (data.inspectionExpiry && !inspectionExpiry) {
+      setInspectionExpiry(data.inspectionExpiry);
+    }
+    
+    if (data.firstRegYm && !firstRegYm) {
+      setFirstRegYm(data.firstRegYm);
+    }
+    
+    if (data.chassisNumber && !chassisNumber) {
+      setChassisNumber(data.chassisNumber);
+    }
+    
+    if (data.registrationNumber && !registrationNumber) {
+      setRegistrationNumber(data.registrationNumber);
+    }
+    
+    setShowQRScanner(false);
+    
+    // 成功メッセージ
+    const hasData = data.modelCode || data.year || data.inspectionExpiry || data.firstRegYm || data.chassisNumber || data.registrationNumber;
+    if (hasData) {
+      alert('QRコードから情報を読み取りました。必要に応じて内容を確認・修正してください。');
+    } else {
+      alert('QRコードを読み取りましたが、認識できる情報が見つかりませんでした。手動で入力してください。');
     }
   };
 
@@ -209,8 +275,38 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
         carData.avgKmPerMonth = Number(avgKmPerMonth);
       }
       
-      // 車種クラスはデフォルト値で保存（UIから削除）
-      carData.vehicleClass = 'Cセグメント';
+      if (chassisNumber && chassisNumber.trim()) {
+        carData.chassisNumber = chassisNumber.trim();
+      }
+      
+      if (registrationNumber && registrationNumber.trim()) {
+        carData.registrationNumber = registrationNumber.trim();
+      }
+      
+      // modelCodeからbodyTypeとvehicleClassを自動判定
+      let detectedBodyType: CarInput['bodyType'] | undefined;
+      if (modelCode && modelCode.trim()) {
+        const carInfo = await findCarNameByModelCode(modelCode.trim(), year ? Number(year) : undefined);
+        if (carInfo) {
+          if (carInfo.bodyType) {
+            detectedBodyType = carInfo.bodyType;
+            carData.bodyType = carInfo.bodyType;
+          }
+          if (carInfo.vehicleClass) {
+            carData.vehicleClass = carInfo.vehicleClass;
+          }
+        }
+      }
+      
+      // bodyTypeからvehicleClassを自動判定（modelCodeから取得できなかった場合）
+      if (!carData.vehicleClass && detectedBodyType) {
+        carData.vehicleClass = mapBodyTypeStringToVehicleClass(detectedBodyType);
+      }
+      
+      // 車種クラスが未設定の場合はデフォルト値
+      if (!carData.vehicleClass) {
+        carData.vehicleClass = 'Cセグメント';
+      }
       
       // undefined を null に正規化（Firestore 対策）
       const clean = <T extends object>(o: T): T => {
@@ -225,7 +321,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
       // 完了トースト（将来的に実装）
       console.log(`✅ ${name} を追加しました`);
       
-      setName(""); setModel(""); setYear(""); setOdo(""); setInspectionExpiry(""); setFirstRegYm(""); setAvgKmPerMonth(""); setSelectedFile(null); setImagePreview(null); setCompressionInfo(null);
+      setName(""); setModel(""); setYear(""); setOdo(""); setInspectionExpiry(""); setFirstRegYm(""); setAvgKmPerMonth(""); setChassisNumber(""); setRegistrationNumber(""); setSelectedFile(null); setImagePreview(null); setCompressionInfo(null);
       onAdded?.();
     } catch (error) {
       console.error("Error adding car:", error);
@@ -241,6 +337,14 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
           onClose={closePaywall}
           feature={paywallFeature}
           variant={paywallVariant}
+        />
+      )}
+      
+      {/* QRコードスキャナーモーダル */}
+      {showQRScanner && (
+        <QRCodeScannerModal
+          onClose={() => setShowQRScanner(false)}
+          onScanSuccess={handleQRScanSuccess}
         />
       )}
       
@@ -273,7 +377,17 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
           <div className="space-y-6">
             {/* 基本情報 */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900">基本情報</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">基本情報</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowQRScanner(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors border border-indigo-200"
+                >
+                  <span>📱</span>
+                  <span>QRコード読み取り</span>
+                </button>
+              </div>
               
               {/* 車名 */}
               <div>
@@ -300,6 +414,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                     value={modelCode}
                     onChange={(e) => setModel(e.target.value)}
                   />
+                  <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -316,8 +431,10 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                     value={year}
                     onChange={(e) => handleYearChange(e.target.value)}
                   />
-                  {yearError && (
+                  {yearError ? (
                     <p className="text-xs text-red-600 mt-1">{yearError}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
                   )}
                 </div>
               </div>
@@ -413,6 +530,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                     value={inspectionExpiry}
                     onChange={(e) => setInspectionExpiry(e.target.value)}
                   />
+                  <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -425,6 +543,35 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
                     onChange={(e) => setFirstRegYm(e.target.value)}
                     placeholder="例: 2020-03"
                   />
+                  <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
+                </div>
+              </div>
+              
+              {/* 登録番号・車台番号 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    登録番号（ナンバー）
+                  </label>
+                  <input
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
+                    placeholder="例：品川500 あ1234"
+                    value={registrationNumber}
+                    onChange={(e) => setRegistrationNumber(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    車台番号
+                  </label>
+                  <input
+                    className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-400 text-gray-900"
+                    placeholder="例：ABC1234567890"
+                    value={chassisNumber}
+                    onChange={(e) => setChassisNumber(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">QRコードから自動入力可能</p>
                 </div>
               </div>
               

@@ -43,6 +43,9 @@ export interface Car extends BaseEntity {
   soldTo?: string; // 売却先
   soldNotes?: string; // 売却メモ
   downgradedAt?: Timestamp; // ダウングレード日時（downgraded_premium時のみ）
+  chassisNumber?: string; // 車台番号（QRコードから）
+  registrationNumber?: string; // 登録番号（ナンバープレート）
+  bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other'; // 車体形状
 }
 
 export interface CarInput {
@@ -60,6 +63,9 @@ export interface CarInput {
   soldPrice?: number; // 売却価格
   soldTo?: string; // 売却先
   soldNotes?: string; // 売却メモ
+  chassisNumber?: string; // 車台番号（QRコードから）
+  registrationNumber?: string; // 登録番号（ナンバープレート）
+  bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other'; // 車体形状
 }
 
 // メンテナンス関連の型
