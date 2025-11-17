@@ -372,7 +372,7 @@ function generateHTMLContent(
       ` : ''}
 
       <div class="footer">
-        <p>Smart Garage - 愛車の価値を履歴で残す</p>
+        <p>GarageLog - クルマと、ずっといい関係。</p>
         <p>Generated on ${new Date().toLocaleString('ja-JP')}</p>
         ${proof ? `
         <div class="proof-section" style="margin-top: 20px; padding: 15px; background: #f0f8ff; border: 1px solid #4285f4; border-radius: 8px;">

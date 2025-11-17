@@ -131,7 +131,7 @@ export function DetailedEmptyState({
       case 'first-car':
         return {
           icon: '🚗',
-          title: 'Smart Garage へようこそ！',
+          title: 'GarageLog へようこそ！',
           subtitle: 'まずは愛車を登録しましょう',
           description: '車両情報を登録することで、メンテナンスの自動リマインダーや燃費管理などの機能が利用できます。',
           primaryButton: '車両を登録',

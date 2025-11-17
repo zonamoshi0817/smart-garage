@@ -34,8 +34,8 @@ function Header() {
             <Car className="h-5 w-5 text-white" />
             </div>
           <div className="leading-tight">
-            <p className="font-bold text-gray-900">Smart Garage</p>
-            <p className="text-[12px] text-gray-500 -mt-0.5">Turn Your Car History into Value</p>
+            <p className="font-bold text-gray-900">GarageLog</p>
+            <p className="text-[12px] text-gray-500 -mt-0.5">クルマと、ずっといい関係。</p>
                 </div>
             </div>
         <nav className="hidden md:flex items-center gap-8 text-sm text-gray-700">
@@ -63,10 +63,10 @@ function Hero() {
         <div className="grid lg:grid-cols-2 gap-10 items-center py-16 lg:py-24">
                 <div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-gray-900">
-              愛車の履歴を、資産に。
+              クルマと、ずっと走り続けるために。
             </h1>
             <p className="mt-5 text-lg text-gray-600 leading-relaxed">
-              給油・メンテ・カスタムの"いたわり"を記録。グラフ・PDF・共有で、愛車の価値を正しく伝えます。
+              メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button disabled className="inline-flex justify-center items-center gap-2 px-5 py-3 rounded-2xl bg-gray-200 text-gray-500 font-semibold cursor-not-allowed">
@@ -88,7 +88,7 @@ function Hero() {
                 <div className="h-3 w-3 rounded-full bg-red-400" />
                 <div className="h-3 w-3 rounded-full bg-yellow-400" />
                 <div className="h-3 w-3 rounded-full bg-green-400" />
-                <span className="text-sm text-gray-500 ml-2">Smart Garage Demo</span>
+                <span className="text-sm text-gray-500 ml-2">GarageLog Demo</span>
             </div>
               <div className="p-6 grid sm:grid-cols-2 gap-6">
                 <div className="rounded-2xl p-4 bg-blue-50 border border-blue-100">
@@ -142,7 +142,7 @@ function PainGain() {
                 </ul>
               </div>
             <div>
-          <h3 className="text-2xl sm:text-3xl font-bold">Smart Garage なら</h3>
+          <h3 className="text-2xl sm:text-3xl font-bold">GarageLog なら</h3>
           <ul className="mt-6 space-y-4 text-gray-700">
             <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> すべてを1か所で一元管理（車ごとに整理）</li>
             <li className="flex items-start gap-3"><Check className="mt-1 h-5 w-5 text-blue-600"/> 自動グラフ化で &quot;見るだけで価値&quot;</li>
@@ -290,7 +290,7 @@ function Security() {
             </div>
         <div className="rounded-2xl border border-gray-200 p-6">
           <div className="flex items-center gap-2 text-gray-900 font-semibold"><Shield className="h-5 w-5 text-blue-600"/> 安心して使える仕組み</div>
-          <p className="mt-2 text-sm text-gray-600">Smart Garageは、あなたの愛車データを安全に守ります。リンク共有時も、期限つきの署名トークンで第三者への過剰な公開を防ぎます。</p>
+          <p className="mt-2 text-sm text-gray-600">GarageLogは、あなたの愛車データを安全に守ります。リンク共有時も、期限つきの署名トークンで第三者への過剰な公開を防ぎます。</p>
             </div>
           </div>
     </section>
@@ -354,8 +354,8 @@ function Footer() {
               <Car className="h-4 w-4 text-white" />
                   </div>
                     <div>
-              <p className="font-semibold text-gray-900">Smart Garage</p>
-              <p className="text-xs text-gray-500">© {new Date().getFullYear()} Smart Garage</p>
+              <p className="font-semibold text-gray-900">GarageLog</p>
+              <p className="text-xs text-gray-500">© {new Date().getFullYear()} GarageLog</p>
                     </div>
                       </div>
           <div className="flex items-center gap-6">
