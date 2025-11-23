@@ -2,7 +2,7 @@
 
 import { Car, MaintenanceRecord } from '@/types';
 import { useState } from 'react';
-import { toMillis } from './utils';
+import { toMillis, toDate } from './utils';
 import { Droplet, Wrench, Battery } from 'lucide-react';
 
 interface HealthIndicatorItem {
@@ -12,6 +12,13 @@ interface HealthIndicatorItem {
   status: 'good' | 'warning' | 'critical';
   remainingKm?: number;
   remainingDays?: number;
+  lastChangeDate?: Date | null;
+  lastChangeMileage?: number;
+  recommendedInterval?: number;
+  kmSinceChange?: number;
+  daysSinceChange?: number;
+  recommendedMonths?: number;
+  monthsSinceChange?: number;
   onClick: () => void;
 }
 
@@ -39,10 +46,12 @@ export default function VehicleHealthIndicator({
         label: 'オイル交換',
         icon: '',
         status: 'warning',
+        recommendedInterval: 5000,
         onClick: () => onQuickAdd('oil')
       };
     }
     
+    const lastChangeDate = toDate(lastOilChange.date);
     const kmSinceChange = car.odoKm - lastOilChange.mileage;
     const recommendedInterval = 5000; // 推奨交換距離
     const remainingKm = recommendedInterval - kmSinceChange;
@@ -65,6 +74,11 @@ export default function VehicleHealthIndicator({
       status,
       remainingKm: Math.max(0, remainingKm),
       remainingDays: Math.max(0, 180 - daysSinceChange),
+      lastChangeDate,
+      lastChangeMileage: lastOilChange.mileage,
+      recommendedInterval,
+      kmSinceChange,
+      daysSinceChange,
       onClick: () => onQuickAdd('oil')
     };
   };
@@ -84,10 +98,12 @@ export default function VehicleHealthIndicator({
         label: 'ブレーキ&タイヤ',
         icon: '',
         status: 'good',
+        recommendedInterval: 30000,
         onClick: () => onQuickAdd('brake')
       };
     }
     
+    const lastChangeDate = toDate(lastBrakeTire.date);
     const kmSinceChange = car.odoKm - lastBrakeTire.mileage;
     const recommendedInterval = lastBrakeTire.title.toLowerCase().includes('タイヤ') ? 40000 : 30000;
     const remainingKm = recommendedInterval - kmSinceChange;
@@ -102,6 +118,10 @@ export default function VehicleHealthIndicator({
       icon: '',
       status,
       remainingKm: Math.max(0, remainingKm),
+      lastChangeDate,
+      lastChangeMileage: lastBrakeTire.mileage,
+      recommendedInterval,
+      kmSinceChange,
       onClick: () => onQuickAdd('brake')
     };
   };
@@ -118,10 +138,12 @@ export default function VehicleHealthIndicator({
         label: 'バッテリー',
         icon: '',
         status: 'warning',
+        recommendedMonths: 36,
         onClick: () => onQuickAdd('battery')
       };
     }
     
+    const lastChangeDate = toDate(lastBattery.date);
     const monthsSinceChange = Math.floor((Date.now() - toMillis(lastBattery.date)) / (1000 * 60 * 60 * 24 * 30));
     const recommendedMonths = 36; // 3年
     
@@ -135,6 +157,9 @@ export default function VehicleHealthIndicator({
       icon: '',
       status,
       remainingDays: monthsSinceChange,
+      lastChangeDate,
+      recommendedMonths,
+      monthsSinceChange,
       onClick: () => onQuickAdd('battery')
     };
   };
@@ -236,21 +261,59 @@ export default function VehicleHealthIndicator({
                     {item.status === 'good' ? '良好' : item.status === 'warning' ? '注意' : '要対応'}
                   </span>
                 </div>
-                <div className="text-xs text-gray-600">
-                  {item.id === 'oil' && item.remainingKm !== undefined && item.remainingDays !== undefined ? (
-                    <span>残り約 <span className="font-semibold text-gray-900">{item.remainingKm.toLocaleString()} km</span> / <span className="font-semibold text-gray-900">{item.remainingDays}日</span></span>
+                <div className="space-y-1">
+                  {/* オイル交換 */}
+                  {item.id === 'oil' && item.lastChangeDate && item.lastChangeMileage !== undefined && item.kmSinceChange !== undefined && item.remainingKm !== undefined && item.remainingDays !== undefined ? (
+                    <>
+                      <div className="text-xs text-gray-600">
+                        前回: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} ({item.lastChangeMileage.toLocaleString()}km)
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        経過: <span className="font-semibold text-gray-900">{item.kmSinceChange.toLocaleString()}km</span> / <span className="font-semibold text-gray-900">{item.daysSinceChange}日</span>
+                        {' • '}推奨: {item.recommendedInterval?.toLocaleString()}km または 6ヶ月
+                      </div>
+                      <div className="text-xs font-semibold text-gray-900">
+                        残り約 <span className={item.remainingKm < 1000 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingKm.toLocaleString()} km</span> / <span className={item.remainingDays < 30 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingDays}日</span>
+                      </div>
+                    </>
                   ) : item.id === 'oil' ? (
-                    <span className="text-gray-500">記録を追加して状態を確認</span>
+                    <div className="text-xs text-gray-500">記録を追加して状態を確認（推奨: 5,000km または 6ヶ月ごと）</div>
                   ) : null}
-                  {item.id === 'brake-tire' && item.remainingKm !== undefined ? (
-                    <span>残り約 <span className="font-semibold text-gray-900">{item.remainingKm.toLocaleString()} km</span></span>
+                  
+                  {/* ブレーキ&タイヤ */}
+                  {item.id === 'brake-tire' && item.lastChangeDate && item.lastChangeMileage !== undefined && item.kmSinceChange !== undefined && item.remainingKm !== undefined ? (
+                    <>
+                      <div className="text-xs text-gray-600">
+                        前回: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} ({item.lastChangeMileage.toLocaleString()}km)
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        経過: <span className="font-semibold text-gray-900">{item.kmSinceChange.toLocaleString()}km</span>
+                        {' • '}推奨: {item.recommendedInterval?.toLocaleString()}kmごと
+                      </div>
+                      <div className="text-xs font-semibold text-gray-900">
+                        残り約 <span className={item.remainingKm < 5000 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingKm.toLocaleString()} km</span>
+                      </div>
+                    </>
                   ) : item.id === 'brake-tire' ? (
-                    <span className="text-gray-500">記録を追加して状態を確認</span>
+                    <div className="text-xs text-gray-500">記録を追加して状態を確認（推奨: ブレーキ30,000km / タイヤ40,000kmごと）</div>
                   ) : null}
-                  {item.id === 'battery' && item.remainingDays !== undefined ? (
-                    <span>交換後 <span className="font-semibold text-gray-900">{item.remainingDays}ヶ月</span>経過</span>
+                  
+                  {/* バッテリー */}
+                  {item.id === 'battery' && item.lastChangeDate && item.monthsSinceChange !== undefined ? (
+                    <>
+                      <div className="text-xs text-gray-600">
+                        前回交換: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        経過: <span className="font-semibold text-gray-900">{item.monthsSinceChange}ヶ月</span>
+                        {' • '}推奨交換: {item.recommendedMonths}ヶ月（3年）ごと
+                      </div>
+                      <div className="text-xs font-semibold text-gray-900">
+                        残り約 <span className={item.monthsSinceChange >= 24 ? 'text-amber-600' : item.monthsSinceChange >= 36 ? 'text-red-600' : 'text-gray-900'}>{Math.max(0, (item.recommendedMonths || 36) - item.monthsSinceChange)}ヶ月</span>
+                      </div>
+                    </>
                   ) : item.id === 'battery' ? (
-                    <span className="text-gray-500">記録を追加して状態を確認</span>
+                    <div className="text-xs text-gray-500">記録を追加して状態を確認（推奨: 36ヶ月ごと）</div>
                   ) : null}
                 </div>
               </div>

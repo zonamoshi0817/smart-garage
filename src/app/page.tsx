@@ -119,7 +119,6 @@ export default function LandingPage() {
       <PainGain />
       <HowItWorks />
       <Features />
-      <ValueBlocks />
       <Pricing />
       <Security />
       <FAQ />
@@ -442,41 +441,6 @@ function Features() {
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">{f.title}</h3>
             <p className="text-sm text-gray-600 leading-relaxed">{f.desc}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ValueBlocks() {
-  const blocks = [
-    {
-      title: '&quot;見せられる履歴&quot;で価値が上がる',
-      desc: "記録は自己満で終わらせない。PDFで第三者にも伝わる形に。中古車の信頼性と売却価値を底上げします。",
-      icon: <Star className="h-6 w-6" />,
-    },
-    {
-      title: "続けられるUX",
-      desc: '入力は最小化。テンプレ・前回コピー・OCRで&quot;続く仕組み&quot;を設計。',
-      icon: <Zap className="h-6 w-6" />,
-    },
-    {
-      title: "将来の意思決定がラクに",
-      desc: "費用の見える化と次回メンテ提案で、計画も予算も迷わない。",
-      icon: <LineChart className="h-6 w-6" />,
-    },
-  ];
-  return (
-    <section className="bg-blue-50 py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-6">
-        {blocks.map((b, i) => (
-          <div key={i} className="group rounded-3xl bg-white border border-blue-200 p-8 shadow-md hover:shadow-lg hover:border-blue-300 transition-all duration-300">
-            <div className="h-14 w-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md group-hover:scale-110 transition-transform mb-4">
-              {b.icon}
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{b.title}</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">{b.desc}</p>
           </div>
         ))}
       </div>

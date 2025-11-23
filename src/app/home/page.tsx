@@ -1956,7 +1956,7 @@ function MaintenanceHistoryContent({
   setShowEditMaintenanceModal: (show: boolean) => void;
   setEditingMaintenanceRecord: (record: MaintenanceRecord | null) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'suggestions' | 'history'>('suggestions');
+  const [activeTab, setActiveTab] = useState<'suggestions' | 'history'>('history');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -2218,60 +2218,66 @@ function MaintenanceHistoryContent({
                 </div>
       </div>
 
-      {/* タブナビゲーション */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('suggestions')}
-            className={`flex-1 px-6 py-4 font-medium transition-colors relative ${
-              activeTab === 'suggestions'
-                ? 'text-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              次回メンテ
-              {selectedCar && suggestions.length > 0 && (
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  criticalSuggestions.length > 0
-                    ? 'bg-red-500 text-white'
-                    : soonSuggestions.length > 0
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-200 text-gray-700'
-                }`}>
-                  {suggestions.length}
-                </span>
-              )}
-            </span>
-            {activeTab === 'suggestions' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex-1 px-6 py-4 font-medium transition-colors relative ${
-              activeTab === 'history'
-                ? 'text-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              履歴
-              {filteredRecords.length > 0 && (
-                <span className="px-2 py-0.5 text-xs rounded-full bg-gray-200 text-gray-700">
-                  {filteredRecords.length}
-                </span>
-              )}
-            </span>
-            {activeTab === 'history' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
-            )}
-          </button>
-        </div>
-      </div>
+      {/* 統計カード */}
+      {(() => {
+        const totalRecords = maintenanceRecords.length;
+        const totalCost = maintenanceRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
+        const avgCost = totalRecords > 0 ? Math.round(totalCost / totalRecords) : 0;
+        const lastMaintenance = maintenanceRecords
+          .sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
+        const lastMaintenanceDate = lastMaintenance 
+          ? (lastMaintenance.date?.toDate ? lastMaintenance.date.toDate() : new Date())
+          : null;
 
-      {/* フィルター・検索（履歴タブでのみ表示） */}
-      {activeTab === 'history' && (
+        const summaryCards = [
+          {
+            title: '総メンテナンス回数',
+            value: `${totalRecords} 回`,
+            description: '保存済みの記録',
+            icon: '🔧',
+          },
+          {
+            title: '累計費用',
+            value: `¥${totalCost.toLocaleString()}`,
+            description: '税込み合計',
+            icon: '💴',
+          },
+          {
+            title: '平均費用',
+            value: avgCost > 0 ? `¥${avgCost.toLocaleString()}` : '---',
+            description: '1回あたり平均',
+            icon: '📊',
+          },
+          {
+            title: '直近メンテナンス',
+            value: lastMaintenanceDate 
+              ? lastMaintenanceDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
+              : '記録なし',
+            description: '最新の実施日',
+            icon: '📅',
+          },
+        ];
+
+        return (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {summaryCards.map((card) => (
+              <div
+                key={card.title}
+                className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{card.title}</span>
+                  <span className="text-xl">{card.icon}</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{card.value}</div>
+                <p className="mt-1 text-xs text-gray-500">{card.description}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* フィルター・検索 */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 検索 */}
@@ -2353,162 +2359,8 @@ function MaintenanceHistoryContent({
           </div>
         </div>
       </div>
-      )}
 
-      {/* タブコンテンツ */}
-      {activeTab === 'suggestions' ? (
-        // 提案タブ：カンバン風レイアウト
-        <div className="space-y-4">
-          {/* ODO/平均走行距離の警告バナー */}
-          {selectedCar && (
-            <>
-              {(!selectedCar.odoKm || selectedCar.odoKm === 0) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-blue-900 text-sm mb-1">走行距離（ODO）未登録</h4>
-                    <p className="text-xs text-blue-700">
-                      時間ベースで提案しています。ODOを登録すると、より正確なメンテナンス提案ができます。
-                    </p>
-                  </div>
-                </div>
-              )}
-              {selectedCar.odoKm && selectedCar.odoKm > 0 && (!selectedCar.avgKmPerMonth || selectedCar.avgKmPerMonth === 0) && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-amber-900 text-sm mb-1">平均走行距離未登録</h4>
-                    <p className="text-xs text-amber-700">
-                      車両設定で月間走行距離を登録すると、残り日数の推定精度が向上します。
-                    </p>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {!selectedCar ? (
-            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-              <div className="text-gray-400 mb-4">
-                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                車両を選択してください
-              </h3>
-              <p className="text-gray-500">
-                フィルターから車両を選択すると、メンテナンス提案が表示されます
-              </p>
-            </div>
-          ) : suggestions.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-              <div className="text-green-400 mb-4">
-                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                すべて良好です
-              </h3>
-              <p className="text-gray-500">
-                近いうちに必要なメンテナンスはありません
-              </p>
-            </div>
-          ) : (
-            // カンバン風レイアウト
-            <div className="grid gap-4 md:grid-cols-3">
-              {/* 緊急 */}
-              <div className="bg-white rounded-2xl border-2 border-red-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-red-50 to-red-100 px-4 py-3 border-b border-red-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-red-900">
-                      緊急
-                    </h3>
-                    <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                      {criticalSuggestions.length}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 space-y-2 min-h-[200px]">
-                  {criticalSuggestions.map((suggestion) => (
-                    <CompactSuggestionCard
-                      key={suggestion.id}
-                      suggestion={suggestion}
-                      onCreateFromTemplate={(id) => {
-                        console.log('Create from template:', id);
-                        setShowMaintenanceModal(true);
-                      }}
-                    />
-                  ))}
-                  {criticalSuggestions.length === 0 && (
-                    <p className="text-sm text-gray-400 text-center py-8">該当なし</p>
-                  )}
-                </div>
-              </div>
-
-              {/* 近日 */}
-              <div className="bg-white rounded-2xl border-2 border-yellow-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 px-4 py-3 border-b border-yellow-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-yellow-900">
-                      近日
-                    </h3>
-                    <span className="px-2 py-0.5 bg-yellow-500 text-white text-xs font-bold rounded-full">
-                      {[...soonSuggestions, ...upcomingSuggestions].length}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 space-y-2 min-h-[200px]">
-                  {[...soonSuggestions, ...upcomingSuggestions].map((suggestion) => (
-                    <CompactSuggestionCard
-                      key={suggestion.id}
-                      suggestion={suggestion}
-                      onCreateFromTemplate={(id) => {
-                        console.log('Create from template:', id);
-                        setShowMaintenanceModal(true);
-                      }}
-                    />
-                  ))}
-                  {[...soonSuggestions, ...upcomingSuggestions].length === 0 && (
-                    <p className="text-sm text-gray-400 text-center py-8">該当なし</p>
-                  )}
-                </div>
-              </div>
-
-              {/* 余裕あり */}
-              <div className="bg-white rounded-2xl border-2 border-green-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-green-50 to-green-100 px-4 py-3 border-b border-green-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-green-900">
-                      余裕あり
-                    </h3>
-                    <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full">
-                      {okSuggestions.length}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 space-y-2 min-h-[200px]">
-                  {okSuggestions.map((suggestion) => (
-                    <CompactSuggestionCard
-                      key={suggestion.id}
-                      suggestion={suggestion}
-                      onCreateFromTemplate={(id) => {
-                        console.log('Create from template:', id);
-                        setShowMaintenanceModal(true);
-                      }}
-                    />
-                  ))}
-                  {okSuggestions.length === 0 && (
-                    <p className="text-sm text-gray-400 text-center py-8">該当なし</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        // 履歴タブ：既存の履歴一覧
-        <>
-          {/* 履歴一覧 */}
+      {/* 履歴一覧 */}
       <div className="bg-white rounded-2xl border border-gray-200">
         {filteredRecords.length === 0 ? (
           <div className="p-8 text-center">
@@ -2600,8 +2452,6 @@ function MaintenanceHistoryContent({
           </div>
         )}
       </div>
-        </>
-      )}
     </>
   );
 }
@@ -4788,6 +4638,113 @@ function FuelLogsContent({
   // 安全のため、fuelLogsがundefinedの場合は空配列を使用
   const safeFuelLogs = fuelLogs || [];
   const activeCar = cars.find(car => car.id === activeCarId);
+  
+  // フィルター状態
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterYear, setFilterYear] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string>('all');
+  const [filterFullTank, setFilterFullTank] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'cost' | 'odo'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // 利用可能な年月のリスト
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    safeFuelLogs.forEach(log => {
+      const date = log.date?.toDate ? log.date.toDate() : new Date();
+      months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+    });
+    return Array.from(months).sort().reverse();
+  }, [safeFuelLogs]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    safeFuelLogs.forEach(log => {
+      const date = log.date?.toDate ? log.date.toDate() : new Date();
+      years.add(date.getFullYear().toString());
+    });
+    return Array.from(years).sort().reverse();
+  }, [safeFuelLogs]);
+  
+  // フィルター適用後の給油ログ
+  const filteredFuelLogs = useMemo(() => {
+    let filtered = safeFuelLogs;
+    
+    // 検索フィルター
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(log => {
+        const date = log.date?.toDate ? log.date.toDate() : new Date();
+        const dateStr = date.toLocaleDateString('ja-JP');
+        const { value: fuelAmount } = getDisplayAmount(log);
+        const cost = getDisplayCost(log);
+        const odoKm = log.odoKm?.toString() || '';
+        
+        return dateStr.includes(term) ||
+               fuelAmount.toString().includes(term) ||
+               cost.toString().includes(term) ||
+               odoKm.includes(term);
+      });
+    }
+    
+    // 年フィルター
+    if (filterYear !== 'all') {
+      filtered = filtered.filter(log => {
+        const date = log.date?.toDate ? log.date.toDate() : new Date();
+        return date.getFullYear().toString() === filterYear;
+      });
+    }
+    
+    // 月フィルター
+    if (filterMonth !== 'all' && filterYear !== 'all') {
+      filtered = filtered.filter(log => {
+        const date = log.date?.toDate ? log.date.toDate() : new Date();
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return monthKey === filterMonth;
+      });
+    }
+    
+    // 満タン/部分給油フィルター
+    if (filterFullTank !== 'all') {
+      filtered = filtered.filter(log => {
+        if (filterFullTank === 'full') return log.isFullTank === true;
+        if (filterFullTank === 'partial') return log.isFullTank === false;
+        return true;
+      });
+    }
+    
+    // ソート
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'date':
+          const dateA = a.date?.toDate ? a.date.toDate() : new Date();
+          const dateB = b.date?.toDate ? b.date.toDate() : new Date();
+          comparison = dateA.getTime() - dateB.getTime();
+          break;
+        case 'amount':
+          const amountA = getDisplayAmount(a).value;
+          const amountB = getDisplayAmount(b).value;
+          comparison = amountA - amountB;
+          break;
+        case 'cost':
+          const costA = getDisplayCost(a);
+          const costB = getDisplayCost(b);
+          comparison = costA - costB;
+          break;
+        case 'odo':
+          const odoA = a.odoKm || 0;
+          const odoB = b.odoKm || 0;
+          comparison = odoA - odoB;
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    
+    return filtered;
+  }, [safeFuelLogs, searchTerm, filterYear, filterMonth, filterFullTank, sortBy, sortOrder]);
 
   const summary = useMemo(() => {
     if (!safeFuelLogs || !Array.isArray(safeFuelLogs) || safeFuelLogs.length === 0) {
@@ -4979,30 +4936,122 @@ function FuelLogsContent({
         ))}
       </div>
 
-      {/* 情報バー */}
-      <div className="bg-white rounded-xl border border-gray-200 px-5 py-3.5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">表示範囲:</span>
-            <span className="font-medium text-gray-900">全期間</span>
-            <span className="text-gray-400 text-xs">(フィルター機能は近日追加予定)</span>
-          </div>
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-500">直近単価:</span>
-              <span className="font-semibold text-gray-900">{lastPriceLabel}</span>
+      {/* フィルター・検索 */}
+      {safeFuelLogs.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 検索 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                検索
+              </label>
+              <input
+                type="text"
+                placeholder="日付、給油量、金額、走行距離で検索..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
+              />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-gray-500">平均給油量:</span>
-              <span className="font-semibold text-gray-900">{averageFillSizeLabel}</span>
+
+            {/* 年フィルター */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                年
+              </label>
+              <select
+                value={filterYear}
+                onChange={(e) => {
+                  setFilterYear(e.target.value);
+                  setFilterMonth('all');
+                }}
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              >
+                <option value="all">すべての年</option>
+                {availableYears.map(year => (
+                  <option key={year} value={year}>{year}年</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 月フィルター */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                月
+              </label>
+              <select
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                disabled={filterYear === 'all'}
+              >
+                <option value="all">すべての月</option>
+                {filterYear !== 'all' && availableMonths
+                  .filter(m => m.startsWith(filterYear))
+                  .map(month => {
+                    const [, m] = month.split('-');
+                    return (
+                      <option key={month} value={month}>
+                        {parseInt(m)}月
+                      </option>
+                    );
+                  })}
+              </select>
+            </div>
+
+            {/* 給油タイプフィルター */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                給油タイプ
+              </label>
+              <select
+                value={filterFullTank}
+                onChange={(e) => setFilterFullTank(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              >
+                <option value="all">すべて</option>
+                <option value="full">満タンのみ</option>
+                <option value="partial">部分給油のみ</option>
+              </select>
+            </div>
+          </div>
+
+          {/* ソートオプション */}
+          <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">並び順:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'date' | 'amount' | 'cost' | 'odo')}
+                className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="date">実施日</option>
+                <option value="amount">給油量</option>
+                <option value="cost">金額</option>
+                <option value="odo">走行距離</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="p-1 rounded hover:bg-gray-100 transition"
+                title={sortOrder === 'asc' ? '昇順' : '降順'}
+              >
+                {sortOrder === 'asc' ? '↑' : '↓'}
+              </button>
+            </div>
+            
+            <div className="text-sm text-gray-600">
+              {filteredFuelLogs.length}件の給油記録
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* メインコンテンツ */}
       {activeCar ? (
-        <FuelLogCard car={activeCar} />
+        <FuelLogCard 
+          car={activeCar} 
+          fuelLogs={filteredFuelLogs}
+        />
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
@@ -5089,7 +5138,6 @@ function CustomizationsContent({
   const activeCar = cars.find(car => car.id === activeCarId);
   
   // フィルタリングと検索の状態
-  const [selectedCarId, setSelectedCarId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -5100,9 +5148,9 @@ function CustomizationsContent({
   const filteredCustomizations = useMemo(() => {
     let filtered = customizations;
 
-    // 車両でフィルタ
-    if (selectedCarId !== 'all') {
-      filtered = filtered.filter(customization => customization.carId === selectedCarId);
+    // 車両でフィルタ（ヘッダーで選択された車両のみ表示）
+    if (activeCarId) {
+      filtered = filtered.filter(customization => customization.carId === activeCarId);
     }
 
     // 検索語でフィルタ
@@ -5151,7 +5199,7 @@ function CustomizationsContent({
     });
 
     return filtered;
-  }, [customizations, selectedCarId, searchTerm, selectedCategory, selectedStatus, sortBy, sortOrder]);
+  }, [customizations, activeCarId, searchTerm, selectedCategory, selectedStatus, sortBy, sortOrder]);
 
   const handleEdit = (customization: Customization) => {
     setEditingCustomization(customization);
@@ -5200,6 +5248,67 @@ function CustomizationsContent({
         </div>
       </div>
 
+      {/* 統計カード */}
+      {(() => {
+        const totalCustomizations = customizations.length;
+        const totalCost = customizations.reduce((sum, c) => {
+          return sum + ((c.partsCostJpy || 0) + (c.laborCostJpy || 0) + (c.otherCostJpy || 0));
+        }, 0);
+        const avgCost = totalCustomizations > 0 ? Math.round(totalCost / totalCustomizations) : 0;
+        const lastCustomization = customizations
+          .sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
+        const lastCustomizationDate = lastCustomization 
+          ? (lastCustomization.date?.toDate ? lastCustomization.date.toDate() : new Date())
+          : null;
+
+        const summaryCards = [
+          {
+            title: '総カスタマイズ数',
+            value: `${totalCustomizations} 件`,
+            description: '保存済みの記録',
+            icon: '✨',
+          },
+          {
+            title: '累計費用',
+            value: `¥${totalCost.toLocaleString()}`,
+            description: '税込み合計',
+            icon: '💴',
+          },
+          {
+            title: '平均費用',
+            value: avgCost > 0 ? `¥${avgCost.toLocaleString()}` : '---',
+            description: '1件あたり平均',
+            icon: '📊',
+          },
+          {
+            title: '最新カスタマイズ',
+            value: lastCustomizationDate 
+              ? lastCustomizationDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
+              : '記録なし',
+            description: '最新の登録日',
+            icon: '📅',
+          },
+        ];
+
+        return (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {summaryCards.map((card) => (
+              <div
+                key={card.title}
+                className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{card.title}</span>
+                  <span className="text-xl">{card.icon}</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{card.value}</div>
+                <p className="mt-1 text-xs text-gray-500">{card.description}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {!activeCarId ? (
         <div className="text-center py-12">
           <div className="text-gray-500 mb-4">
@@ -5210,26 +5319,7 @@ function CustomizationsContent({
         <>
           {/* フィルター・検索 */}
           <div className="bg-white rounded-2xl border border-gray-200 p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* 車両選択 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  車両でフィルター
-                </label>
-                <select
-                  value={selectedCarId}
-                  onChange={(e) => setSelectedCarId(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
-                >
-                  <option value="all">すべての車両</option>
-                  {cars.map((car) => (
-                    <option key={car.id} value={car.id}>
-                      {car.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* 検索 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
