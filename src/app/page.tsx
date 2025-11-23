@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Shield, Gauge, Wrench, FileText, Share2, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer, Zap, LogIn } from "lucide-react";
+import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer, Zap, LogIn } from "lucide-react";
 import { loginWithGoogle, watchAuth } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 
@@ -139,7 +139,7 @@ function Header({ user, onLogin }: { user: User | null; onLogin: () => void }) {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 border-b border-gray-200/50 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <img 
             src="/icon.png" 
             alt="GarageLog" 
@@ -150,7 +150,7 @@ function Header({ user, onLogin }: { user: User | null; onLogin: () => void }) {
             <p className="font-bold text-gray-900 text-lg">GarageLog</p>
             <p className="text-[11px] text-gray-500 -mt-0.5 font-medium">クルマと、ずっといい関係。</p>
           </div>
-        </div>
+        </a>
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
           <a href="#features" className="hover:text-blue-600 transition-colors">機能</a>
           <a href="#how" className="hover:text-blue-600 transition-colors">使い方</a>
@@ -270,11 +270,11 @@ function Hero({ onLogin }: { onLogin: () => void }) {
                 <div className="group rounded-xl p-5 bg-blue-50 border border-blue-200 hover:border-blue-300 hover:shadow-md transition-all duration-200">
                   <div className="flex items-center gap-2 text-blue-900 font-semibold mb-2">
                     <div className="h-8 w-8 rounded-lg bg-blue-200 flex items-center justify-center group-hover:bg-blue-300 transition-colors">
-                      <Share2 className="h-4 w-4 text-blue-700" />
+                      <FileText className="h-4 w-4 text-blue-700" />
                     </div>
-                    PDF/共有
+                    PDF出力
                   </div>
-                  <p className="text-sm text-blue-800">履歴を証明書として出力・共有。</p>
+                  <p className="text-sm text-blue-800">履歴を証明書として出力。</p>
                 </div>
               </div>
             </div>
@@ -297,9 +297,9 @@ function TrustBar() {
         </div>
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
-            <Shield className="h-5 w-5 text-blue-600" />
+            <FileText className="h-5 w-5 text-blue-600" />
           </div>
-          <span className="font-semibold text-gray-700">共有URLは署名付き&有効期限</span>
+          <span className="font-semibold text-gray-700">PDF出力で売却時の&quot;証明&quot;に</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
@@ -370,7 +370,7 @@ function PainGain() {
               <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
                 <Check className="h-4 w-4 text-white" />
               </div>
-              <span className="font-semibold text-gray-900">PDF/共有リンクで第三者にも&quot;証明&quot;できる</span>
+              <span className="font-semibold text-gray-900">PDFで第三者にも&quot;証明&quot;できる</span>
             </li>
           </ul>
         </div>
@@ -384,7 +384,7 @@ function HowItWorks() {
     { icon: <Camera className="h-6 w-6" />, title: "記録する", desc: "テンプレ or レシートOCRで最短10秒。" },
     { icon: <LineChart className="h-6 w-6" />, title: "見える化", desc: "費用・燃費を自動でグラフ化。" },
     { icon: <Wrench className="h-6 w-6" />, title: "次の一手", desc: "次回メンテナンスを提案＆リマインド。" },
-    { icon: <Share2 className="h-6 w-6" />, title: "資産化", desc: 'PDF/共有URLで履歴を"価値"に。' },
+    { icon: <FileText className="h-6 w-6" />, title: "資産化", desc: 'PDFで履歴を"価値"に。' },
   ];
   
   return (
@@ -421,9 +421,8 @@ function Features() {
     { icon: <Gauge className="h-5 w-5" />, title: "ホーム", desc: "今月のコスト・燃費・やることを一目で。" },
     { icon: <Wrench className="h-5 w-5" />, title: "メンテ記録", desc: "テンプレで素早く、走行距離も自動更新。" },
     { icon: <FileText className="h-5 w-5" />, title: "履歴証明PDF", desc: "売却や引き継ぎに使える書式で出力。" },
-    { icon: <Share2 className="h-5 w-5" />, title: "共有URL", desc: '署名付きリンクで安全に "見せられる"。' },
     { icon: <Camera className="h-5 w-5" />, title: "レシートOCR", desc: "給油や保険証券の自動読み取り。" },
-    { icon: <Lock className="h-5 w-5" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・共有・OCRが使い放題。" },
+    { icon: <Lock className="h-5 w-5" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・OCRが使い放題。" },
   ];
   
   return (
@@ -454,7 +453,7 @@ function ValueBlocks() {
   const blocks = [
     {
       title: '&quot;見せられる履歴&quot;で価値が上がる',
-      desc: "記録は自己満で終わらせない。PDF/共有URLで第三者にも伝わる形に。中古車の信頼性と売却価値を底上げします。",
+      desc: "記録は自己満で終わらせない。PDFで第三者にも伝わる形に。中古車の信頼性と売却価値を底上げします。",
       icon: <Star className="h-6 w-6" />,
     },
     {
@@ -520,7 +519,7 @@ function Pricing() {
               </li>
               <li className="flex gap-3 items-start">
                 <Lock className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-400">OCR / PDF / 共有URL</span>
+                <span className="text-gray-400">OCR / PDF</span>
               </li>
             </ul>
             <button disabled className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-400 py-3 font-semibold cursor-not-allowed">
@@ -550,10 +549,6 @@ function Pricing() {
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <span>履歴証明PDF出力</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span>署名付き共有URL（有効期限つき）</span>
               </li>
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -596,15 +591,6 @@ function Security() {
                 <Shield className="h-4 w-4 text-white" />
               </div>
               <div>
-                <span className="font-semibold text-gray-900">署名付きトークン＋有効期限</span>
-                <p className="text-sm text-gray-600 mt-1">共有リンクは安全に保護</p>
-              </div>
-            </li>
-            <li className="flex items-start gap-4 p-4 rounded-xl bg-blue-50 border border-blue-200">
-              <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-                <Shield className="h-4 w-4 text-white" />
-              </div>
-              <div>
                 <span className="font-semibold text-gray-900">PDFに署名埋め込み</span>
                 <p className="text-sm text-gray-600 mt-1">改ざん防止で信頼性を確保</p>
               </div>
@@ -628,7 +614,7 @@ function Security() {
             安心して使える仕組み
           </div>
           <p className="text-gray-700 leading-relaxed">
-            GarageLogは、あなたの愛車データを安全に守ります。リンク共有時も、期限つきの署名トークンで第三者への過剰な公開を防ぎます。データの所有権は常にあなたにあり、いつでもエクスポートできます。
+            GarageLogは、あなたの愛車データを安全に守ります。PDFには署名を埋め込み、データの改ざんを防ぎます。データの所有権は常にあなたにあり、いつでもエクスポートできます。
           </p>
         </div>
       </div>
@@ -639,9 +625,9 @@ function Security() {
 function FAQ() {
   const faqs = [
     { q: "自動連携はありますか？", a: "銀行連携のような外部APIはありませんが、代わりにレシートOCR・テンプレ・前回コピーで入力負担を最小化しています。" },
-    { q: "無料プランでも十分使えますか？", a: "1台までなら主要機能はすべて利用可能です。2台目以降・OCR・PDF・共有URLはプレミアムで提供します。" },
+    { q: "無料プランでも十分使えますか？", a: "1台までなら主要機能はすべて利用可能です。2台目以降・OCR・PDFはプレミアムで提供します。" },
     { q: "データはエクスポートできますか？", a: "CSV/JSON/PDFでいつでもエクスポート可能です。PDFには署名を埋め込みます。" },
-    { q: "安全面は？", a: "Firebase認証・権限管理、署名付き共有リンク、有効期限など多層防御を採用しています。" },
+    { q: "安全面は？", a: "Firebase認証・権限管理、PDFへの署名埋め込みなど多層防御を採用しています。" },
   ];
   return (
     <section id="faq" className="bg-blue-50 py-20">
@@ -693,14 +679,22 @@ function CTA({ onLogin }: { onLogin: () => void }) {
 }
 
 function Footer() {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    target.style.display = 'none';
+  };
+
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 text-sm text-gray-600">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-md">
-              <Car className="h-5 w-5 text-white" />
-            </div>
+            <img 
+              src="/icon.png" 
+              alt="GarageLog" 
+              className="h-10 w-10 rounded-xl shadow-md"
+              onError={handleImageError}
+            />
             <div>
               <p className="font-bold text-gray-900 text-lg">GarageLog</p>
               <p className="text-xs text-gray-500">© {new Date().getFullYear()} GarageLog</p>

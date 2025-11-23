@@ -17,6 +17,7 @@ import type { Customization } from "@/types";
 import { watchFuelLogs, calculateFuelEfficiency, calculateAverageFuelEfficiency, getDisplayAmount, getDisplayCost } from "@/lib/fuelLogs";
 import type { FuelLog } from "@/types";
 import { Bar as RechartsBar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart } from 'recharts';
+import { Car as CarIcon } from 'lucide-react';
 import FuelLogModal from "@/components/modals/FuelLogModal";
 import AddCarModal from "@/components/modals/AddCarModal";
 import FuelLogCard from "@/components/dashboard/FuelLogCard";
@@ -59,6 +60,7 @@ export default function Home() {
   const [showEditCarModal, setShowEditCarModal] = useState(false);
   const [editingCar, setEditingCar] = useState<Car | null>(null);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [maintenanceTemplate, setMaintenanceTemplate] = useState<string | null>(null);
   const [showEditMaintenanceModal, setShowEditMaintenanceModal] = useState(false);
   const [editingMaintenanceRecord, setEditingMaintenanceRecord] = useState<MaintenanceRecord | null>(null);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
@@ -637,6 +639,7 @@ export default function Home() {
                         setShowFuelLogModal(true);
                         break;
                       case 'maintenance':
+                        setMaintenanceTemplate(data?.template || null);
                         setShowMaintenanceModal(true);
                         break;
                       case 'customization':
@@ -652,7 +655,7 @@ export default function Home() {
                         setEditingCar(car);
                         break;
                       case 'share':
-                        // PDF/共有機能
+                        // PDF出力機能
                         setShowShareAndPDFModal(true);
                         break;
                       case 'ocr':
@@ -788,11 +791,16 @@ export default function Home() {
           carId={activeCarId}
           carName={car?.name || "車"}
           currentMileage={car?.odoKm}
-          onClose={() => setShowMaintenanceModal(false)}
+          initialTitle={maintenanceTemplate || undefined}
+          onClose={() => {
+            setShowMaintenanceModal(false);
+            setMaintenanceTemplate(null);
+          }}
           onAdded={() => {
             console.log("Maintenance record added, closing modal");
             console.log("Current allMaintenanceRecords count:", allMaintenanceRecords.length);
             setShowMaintenanceModal(false);
+            setMaintenanceTemplate(null);
             setToastMessage("メンテナンス記録を追加しました");
             // 少し待ってから再度確認
             setTimeout(() => {
@@ -878,7 +886,7 @@ export default function Home() {
         />
       )}
 
-      {/* PDF/共有モーダル */}
+      {/* PDF出力モーダル */}
       {showShareAndPDFModal && car && (
         <ShareAndPDFModal
           car={car}
@@ -1620,6 +1628,34 @@ function DashboardContent({
               </div>
 
             </section>
+
+      {/* フッター */}
+      <footer className="border-t border-gray-200 bg-gray-50 mt-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-gray-600">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <img 
+                src="/icon.png" 
+                alt="GarageLog" 
+                className="h-10 w-10 rounded-xl shadow-md"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+              <div>
+                <p className="font-bold text-gray-900 text-base">GarageLog</p>
+                <p className="text-xs text-gray-500">© {new Date().getFullYear()} GarageLog</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-xs md:text-sm">
+              <a className="hover:text-blue-600 font-medium transition-colors" href="/legal/privacy">プライバシーポリシー</a>
+              <a className="hover:text-blue-600 font-medium transition-colors" href="/legal/terms">利用規約</a>
+              <a className="hover:text-blue-600 font-medium transition-colors" href="/support">サポート</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </>
   );
 }
@@ -4090,21 +4126,30 @@ function MaintenanceModal({
   carId, 
   carName, 
   currentMileage,
+  initialTitle,
   onClose, 
   onAdded 
 }: { 
   carId: string; 
   carName: string; 
   currentMileage?: number;
+  initialTitle?: string;
   onClose: () => void; 
   onAdded: () => void; 
 }) {
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle || "");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState<string>("");
   const [mileage, setMileage] = useState<string>(currentMileage ? currentMileage.toString() : "");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState("");
+
+  // initialTitleが変更されたときにtitleを更新
+  useEffect(() => {
+    if (initialTitle) {
+      setTitle(initialTitle);
+    }
+  }, [initialTitle]);
 
   async function handleAdd() {
     if (!title) return alert("タイトルを入力してください");

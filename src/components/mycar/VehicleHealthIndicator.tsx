@@ -3,6 +3,7 @@
 import { Car, MaintenanceRecord } from '@/types';
 import { useState } from 'react';
 import { toMillis } from './utils';
+import { Droplet, Wrench, Battery } from 'lucide-react';
 
 interface HealthIndicatorItem {
   id: string;
@@ -36,7 +37,7 @@ export default function VehicleHealthIndicator({
       return {
         id: 'oil',
         label: 'オイル交換',
-        icon: '🛢️',
+        icon: '',
         status: 'warning',
         onClick: () => onQuickAdd('oil')
       };
@@ -60,7 +61,7 @@ export default function VehicleHealthIndicator({
     return {
       id: 'oil',
       label: 'オイル交換',
-      icon: '🛢️',
+      icon: '',
       status,
       remainingKm: Math.max(0, remainingKm),
       remainingDays: Math.max(0, 180 - daysSinceChange),
@@ -81,7 +82,7 @@ export default function VehicleHealthIndicator({
       return {
         id: 'brake-tire',
         label: 'ブレーキ&タイヤ',
-        icon: '🔧',
+        icon: '',
         status: 'good',
         onClick: () => onQuickAdd('brake')
       };
@@ -98,7 +99,7 @@ export default function VehicleHealthIndicator({
     return {
       id: 'brake-tire',
       label: 'ブレーキ&タイヤ',
-      icon: '🔧',
+      icon: '',
       status,
       remainingKm: Math.max(0, remainingKm),
       onClick: () => onQuickAdd('brake')
@@ -115,7 +116,7 @@ export default function VehicleHealthIndicator({
       return {
         id: 'battery',
         label: 'バッテリー',
-        icon: '🔋',
+        icon: '',
         status: 'warning',
         onClick: () => onQuickAdd('battery')
       };
@@ -131,7 +132,7 @@ export default function VehicleHealthIndicator({
     return {
       id: 'battery',
       label: 'バッテリー',
-      icon: '🔋',
+      icon: '',
       status,
       remainingDays: monthsSinceChange,
       onClick: () => onQuickAdd('battery')
@@ -144,76 +145,129 @@ export default function VehicleHealthIndicator({
     calculateBatteryAge()
   ];
   
-  const getStatusColor = (status: 'good' | 'warning' | 'critical') => {
+  const getStatusStyles = (status: 'good' | 'warning' | 'critical') => {
     switch (status) {
       case 'good':
-        return 'bg-green-100 text-green-700 border-green-300';
+        return {
+          bg: 'bg-white',
+          border: 'border-gray-200',
+          iconBg: 'bg-emerald-50',
+          iconColor: 'text-emerald-600',
+          dot: 'bg-emerald-500',
+          badgeBg: 'bg-emerald-50',
+          badgeText: 'text-emerald-700',
+          badgeBorder: 'border-emerald-200',
+          hover: 'hover:bg-gray-50 hover:border-gray-300 hover:shadow-md'
+        };
       case 'warning':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+        return {
+          bg: 'bg-white',
+          border: 'border-gray-200',
+          iconBg: 'bg-amber-50',
+          iconColor: 'text-amber-600',
+          dot: 'bg-amber-500',
+          badgeBg: 'bg-amber-50',
+          badgeText: 'text-amber-700',
+          badgeBorder: 'border-amber-200',
+          hover: 'hover:bg-gray-50 hover:border-gray-300 hover:shadow-md'
+        };
       case 'critical':
-        return 'bg-red-100 text-red-700 border-red-300';
+        return {
+          bg: 'bg-white',
+          border: 'border-gray-200',
+          iconBg: 'bg-red-50',
+          iconColor: 'text-red-600',
+          dot: 'bg-red-500',
+          badgeBg: 'bg-red-50',
+          badgeText: 'text-red-700',
+          badgeBorder: 'border-red-200',
+          hover: 'hover:bg-gray-50 hover:border-gray-300 hover:shadow-md'
+        };
     }
   };
-  
-  const getStatusDot = (status: 'good' | 'warning' | 'critical') => {
-    switch (status) {
-      case 'good':
-        return 'bg-green-500';
-      case 'warning':
-        return 'bg-yellow-500';
-      case 'critical':
-        return 'bg-red-500';
+
+  const getIcon = (id: string) => {
+    switch (id) {
+      case 'oil':
+        return <Droplet className="h-5 w-5" />;
+      case 'brake-tire':
+        return <Wrench className="h-5 w-5" />;
+      case 'battery':
+        return <Battery className="h-5 w-5" />;
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-      <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-        <span>🏥</span>
-        <span>車両ヘルスインジケータ</span>
-      </h2>
-      
-      <div className="space-y-3">
-        {healthItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={item.onClick}
-            className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${getStatusColor(item.status)}`}
-          >
-            {/* アイコンとステータスドット */}
-            <div className="relative flex-shrink-0">
-              <span className="text-3xl">{item.icon}</span>
-              <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getStatusDot(item.status)} ring-2 ring-white`} />
-            </div>
-            
-            {/* 情報 */}
-            <div className="flex-1 text-left">
-              <div className="font-semibold text-sm mb-1">{item.label}</div>
-              <div className="text-xs">
-                {item.id === 'oil' && item.remainingKm !== undefined && (
-                  <span>残り約 {item.remainingKm.toLocaleString()} km / {item.remainingDays}日</span>
-                )}
-                {item.id === 'brake-tire' && item.remainingKm !== undefined && (
-                  <span>残り約 {item.remainingKm.toLocaleString()} km</span>
-                )}
-                {item.id === 'battery' && item.remainingDays !== undefined && (
-                  <span>交換後 {item.remainingDays}ヶ月経過</span>
-                )}
-              </div>
-            </div>
-            
-            {/* 追加アイコン */}
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-          </button>
-        ))}
+    <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 lg:p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
+        <div>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">車両ヘルスインジケータ</h2>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">オイル・ブレーキ・バッテリーの状態</p>
+        </div>
       </div>
       
-      <div className="mt-4 text-xs text-gray-500 text-center">
-        クリックして次回予定を1タップ追加
+      <div className="space-y-2.5">
+        {healthItems.map((item) => {
+          const styles = getStatusStyles(item.status);
+          return (
+            <button
+              key={item.id}
+              onClick={item.onClick}
+              className={`group w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 ${styles.bg} ${styles.border} ${styles.hover}`}
+            >
+              {/* アイコン */}
+              <div className="relative flex-shrink-0">
+                <div className={`h-11 w-11 rounded-xl flex items-center justify-center transition-all duration-200 group-hover:scale-105 ${styles.iconBg}`}>
+                  <div className={styles.iconColor}>
+                    {getIcon(item.id)}
+                  </div>
+                </div>
+                {/* ステータスインジケータ */}
+                <div className={`absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full ${styles.dot} ring-2 ring-white`} />
+              </div>
+              
+              {/* 情報 */}
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="font-semibold text-sm text-gray-900">{item.label}</div>
+                  <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${styles.badgeBg} ${styles.badgeText} border ${styles.badgeBorder}`}>
+                    {item.status === 'good' ? '良好' : item.status === 'warning' ? '注意' : '要対応'}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-600">
+                  {item.id === 'oil' && item.remainingKm !== undefined && item.remainingDays !== undefined ? (
+                    <span>残り約 <span className="font-semibold text-gray-900">{item.remainingKm.toLocaleString()} km</span> / <span className="font-semibold text-gray-900">{item.remainingDays}日</span></span>
+                  ) : item.id === 'oil' ? (
+                    <span className="text-gray-500">記録を追加して状態を確認</span>
+                  ) : null}
+                  {item.id === 'brake-tire' && item.remainingKm !== undefined ? (
+                    <span>残り約 <span className="font-semibold text-gray-900">{item.remainingKm.toLocaleString()} km</span></span>
+                  ) : item.id === 'brake-tire' ? (
+                    <span className="text-gray-500">記録を追加して状態を確認</span>
+                  ) : null}
+                  {item.id === 'battery' && item.remainingDays !== undefined ? (
+                    <span>交換後 <span className="font-semibold text-gray-900">{item.remainingDays}ヶ月</span>経過</span>
+                  ) : item.id === 'battery' ? (
+                    <span className="text-gray-500">記録を追加して状態を確認</span>
+                  ) : null}
+                </div>
+              </div>
+              
+              {/* 追加アイコン */}
+              <div className="flex-shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      
+      <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500 text-center">
+        クリックして次回メンテナンスを追加
       </div>
     </div>
   );

@@ -161,7 +161,6 @@ export default function BillingPage() {
               {[
                 { icon: '🚗', title: '無制限の車両登録', desc: '何台でも登録可能' },
                 { icon: '📄', title: 'PDF出力', desc: 'メンテナンス履歴をPDF化' },
-                { icon: '🔗', title: '共有URL', desc: '履歴を簡単に共有' },
                 { icon: '📸', title: 'OCRスキャン', desc: 'レシートを自動読み取り' },
                 { icon: '🔔', title: '高度なリマインダー', desc: '無制限のリマインダー' },
                 { icon: '📊', title: 'データ分析', desc: '詳細な統計レポート' },

@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "GarageLog - クルマと、ずっといい関係。",
   description: "メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。",
-  keywords: "車両管理,車メンテナンス,給油記録,カスタム記録,PDF出力,共有リンク,OCR,車歴書,整備記録",
+  keywords: "車両管理,車メンテナンス,給油記録,カスタム記録,PDF出力,OCR,車歴書,整備記録",
   authors: [{ name: "GarageLog" }],
   openGraph: {
     type: "website",

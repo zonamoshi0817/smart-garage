@@ -69,8 +69,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
   const primaryFeatures: PremiumFeature[] = [
     'multiple_cars',
     'ocr_scan',
-    'pdf_export',
-    'share_links'
+    'pdf_export'
   ];
 
   // その他の機能（「もっと見る」で表示）
