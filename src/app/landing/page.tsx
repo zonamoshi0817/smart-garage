@@ -11,28 +11,83 @@ import type { User } from "firebase/auth";
 export default function LandingPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = watchAuth((u) => {
-      setUser(u);
-      setIsLoading(false);
-      // ログイン済みの場合はホーム画面にリダイレクト
-      if (u) {
-        router.push('/home');
-      }
-    });
+    let isMounted = true;
+    
+    try {
+      const unsubscribe = watchAuth((u) => {
+        if (!isMounted) return;
+        
+        try {
+          setUser(u);
+          setIsLoading(false);
+          setError(null);
+          
+          // ログイン済みの場合はホーム画面にリダイレクト
+          if (u) {
+            // リダイレクトは非同期で実行し、エラーをキャッチ
+            setTimeout(() => {
+              try {
+                router.push('/home');
+              } catch (err) {
+                console.error('リダイレクトエラー:', err);
+                // リダイレクトエラーは無視（ユーザーは既にLPにいる）
+              }
+            }, 100);
+          }
+        } catch (err) {
+          console.error('認証状態更新エラー:', err);
+          if (isMounted) {
+            setError('認証状態の取得に失敗しました');
+            setIsLoading(false);
+          }
+        }
+      });
 
-    return () => unsubscribe();
+      // タイムアウトを設定（3秒後に強制的にローディングを解除）
+      const timeoutId = setTimeout(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }, 3000);
+
+      return () => {
+        isMounted = false;
+        clearTimeout(timeoutId);
+        try {
+          unsubscribe();
+        } catch (err) {
+          console.error('認証監視の解除エラー:', err);
+        }
+      };
+    } catch (err) {
+      console.error('認証初期化エラー:', err);
+      if (isMounted) {
+        setError('認証の初期化に失敗しました');
+        setIsLoading(false);
+      }
+    }
   }, [router]);
 
   const handleLogin = async () => {
     try {
+      setError(null);
       await loginWithGoogle();
       // ログイン成功後、watchAuthのコールバックでリダイレクトされる
-    } catch (error) {
+    } catch (error: any) {
       console.error('ログインエラー:', error);
-      alert('ログインに失敗しました。もう一度お試しください。');
+      const errorMessage = error?.message || error?.toString() || '不明なエラー';
+      setError(`ログインに失敗しました: ${errorMessage}`);
+      
+      // ユーザーフレンドリーなエラーメッセージを表示
+      if (errorMessage.includes('popup') || errorMessage.includes('blocked')) {
+        alert('ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。');
+      } else {
+        alert('ログインに失敗しました。もう一度お試しください。');
+      }
     }
   };
 
@@ -49,6 +104,15 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <div className="flex">
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
       <Header user={user} onLogin={handleLogin} />
       <Hero onLogin={handleLogin} />
       <TrustBar />
@@ -66,11 +130,22 @@ export default function LandingPage() {
 }
 
 function Header({ user, onLogin }: { user: User | null; onLogin: () => void }) {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    // 画像読み込みエラーを無視（デフォルト画像が表示されない場合）
+    const target = e.target as HTMLImageElement;
+    target.style.display = 'none';
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 border-b border-gray-200/50 shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src="/icon.png" alt="GarageLog" className="h-10 w-10 rounded-xl shadow-md" />
+          <img 
+            src="/icon.png" 
+            alt="GarageLog" 
+            className="h-10 w-10 rounded-xl shadow-md"
+            onError={handleImageError}
+          />
           <div className="leading-tight">
             <p className="font-bold text-gray-900 text-lg">GarageLog</p>
             <p className="text-[11px] text-gray-500 -mt-0.5 font-medium">クルマと、ずっといい関係。</p>
