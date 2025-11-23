@@ -324,22 +324,39 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
   const [cameraId, setCameraId] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementId = 'qr-reader';
+  const onScanSuccessRef = useRef(onScanSuccess);
 
-  // モーダルが開いたことをログに記録し、自動的にカメラを起動
+  // onScanSuccessの最新値をrefに保存（依存配列の問題を回避）
+  useEffect(() => {
+    onScanSuccessRef.current = onScanSuccess;
+  }, [onScanSuccess]);
+
+  // モーダルが開いたことをログに記録（自動起動は削除、ユーザーがボタンを押すまで待つ）
   useEffect(() => {
     console.log('[QRScanner] Modal opened');
-    // モーダルが開いたら自動的にカメラを起動
-    setIsScanning(true);
   }, []);
 
   // カメラの初期化
   useEffect(() => {
     if (!isScanning) return;
 
+    // DOM要素の存在確認
+    const scannerElement = document.getElementById(scannerElementId);
+    if (!scannerElement) {
+      console.error(`[QRScanner] DOM element not found: ${scannerElementId}`);
+      setError('スキャナー要素が見つかりませんでした。ページを再読み込みしてください。');
+      setIsScanning(false);
+      return;
+    }
+
     const initScanner = async () => {
       try {
+        console.log('[QRScanner] Initializing camera...');
+        
         // 利用可能なカメラを取得
         const devices = await Html5Qrcode.getCameras();
+        console.log('[QRScanner] Available cameras:', devices.length);
+        
         if (devices.length === 0) {
           setError('カメラが見つかりませんでした。デバイスにカメラが接続されているか確認してください。');
           setIsScanning(false);
@@ -354,12 +371,14 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
         );
         const selectedCamera = backCamera?.id || devices[0].id;
         setCameraId(selectedCamera);
+        console.log('[QRScanner] Selected camera:', backCamera?.label || devices[0].label);
 
         // スキャナーを初期化
         const scanner = new Html5Qrcode(scannerElementId);
         scannerRef.current = scanner;
 
         // スキャンを開始
+        console.log('[QRScanner] Starting scan...');
         await scanner.start(
           selectedCamera,
           {
@@ -369,45 +388,72 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
           },
           (decodedText) => {
             // QRコードが読み取れた
-            console.log('QRコード読み取り成功:', decodedText);
+            console.log('[QRScanner] QRコード読み取り成功:', decodedText);
             
             // データをパース
             const parsedData = parseInspectionQRCode(decodedText);
+            console.log('[QRScanner] Parsed data:', parsedData);
             
             // スキャンを停止
             scanner.stop().then(() => {
+              console.log('[QRScanner] Scanner stopped successfully');
               setIsScanning(false);
-              onScanSuccess(parsedData);
+              onScanSuccessRef.current(parsedData);
             }).catch((err) => {
-              console.error('スキャン停止エラー:', err);
+              console.error('[QRScanner] スキャン停止エラー:', err);
               setIsScanning(false);
-              onScanSuccess(parsedData);
+              onScanSuccessRef.current(parsedData);
             });
           },
           (errorMessage) => {
             // エラーは無視（継続的にスキャンするため）
+            // ただし、重要なエラーのみログに記録
+            if (errorMessage && !errorMessage.includes('NotFoundException')) {
+              console.log('[QRScanner] Scan error (ignored):', errorMessage);
+            }
           }
         );
+        console.log('[QRScanner] Scanner started successfully');
       } catch (err: any) {
-        console.error('カメラ初期化エラー:', err);
-        setError(`カメラの初期化に失敗しました: ${err.message}`);
+        console.error('[QRScanner] カメラ初期化エラー:', err);
+        
+        // より詳細なエラーメッセージ
+        let errorMessage = 'カメラの初期化に失敗しました。';
+        if (err.message) {
+          if (err.message.includes('Permission denied') || err.message.includes('NotAllowedError')) {
+            errorMessage = 'カメラへのアクセスが拒否されました。ブラウザの設定でカメラの権限を許可してください。';
+          } else if (err.message.includes('NotFoundError') || err.message.includes('No camera found')) {
+            errorMessage = 'カメラが見つかりませんでした。デバイスにカメラが接続されているか確認してください。';
+          } else {
+            errorMessage = `カメラの初期化に失敗しました: ${err.message}`;
+          }
+        }
+        
+        setError(errorMessage);
         setIsScanning(false);
       }
     };
 
-    initScanner();
+    // 少し遅延を入れてDOMの準備を待つ
+    const timer = setTimeout(() => {
+      initScanner();
+    }, 100);
 
     // クリーンアップ
     return () => {
+      clearTimeout(timer);
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {
-          // エラーは無視
+        console.log('[QRScanner] Cleaning up scanner...');
+        scannerRef.current.stop().catch((err) => {
+          console.log('[QRScanner] Stop error during cleanup (ignored):', err);
         });
-        scannerRef.current.clear();
+        scannerRef.current.clear().catch((err) => {
+          console.log('[QRScanner] Clear error during cleanup (ignored):', err);
+        });
         scannerRef.current = null;
       }
     };
-  }, [isScanning, scannerElementId, onScanSuccess]);
+  }, [isScanning, scannerElementId]);
 
   const handleStartScan = async () => {
     console.log('[QRScanner] Start scan button clicked');
@@ -590,6 +636,7 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
 
     try {
       setError(null);
+      console.log('[QRScanner] File selected:', file.name, file.size, 'bytes');
       
       // ファイルサイズチェック（10MB制限）
       if (file.size > 10 * 1024 * 1024) {
@@ -597,15 +644,23 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
         return;
       }
       
+      // ファイルタイプチェック
+      if (!file.type.startsWith('image/')) {
+        setError('画像ファイルを選択してください。');
+        return;
+      }
+      
+      console.log('[QRScanner] Starting QR code scan from file...');
+      
       // 複数のQRコードをスキャン
       const decodedTexts = await scanMultipleQRCodes(file);
       
       if (decodedTexts.length === 0) {
-        setError('QRコードが見つかりませんでした。画像にQRコードが含まれているか確認してください。');
+        setError('QRコードが見つかりませんでした。画像にQRコードが含まれているか確認してください。画像が鮮明で、QRコードが完全に写っていることを確認してください。');
         return;
       }
       
-      console.log('検出されたQRコード数:', decodedTexts.length);
+      console.log('[QRScanner] 検出されたQRコード数:', decodedTexts.length);
       
       // 分割QRコードの処理
       const splitQRParts: Array<{ partNumber: number; totalParts: number; content: string }> = [];
@@ -638,16 +693,16 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
         if (hasAllParts) {
           // すべてのパートを結合
           combinedSplitQR = splitQRParts.map(part => part.content).join('');
-          console.log('分割QRコードを結合:', combinedSplitQR.substring(0, 100) + '...');
+          console.log('[QRScanner] 分割QRコードを結合:', combinedSplitQR.substring(0, 100) + '...');
         } else {
-          console.warn(`分割QRコードのパートが不完全です。検出: ${splitQRParts.length}/${totalParts}`);
+          console.warn(`[QRScanner] 分割QRコードのパートが不完全です。検出: ${splitQRParts.length}/${totalParts}`);
         }
       }
       
       // すべてのQRコードのテキストを結合してパース
       const allTexts = combinedSplitQR ? [combinedSplitQR, ...normalQRTexts] : normalQRTexts;
       const combinedText = allTexts.join('\n');
-      console.log('結合されたQRコードテキスト:', combinedText.substring(0, 200) + '...');
+      console.log('[QRScanner] 結合されたQRコードテキスト:', combinedText.substring(0, 200) + '...');
       
       // データをパース（結合された分割QRを優先）
       const parsedData = combinedSplitQR 
@@ -681,12 +736,37 @@ export default function QRCodeScannerModal({ onClose, onScanSuccess }: QRCodeSca
         }
       }
       
-      console.log('パース結果:', parsedData);
-      onScanSuccess(parsedData);
+      console.log('[QRScanner] パース結果:', parsedData);
+      
+      // データが取得できたか確認
+      const hasData = parsedData.chassisNumber || parsedData.registrationNumber || 
+                     parsedData.inspectionExpiry || parsedData.firstRegYm || 
+                     parsedData.modelCode || parsedData.year;
+      
+      if (!hasData) {
+        setError('QRコードを読み取りましたが、車両情報を認識できませんでした。車検証のQRコードが正しく写っているか確認してください。');
+        return;
+      }
+      
+      onScanSuccessRef.current(parsedData);
     } catch (err: any) {
-      console.error('QRコード読み取りエラー:', err);
+      console.error('[QRScanner] QRコード読み取りエラー:', err);
       const errorMessage = err?.message || '不明なエラー';
-      setError(`QRコードの読み取りに失敗しました: ${errorMessage}。画像にQRコードが含まれているか確認してください。`);
+      
+      // より詳細なエラーメッセージ
+      let userMessage = 'QRコードの読み取りに失敗しました。';
+      if (errorMessage.includes('No QR code found') || errorMessage.includes('NotFoundException')) {
+        userMessage = 'QRコードが見つかりませんでした。画像にQRコードが含まれているか確認してください。';
+      } else if (errorMessage.includes('Invalid image')) {
+        userMessage = '無効な画像ファイルです。JPGまたはPNG形式の画像を選択してください。';
+      } else {
+        userMessage = `QRコードの読み取りに失敗しました: ${errorMessage}`;
+      }
+      
+      setError(userMessage);
+    } finally {
+      // ファイル入力のリセット（同じファイルを再度選択できるように）
+      event.target.value = '';
     }
   };
 
