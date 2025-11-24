@@ -87,13 +87,16 @@ export default function VehicleSwitcher({
         {activeCar ? (
           <>
             {activeCar.imagePath ? (
-              <img
-                src={activeCar.imagePath}
-                alt={activeCar.name}
-                className="w-7 h-7 object-cover rounded"
-              />
+              <div className="w-10 h-8 rounded bg-gray-50 overflow-hidden flex items-center justify-center flex-shrink-0">
+                <img
+                  src={activeCar.imagePath}
+                  alt={activeCar.name}
+                  className="object-contain"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              </div>
             ) : (
-              <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center">
+              <div className="w-10 h-8 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -110,7 +113,7 @@ export default function VehicleSwitcher({
           </>
         ) : (
           <>
-            <div className="w-7 h-7 rounded bg-gray-100 flex items-center justify-center">
+            <div className="w-10 h-8 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -184,14 +187,17 @@ export default function VehicleSwitcher({
                   <div className="flex items-center gap-3">
                     {/* 車両画像サムネイル */}
                     {car.imagePath && !imageErrors.has(car.id!) ? (
-                      <img
-                        src={car.imagePath}
-                        alt={car.name}
-                        className="w-14 h-14 object-cover rounded border border-gray-200 flex-shrink-0"
-                        onError={() => handleImageError(car.id!)}
-                      />
+                      <div className="w-20 h-14 rounded border border-gray-200 flex-shrink-0 bg-gray-50 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={car.imagePath}
+                          alt={car.name}
+                          className="object-contain"
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                          onError={() => handleImageError(car.id!)}
+                        />
+                      </div>
                     ) : (
-                      <div className="w-14 h-14 rounded bg-gray-100 flex items-center justify-center flex-shrink-0 border border-gray-200">
+                      <div className="w-20 h-14 rounded bg-gray-100 flex items-center justify-center flex-shrink-0 border border-gray-200">
                         <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>

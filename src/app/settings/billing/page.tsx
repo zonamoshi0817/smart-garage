@@ -225,7 +225,7 @@ export default function BillingPage() {
                 </div>
               </div>
               <div className="mt-4 text-center text-sm text-gray-500">
-                7日間無料トライアル • いつでもキャンセル可能
+                いつでもキャンセル可能
               </div>
             </div>
           )}

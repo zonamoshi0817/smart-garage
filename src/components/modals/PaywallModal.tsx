@@ -330,7 +330,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
             </button>
 
             <div className="text-center text-xs text-gray-500 mt-3">
-              7日間無料トライアル • いつでもキャンセル可能
+              いつでもキャンセル可能
             </div>
           </div>
         </div>
@@ -475,7 +475,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
             </button>
 
             <div className="text-center text-xs text-gray-500">
-              7日間無料トライアル • いつでもキャンセル可能 • 安全な決済
+              いつでもキャンセル可能 • 安全な決済
             </div>
 
             <button

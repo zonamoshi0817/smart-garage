@@ -177,50 +177,6 @@ export default function MyCarPage({
   const inspectionDaysLeft = inspectionDate ? Math.ceil((inspectionDate.getTime() - Date.now()) / dayMs) : null;
 
   const latestMaintenanceDate = latestMaintenance ? toJsDate(latestMaintenance.date) : null;
-
-  const highlightCards = [
-    {
-      id: 'odo',
-      icon: '🛣️',
-      iconBg: 'bg-sky-100 text-sky-600',
-      label: '総走行距離',
-      value: car.odoKm ? `${formatNumber(car.odoKm)} km` : '---',
-      description: car.avgKmPerMonth
-        ? `月平均 ${formatNumber(car.avgKmPerMonth)} km`
-        : 'ODOメーターを更新すると精度が上がります',
-    },
-    {
-      id: 'fuel',
-      icon: '⛽',
-      iconBg: 'bg-amber-100 text-amber-600',
-      label: '最新給油',
-      value: latestFuelDate ? formatRelativeDate(latestFuelDate) : '記録なし',
-      description:
-        latestFuelLog && latestFuelAmount && latestFuelCost !== null
-          ? `${formatNumber(latestFuelAmount.value, latestFuelAmount.unit === 'L' ? 1 : 0)}${latestFuelAmount.unit} / ${formatCurrency(latestFuelCost)}`
-          : '給油を記録するとサマリーに表示されます',
-    },
-    {
-      id: 'inspection',
-      icon: '🗓️',
-      iconBg: 'bg-purple-100 text-purple-600',
-      label: '次回車検',
-      value: inspectionDate ? formatCountdown(inspectionDate) : '未登録',
-      description: inspectionDate
-        ? `${formatDateLabel(inspectionDate)}まで`
-        : '車検日を登録するとリマインドされます',
-    },
-    {
-      id: 'maintenance',
-      icon: '🔧',
-      iconBg: 'bg-emerald-100 text-emerald-600',
-      label: '直近メンテ',
-      value: latestMaintenanceDate ? formatRelativeDate(latestMaintenanceDate) : '未実施',
-      description:
-        latestMaintenance?.title ||
-        (maintenanceRecords.length ? '直近のメンテナンスにタイトルがありません' : 'メンテナンスを記録しましょう'),
-    },
-  ];
  
   // クイックアクションの定義
   const quickActions = [
@@ -349,8 +305,8 @@ export default function MyCarPage({
           onImageChange={handleImageChange}
         />
 
-        <div className="grid gap-4 sm:gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          {/* 左カラム: クイック操作 + ヘルスインジケータ + カスタムパーツ */}
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+          {/* クイック操作 + ヘルスインジケータ + カスタムパーツ */}
           <div className="space-y-4 sm:space-y-6 lg:space-y-8 min-w-0">
             {/* クイック操作 */}
             {readOnly ? (
@@ -432,38 +388,6 @@ export default function MyCarPage({
                 }}
               />
             </div>
-          </div>
-
-          {/* 右カラム: サマリーカード */}
-          <div className="space-y-4 sm:space-y-6 min-w-0">
-            {/* サマリーカード */}
-            <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 lg:p-5 shadow-sm">
-            <SectionHeader title="車両サマリー" size="md" />
-              <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
-                {highlightCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="group relative overflow-hidden rounded-lg sm:rounded-xl border border-gray-100 bg-gradient-to-br from-white to-gray-50/50 p-3.5 sm:p-4 transition-all duration-200 hover:bg-white hover:shadow-md hover:border-gray-200"
-                  >
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className={`flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl text-base sm:text-lg shadow-sm ${card.iconBg}`}>
-                        {card.icon}
-                      </div>
-                      <div className="min-w-0 flex-1 pt-0.5">
-                        <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">{card.label}</p>
-                        <p className="text-base sm:text-lg font-bold text-gray-900 mb-1.5 break-words">{card.value}</p>
-                        {card.description && (
-                          <p className="text-xs leading-relaxed text-gray-600">{card.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 広告削除: マイカーページ（意思決定面）は広告非表示
-                広告はダッシュボードの全車横断セクションのみに表示 */}
           </div>
         </div>
       </div>

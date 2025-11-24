@@ -74,8 +74,7 @@ export default function TokushoPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-3">支払時期</h2>
             <div className="text-gray-700">
               <p className="mb-2">• 月額プラン: 毎月の更新日に自動課金</p>
-              <p className="mb-2">• 年額プラン: 毎年の更新日に自動課金</p>
-              <p>• 初回: 7日間の無料トライアル終了後に課金開始</p>
+              <p>• 年額プラン: 毎年の更新日に自動課金</p>
             </div>
           </section>
 
@@ -94,11 +93,8 @@ export default function TokushoPage() {
               <p className="mb-2">
                 デジタルサービスの性質上、お客様都合による返品・返金には応じかねます。
               </p>
-              <p className="mb-2">
-                サブスクリプションはいつでもキャンセル可能です。キャンセル後は次回更新日以降、課金されません。
-              </p>
               <p>
-                無料トライアル期間中にキャンセルした場合、料金は一切発生しません。
+                サブスクリプションはいつでもキャンセル可能です。キャンセル後は次回更新日以降、課金されません。
               </p>
             </div>
           </section>

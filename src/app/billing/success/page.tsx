@@ -58,8 +58,7 @@ function SuccessContent() {
           🎉 ようこそプレミアムへ！
         </h1>
         <p className="text-lg text-gray-600 mb-8">
-          サブスクリプションの登録が完了しました。<br />
-          7日間の無料トライアルをお楽しみください！
+          サブスクリプションの登録が完了しました。
         </p>
 
         {/* 機能一覧 */}
@@ -114,7 +113,6 @@ function SuccessContent() {
 
         {/* 注意事項 */}
         <div className="mt-8 text-xs text-gray-500">
-          ※ 7日間の無料トライアル終了後、自動的に課金が開始されます。<br />
           いつでもキャンセル可能です。
         </div>
       </div>

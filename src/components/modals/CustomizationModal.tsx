@@ -376,30 +376,17 @@ export default function CustomizationModal({
           </div>
 
           {/* リンク・メモ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-2">
-                商品リンク
-              </label>
-              <input
-                type="url"
-                value={formData.link || ''}
-                onChange={(e) => handleInputChange('link', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
-                placeholder="https://..."
-              />
-            </div>
-            <div className="flex items-center">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.isPublic}
-                  onChange={(e) => handleInputChange('isPublic', e.target.checked)}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-800">公開する</span>
-              </label>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              商品リンク
+            </label>
+            <input
+              type="url"
+              value={formData.link || ''}
+              onChange={(e) => handleInputChange('link', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+              placeholder="https://..."
+            />
           </div>
 
           {/* メモ */}
