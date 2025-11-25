@@ -95,3 +95,107 @@ export const lpEvents = {
     });
   },
 };
+
+/**
+ * OCR関連のイベント追跡
+ */
+export function logOcrStarted(type: string, fileSize?: number) {
+  trackEvent("ocr_started", {
+    type,
+    file_size: fileSize,
+  });
+}
+
+export function logOcrUsed(type: string, success: boolean) {
+  trackEvent("ocr_used", {
+    type,
+    success,
+  });
+}
+
+export function logOcrAutofillDone(type: string, fieldsPopulated: number) {
+  trackEvent("ocr_autofill_done", {
+    type,
+    fields_populated: fieldsPopulated,
+  });
+}
+
+/**
+ * ペイウォール関連のイベント追跡
+ */
+export function logPaywallShown(feature: string, plan: string) {
+  trackEvent("paywall_shown", {
+    feature,
+    plan,
+  });
+}
+
+export function logPaywallClick(feature: string, plan: string) {
+  trackEvent("paywall_click", {
+    feature,
+    plan,
+  });
+}
+
+export function logSubscribeStarted(plan: string, billingCycle: string) {
+  trackEvent("subscribe_started", {
+    plan,
+    billing_cycle: billingCycle,
+  });
+}
+
+/**
+ * 車両関連のイベント追跡
+ */
+export function logCarAdded(carCount: number, isFirstCar: boolean) {
+  trackEvent("car_added", {
+    car_count: carCount,
+    is_first_car: isFirstCar,
+  });
+}
+
+export function logCarDeleted(carCount: number) {
+  trackEvent("car_deleted", {
+    car_count: carCount,
+  });
+}
+
+/**
+ * カスタマイズ関連のイベント追跡
+ */
+export function logCustomizationCreated(carId: string, categories: string[]) {
+  trackEvent("customization_created", {
+    car_id: carId,
+    categories: categories.join(","),
+  });
+}
+
+/**
+ * 給油記録関連のイベント追跡
+ */
+export function logFuelCreated(carId: string, isOcrUsed: boolean) {
+  trackEvent("fuel_created", {
+    car_id: carId,
+    is_ocr_used: isOcrUsed,
+  });
+}
+
+/**
+ * メンテナンス関連のイベント追跡
+ */
+export function logMaintenanceCreated(carId: string, title: string) {
+  trackEvent("maintenance_created", {
+    car_id: carId,
+    title,
+  });
+}
+
+/**
+ * PDFエクスポート関連のイベント追跡
+ */
+export function logPdfExported(carId: string, recordCount: number) {
+  trackEvent("pdf_exported", {
+    car_id: carId,
+    record_count: recordCount,
+  });
+}
