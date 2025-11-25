@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { OfflineDetector } from "@/components/common/OfflineDetector";
+import { GoogleAnalyticsComponent } from "@/components/GoogleAnalytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,6 +77,7 @@ export default function RootLayout({
           <OfflineDetector />
           {children}
         </ErrorBoundary>
+        <GoogleAnalyticsComponent />
       </body>
     </html>
   );

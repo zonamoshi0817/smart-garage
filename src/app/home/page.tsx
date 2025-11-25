@@ -891,7 +891,17 @@ export default function Home() {
         <ShareAndPDFModal
           car={car}
           maintenanceRecords={maintenanceRecords}
+          customizations={customizations}
           onClose={() => setShowShareAndPDFModal(false)}
+          onCarUpdated={() => {
+            // 車両データを再読み込み
+            if (activeCarId) {
+              const activeCar = cars.find(c => c.id === activeCarId);
+              if (activeCar) {
+                // 車両リストを更新（watchCarsが自動的に更新するはず）
+              }
+            }
+          }}
         />
       )}
 

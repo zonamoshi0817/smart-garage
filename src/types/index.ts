@@ -46,6 +46,19 @@ export interface Car extends BaseEntity {
   chassisNumber?: string; // 車台番号（QRコードから）
   registrationNumber?: string; // 登録番号（ナンバープレート）
   bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other'; // 車体形状
+  // 公開マイカーページ設定
+  isPublic?: boolean; // 公開設定
+  publicVanityUrl?: string; // カスタムURL（例：/c/fl5-ken）
+  publicTagline?: string; // 一言キャッチコピー
+  ownerPicks?: string[]; // OWNER'S PICKのカスタマイズID配列（最大3件）
+  ownerHandle?: string; // オーナーハンドルネーム
+  ownerRegion?: string; // 地域（都道府県）
+  ownerSocialLinks?: { instagram?: string; twitter?: string }; // SNSリンク
+  // 基本スペック（公開用）
+  driveType?: 'FF' | 'FR' | '4WD' | 'MR' | 'RR' | 'AWD'; // 駆動方式
+  transmission?: string; // ミッション（例：6MT、AT、CVT、DCT）
+  bodyColor?: string; // ボディカラー
+  ownedSince?: Timestamp; // 所有開始年月
 }
 
 export interface CarInput {
@@ -66,6 +79,19 @@ export interface CarInput {
   chassisNumber?: string; // 車台番号（QRコードから）
   registrationNumber?: string; // 登録番号（ナンバープレート）
   bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other'; // 車体形状
+  // 公開マイカーページ設定
+  isPublic?: boolean; // 公開設定
+  publicVanityUrl?: string; // カスタムURL（例：/c/fl5-ken）
+  publicTagline?: string; // 一言キャッチコピー
+  ownerPicks?: string[]; // OWNER'S PICKのカスタマイズID配列（最大3件）
+  ownerHandle?: string; // オーナーハンドルネーム
+  ownerRegion?: string; // 地域（都道府県）
+  ownerSocialLinks?: { instagram?: string; twitter?: string }; // SNSリンク
+  // 基本スペック（公開用）
+  driveType?: 'FF' | 'FR' | '4WD' | 'MR' | 'RR' | 'AWD'; // 駆動方式
+  transmission?: string; // ミッション（例：6MT、AT、CVT、DCT）
+  bodyColor?: string; // ボディカラー
+  ownedSince?: Timestamp; // 所有開始年月
 }
 
 // メンテナンス関連の型

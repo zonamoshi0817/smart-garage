@@ -3,7 +3,7 @@
 import { db, auth } from "@/lib/firebase";
 import {
   collection, addDoc, serverTimestamp, onSnapshot, query, orderBy,
-  doc, updateDoc, deleteDoc, Timestamp, limit
+  doc, updateDoc, deleteDoc, Timestamp, limit, setDoc, getDoc
 } from "firebase/firestore";
 import { logAudit } from "./auditLog";
 import { logCarAdded, logCarDeleted } from "./analytics";
@@ -177,6 +177,9 @@ export async function updateCar(carId: string, data: Partial<Car>) {
   if (firestoreData.downgradedAt) {
     firestoreData.downgradedAt = toTimestamp(firestoreData.downgradedAt);
   }
+  if (firestoreData.ownedSince) {
+    firestoreData.ownedSince = toTimestamp(firestoreData.ownedSince);
+  }
   
   // undefinedをnullに変換
   Object.keys(firestoreData).forEach(key => {
@@ -192,6 +195,66 @@ export async function updateCar(carId: string, data: Partial<Car>) {
     updatedBy: u.uid,
     updatedAt: serverTimestamp(),
   });
+  
+  // 公開設定が変更された場合、publicCarsコレクションも更新
+  if (data.isPublic !== undefined) {
+    const carRef = doc(db, "users", u.uid, "cars", carId);
+    const carSnap = await getDoc(carRef);
+    
+    if (carSnap.exists()) {
+      const carData = carSnap.data();
+      
+      if (data.isPublic) {
+        // 公開設定がONの場合、publicCarsコレクションに追加/更新
+        const publicCarRef = doc(db, "publicCars", carId);
+        await setDoc(publicCarRef, {
+          carId: carId,
+          userId: u.uid,
+          name: carData.name,
+          modelCode: carData.modelCode,
+          year: carData.year,
+          odoKm: carData.odoKm,
+          imagePath: carData.imagePath,
+          publicTagline: data.publicTagline || carData.publicTagline || null,
+          ownerHandle: data.ownerHandle || carData.ownerHandle || null,
+          ownerRegion: data.ownerRegion || carData.ownerRegion || null,
+          ownerPicks: data.ownerPicks || carData.ownerPicks || null,
+          ownerSocialLinks: data.ownerSocialLinks || carData.ownerSocialLinks || null,
+          driveType: carData.driveType || null,
+          transmission: carData.transmission || null,
+          bodyColor: carData.bodyColor || null,
+          ownedSince: carData.ownedSince || null,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      } else {
+        // 公開設定がOFFの場合、publicCarsコレクションから削除
+        const publicCarRef = doc(db, "publicCars", carId);
+        await deleteDoc(publicCarRef);
+      }
+    }
+  } else if (data.publicTagline !== undefined || data.ownerHandle !== undefined || 
+             data.ownerRegion !== undefined || data.ownerPicks !== undefined ||
+             data.ownerSocialLinks !== undefined) {
+    // 公開設定の他のフィールドが更新された場合も、publicCarsを更新
+    const carRef = doc(db, "users", u.uid, "cars", carId);
+    const carSnap = await getDoc(carRef);
+    
+    if (carSnap.exists()) {
+      const carData = carSnap.data();
+      
+      if (carData.isPublic) {
+        const publicCarRef = doc(db, "publicCars", carId);
+        await updateDoc(publicCarRef, {
+          publicTagline: data.publicTagline !== undefined ? data.publicTagline : carData.publicTagline || null,
+          ownerHandle: data.ownerHandle !== undefined ? data.ownerHandle : carData.ownerHandle || null,
+          ownerRegion: data.ownerRegion !== undefined ? data.ownerRegion : carData.ownerRegion || null,
+          ownerPicks: data.ownerPicks !== undefined ? data.ownerPicks : carData.ownerPicks || null,
+          ownerSocialLinks: data.ownerSocialLinks !== undefined ? data.ownerSocialLinks : carData.ownerSocialLinks || null,
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
+  }
   
   // 監査ログを記録
   await logAudit({

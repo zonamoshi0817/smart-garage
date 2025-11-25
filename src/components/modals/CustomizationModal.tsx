@@ -376,17 +376,30 @@ export default function CustomizationModal({
           </div>
 
           {/* リンク・メモ */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              商品リンク
-            </label>
-            <input
-              type="url"
-              value={formData.link || ''}
-              onChange={(e) => handleInputChange('link', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
-              placeholder="https://..."
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                商品リンク
+              </label>
+              <input
+                type="url"
+                value={formData.link || ''}
+                onChange={(e) => handleInputChange('link', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-600 text-gray-900"
+                placeholder="https://..."
+              />
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={(e) => handleInputChange('isPublic', e.target.checked)}
+                  className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-800">公開マイカーページに表示</span>
+              </label>
+            </div>
           </div>
 
           {/* メモ */}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer, Zap, LogIn, Menu, X } from "lucide-react";
 import { loginWithGoogle, watchAuth } from "@/lib/firebase";
 import type { User } from "firebase/auth";
+import { lpEvents, trackPageView } from "@/lib/analytics";
 
 // Smart Garage LP — Modern, premium design with animations and gradients
 
@@ -75,7 +76,13 @@ export default function LandingPage() {
     };
   }, [router]);
 
-  // スクロールアニメーションを初期化（ローディング完了後）
+  // ページビューを追跡
+  useEffect(() => {
+    if (isLoading || typeof window === 'undefined') return;
+    trackPageView(window.location.pathname);
+  }, [isLoading]);
+
+  // スクロールアニメーションとセクション表示を初期化（ローディング完了後）
   useEffect(() => {
     if (isLoading || typeof window === 'undefined') return;
     
@@ -84,6 +91,13 @@ export default function LandingPage() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('visible');
+            
+            // セクション表示を追跡
+            const sectionId = entry.target.id;
+            if (sectionId) {
+              lpEvents.sectionView(sectionId);
+            }
+            
             observer.unobserve(entry.target);
           }
         });
@@ -95,18 +109,48 @@ export default function LandingPage() {
     const timeoutId = setTimeout(() => {
       const elements = document.querySelectorAll('.fade-in-on-scroll, .slide-in-left-on-scroll, .slide-in-right-on-scroll, .scale-in-on-scroll');
       elements.forEach((el) => observer.observe(el));
+      
+      // セクション要素も監視
+      const sections = document.querySelectorAll('section[id]');
+      sections.forEach((section) => observer.observe(section));
     }, 200);
+
+    // スクロール深度を追跡
+    let maxScrollDepth = 0;
+    const scrollDepthThresholds = [25, 50, 75, 100];
+    const trackedDepths = new Set<number>();
+
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollDepth = Math.round((scrollTop / documentHeight) * 100);
+
+      scrollDepthThresholds.forEach((threshold) => {
+        if (scrollDepth >= threshold && !trackedDepths.has(threshold) && maxScrollDepth < threshold) {
+          trackedDepths.add(threshold);
+          maxScrollDepth = threshold;
+          lpEvents.scrollDepth(threshold);
+        }
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       clearTimeout(timeoutId);
       const elements = document.querySelectorAll('.fade-in-on-scroll, .slide-in-left-on-scroll, .slide-in-right-on-scroll, .scale-in-on-scroll');
       elements.forEach((el) => observer.unobserve(el));
+      const sections = document.querySelectorAll('section[id]');
+      sections.forEach((section) => observer.unobserve(section));
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [isLoading]);
 
-  const handleLogin = async () => {
+  const handleLogin = async (location: string = 'unknown') => {
     try {
       setError(null);
+      // ログインクリックを追跡
+      lpEvents.loginClick(location);
       await loginWithGoogle();
       // ログイン成功後、watchAuthのコールバックでリダイレクトされる
     } catch (error: any) {
@@ -145,15 +189,15 @@ export default function LandingPage() {
           </div>
         </div>
       )}
-      <Header user={user} onLogin={handleLogin} />
-      <Hero onLogin={handleLogin} />
+      <Header user={user} onLogin={() => handleLogin('header')} />
+      <Hero onLogin={() => handleLogin('hero')} />
       <TrustBar />
       <PainGain />
       <HowItWorks />
       <Features />
       <Pricing />
       <FAQ />
-      <CTA onLogin={handleLogin} />
+      <CTA onLogin={() => handleLogin('cta_section')} />
       <Footer />
     </div>
   );
@@ -266,13 +310,20 @@ function Hero({ onLogin }: { onLogin: () => void }) {
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               <button
-                onClick={onLogin}
+                onClick={() => {
+                  lpEvents.ctaClick('hero');
+                  onLogin();
+                }}
                 className="group inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-lg hover:bg-blue-700 hover:shadow-xl hover:scale-105 transition-all duration-200"
               >
                 無料ではじめる
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </button>
-              <a href="#how" className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold border-2 border-blue-200 hover:border-blue-300 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200">
+              <a 
+                href="#how" 
+                onClick={() => lpEvents.ctaClick('hero_how_it_works')}
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold border-2 border-blue-200 hover:border-blue-300 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
+              >
                 使い方を見る
               </a>
             </div>
@@ -719,7 +770,10 @@ function CTA({ onLogin }: { onLogin: () => void }) {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-end">
               <button
-                onClick={onLogin}
+                onClick={() => {
+                  lpEvents.ctaClick('cta_section');
+                  onLogin();
+                }}
                 className="group inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-white text-blue-600 font-bold px-6 sm:px-8 py-3 sm:py-4 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
               >
                 今すぐ始める
