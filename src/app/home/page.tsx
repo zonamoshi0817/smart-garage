@@ -1267,14 +1267,12 @@ function DashboardContent({
                 <SectionHeader
                   title="最近の給油"
                   right={
-                    car && fuelLogs.length > 0 && (
-                      <button
-                        onClick={() => setCurrentPage('fuel-logs')}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        詳細を見る →
-                      </button>
-                    )
+                    <button
+                      onClick={() => setCurrentPage('fuel-logs')}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      すべて見る →
+                    </button>
                   }
                 />
                 
