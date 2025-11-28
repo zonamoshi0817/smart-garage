@@ -21,6 +21,8 @@ import {
 } from '@/lib/plan';
 import { PREMIUM_PRICING } from '@/lib/premium';
 import PaywallModal from '@/components/modals/PaywallModal';
+import DowngradePlanModal from '@/components/modals/DowngradePlanModal';
+import Logo from '@/components/common/Logo';
 
 export default function BillingPage() {
   const {
@@ -34,6 +36,7 @@ export default function BillingPage() {
   } = usePremium();
 
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showDowngradeModal, setShowDowngradeModal] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
 
   /**
@@ -83,12 +86,27 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* ロゴ */}
+        <div className="mb-6">
+          <Logo size="md" />
+        </div>
+        
         {/* ヘッダー */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">請求管理</h1>
-          <p className="text-gray-600">プランの管理と請求情報の確認</p>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">請求管理</h1>
+              <p className="text-gray-600">プランの管理と請求情報の確認</p>
+            </div>
+            <a
+              href="/settings/account"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              アカウント設定 →
+            </a>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -230,6 +248,34 @@ export default function BillingPage() {
             </div>
           )}
 
+          {/* プラン変更（プレミアムユーザー向け） */}
+          {isPremium && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">プラン変更</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                無料プランに変更すると、サブスクリプションが解約されます。すべてのデータは保持されます。
+              </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium mb-1">無料プランに変更すると：</p>
+                    <ul className="list-disc list-inside space-y-1 text-yellow-700">
+                      <li>車両登録は1台まで</li>
+                      <li>PDF出力とOCR機能は利用できません</li>
+                      <li>高度なリマインダー機能は制限されます</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDowngradeModal(true)}
+                className="w-full rounded-lg border-2 border-gray-300 bg-white text-gray-700 px-6 py-3 font-bold hover:bg-gray-50 transition-colors"
+              >
+                無料プランに変更する
+              </button>
+            </div>
+          )}
+
           {/* カスタマーポータルボタン（プレミアムユーザー向け） */}
           {isPremium && stripeCustomerId && (
             <div className="bg-blue-50 rounded-xl p-6 text-center">
@@ -241,7 +287,6 @@ export default function BillingPage() {
                 <li>✓ 支払い方法の変更</li>
                 <li>✓ 請求履歴の確認</li>
                 <li>✓ 領収書のダウンロード</li>
-                <li>✓ サブスクリプションのキャンセル</li>
               </ul>
               <button
                 onClick={openCustomerPortal}
@@ -258,6 +303,14 @@ export default function BillingPage() {
       {/* ペイウォールモーダル */}
       {showPaywall && (
         <PaywallModal onClose={() => setShowPaywall(false)} variant="hero" />
+      )}
+
+      {/* プラン変更モーダル */}
+      {showDowngradeModal && (
+        <DowngradePlanModal
+          onClose={() => setShowDowngradeModal(false)}
+          currentPlan={getPlanDisplayName(userPlan)}
+        />
       )}
     </div>
   );
