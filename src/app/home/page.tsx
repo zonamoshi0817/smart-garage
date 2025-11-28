@@ -194,17 +194,9 @@ export default function Home() {
             setActiveCarId(list[0].id);
           }
         } else {
-          // データがない場合はテストデータを使用（開発時のみ）
-          if (process.env.NODE_ENV === 'development') {
-            console.log("No real cars found, using test cars for development");
-            setCars(testCars);
-            if (!activeCarId && testCars[0]?.id) {
-              setActiveCarId(testCars[0].id);
-            }
-          } else {
-            console.log("No cars found, setting empty array");
-            setCars([]);
-          }
+          // データがない場合は空の配列を設定
+          console.log("No cars found, setting empty array");
+          setCars([]);
         }
       });
       return () => {
@@ -213,17 +205,9 @@ export default function Home() {
       };
     } catch (error) {
       console.error("Error watching cars:", error);
-      // エラーの場合はテストデータを使用（開発時のみ）
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Error occurred, using test cars for development");
-        setCars(testCars);
-        if (!activeCarId && testCars[0]?.id) {
-          setActiveCarId(testCars[0].id);
-        }
-      } else {
-        console.log("Error occurred, setting empty array");
-        setCars([]);
-      }
+      // エラーの場合は空の配列を設定
+      console.log("Error occurred, setting empty array");
+      setCars([]);
     }
   }, [auth.currentUser, activeCarId, authTrigger]); // 認証状態、activeCarId、認証トリガーの変更に反応
 

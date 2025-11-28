@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, LogIn, Mail, Lock, ArrowRight } from "lucide-react";
-import { loginWithGoogle, signUpWithEmail } from "@/lib/firebase";
+import { loginWithGoogle, signUpWithEmail, logout, watchAuth, auth } from "@/lib/firebase";
+import type { User } from "firebase/auth";
 import Link from "next/link";
 import Logo from "@/components/common/Logo";
 
@@ -13,7 +14,16 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEmailAlreadyInUse, setIsEmailAlreadyInUse] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const router = useRouter();
+
+  // 認証状態を監視
+  useEffect(() => {
+    const unsubscribe = watchAuth((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleGoogleSignUp = async () => {
     if (isLoading) return; // 既に処理中の場合は何もしない
@@ -21,6 +31,15 @@ export default function SignUpPage() {
     try {
       setIsLoading(true);
       setError(null);
+      
+      // 既にログインしている場合は、ログアウトしてから登録
+      if (currentUser) {
+        console.log("User already logged in, logging out first...");
+        await logout();
+        // ログアウト後に少し待つ
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
       await loginWithGoogle();
       router.push("/home");
     } catch (error: any) {
@@ -121,6 +140,30 @@ export default function SignUpPage() {
               に同意の上、以下いずれかの方法でご登録ください。
             </p>
           </div>
+
+          {currentUser && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+              <p className="text-sm text-yellow-800 mb-2">
+                既にログインしています（{currentUser.email}）
+              </p>
+              <p className="text-sm text-yellow-700 mb-3">
+                別のアカウントで登録する場合は、Googleボタンをクリックすると自動的にログアウトしてから登録できます。
+              </p>
+              <button
+                onClick={async () => {
+                  try {
+                    await logout();
+                    setCurrentUser(null);
+                  } catch (error) {
+                    console.error("Logout error:", error);
+                  }
+                }}
+                className="text-sm text-yellow-800 hover:text-yellow-900 underline font-medium"
+              >
+                今すぐログアウトする
+              </button>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
