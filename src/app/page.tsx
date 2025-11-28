@@ -171,7 +171,7 @@ export default function LandingPage() {
       <PainGain />
       <HowItWorks />
       <Features />
-      <Pricing />
+      <Pricing onSignUp={handleSignUp} />
       <FAQ />
       <CTA onLogin={handleLogin} onSignUp={handleSignUp} />
       <Footer />
@@ -619,7 +619,7 @@ function Features() {
   );
 }
 
-function Pricing() {
+function Pricing({ onSignUp }: { onSignUp: () => void }) {
   return (
     <section id="pricing" className="bg-white py-12 sm:py-16 lg:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -657,8 +657,11 @@ function Pricing() {
                 <span className="text-gray-400">OCR / PDF</span>
               </li>
             </ul>
-            <button disabled className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-400 py-2.5 sm:py-3 font-semibold cursor-not-allowed text-sm sm:text-base">
-              近日公開
+            <button
+              onClick={onSignUp}
+              className="w-full rounded-xl border-2 border-blue-600 bg-white text-blue-600 py-2.5 sm:py-3 font-semibold hover:bg-blue-50 transition-colors text-sm sm:text-base"
+            >
+              無料で始める
             </button>
           </div>
 
@@ -690,10 +693,12 @@ function Pricing() {
                 <span>広告非表示・高度なリマインダー</span>
               </li>
             </ul>
-            <button disabled className="w-full rounded-xl bg-blue-600 text-white py-2.5 sm:py-3 font-bold shadow-lg hover:shadow-xl cursor-not-allowed text-sm sm:text-base">
-              近日公開
+            <button
+              onClick={onSignUp}
+              className="w-full rounded-xl bg-blue-600 text-white py-2.5 sm:py-3 font-bold shadow-lg hover:shadow-xl hover:bg-blue-700 transition-colors text-sm sm:text-base"
+            >
+              プレミアムを始める
             </button>
-            <p className="mt-2 sm:mt-3 text-[10px] sm:text-xs text-gray-500 text-center">サービス準備中です。もうしばらくお待ちください。</p>
           </div>
         </div>
       </div>
