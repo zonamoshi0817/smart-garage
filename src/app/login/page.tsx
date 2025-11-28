@@ -15,6 +15,8 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleGoogleLogin = async () => {
+    if (isLoading) return; // 既に処理中の場合は何もしない
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -22,11 +24,24 @@ export default function LoginPage() {
       router.push("/home");
     } catch (error: any) {
       console.error("Google login error:", error);
+      const errorCode = error?.code;
       const errorMessage = error?.message || error?.toString() || "不明なエラー";
-      setError(`Googleでログインに失敗しました: ${errorMessage}`);
-      if (errorMessage.includes("popup") || errorMessage.includes("blocked")) {
-        alert("ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。");
+      
+      let userFriendlyMessage = "Googleでログインに失敗しました";
+      
+      if (errorCode === "auth/missing-or-invalid-nonce") {
+        userFriendlyMessage = "認証処理が重複しました。ページをリロードしてから再度お試しください。";
+      } else if (errorCode === "auth/popup-closed-by-user") {
+        userFriendlyMessage = "ログインがキャンセルされました。";
+        setError(null); // ユーザーがキャンセルした場合はエラーを表示しない
+        return;
+      } else if (errorMessage.includes("popup") || errorMessage.includes("blocked")) {
+        userFriendlyMessage = "ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。";
+      } else if (errorMessage.includes("既に実行中")) {
+        userFriendlyMessage = errorMessage;
       }
+      
+      setError(userFriendlyMessage);
     } finally {
       setIsLoading(false);
     }

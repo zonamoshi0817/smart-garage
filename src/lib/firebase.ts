@@ -71,15 +71,32 @@ export { app };
 
 // Googleログイン用
 const googleProvider = new GoogleAuthProvider();
+let isGoogleLoginInProgress = false;
+
 export const loginWithGoogle = async () => {
+  // 重複実行を防ぐ
+  if (isGoogleLoginInProgress) {
+    throw new Error("Googleログイン処理が既に実行中です。しばらくお待ちください。");
+  }
+
   try {
+    isGoogleLoginInProgress = true;
     console.log("Attempting Google login...");
     const result = await signInWithPopup(auth, googleProvider);
     console.log("Google login successful:", result.user.uid);
     return result;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Google login failed:", error);
+    // nonceエラーの場合は、少し待ってから再試行可能にする
+    if (error?.code === "auth/missing-or-invalid-nonce") {
+      console.log("Nonce error detected, resetting login state");
+    }
     throw error;
+  } finally {
+    // 少し遅延を入れてからフラグをリセット（重複実行を防ぐ）
+    setTimeout(() => {
+      isGoogleLoginInProgress = false;
+    }, 1000);
   }
 };
 
