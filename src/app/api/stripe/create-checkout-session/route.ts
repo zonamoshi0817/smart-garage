@@ -40,14 +40,65 @@ export async function POST(req: NextRequest) {
     let userUid: string;
     let userEmail: string | undefined;
     try {
-      const auth = getAdminAuth();
+      // Firebase Admin SDKの初期化を試みる
+      let auth;
+      try {
+        auth = getAdminAuth();
+      } catch (initError: any) {
+        console.error('Failed to initialize Firebase Admin SDK:', initError);
+        // 開発環境でのエラーメッセージ
+        if (process.env.NODE_ENV === 'development') {
+          return NextResponse.json(
+            { error: 'Firebase Admin SDKの初期化に失敗しました。環境変数FIREBASE_SERVICE_ACCOUNT_BASE64が設定されているか確認してください。' },
+            { status: 500 }
+          );
+        }
+        return NextResponse.json(
+          { error: 'サーバー設定エラーが発生しました。' },
+          { status: 500 }
+        );
+      }
+      
+      if (!idToken || typeof idToken !== 'string') {
+        console.error('ID Token is missing or invalid type:', typeof idToken);
+        return NextResponse.json(
+          { error: 'ID Token is required.' },
+          { status: 401 }
+        );
+      }
+      
       const decodedToken = await auth.verifyIdToken(idToken);
       userUid = decodedToken.uid;
       userEmail = decodedToken.email;
-    } catch (error) {
+      
+      if (!userUid) {
+        console.error('User UID is missing from decoded token');
+        return NextResponse.json(
+          { error: 'User UID is missing from token.' },
+          { status: 401 }
+        );
+      }
+    } catch (error: any) {
       console.error('Failed to verify ID token:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        idTokenLength: idToken?.length,
+        idTokenPrefix: idToken?.substring(0, 20),
+      });
+      
+      // より詳細なエラーメッセージを返す
+      let errorMessage = 'Invalid authentication token.';
+      if (error.code === 'auth/id-token-expired') {
+        errorMessage = '認証トークンの有効期限が切れています。再度ログインしてください。';
+      } else if (error.code === 'auth/argument-error') {
+        errorMessage = '認証トークンの形式が正しくありません。';
+      } else if (error.message?.includes('FIREBASE_SERVICE_ACCOUNT_BASE64')) {
+        errorMessage = 'サーバー設定エラーが発生しました。開発環境では環境変数の設定が必要です。';
+      }
+      
       return NextResponse.json(
-        { error: 'Invalid authentication token.' },
+        { error: errorMessage },
         { status: 401 }
       );
     }

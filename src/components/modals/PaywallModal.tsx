@@ -103,7 +103,12 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
         return;
       }
 
-      const idToken = await user.getIdToken();
+      // 強制的に新しいトークンを取得（trueを渡すと強制リフレッシュ）
+      const idToken = await user.getIdToken(true);
+
+      if (!idToken) {
+        throw new Error('ID Tokenの取得に失敗しました。再度ログインしてください。');
+      }
 
       // Checkout セッションを作成
       const response = await fetch('/api/stripe/create-checkout-session', {
@@ -113,17 +118,47 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create checkout session');
+        const errorData = await response.json();
+        const errorMessage = errorData.error || 'Failed to create checkout session';
+        
+        // 認証エラーの場合は、より詳細なメッセージを表示
+        if (errorMessage.includes('authentication') || errorMessage.includes('token') || errorMessage.includes('認証')) {
+          console.error('Authentication error:', errorMessage);
+          // 開発環境での詳細なメッセージ
+          if (process.env.NODE_ENV === 'development') {
+            alert('認証エラーが発生しました。\n\n開発環境では、.env.localにFIREBASE_SERVICE_ACCOUNT_BASE64を設定する必要があります。\n\n本番環境では正常に動作します。');
+          } else {
+            alert('認証に失敗しました。ページをリロードして再度お試しください。');
+          }
+          return;
+        }
+        
+        // サーバー設定エラーの場合
+        if (errorMessage.includes('FIREBASE_SERVICE_ACCOUNT') || errorMessage.includes('サーバー設定')) {
+          console.error('Server configuration error:', errorMessage);
+          if (process.env.NODE_ENV === 'development') {
+            alert('サーバー設定エラーが発生しました。\n\n開発環境では、.env.localにFIREBASE_SERVICE_ACCOUNT_BASE64を設定する必要があります。\n\n本番環境では正常に動作します。');
+          } else {
+            alert('サーバー設定エラーが発生しました。管理者にお問い合わせください。');
+          }
+          return;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const { url } = await response.json();
+
+      if (!url) {
+        throw new Error('Checkout URLの取得に失敗しました。');
+      }
 
       // Stripe Checkout ページへリダイレクト
       window.location.href = url;
     } catch (error: any) {
       console.error('Failed to start checkout:', error);
-      alert(`エラーが発生しました: ${error.message}`);
+      const errorMessage = error.message || 'エラーが発生しました';
+      alert(`エラーが発生しました: ${errorMessage}`);
     }
   };
 
