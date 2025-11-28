@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer, Zap, LogIn, Menu, X } from "lucide-react";
-import { loginWithGoogle, watchAuth } from "@/lib/firebase";
+import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer, Zap, LogIn, Menu, X, UserPlus } from "lucide-react";
+import { watchAuth } from "@/lib/firebase";
 import type { User } from "firebase/auth";
 import { lpEvents, trackPageView } from "@/lib/analytics";
 
@@ -34,19 +34,6 @@ export default function LandingPage() {
           setUser(u);
           setIsLoading(false);
           setError(null);
-          
-          // ログイン済みの場合はホーム画面にリダイレクト
-          if (u) {
-            // リダイレクトは非同期で実行し、エラーをキャッチ
-            setTimeout(() => {
-              try {
-                router.push('/home');
-              } catch (err) {
-                console.error('リダイレクトエラー:', err);
-                // リダイレクトエラーは無視（ユーザーは既にLPにいる）
-              }
-            }, 100);
-          }
         } catch (err) {
           console.error('認証状態更新エラー:', err);
           if (isMounted) {
@@ -146,25 +133,14 @@ export default function LandingPage() {
     };
   }, [isLoading]);
 
-  const handleLogin = async (location: string = 'unknown') => {
-    try {
-      setError(null);
-      // ログインクリックを追跡
-      lpEvents.loginClick(location);
-      await loginWithGoogle();
-      // ログイン成功後、watchAuthのコールバックでリダイレクトされる
-    } catch (error: any) {
-      console.error('ログインエラー:', error);
-      const errorMessage = error?.message || error?.toString() || '不明なエラー';
-      setError(`ログインに失敗しました: ${errorMessage}`);
-      
-      // ユーザーフレンドリーなエラーメッセージを表示
-      if (errorMessage.includes('popup') || errorMessage.includes('blocked')) {
-        alert('ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。');
-      } else {
-        alert('ログインに失敗しました。もう一度お試しください。');
-      }
-    }
+  const handleLogin = () => {
+    lpEvents.loginClick('lp');
+    router.push('/login');
+  };
+
+  const handleSignUp = () => {
+    lpEvents.ctaClick('lp_signup');
+    router.push('/signup');
   };
 
   if (isLoading) {
@@ -189,21 +165,21 @@ export default function LandingPage() {
           </div>
         </div>
       )}
-      <Header user={user} onLogin={() => handleLogin('header')} />
-      <Hero onLogin={() => handleLogin('hero')} />
+      <Header user={user} onLogin={handleLogin} onSignUp={handleSignUp} />
+      <Hero onLogin={handleLogin} onSignUp={handleSignUp} />
       <TrustBar />
       <PainGain />
       <HowItWorks />
       <Features />
       <Pricing />
       <FAQ />
-      <CTA onLogin={() => handleLogin('cta_section')} />
+      <CTA onLogin={handleLogin} onSignUp={handleSignUp} />
       <Footer />
     </div>
   );
 }
 
-function Header({ user, onLogin }: { user: User | null; onLogin: () => void }) {
+function Header({ user, onLogin, onSignUp }: { user: User | null; onLogin: () => void; onSignUp: () => void }) {
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     // 画像読み込みエラーを無視（デフォルト画像が表示されない場合）
     const target = e.target as HTMLImageElement;
@@ -242,30 +218,29 @@ function Header({ user, onLogin }: { user: User | null; onLogin: () => void }) {
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          {user ? (
-            <a href="/home" className="inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 hover:scale-105 transition-all duration-200 text-sm sm:text-base">
-              <span className="hidden sm:inline">ダッシュボードへ</span>
-              <span className="sm:hidden">ダッシュボード</span>
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          ) : (
-            <>
-              <button
-                onClick={onLogin}
-                className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 hover:scale-105 transition-all duration-200"
-              >
-                <LogIn className="h-4 w-4" />
-                ログイン
-              </button>
-              <button
-                onClick={onLogin}
-                className="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-all duration-200"
-                aria-label="ログイン"
-              >
-                <LogIn className="h-5 w-5" />
-              </button>
-            </>
-          )}
+          <>
+            <button
+              onClick={onSignUp}
+              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 hover:scale-105 transition-all duration-200"
+            >
+              <UserPlus className="h-4 w-4" />
+              新規登録
+            </button>
+            <button
+              onClick={onLogin}
+              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-700 font-semibold border-2 border-gray-300 shadow-md hover:bg-gray-50 hover:scale-105 transition-all duration-200"
+            >
+              <LogIn className="h-4 w-4" />
+              ログイン
+            </button>
+            <button
+              onClick={onSignUp}
+              className="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-all duration-200"
+              aria-label="新規登録"
+            >
+              <UserPlus className="h-5 w-5" />
+            </button>
+          </>
         </div>
       </div>
       {/* モバイルメニュー */}
@@ -283,7 +258,7 @@ function Header({ user, onLogin }: { user: User | null; onLogin: () => void }) {
   );
 }
 
-function Hero({ onLogin }: { onLogin: () => void }) {
+function Hero({ onLogin, onSignUp }: { onLogin: () => void; onSignUp: () => void }) {
   return (
     <section className="relative overflow-hidden bg-blue-50">
       {/* アニメーション背景 */}
@@ -310,19 +285,22 @@ function Hero({ onLogin }: { onLogin: () => void }) {
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               <button
-                onClick={() => {
-                  lpEvents.ctaClick('hero');
-                  onLogin();
-                }}
+                onClick={onSignUp}
                 className="group inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-lg hover:bg-blue-700 hover:shadow-xl hover:scale-105 transition-all duration-200"
               >
                 無料ではじめる
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </button>
+              <button
+                onClick={onLogin}
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold border-2 border-blue-200 hover:border-blue-300 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
+              >
+                ログイン
+              </button>
               <a 
                 href="#how" 
                 onClick={() => lpEvents.ctaClick('hero_how_it_works')}
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold border-2 border-blue-200 hover:border-blue-300 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold border-2 border-gray-200 hover:border-gray-300 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
               >
                 使い方を見る
               </a>
@@ -753,7 +731,7 @@ function FAQ() {
   );
 }
 
-function CTA({ onLogin }: { onLogin: () => void }) {
+function CTA({ onLogin, onSignUp }: { onLogin: () => void; onSignUp: () => void }) {
   return (
     <section id="cta" className="relative overflow-hidden bg-blue-600 fade-in-on-scroll">
       {/* アニメーション背景 */}
@@ -770,14 +748,17 @@ function CTA({ onLogin }: { onLogin: () => void }) {
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-end">
               <button
-                onClick={() => {
-                  lpEvents.ctaClick('cta_section');
-                  onLogin();
-                }}
+                onClick={onSignUp}
                 className="group inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-white text-blue-600 font-bold px-6 sm:px-8 py-3 sm:py-4 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
               >
-                今すぐ始める
+                新規登録
                 <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <button
+                onClick={onLogin}
+                className="inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-sm text-white font-semibold border-2 border-white/30 px-6 sm:px-8 py-3 sm:py-4 shadow-xl hover:bg-white/20 hover:scale-105 transition-all duration-200 text-base sm:text-lg"
+              >
+                ログイン
               </button>
             </div>
           </div>

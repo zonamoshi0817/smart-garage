@@ -2,8 +2,10 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { 
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut,
-  onAuthStateChanged, type User
+  getAuth, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut,
+  onAuthStateChanged, type User,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -68,15 +70,29 @@ export const storage = getStorage(app);
 export { app };
 
 // Googleログイン用
-const provider = new GoogleAuthProvider();
+const googleProvider = new GoogleAuthProvider();
 export const loginWithGoogle = async () => {
   try {
     console.log("Attempting Google login...");
-    const result = await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, googleProvider);
     console.log("Google login successful:", result.user.uid);
     return result;
   } catch (error) {
     console.error("Google login failed:", error);
+    throw error;
+  }
+};
+
+// Appleログイン用
+const appleProvider = new OAuthProvider('apple.com');
+export const loginWithApple = async () => {
+  try {
+    console.log("Attempting Apple login...");
+    const result = await signInWithPopup(auth, appleProvider);
+    console.log("Apple login successful:", result.user.uid);
+    return result;
+  } catch (error) {
+    console.error("Apple login failed:", error);
     throw error;
   }
 };
@@ -87,6 +103,52 @@ export const logout = async () => {
     console.log("Logout successful");
   } catch (error) {
     console.error("Logout failed:", error);
+    throw error;
+  }
+};
+
+// メールアドレスで新規登録
+export const signUpWithEmail = async (email: string, password: string) => {
+  try {
+    console.log("Attempting email signup...");
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    console.log("Email signup successful:", result.user.uid);
+    return result;
+  } catch (error: any) {
+    // エラーコードを保持して再スロー（呼び出し元で適切にハンドリングされる）
+    // 開発環境でのみ詳細なログを出力
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Email signup failed (handled by UI):", error?.code || error?.message);
+    }
+    throw error;
+  }
+};
+
+// メールアドレスでログイン
+export const loginWithEmail = async (email: string, password: string) => {
+  try {
+    console.log("Attempting email login...");
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    console.log("Email login successful:", result.user.uid);
+    return result;
+  } catch (error: any) {
+    // エラーコードを保持して再スロー（呼び出し元で適切にハンドリングされる）
+    // 開発環境でのみ詳細なログを出力
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Email login failed (handled by UI):", error?.code || error?.message);
+    }
+    throw error;
+  }
+};
+
+// パスワードリセットメール送信
+export const resetPassword = async (email: string) => {
+  try {
+    console.log("Attempting password reset...");
+    await sendPasswordResetEmail(auth, email);
+    console.log("Password reset email sent");
+  } catch (error) {
+    console.error("Password reset failed:", error);
     throw error;
   }
 };
