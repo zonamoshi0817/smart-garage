@@ -1250,18 +1250,12 @@ function DashboardContent({
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h4>
                   <p className="text-gray-500 mb-4">まずはメンテナンスを1件追加しましょう</p>
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center">
                     <button
                       onClick={() => activeCarId ? setShowMaintenanceModal(true) : setCurrentPage('my-car')}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     >
                       メンテナンスを追加
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage('my-car')}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                    >
-                      マイカーで追加する
                     </button>
                   </div>
                 </div>
@@ -1448,18 +1442,12 @@ function DashboardContent({
                       </div>
                       <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
                       <p className="text-gray-500 mb-4">1件目の給油を記録しましょう</p>
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center">
                         <button
                           onClick={() => activeCarId ? setShowFuelLogModal(true) : setCurrentPage('my-car')}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                         >
                           給油を記録
-                        </button>
-                        <button
-                          onClick={() => setCurrentPage('my-car')}
-                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                        >
-                          マイカーで記録する
                         </button>
                       </div>
                     </div>
@@ -1537,18 +1525,12 @@ function DashboardContent({
                     </div>
                     <h4 className="text-lg font-medium text-gray-900 mb-2">カスタマイズ記録がありません</h4>
                     <p className="text-gray-500 mb-4">まずは1件追加してみましょう</p>
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center">
                       <button
                         onClick={() => (activeCarId && auth.currentUser) ? setShowCustomizationModal(true) : setCurrentPage('my-car')}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                       >
                         カスタマイズを追加
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage('my-car')}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                      >
-                        マイカーで追加する
                       </button>
                     </div>
                   </div>
