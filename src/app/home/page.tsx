@@ -2828,17 +2828,6 @@ function DataManagementContent({
         )}
       </div>
 
-      {/* データ管理のヒント */}
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">データ管理のヒント</h3>
-        <ul className="text-blue-800 space-y-2">
-          <li>• 定期的にデータをエクスポートしてバックアップを取ることをお勧めします</li>
-          <li>• CSVファイルはExcelやGoogleスプレッドシートで開くことができます</li>
-          <li>• JSONファイルは完全なバックアップとして使用できます</li>
-          <li>• <strong>PDF履歴書</strong>は売却時や整備工場への提示に最適です</li>
-          <li>• データは暗号化されてFirebaseに保存されています</li>
-                </ul>
-              </div>
     </>
   );
 }

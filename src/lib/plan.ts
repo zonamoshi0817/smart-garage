@@ -124,9 +124,9 @@ export function getPriceId(plan: 'monthly' | 'yearly'): string {
 export function getPlanPrice(plan: Plan): number {
   switch (plan) {
     case 'premium_monthly':
-      return 480;
+      return 350;
     case 'premium_yearly':
-      return 4800;
+      return 3500;
     case 'free':
     default:
       return 0;

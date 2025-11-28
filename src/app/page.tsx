@@ -672,7 +672,7 @@ function Pricing({ onSignUp }: { onSignUp: () => void }) {
             </span>
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">プレミアム</h3>
             <p className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-1">
-              ¥480<span className="text-base sm:text-lg font-medium text-gray-500"> / 月</span>
+              ¥350<span className="text-base sm:text-lg font-medium text-gray-500"> / 月</span>
             </p>
             <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">本格的な資産管理に</p>
             <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-gray-700 mb-6 sm:mb-8">
