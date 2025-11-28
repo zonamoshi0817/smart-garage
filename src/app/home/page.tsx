@@ -89,21 +89,6 @@ export default function Home() {
   // プレミアムガード
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
 
-  // テスト用の車両データ（開発時のみ）
-  const testCars: Car[] = [
-    {
-      id: 'test1',
-      name: 'シビック（FL5）',
-      modelCode: 'RS200',
-      year: 2023,
-      odoKm: 10000,
-      imagePath: '/car.jpg',
-      deletedAt: null,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    }
-  ];
-
   // 認証状態を監視
   useEffect(() => {
     console.log("Setting up auth watcher...");
@@ -1107,84 +1092,95 @@ function DashboardContent({
           </div>
         )}
         
-              <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-                  <img
-                    src={car?.imagePath || "/car.jpg"}
-                    alt={car?.name || "My Car"}
-                    className="w-full h-44 md:h-full object-cover rounded-xl"
-                    onLoad={() => {
-                      // 画像読み込み完了時の処理
-                    }}
-                    onError={() => {
-                      // 画像読み込みエラー時の処理
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-bold">
-                      {car?.name || "シビック（FL5）"}
-                      {car?.modelCode ? `（${car.modelCode}）` : ""}
-                    </h2>
-                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                      <Spec label="グレード" value={car?.modelCode || "RS200"} />
-                      <Spec
-                        label="年式"
-                        value={car?.year ? `${car.year}年` : "2001年（平成13年）"}
-                      />
-                      <Spec
-                        label="走行距離"
-                        value={
-                          car?.odoKm
-                            ? `${car.odoKm.toLocaleString()} km`
-                            : "未設定"
-                        }
-                      />
-                      <Spec 
-                        label="車検期限" 
-                        value={
-                          car?.inspectionExpiry
-                            ? (car.inspectionExpiry.toDate ? car.inspectionExpiry.toDate() : new Date(car.inspectionExpiry as any)).toLocaleDateString('ja-JP', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })
-                            : "未設定"
-                        } 
-                      />
+              {car ? (
+                <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                    <img
+                      src={car.imagePath || "/car.jpg"}
+                      alt={car.name || "My Car"}
+                      className="w-full h-44 md:h-full object-cover rounded-xl"
+                      onLoad={() => {
+                        // 画像読み込み完了時の処理
+                      }}
+                      onError={() => {
+                        // 画像読み込みエラー時の処理
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-bold">
+                        {car.name}
+                        {car.modelCode ? `（${car.modelCode}）` : ""}
+                      </h2>
+                      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        <Spec label="グレード" value={car.modelCode || "未設定"} />
+                        <Spec
+                          label="年式"
+                          value={car.year ? `${car.year}年` : "未設定"}
+                        />
+                        <Spec
+                          label="走行距離"
+                          value={
+                            car.odoKm
+                              ? `${car.odoKm.toLocaleString()} km`
+                              : "未設定"
+                          }
+                        />
+                        <Spec 
+                          label="車検期限" 
+                          value={
+                            car.inspectionExpiry
+                              ? (car.inspectionExpiry.toDate ? car.inspectionExpiry.toDate() : new Date(car.inspectionExpiry as any)).toLocaleDateString('ja-JP', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })
+                              : "未設定"
+                          } 
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button 
+                        onClick={() => {
+                          console.log("Navigate to vehicle data, activeCarId:", activeCarId);
+                          setCurrentPage('my-car');
+                        }}
+                        className="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-500 flex-1 sm:flex-none"
+                      >
+                        📊 マイカーを見る
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowFuelLogModal(true);
+                        }}
+                        className="rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:bg-emerald-500 flex-1 sm:flex-none flex items-center justify-center gap-1.5"
+                      >
+                        <span>⛽</span>
+                        <span>給油を登録</span>
+                      </button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-              {!activeCarId ? (
-                <div className="text-sm text-gray-500 px-4 py-2">
-                  {cars.length === 0 ? "まず車を追加してください" : "車を選択してください"}
                 </div>
               ) : (
-                <>
-                  <button 
-                    onClick={() => {
-                      console.log("Navigate to vehicle data, activeCarId:", activeCarId);
-                      setCurrentPage('my-car');
-                    }}
-                    className="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-500 flex-1 sm:flex-none"
-                  >
-                    📊 マイカーを見る
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setShowFuelLogModal(true);
-                    }}
-                    className="rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:bg-emerald-500 flex-1 sm:flex-none flex items-center justify-center gap-1.5"
-                  >
-                    <span>⛽</span>
-                    <span>給油を登録</span>
-                  </button>
-                </>
-              )}
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <div className="text-gray-400 mb-4">
+                    <CarIcon className="h-16 w-16 mx-auto" />
                   </div>
+                  <p className="text-lg font-medium text-gray-700 mb-2">
+                    {cars.length === 0 ? "まず車を追加してください" : "車を選択してください"}
+                  </p>
+                  {cars.length === 0 && (
+                    <button
+                      onClick={() => setShowAddCarModal(true)}
+                      className="mt-4 rounded-xl bg-blue-600 text-white px-6 py-3 text-sm font-medium hover:bg-blue-500"
+                    >
+                      車を追加する
+                    </button>
+                  )}
                 </div>
-              </div>
+              )}
             </section>
 
             {/* メンテナンス、給油情報、カスタマイズ情報を3列に配置 */}
@@ -1273,21 +1269,38 @@ function DashboardContent({
             </div>
 
               {/* 最近の給油 */}
-              {car && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
-                  <SectionHeader
-                    title="最近の給油"
-                    right={
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
+                <SectionHeader
+                  title="最近の給油"
+                  right={
+                    car && fuelLogs.length > 0 && (
                       <button
                         onClick={() => setCurrentPage('fuel-logs')}
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                       >
                         詳細を見る →
                       </button>
-                    }
-                  />
-                  
-                  {fuelLogs.length > 0 ? (
+                    )
+                  }
+                />
+                
+                {!car ? (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 mb-4">
+                      <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
+                    <p className="text-gray-500 mb-4">まず車を追加してください</p>
+                    <button
+                      onClick={() => setShowAddCarModal(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      車を追加する
+                    </button>
+                  </div>
+                ) : car && fuelLogs.length > 0 ? (
                     <div className="space-y-4">
                       {/* 最新の給油情報 */}
                       <div className="bg-gray-50 rounded-lg p-4">
@@ -1433,26 +1446,25 @@ function DashboardContent({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                         </svg>
                       </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                  <p className="text-gray-500 mb-4">1件目の給油を記録しましょう</p>
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => activeCarId ? setShowFuelLogModal(true) : setCurrentPage('my-car')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                      給油を記録
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage('my-car')}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                    >
-                      マイカーで記録する
-                    </button>
-                  </div>
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
+                      <p className="text-gray-500 mb-4">1件目の給油を記録しましょう</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => activeCarId ? setShowFuelLogModal(true) : setCurrentPage('my-car')}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                        >
+                          給油を記録
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage('my-car')}
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                        >
+                          マイカーで記録する
+                        </button>
+                      </div>
+                    </div>
+                  )}
               </div>
-            )}
-                </div>
-              )}
 
               {/* カスタマイズ履歴 */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">

@@ -38,15 +38,32 @@ export async function POST(req: NextRequest) {
 
     // Firebase ID Token を検証
     let userUid: string;
+    let userEmail: string | undefined;
     try {
       const auth = getAdminAuth();
       const decodedToken = await auth.verifyIdToken(idToken);
       userUid = decodedToken.uid;
+      userEmail = decodedToken.email;
     } catch (error) {
       console.error('Failed to verify ID token:', error);
       return NextResponse.json(
         { error: 'Invalid authentication token.' },
         { status: 401 }
+      );
+    }
+
+    // 検証用アカウントのチェック（常に無料プラン）
+    const TEST_USER_EMAILS = (
+      process.env.NEXT_PUBLIC_TEST_USER_EMAILS?.split(',').map(e => e.trim()) || [
+        'kobayan0817@gmail.com',
+      ]
+    );
+    
+    if (userEmail && TEST_USER_EMAILS.includes(userEmail.toLowerCase())) {
+      console.log('[Checkout] Test user account detected, blocking checkout:', userEmail);
+      return NextResponse.json(
+        { error: 'このアカウントは検証用のため、プレミアムプランへのアップグレードはできません。' },
+        { status: 403 }
       );
     }
 

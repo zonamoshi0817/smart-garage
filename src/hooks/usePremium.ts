@@ -18,6 +18,15 @@ const DEVELOPER_EMAILS = (
   ]
 );
 
+// 検証用アカウント（常に無料プラン）
+// 環境変数またはハードコードで設定
+const TEST_USER_EMAILS = (
+  process.env.NEXT_PUBLIC_TEST_USER_EMAILS?.split(',').map(e => e.trim()) || [
+    'kobayan0817@gmail.com',
+    // 他の検証用メールアドレスをここに追加
+  ]
+);
+
 /**
  * プレミアムプランの状態を管理するフック
  */
@@ -33,6 +42,14 @@ export function usePremium() {
     // 認証状態の変化を監視
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (!user) {
+        setUserPlan('free');
+        setIsLoading(false);
+        return;
+      }
+
+      // 検証用アカウントは常に無料プラン（最優先）
+      if (user.email && TEST_USER_EMAILS.includes(user.email.toLowerCase())) {
+        console.log('[Premium] Test user account detected (always free):', user.email);
         setUserPlan('free');
         setIsLoading(false);
         return;
@@ -61,6 +78,14 @@ export function usePremium() {
         (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.data() as Partial<UserDocument>;
+            
+            // 検証用アカウントは常に無料プラン（Firestoreの値に関係なく）
+            if (user.email && TEST_USER_EMAILS.includes(user.email.toLowerCase())) {
+              console.log('[Premium] Test user account detected (always free, ignoring Firestore):', user.email);
+              setUserPlan('free');
+              setIsLoading(false);
+              return;
+            }
             
             // プラン情報を取得
             const plan = data.plan || 'free';
