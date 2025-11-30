@@ -8,6 +8,7 @@ import AuthGate from "@/components/AuthGate";
 import { addCar, watchCars, updateCar } from "@/lib/cars";
 import type { Car, CarInput } from "@/types";
 import { auth, watchAuth } from "@/lib/firebase";
+import type { User } from "firebase/auth";
 import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords } from "@/lib/maintenance";
 import type { MaintenanceRecord } from "@/types";
 import { downloadMaintenancePDF, type PDFExportOptions } from "@/lib/pdfExport";
@@ -77,6 +78,7 @@ export default function Home() {
   const [showShareAndPDFModal, setShowShareAndPDFModal] = useState(false);
   const [showOCRModal, setShowOCRModal] = useState(false);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
+  const [currentUser, setCurrentUser] = useState<User | null>(null); // 現在のユーザー情報
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications'>('dashboard');
   // 軽量トースト（成功フィードバック）
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -94,6 +96,9 @@ export default function Home() {
     console.log("Setting up auth watcher...");
     const unsubscribe = watchAuth((user) => {
       console.log("Auth state changed:", user ? `User: ${user.email}` : "No user");
+      // ユーザー情報をstateに保存
+      setCurrentUser(user);
+      
       if (user) {
         console.log("User authenticated, forcing data refresh");
         // 認証されたらデータをクリアして再取得を促す
@@ -508,22 +513,22 @@ export default function Home() {
           {/* サイドバー */}
           <aside className="lg:sticky lg:top-20 h-fit">
             <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3">
-              {auth.currentUser?.photoURL ? (
+              {currentUser?.photoURL ? (
                 <img 
-                  src={auth.currentUser.photoURL} 
-                  alt={auth.currentUser.displayName || auth.currentUser.email || 'User'} 
+                  src={currentUser.photoURL} 
+                  alt={currentUser.displayName || currentUser.email || 'User'} 
                   className="h-8 w-8 rounded-full object-cover"
                 />
               ) : (
                 <div className={`h-8 w-8 rounded-full grid place-items-center font-semibold text-sm ${
                   isPremiumPlan(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-blue-100 text-blue-600'
                 }`}>
-                  {auth.currentUser?.displayName?.[0] || auth.currentUser?.email?.[0]?.toUpperCase() || 'U'}
+                  {currentUser?.displayName?.[0] || currentUser?.email?.[0]?.toUpperCase() || 'U'}
                 </div>
               )}
               <div className="text-sm">
                 <div className="font-semibold">
-                  {auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'ユーザー'}
+                  {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ユーザー'}
                 </div>
                 <div className={`text-xs ${isPremiumPlan(userPlan) ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
                   {isPremiumPlan(userPlan) ? '✨ Premium プラン' : 'Free プラン'}
