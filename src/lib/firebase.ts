@@ -5,7 +5,7 @@ import {
   getAuth, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut,
   onAuthStateChanged, type User,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendPasswordResetEmail
+  sendPasswordResetEmail, updateProfile
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -166,6 +166,28 @@ export const resetPassword = async (email: string) => {
     console.log("Password reset email sent");
   } catch (error) {
     console.error("Password reset failed:", error);
+    throw error;
+  }
+};
+
+// ユーザープロフィール（表示名）を更新
+export const updateUserProfile = async (displayName: string) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('ユーザーがログインしていません');
+  }
+
+  try {
+    console.log("Attempting to update user profile...");
+    await updateProfile(user, {
+      displayName: displayName.trim() || null,
+    });
+    console.log("User profile updated successfully");
+    // プロフィール更新後、ユーザー情報を再読み込み
+    await user.reload();
+    return user;
+  } catch (error: any) {
+    console.error("Profile update failed:", error);
     throw error;
   }
 };

@@ -9,12 +9,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
+import { auth, updateUserProfile } from '@/lib/firebase';
 import { usePremium } from '@/hooks/usePremium';
 import { getPlanDisplayName } from '@/lib/plan';
 import DeleteAccountModal from '@/components/modals/DeleteAccountModal';
 import Logo from '@/components/common/Logo';
-import { AlertTriangle, User, Mail, Calendar, CreditCard } from 'lucide-react';
+import { AlertTriangle, User, Mail, Calendar, CreditCard, Edit2, Check, X, Loader2 } from 'lucide-react';
 
 export default function AccountPage() {
   const router = useRouter();
@@ -23,6 +23,10 @@ export default function AccountPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [createdAt, setCreatedAt] = useState<Date | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -32,10 +36,54 @@ export default function AccountPage() {
       if (currentUser?.metadata.creationTime) {
         setCreatedAt(new Date(currentUser.metadata.creationTime));
       }
+      
+      // 表示名を初期化
+      if (currentUser) {
+        setDisplayName(currentUser.displayName || '');
+      }
     });
 
     return () => unsubscribe();
   }, []);
+
+  const handleStartEditName = () => {
+    setDisplayName(user?.displayName || '');
+    setIsEditingName(true);
+    setNameError(null);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setDisplayName(user?.displayName || '');
+    setNameError(null);
+  };
+
+  const handleSaveName = async () => {
+    if (!user) return;
+
+    const trimmedName = displayName.trim();
+    
+    // バリデーション
+    if (trimmedName.length > 50) {
+      setNameError('名前は50文字以内で入力してください');
+      return;
+    }
+
+    setIsUpdatingName(true);
+    setNameError(null);
+
+    try {
+      await updateUserProfile(trimmedName);
+      // ユーザー情報を更新
+      setUser(auth.currentUser);
+      setIsEditingName(false);
+    } catch (error: any) {
+      console.error('Failed to update name:', error);
+      setNameError('名前の更新に失敗しました。もう一度お試しください。');
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
 
   if (isLoading || premiumLoading) {
     return (
@@ -86,6 +134,73 @@ export default function AccountPage() {
             </h2>
             
             <div className="space-y-4">
+              {/* 表示名 */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <User className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-gray-500 mb-1">表示名</div>
+                    {isEditingName ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          disabled={isUpdatingName}
+                          maxLength={50}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-base font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                          placeholder="表示名を入力"
+                          autoFocus
+                        />
+                        {nameError && (
+                          <p className="text-sm text-red-600">{nameError}</p>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleSaveName}
+                            disabled={isUpdatingName}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isUpdatingName ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                保存中...
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-4 w-4" />
+                                保存
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={handleCancelEditName}
+                            disabled={isUpdatingName}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <X className="h-4 w-4" />
+                            キャンセル
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-base font-medium text-gray-900 truncate">
+                          {user.displayName || user.email?.split('@')[0] || '未設定'}
+                        </div>
+                        <button
+                          onClick={handleStartEditName}
+                          className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                          編集
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between py-3 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   <Mail className="h-5 w-5 text-gray-400" />
