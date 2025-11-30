@@ -5,7 +5,8 @@ import {
   getAuth, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut,
   onAuthStateChanged, type User,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendPasswordResetEmail, updateProfile
+  sendPasswordResetEmail, updateProfile,
+  setPersistence, browserLocalPersistence
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -65,6 +66,15 @@ if (typeof window !== 'undefined') {
 
 // 認証とDBのインスタンスをexport
 export const auth = getAuth(app);
+
+// 認証状態をlocalStorageに永続化（ブラウザを閉じてもログイン状態を保持）
+// デフォルトでもLOCALパーシスタンスが使用されますが、明示的に設定することで確実にします
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('Failed to set auth persistence:', error);
+  });
+}
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export { app };
