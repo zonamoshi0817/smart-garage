@@ -21,7 +21,7 @@ function SuccessContent() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          router.push('/');
+          router.push('/home');
           return 0;
         }
         return prev - 1;
@@ -98,7 +98,7 @@ function SuccessContent() {
         {/* ボタン */}
         <div className="flex gap-4 justify-center">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/home')}
             className="rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 font-bold hover:shadow-lg transition"
           >
             今すぐ始める

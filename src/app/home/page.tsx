@@ -508,13 +508,23 @@ export default function Home() {
           {/* サイドバー */}
           <aside className="lg:sticky lg:top-20 h-fit">
             <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3">
-              <div className={`h-8 w-8 rounded-full grid place-items-center font-semibold text-sm ${
-                isPremiumPlan(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-blue-100 text-blue-600'
-              }`}>
-                小
-              </div>
+              {auth.currentUser?.photoURL ? (
+                <img 
+                  src={auth.currentUser.photoURL} 
+                  alt={auth.currentUser.displayName || auth.currentUser.email || 'User'} 
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className={`h-8 w-8 rounded-full grid place-items-center font-semibold text-sm ${
+                  isPremiumPlan(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-blue-100 text-blue-600'
+                }`}>
+                  {auth.currentUser?.displayName?.[0] || auth.currentUser?.email?.[0]?.toUpperCase() || 'U'}
+                </div>
+              )}
               <div className="text-sm">
-                <div className="font-semibold">小林 健太</div>
+                <div className="font-semibold">
+                  {auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'ユーザー'}
+                </div>
                 <div className={`text-xs ${isPremiumPlan(userPlan) ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
                   {isPremiumPlan(userPlan) ? '✨ Premium プラン' : 'Free プラン'}
                 </div>
@@ -610,6 +620,7 @@ export default function Home() {
                 setShowMaintenanceModal={setShowMaintenanceModal}
                 setShowFuelLogModal={setShowFuelLogModal}
                 setShowCustomizationModal={setShowCustomizationModal}
+                setShowAddCarModal={setShowAddCarModal}
               />
             ) : currentPage === 'my-car' ? (
               // 新しいマイカーページ（全車両を表示、売却済み・廃車済みはREAD ONLYモード）
@@ -930,7 +941,8 @@ function DashboardContent({
   setActiveCarId,
   setShowMaintenanceModal,
   setShowFuelLogModal,
-  setShowCustomizationModal
+  setShowCustomizationModal,
+  setShowAddCarModal
 }: {
   cars: Car[];
   activeCarId?: string;
@@ -943,6 +955,7 @@ function DashboardContent({
   setShowMaintenanceModal: (show: boolean) => void;
   setShowFuelLogModal: (show: boolean) => void;
   setShowCustomizationModal: (show: boolean) => void;
+  setShowAddCarModal: (show: boolean) => void;
 }) {
   // SEO/アクセシビリティ用のh1タグ（非表示）
   const pageTitle = `ホーム${car ? ' - ' + car.name : ' - garage log'}`;

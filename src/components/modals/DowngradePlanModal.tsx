@@ -44,19 +44,28 @@ export default function DowngradePlanModal({
 
       if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage = errorData.error || 'プラン変更に失敗しました';
+        let errorMessage = errorData.error || 'プラン変更に失敗しました';
         
         // 環境変数エラーの場合はより分かりやすいメッセージを表示
         if (errorMessage.includes('FIREBASE_SERVICE_ACCOUNT_BASE64') || 
             errorMessage.includes('サーバー設定エラー')) {
-          throw new Error('サーバー設定エラーが発生しました。しばらく時間をおいてから再度お試しください。');
+          errorMessage = 'サーバー設定エラーが発生しました。しばらく時間をおいてから再度お試しください。';
+        } else if (errorMessage.includes('User document not found')) {
+          // ユーザードキュメントが見つからない場合は、再試行を促す
+          errorMessage = 'ユーザー情報が見つかりませんでした。ページをリロードしてから再度お試しください。';
         }
         
         throw new Error(errorMessage);
       }
 
-      // 成功後、ページをリロードしてプラン情報を更新
-      window.location.reload();
+      // 成功後、モーダルを閉じる
+      // usePremiumフックのonSnapshotが自動的にFirestoreの更新を検知して反映する
+      // リロードは不要（onSnapshotがリアルタイムで更新を検知する）
+      onClose();
+      
+      // Firestoreの更新が反映されるまで少し待つ（onSnapshotが更新を検知する時間を確保）
+      // ただし、リロードはしない（onSnapshotが自動的に反映する）
+      // もし更新が反映されない場合は、ユーザーが手動でリロードできる
     } catch (err: any) {
       console.error('Plan downgrade error:', err);
       setError(err.message || 'プラン変更に失敗しました。もう一度お試しください。');

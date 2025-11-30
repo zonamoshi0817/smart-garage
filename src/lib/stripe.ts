@@ -17,7 +17,7 @@ if (!process.env.STRIPE_SECRET_KEY && process.env.NODE_ENV === 'production') {
  * API バージョンは最新の安定版を使用
  */
 export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-10-29.clover',
   typescript: true,
   // Stripe-Account ヘッダーを使用する場合はここで設定
   // stripeAccount: process.env.STRIPE_ACCOUNT_ID,
@@ -37,6 +37,10 @@ export async function createCheckoutSession({
   userUid: string;
   trialDays?: number;
 }) {
+  // APP_URLが設定されていない場合は、デフォルトでlocalhostを使用（開発環境）
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://garagelog.jp');
+  
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [
@@ -47,10 +51,16 @@ export async function createCheckoutSession({
     ],
     customer: customerId, // 既存の顧客がいる場合は再利用
     client_reference_id: userUid, // Firebase UID を紐付け
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing/cancel`,
+    success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${appUrl}/billing/cancel`,
     allow_promotion_codes: true, // プロモーションコードの入力を許可
     billing_address_collection: 'auto', // 住所情報を自動収集
+    // 3Dセキュア（EMV 3-D Secure）を有効化（日本では推奨/実質必須）
+    payment_method_options: {
+      card: {
+        request_three_d_secure: 'automatic', // 自動的に3Dセキュアを要求
+      },
+    },
     subscription_data: {
       trial_period_days: trialDays,
       // トライアル終了時の自動課金を設定
@@ -63,8 +73,8 @@ export async function createCheckoutSession({
         firebaseUid: userUid, // メタデータにも UID を保存
       },
     },
-    // Customer を新規作成する場合は metadata を設定
-    customer_creation: customerId ? undefined : 'always',
+    // subscription モードでは customer_creation は不要（自動的に作成される）
+    // customer_creation は payment モードでのみ使用可能
     metadata: {
       firebaseUid: userUid,
     },
@@ -87,9 +97,13 @@ export async function createPortalSession({
   customerId: string;
   returnUrl?: string;
 }) {
+  // APP_URLが設定されていない場合は、デフォルトでlocalhostを使用（開発環境）
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://garagelog.jp');
+  
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing`,
+    return_url: returnUrl || `${appUrl}/settings/billing`,
   });
 
   return session;

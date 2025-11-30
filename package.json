@@ -13,7 +13,14 @@
     "test:debug": "playwright test --debug",
     "vercel:env:check": "./scripts/check-vercel-env.sh",
     "vercel:env:ls": "vercel env ls",
-    "vercel:logs": "vercel logs --follow"
+    "vercel:logs": "vercel logs --follow",
+    "stripe:setup:check": "./scripts/check-stripe-setup.sh",
+    "stripe:create-products": "node scripts/create-stripe-products.js",
+    "stripe:verify-price": "node scripts/verify-stripe-price.js",
+    "stripe:verify-all": "node scripts/verify-all-prices.js",
+    "stripe:webhook:listen": "stripe listen --forward-to localhost:3000/api/stripe/webhook",
+    "firebase:setup": "./scripts/setup-firebase-admin.sh",
+    "env:setup": "./scripts/setup-env.sh"
   },
   "dependencies": {
     "@fontsource/noto-sans-jp": "^5.2.8",
@@ -41,6 +48,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^16.4.5",
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "tailwindcss": "^4",

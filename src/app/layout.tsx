@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GoogleAnalyticsComponent } from "@/components/GoogleAnalytics";
@@ -14,16 +14,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "GarageLog - クルマと、ずっといい関係。",
   description: "メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。",
   keywords: "車両管理,車メンテナンス,給油記録,カスタム記録,PDF出力,OCR,車歴書,整備記録",
   authors: [{ name: "GarageLog" }],
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-  },
   openGraph: {
     type: "website",
     locale: "ja_JP",

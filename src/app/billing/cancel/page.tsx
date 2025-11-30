@@ -68,7 +68,7 @@ export default function BillingCancelPage() {
         {/* ボタン */}
         <div className="flex gap-4 justify-center">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/home')}
             className="rounded-xl bg-blue-600 text-white px-8 py-3 font-bold hover:bg-blue-700 transition"
           >
             ホームに戻る

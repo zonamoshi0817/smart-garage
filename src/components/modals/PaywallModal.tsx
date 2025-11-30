@@ -134,10 +134,19 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
         }
         
         // サーバー設定エラーの場合
-        if (errorMessage.includes('FIREBASE_SERVICE_ACCOUNT') || errorMessage.includes('サーバー設定')) {
+        if (errorMessage.includes('FIREBASE_SERVICE_ACCOUNT') || errorMessage.includes('サーバー設定') || errorMessage.includes('Firebase Admin SDK')) {
           console.error('Server configuration error:', errorMessage);
           if (process.env.NODE_ENV === 'development') {
-            alert('サーバー設定エラーが発生しました。\n\n開発環境では、.env.localにFIREBASE_SERVICE_ACCOUNT_BASE64を設定する必要があります。\n\n本番環境では正常に動作します。');
+            alert(
+              '開発環境の設定が必要です。\n\n' +
+              'Stripe Checkoutを使用するには、.env.localに以下の環境変数を設定してください：\n\n' +
+              '1. FIREBASE_SERVICE_ACCOUNT_BASE64\n' +
+              '2. FIREBASE_PROJECT_ID\n' +
+              '3. STRIPE_SECRET_KEY\n' +
+              '4. NEXT_PUBLIC_PRICE_MONTHLY\n' +
+              '5. NEXT_PUBLIC_PRICE_YEARLY\n\n' +
+              '詳細は docs/STRIPE_CHECKOUT_SETUP.md を参照してください。'
+            );
           } else {
             alert('サーバー設定エラーが発生しました。管理者にお問い合わせください。');
           }

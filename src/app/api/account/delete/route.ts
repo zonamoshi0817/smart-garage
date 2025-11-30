@@ -96,8 +96,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('[Account Deletion] Error:', error);
+    // エラー内容を非表示にして、一般的なメッセージのみ返す（セキュリティ対策）
     return NextResponse.json(
-      { error: error.message || 'アカウント削除に失敗しました' },
+      { error: 'アカウント削除に失敗しました。しばらく待ってから再度お試しください。' },
       { status: 500 }
     );
   }

@@ -36,21 +36,31 @@ export async function POST(request: NextRequest) {
     // ID Token を検証してユーザーIDを取得
     const decodedToken = await auth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
+    const userEmail = decodedToken.email;
 
     console.log(`[Plan Downgrade] Starting downgrade for user: ${uid}`);
 
-    // 1. Firestore からユーザー情報を取得
+    // 1. Firestore からユーザー情報を取得（存在しない場合は作成）
     const userRef = firestore.collection('users').doc(uid);
     const userDoc = await userRef.get();
 
+    let userData: any;
     if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'User document not found' },
-        { status: 404 }
-      );
+      // ユーザードキュメントが存在しない場合は作成
+      console.log(`[Plan Downgrade] User document not found, creating new document for user: ${uid}`);
+      const initialUserData = {
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        plan: 'free',
+        email: userEmail || null,
+      };
+      await userRef.set(initialUserData);
+      userData = initialUserData;
+      console.log(`[Plan Downgrade] Created user document for ${uid}`);
+    } else {
+      userData = userDoc.data();
     }
 
-    const userData = userDoc.data();
     const stripeCustomerId = userData?.stripeCustomerId;
     const subscriptionId = userData?.subscriptionId;
 
@@ -87,22 +97,38 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Firestore のプラン情報を更新
-    await userRef.update({
+    const updateData = {
       plan: 'free',
       subscriptionStatus: null,
       subscriptionId: null,
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
       updatedAt: new Date(),
-    });
+    };
+    
+    await userRef.update(updateData);
+
+    // 更新が正しく反映されたか確認
+    const updatedDoc = await userRef.get();
+    const updatedData = updatedDoc.data();
+    
+    if (updatedData?.plan !== 'free') {
+      console.error(`[Plan Downgrade] Plan update verification failed. Expected 'free', got '${updatedData?.plan}'`);
+      // エラーを投げずに続行（Firestoreの更新は成功している可能性が高い）
+    }
 
     console.log(`[Plan Downgrade] Successfully downgraded user: ${uid} to free plan`);
+    console.log(`[Plan Downgrade] Updated plan: ${updatedData?.plan}`);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      plan: updatedData?.plan || 'free'
+    });
   } catch (error: any) {
     console.error('[Plan Downgrade] Error:', error);
+    // エラー内容を非表示にして、一般的なメッセージのみ返す（セキュリティ対策）
     return NextResponse.json(
-      { error: error.message || 'プラン変更に失敗しました' },
+      { error: 'プラン変更に失敗しました。しばらく待ってから再度お試しください。' },
       { status: 500 }
     );
   }

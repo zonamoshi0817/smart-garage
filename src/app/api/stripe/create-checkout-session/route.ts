@@ -21,18 +21,26 @@ export async function POST(req: NextRequest) {
       idToken: string;
     };
 
-    // バリデーション
-    if (!plan || !['monthly', 'yearly'].includes(plan)) {
+    // バリデーション（XSS対策、SQLインジェクション対策）
+    if (!plan || typeof plan !== 'string' || !['monthly', 'yearly'].includes(plan)) {
       return NextResponse.json(
-        { error: 'Invalid plan. Must be "monthly" or "yearly".' },
+        { error: '無効なプランです。' },
         { status: 400 }
       );
     }
 
-    if (!idToken) {
+    if (!idToken || typeof idToken !== 'string' || idToken.length > 2000) {
       return NextResponse.json(
-        { error: 'Authentication required. Please provide idToken.' },
+        { error: '認証が必要です。' },
         { status: 401 }
+      );
+    }
+
+    // customerIdのバリデーション（オプション）
+    if (customerId && (typeof customerId !== 'string' || customerId.length > 200)) {
+      return NextResponse.json(
+        { error: '無効な顧客IDです。' },
+        { status: 400 }
       );
     }
 
@@ -136,8 +144,39 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Failed to create checkout session:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      type: error.type,
+      stack: error.stack,
+    });
+    
+    // 開発環境ではより詳細なエラー情報を返す
+    if (process.env.NODE_ENV === 'development') {
+      let errorMessage = '決済セッションの作成に失敗しました。';
+      
+      if (error.message) {
+        errorMessage += `\n\nエラー詳細: ${error.message}`;
+      }
+      
+      if (error.code) {
+        errorMessage += `\nエラーコード: ${error.code}`;
+      }
+      
+      // Stripe関連のエラーの場合
+      if (error.type && error.type.startsWith('Stripe')) {
+        errorMessage += '\n\nStripe APIエラーが発生しました。環境変数STRIPE_SECRET_KEYが正しく設定されているか確認してください。';
+      }
+      
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 500 }
+      );
+    }
+    
+    // 本番環境では一般的なメッセージのみ返す（セキュリティ対策）
     return NextResponse.json(
-      { error: error.message || 'Failed to create checkout session' },
+      { error: '決済セッションの作成に失敗しました。しばらく待ってから再度お試しください。' },
       { status: 500 }
     );
   }
