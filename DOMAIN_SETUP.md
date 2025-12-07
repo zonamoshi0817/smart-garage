@@ -72,11 +72,46 @@ Stripe Dashboard でリダイレクトURLを更新：
 
 ### 3.3 Firebase設定の更新
 
+#### 3.3.1 Firebase Hostingにカスタムドメインを追加
+
+1. Firebase Console を開く
+   - https://console.firebase.google.com/project/smart-garage-74ad1
+
+2. Hosting → カスタムドメインを追加
+   - 「カスタムドメインを追加」をクリック
+   - `garagelog.jp` を入力
+   - 指示に従ってDNS設定を追加（AレコードまたはCNAMEレコード）
+   - 所有権を確認（数分〜数時間かかる場合があります）
+
+#### 3.3.2 Firebase Authenticationの承認済みドメイン
+
 Firebase Console → Authentication → Settings → Authorized domains
 
 以下を追加：
 - `garagelog.jp`
 - `www.garagelog.jp`
+
+#### 3.3.3 Google OAuthのリダイレクトURI更新
+
+Google Cloud Console → APIとサービス → 認証情報
+
+1. OAuth 2.0クライアントIDを選択
+2. 「承認済みのリダイレクトURI」に以下を追加：
+   - `https://garagelog.jp/__/auth/handler`
+
+#### 3.3.4 Firebase SDKの環境変数を更新
+
+**Vercel環境変数:**
+```
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=garagelog.jp
+```
+
+**ローカル環境 (.env.local):**
+```
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=garagelog.jp
+```
+
+⚠️ **重要**: `smart-garage-74ad1.firebaseapp.com` から `garagelog.jp` に変更することで、認証画面のURLが「ガレージログに移動」と表示されるようになります。
 
 ---
 
