@@ -45,12 +45,15 @@ export function isSubscriptionActive(status: SubscriptionStatus): boolean {
 /**
  * プランの表示名を取得
  */
-export function getPlanDisplayName(plan: Plan): string {
+export function getPlanDisplayName(plan: Plan | 'premium'): string {
   switch (plan) {
     case 'premium_monthly':
       return 'プレミアム（月額）';
     case 'premium_yearly':
       return 'プレミアム（年額）';
+    case 'premium':
+      // 後方互換性のため、'premium' は 'premium_monthly' として扱う
+      return 'プレミアム（月額）';
     case 'free':
     default:
       return '無料プラン';
