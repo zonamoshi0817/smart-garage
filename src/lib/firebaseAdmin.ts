@@ -50,13 +50,24 @@ function initializeFirebaseAdmin(): App {
     const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
     const serviceAccount = JSON.parse(serviceAccountJson);
 
-    // Firebase Admin を初期化
+    // Service Account JSON内のproject_idと環境変数のprojectIdが一致しているか確認
+    const serviceAccountProjectId = serviceAccount.project_id;
+    if (serviceAccountProjectId && serviceAccountProjectId !== projectId) {
+      console.warn('Project ID mismatch:', {
+        serviceAccountProjectId,
+        envProjectId: projectId,
+      });
+      // Service Account JSON内のproject_idを優先する
+      console.log('Using project_id from Service Account JSON:', serviceAccountProjectId);
+    }
+
+    // Firebase Admin を初期化（Service Account JSON内のproject_idを優先）
     const app = initializeApp({
       credential: cert(serviceAccount),
-      projectId,
+      projectId: serviceAccountProjectId || projectId,
     });
     
-    console.log('Firebase Admin initialized successfully');
+    console.log('Firebase Admin initialized successfully with projectId:', serviceAccountProjectId || projectId);
     return app;
   } catch (error: any) {
     console.error('Failed to initialize Firebase Admin:', {

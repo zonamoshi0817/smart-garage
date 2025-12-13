@@ -15,11 +15,14 @@ export async function POST(req: NextRequest) {
   try {
     // リクエストボディをパース
     const body = await req.json();
-    const { plan, customerId, idToken } = body as {
+    const { plan, customerId, idToken: rawIdToken } = body as {
       plan: 'monthly' | 'yearly';
       customerId?: string;
       idToken: string;
     };
+    
+    // ID Tokenの前後の空白を削除
+    let idToken = typeof rawIdToken === 'string' ? rawIdToken.trim() : rawIdToken;
 
     // バリデーション（XSS対策、SQLインジェクション対策）
     if (!plan || typeof plan !== 'string' || !['monthly', 'yearly'].includes(plan)) {
@@ -75,9 +78,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // ID Tokenの前後の空白を削除
-      idToken = idToken.trim();
-
       // ID Tokenの形式を確認（JWT形式: header.payload.signature）
       if (idToken.split('.').length !== 3) {
         console.error('Invalid ID Token format:', {
@@ -113,18 +113,41 @@ export async function POST(req: NextRequest) {
       console.error('Error details:', {
         message: error.message,
         code: error.code,
+        name: error.name,
         idTokenLength: idToken?.length,
-        idTokenPrefix: idToken?.substring(0, 20),
+        idTokenPrefix: idToken?.substring(0, 30),
+        idTokenParts: idToken?.split('.').length,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n'),
       });
+
+      // Firebase Admin SDKの初期化状態を確認
+      try {
+        const testAuth = getAdminAuth();
+        console.log('Firebase Admin Auth initialized successfully');
+      } catch (authError: any) {
+        console.error('Firebase Admin Auth initialization error:', authError);
+      }
       
       // より詳細なエラーメッセージを返す
-      let errorMessage = 'Invalid authentication token.';
+      let errorMessage = '認証トークンの検証に失敗しました。';
+      
       if (error.code === 'auth/id-token-expired') {
         errorMessage = '認証トークンの有効期限が切れています。再度ログインしてください。';
       } else if (error.code === 'auth/argument-error') {
-        errorMessage = '認証トークンの形式が正しくありません。';
+        // argument-errorの場合、より詳細な情報をログに出力
+        console.error('Auth argument error - possible causes:', {
+          tokenLength: idToken?.length,
+          tokenParts: idToken?.split('.').length,
+          tokenFormat: idToken?.match(/^[A-Za-z0-9\-_.]+$/g) ? 'valid chars' : 'invalid chars',
+          projectId: process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        });
+        errorMessage = '認証トークンの形式が正しくありません。ページをリロードして再度お試しください。';
+      } else if (error.code === 'auth/project-not-found') {
+        errorMessage = 'Firebaseプロジェクトが見つかりません。サーバー設定を確認してください。';
       } else if (error.message?.includes('FIREBASE_SERVICE_ACCOUNT_BASE64')) {
         errorMessage = 'サーバー設定エラーが発生しました。開発環境では環境変数の設定が必要です。';
+      } else if (error.message?.includes('project')) {
+        errorMessage = 'Firebaseプロジェクトの設定に問題があります。管理者にお問い合わせください。';
       }
       
       return NextResponse.json(
