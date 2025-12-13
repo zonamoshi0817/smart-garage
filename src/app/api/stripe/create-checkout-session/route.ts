@@ -171,16 +171,58 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Stripe環境変数の確認
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY is not set in environment variables');
+      return NextResponse.json(
+        { error: '決済機能の設定が完了していません。管理者にお問い合わせください。' },
+        { status: 500 }
+      );
+    }
+
     // Price ID を取得
-    const priceId = getPriceId(plan);
+    let priceId: string;
+    try {
+      priceId = getPriceId(plan);
+    } catch (priceError: any) {
+      console.error('Failed to get Price ID:', priceError);
+      return NextResponse.json(
+        { error: `プランの価格IDが設定されていません: ${plan}` },
+        { status: 500 }
+      );
+    }
+    
+    console.log('Creating checkout session:', {
+      plan,
+      priceId,
+      userUid,
+      hasCustomerId: !!customerId,
+      stripeKeySet: !!process.env.STRIPE_SECRET_KEY,
+      priceMonthly: process.env.NEXT_PUBLIC_PRICE_MONTHLY,
+      priceYearly: process.env.NEXT_PUBLIC_PRICE_YEARLY,
+    });
 
     // Checkout セッションを作成
-    const session = await createCheckoutSession({
-      priceId,
-      customerId,
-      userUid,
-      trialDays: 7, // 7日間無料トライアル
-    });
+    let session;
+    try {
+      session = await createCheckoutSession({
+        priceId,
+        customerId,
+        userUid,
+        trialDays: 7, // 7日間無料トライアル
+      });
+    } catch (stripeError: any) {
+      console.error('Stripe Checkout Session creation failed:', {
+        message: stripeError.message,
+        code: stripeError.code,
+        type: stripeError.type,
+        statusCode: stripeError.statusCode,
+        requestId: stripeError.requestId,
+        priceId,
+        userUid,
+      });
+      throw stripeError;
+    }
 
     // Checkout URL を返す
     return NextResponse.json({
@@ -193,7 +235,9 @@ export async function POST(req: NextRequest) {
       message: error.message,
       code: error.code,
       type: error.type,
-      stack: error.stack,
+      statusCode: error.statusCode,
+      requestId: error.requestId,
+      stack: error.stack?.split('\n').slice(0, 10).join('\n'),
     });
     
     // 開発環境ではより詳細なエラー情報を返す
