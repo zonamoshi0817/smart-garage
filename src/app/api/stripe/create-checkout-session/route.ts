@@ -74,6 +74,28 @@ export async function POST(req: NextRequest) {
           { status: 401 }
         );
       }
+
+      // ID Tokenの前後の空白を削除
+      idToken = idToken.trim();
+
+      // ID Tokenの形式を確認（JWT形式: header.payload.signature）
+      if (idToken.split('.').length !== 3) {
+        console.error('Invalid ID Token format:', {
+          length: idToken.length,
+          parts: idToken.split('.').length,
+          prefix: idToken.substring(0, 30),
+        });
+        return NextResponse.json(
+          { error: '認証トークンの形式が正しくありません。' },
+          { status: 401 }
+        );
+      }
+      
+      console.log('Verifying ID Token:', {
+        length: idToken.length,
+        parts: idToken.split('.').length,
+        prefix: idToken.substring(0, 30),
+      });
       
       const decodedToken = await auth.verifyIdToken(idToken);
       userUid = decodedToken.uid;

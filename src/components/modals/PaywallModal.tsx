@@ -104,11 +104,31 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
       }
 
       // 強制的に新しいトークンを取得（trueを渡すと強制リフレッシュ）
-      const idToken = await user.getIdToken(true);
+      let idToken = await user.getIdToken(true);
 
       if (!idToken) {
         throw new Error('ID Tokenの取得に失敗しました。再度ログインしてください。');
       }
+
+      // ID Tokenの前後の空白を削除（改行やスペースが含まれている可能性がある）
+      idToken = idToken.trim();
+
+      // ID Tokenの形式を確認（JWT形式: header.payload.signature）
+      if (!idToken || typeof idToken !== 'string' || idToken.split('.').length !== 3) {
+        console.error('Invalid ID Token format:', {
+          hasToken: !!idToken,
+          type: typeof idToken,
+          length: idToken?.length,
+          parts: idToken?.split('.').length,
+        });
+        throw new Error('ID Tokenの形式が正しくありません。ページをリロードして再度お試しください。');
+      }
+
+      console.log('ID Token obtained:', {
+        length: idToken.length,
+        parts: idToken.split('.').length,
+        prefix: idToken.substring(0, 20),
+      });
 
       // Checkout セッションを作成
       const response = await fetch('/api/stripe/create-checkout-session', {
