@@ -23,14 +23,26 @@ function initializeFirebaseAdmin(): App {
 
   // 環境変数から Service Account を取得
   const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+  // デバッグ用: 環境変数の存在確認（値はログに出力しない）
+  console.log('Firebase Admin initialization check:', {
+    hasServiceAccount: !!serviceAccountBase64,
+    hasProjectId: !!projectId,
+    projectId: projectId || 'MISSING',
+    nodeEnv: process.env.NODE_ENV,
+  });
 
   if (!serviceAccountBase64) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_BASE64 is not set in environment variables');
+    const error = new Error('FIREBASE_SERVICE_ACCOUNT_BASE64 is not set in environment variables');
+    console.error('Firebase Admin initialization error:', error.message);
+    throw error;
   }
 
   if (!projectId) {
-    throw new Error('FIREBASE_PROJECT_ID is not set in environment variables');
+    const error = new Error('FIREBASE_PROJECT_ID is not set in environment variables');
+    console.error('Firebase Admin initialization error:', error.message);
+    throw error;
   }
 
   try {
@@ -39,13 +51,26 @@ function initializeFirebaseAdmin(): App {
     const serviceAccount = JSON.parse(serviceAccountJson);
 
     // Firebase Admin を初期化
-    return initializeApp({
+    const app = initializeApp({
       credential: cert(serviceAccount),
       projectId,
     });
-  } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
-    throw new Error('Failed to initialize Firebase Admin SDK');
+    
+    console.log('Firebase Admin initialized successfully');
+    return app;
+  } catch (error: any) {
+    console.error('Failed to initialize Firebase Admin:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack?.split('\n').slice(0, 5).join('\n'),
+    });
+    
+    // より詳細なエラーメッセージ
+    if (error.message?.includes('JSON')) {
+      throw new Error('Failed to parse Firebase Service Account JSON. Please check FIREBASE_SERVICE_ACCOUNT_BASE64 format.');
+    }
+    
+    throw new Error(`Failed to initialize Firebase Admin SDK: ${error.message}`);
   }
 }
 
