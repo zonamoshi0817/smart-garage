@@ -4,9 +4,28 @@
 
 ---
 
+## ⚠️ 重要: 設定順序
+
+**Firebase Hostingにカスタムドメインを設定する前に環境変数を変更すると、認証が動作しなくなります。**
+
+`authDomain` を `garagelog.jp` に変更する前に、必ず以下を完了してください：
+1. ✅ Firebase Hostingにカスタムドメイン `garagelog.jp` を追加（必須）
+2. ✅ Firebase Authenticationの承認済みドメインに `garagelog.jp` を追加
+3. ✅ Google OAuthのリダイレクトURIを更新
+4. ✅ 環境変数を更新（最後に実行）
+
+**現在404エラーが出ている場合:**
+- 環境変数は既に `garagelog.jp` に設定済み
+- Firebase Hostingの設定が未完了の可能性が高い
+- まずはステップ1（Firebase Hosting設定）を完了してください
+
+---
+
 ## 概要
 
 Firebase Authenticationの認証画面に表示されるURLを変更するには、Firebase Hostingにカスタムドメインを設定し、環境変数を更新する必要があります。
+
+Firebase Authenticationは、`authDomain` で指定されたドメインで認証用のエンドポイント（`/__/auth/iframe` など）を提供します。このドメインがFirebase Hostingに設定されていない場合、404エラーが発生します。
 
 ---
 
@@ -27,18 +46,53 @@ Firebase Authenticationの認証画面に表示されるURLを変更するには
    - 「続行」をクリック
 
 4. **DNS設定を追加**
-   - Firebaseが提示するDNSレコードをコピー
-   - 通常は以下のいずれか：
-     - **Aレコード**: `@` → IPアドレス
-     - **CNAMEレコード**: `@` → Firebase Hostingのドメイン
+   - 「続行」をクリックすると、次の画面でDNS設定の指示が表示されます
+   - 画面には以下のような情報が表示されます：
+     - **タイプ**: Aレコード または CNAMEレコード
+     - **ホスト名**: `@` または空白（ドメイン直下の場合）
+     - **値**: IPアドレス または Firebase Hostingのドメイン
+   
+   **例：Aレコードの場合**
+   ```
+   タイプ: A
+   ホスト名: @
+   値: 151.101.1.195 (例: Firebaseが提示するIPアドレス)
+   ```
+   
+   **例：CNAMEレコードの場合**
+   ```
+   タイプ: CNAME
+   ホスト名: @
+   値: garagelog.jp.cdn.cloudflare.net (例: Firebaseが提示するドメイン)
+   ```
+   
+   - これらの値をコピーして控えておいてください
 
-5. **ドメインレジストラでDNS設定**
-   - お名前.com / ムームードメインなどでDNS設定を追加
-   - 反映まで数分〜数時間かかる場合があります
+5. **ドメインレジストラでDNS設定を追加**
+   
+   **お名前.comの場合:**
+   1. お名前.com Naviにログイン
+   2. 「ドメイン」→「ドメイン設定」を選択
+   3. `garagelog.jp` を選択
+   4. 「DNSレコード設定」をクリック
+   5. Firebaseが提示したタイプ（AレコードまたはCNAMEレコード）を選択
+   6. ホスト名: `@` を入力（または空白）
+   7. 値: Firebaseが提示したIPアドレスまたはドメインを入力
+   8. 「追加」をクリック
+   
+   **ムームードメインの場合:**
+   1. ムームードメインのコントロールパネルにログイン
+   2. 「ドメイン設定」→「DNS設定」を選択
+   3. `garagelog.jp` を選択
+   4. 「DNSレコード設定を利用する」を選択
+   5. Firebaseが提示したタイプを選択
+   6. ホスト名と値を入力して保存
 
 6. **所有権の確認**
-   - Firebase Consoleで「確認」ボタンをクリック
-   - 設定が正しければ「接続済み」と表示されます
+   - DNS設定を追加した後、反映まで数分〜数時間かかります
+   - Firebase Consoleの画面に「確認」または「検証」ボタンが表示されます
+   - ボタンをクリックして所有権を確認
+   - 設定が正しければ「接続済み」または「確認済み」と表示されます
 
 ---
 
@@ -81,24 +135,41 @@ Firebase Authenticationの認証画面に表示されるURLを変更するには
 
 1. **クライアントIDをクリック**
    - OAuth 2.0クライアントIDの行をクリック（名前または右側の編集アイコン）
+   - または、「Web client (auto created by Google Service)」という名前のクライアントを選択
 
-2. **承認済みのリダイレクトURIを確認**
+2. **承認済みのJavaScript生成元を追加（重要）**
+   - 画面の「承認済みのJavaScript生成元」セクションを探す
+   - 現在、以下のような生成元が設定されている可能性があります:
+     - `http://localhost`
+     - `http://localhost:5000`
+     - `https://smart-garage-74ad1.firebaseapp.com`
+   
+   **新しい生成元を追加:**
+   - 「+ URI を追加」ボタンをクリック
+   - 入力フィールドに以下を入力:
+     ```
+     https://garagelog.jp
+     ```
+   - 注意: 末尾の `/` は不要です。`https://` で始まる必要があります
+
+3. **承認済みのリダイレクトURIを追加**
    - 画面を下にスクロールして「承認済みのリダイレクト URI」セクションを探す
    - 現在、以下のようなURIが設定されている可能性があります:
      - `https://smart-garage-74ad1.firebaseapp.com/__/auth/handler`
      - `http://localhost:3000/__/auth/handler` (開発環境用)
-
-3. **新しいURIを追加**
-   - 「URI を追加」または「+ URI を追加」ボタンをクリック
+   
+   **新しいURIを追加:**
+   - 「+ URI を追加」または「URI を追加」ボタンをクリック
    - 入力フィールドに以下を入力:
      ```
      https://garagelog.jp/__/auth/handler
      ```
-   - 注意: 末尾の `/` は不要です
+   - 注意: 末尾の `/` は不要です。完全なURIを入力してください
 
-4. **既存のURIは残す**
-   - 既存の `smart-garage-74ad1.firebaseapp.com` のURIは削除しない
-   - 後方互換性のため、両方を保持します
+4. **既存の設定は残す**
+   - 既存の `smart-garage-74ad1.firebaseapp.com` の設定は削除しない
+   - `localhost` の設定も開発環境で必要なので残してください
+   - 後方互換性のため、すべての設定を保持します
 
 #### 3.4 保存
 
@@ -244,6 +315,41 @@ Firebase Authenticationのメールテンプレートもカスタムドメイン
 1. `dig garagelog.jp` または `nslookup garagelog.jp` でDNS設定を確認
 2. Firebase Consoleで提示されたDNSレコードと一致しているか確認
 3. DNS反映まで最大48時間かかる場合があります
+
+### 404エラー: `/__/auth/iframe` が見つからない
+
+**エラーメッセージ例**:
+```
+GET https://garagelog.jp/__/auth/iframe?apiKey=... 404 (Not Found)
+Firebase: Error (auth/popup-closed-by-user)
+```
+
+**原因**: Firebase Hostingにカスタムドメイン `garagelog.jp` が設定されていない、または接続されていない
+
+**解決方法**:
+1. **Firebase Console → Hosting** を開く
+   - https://console.firebase.google.com/project/smart-garage-74ad1/hosting
+
+2. **カスタムドメインの状態を確認**
+   - `garagelog.jp` がドメインリストに表示されているか確認
+   - 状態が「未接続」「確認待ち」「DNS設定待ち」の場合は、設定を完了してください
+   - 「接続済み」と表示されている場合は、以下を確認：
+     - DNS設定が正しく反映されているか
+     - SSL証明書が発行されているか（数分〜数時間かかることがあります）
+
+3. **DNS設定が反映されていない場合**
+   - ドメインレジストラでDNS設定を追加した後、反映まで最大48時間かかる場合があります
+   - `dig garagelog.jp` または `nslookup garagelog.jp` でDNS設定を確認
+   - Firebase Consoleで提示されたDNSレコードと一致しているか確認
+
+4. **「接続済み」になっているのに404エラーが出る場合**
+   - ブラウザのキャッシュをクリア
+   - 数分待ってから再度試す（SSL証明書の発行を待つ）
+   - `https://garagelog.jp` に直接アクセスして、Firebase Hostingが動作しているか確認
+
+**一時的な回避策**（本番環境で認証が必要な場合）:
+- 環境変数を一時的に `smart-garage-74ad1.firebaseapp.com` に戻す
+- Firebase Hostingの設定が完了したら、再度 `garagelog.jp` に変更
 
 ---
 

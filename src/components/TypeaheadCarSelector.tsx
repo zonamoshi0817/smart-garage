@@ -135,10 +135,10 @@ export default function TypeaheadCarSelector({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col min-h-0">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between p-6 pb-0">
+        <div className="flex items-center justify-between p-6 pb-0 flex-shrink-0">
           <h2 className="text-xl font-bold text-gray-900">車両情報入力</h2>
           <button
             onClick={onClose}
@@ -149,7 +149,7 @@ export default function TypeaheadCarSelector({
         </div>
 
         {/* 進捗インジケーター */}
-        <div className="flex items-center justify-center mb-6 px-6">
+        <div className="flex items-center justify-center mb-6 px-6 flex-shrink-0">
           <div className="flex items-center space-x-2">
             {['manufacturer', 'model', 'year', 'inspection'].map((stepName, index) => (
               <div key={stepName} className="flex items-center">
@@ -179,7 +179,7 @@ export default function TypeaheadCarSelector({
         </div>
 
         {/* スクロール可能なメインコンテンツ */}
-        <div className="flex-1 overflow-y-auto px-6">
+        <div className="flex-1 overflow-y-scroll overflow-x-hidden px-6 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {getStepTitle()}
@@ -191,7 +191,7 @@ export default function TypeaheadCarSelector({
           {/* メーカー選択 */}
           {step === 'manufacturer' && (
             <div className="space-y-3">
-              <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
+              <div className="max-h-80 overflow-y-scroll overflow-x-hidden border border-gray-200 rounded-lg" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {carDatabase.map((manufacturer, index) => (
                   <button
                     key={index}
@@ -225,7 +225,7 @@ export default function TypeaheadCarSelector({
           {/* 車種選択 */}
           {step === 'model' && selectedManufacturer && (
             <div className="space-y-3">
-              <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
+              <div className="max-h-80 overflow-y-scroll overflow-x-hidden border border-gray-200 rounded-lg" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {selectedManufacturer.models.map((model, index) => (
                   <button
                     key={index}
@@ -264,7 +264,7 @@ export default function TypeaheadCarSelector({
           {/* 年式選択 */}
           {step === 'year' && (
             <div className="space-y-3">
-              <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto">
+              <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-scroll overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {yearOptions.map((year) => (
                   <button
                     key={year}
@@ -296,11 +296,10 @@ export default function TypeaheadCarSelector({
               </div>
             </div>
           )}
-        </div>
 
           {/* 選択内容の確認 */}
           {(selectedManufacturer || selectedModel || selectedYear) && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <div className="mt-6 mb-6 p-4 bg-blue-50 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2">選択内容</h4>
               <div className="space-y-1 text-sm text-blue-800">
                 {selectedManufacturer && (
@@ -318,10 +317,11 @@ export default function TypeaheadCarSelector({
               </div>
             </div>
           )}
+          </div>
         </div>
 
         {/* 固定ボタン */}
-        <div className="p-6 pt-0 border-t border-gray-200">
+        <div className="p-6 pt-0 border-t border-gray-200 flex-shrink-0">
           <div className="flex gap-3">
             {step !== 'manufacturer' && (
               <button
