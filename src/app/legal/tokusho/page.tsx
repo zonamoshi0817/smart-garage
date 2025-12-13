@@ -17,19 +17,19 @@ export default function TokushoPage() {
           {/* 販売事業者 */}
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3">販売事業者</h2>
-            <p className="text-gray-700">【事業者名を記載】</p>
+            <p className="text-gray-700">garage log</p>
           </section>
 
           {/* 運営統括責任者 */}
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3">運営統括責任者</h2>
-            <p className="text-gray-700">【責任者名を記載】</p>
+            <p className="text-gray-700">小林健太</p>
           </section>
 
           {/* 所在地 */}
           <section>
             <h2 className="text-xl font-bold text-gray-900 mb-3">所在地</h2>
-            <p className="text-gray-700">【住所を記載】</p>
+            <p className="text-gray-700">東京都練馬区光が丘３−９−３</p>
           </section>
 
           {/* 連絡先 */}

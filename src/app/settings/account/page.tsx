@@ -9,12 +9,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth, updateUserProfile } from '@/lib/firebase';
+import { auth, updateUserProfile, db } from '@/lib/firebase';
 import { usePremium } from '@/hooks/usePremium';
 import { getPlanDisplayName } from '@/lib/plan';
 import DeleteAccountModal from '@/components/modals/DeleteAccountModal';
 import Logo from '@/components/common/Logo';
 import { AlertTriangle, User, Mail, Calendar, CreditCard, Edit2, Check, X, Loader2 } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { timestampToDate } from '@/lib/converters';
 
 export default function AccountPage() {
   const router = useRouter();
@@ -29,21 +31,125 @@ export default function AccountPage() {
   const [nameError, setNameError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      // コンポーネントがアンマウントされている場合は処理をスキップ
+      if (!isMounted) return;
+      
       setUser(currentUser);
-      setIsLoading(false);
       
-      if (currentUser?.metadata.creationTime) {
-        setCreatedAt(new Date(currentUser.metadata.creationTime));
-      }
-      
-      // 表示名を初期化
       if (currentUser) {
+        // 表示名を初期化
         setDisplayName(currentUser.displayName || '');
+        
+        // Firestoreから作成日時を取得（非同期処理を別関数に分離）
+        const fetchCreationDate = async () => {
+          try {
+            // まずFirestoreのユーザードキュメントから作成日時を取得を試みる
+            try {
+              const userDocRef = doc(db, 'users', currentUser.uid);
+              const userDoc = await getDoc(userDocRef);
+              
+              if (!isMounted) return;
+              
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                // FirestoreのcreatedAtフィールドを確認
+                if (userData.createdAt) {
+                  const firestoreDate = timestampToDate(userData.createdAt);
+                  if (firestoreDate && !isNaN(firestoreDate.getTime())) {
+                    const now = new Date();
+                    // 未来の日付でないことを確認
+                    if (firestoreDate <= now) {
+                      console.log('Using creation date from Firestore:', firestoreDate);
+                      if (isMounted) {
+                        setCreatedAt(firestoreDate);
+                        setIsLoading(false);
+                      }
+                      return;
+                    } else {
+                      console.warn('Firestore creation date is in the future, ignoring:', firestoreDate);
+                    }
+                  }
+                }
+              }
+            } catch (firestoreError: any) {
+              // Firestoreエラーはログに記録するが、処理は続行
+              console.error('Error fetching user document from Firestore:', firestoreError);
+              // 権限エラーの場合などはFirebase Authのmetadataを使用
+            }
+            
+            if (!isMounted) return;
+            
+            // Firestoreにない、または無効な場合はFirebase Authenticationのmetadataから取得
+            if (currentUser?.metadata.creationTime) {
+              const creationTimeStr = currentUser.metadata.creationTime;
+              const parsedDate = new Date(creationTimeStr);
+              
+              // デバッグ: 日付のパースを確認
+              console.log('Account creation date (from Auth metadata):', {
+                raw: creationTimeStr,
+                parsed: parsedDate,
+                isoString: parsedDate.toISOString(),
+                localString: parsedDate.toLocaleString('ja-JP'),
+                timestamp: parsedDate.getTime()
+              });
+              
+              // 日付が有効かチェック（未来の日付や無効な日付を除外）
+              if (isNaN(parsedDate.getTime())) {
+                console.error('Invalid date parsed from creationTime:', creationTimeStr);
+                if (isMounted) {
+                  setCreatedAt(null);
+                }
+              } else {
+                // 未来の日付の場合も無視（タイムゾーンの問題の可能性）
+                const now = new Date();
+                if (parsedDate > now) {
+                  console.warn('Future date detected in Auth metadata, ignoring:', {
+                    parsed: parsedDate,
+                    now: now,
+                    diff: parsedDate.getTime() - now.getTime()
+                  });
+                  if (isMounted) {
+                    setCreatedAt(null);
+                  }
+                } else {
+                  if (isMounted) {
+                    setCreatedAt(parsedDate);
+                  }
+                }
+              }
+            } else {
+              if (isMounted) {
+                setCreatedAt(null);
+              }
+            }
+            
+            if (isMounted) {
+              setIsLoading(false);
+            }
+          } catch (error: any) {
+            console.error('Unexpected error fetching creation date:', error);
+            if (isMounted) {
+              setCreatedAt(null);
+              setIsLoading(false);
+            }
+          }
+        };
+        
+        // 非同期処理を実行
+        fetchCreationDate();
+      } else {
+        setCreatedAt(null);
+        setIsLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const handleStartEditName = () => {
