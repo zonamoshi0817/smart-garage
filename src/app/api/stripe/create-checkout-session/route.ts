@@ -220,7 +220,33 @@ export async function POST(req: NextRequest) {
         requestId: stripeError.requestId,
         priceId,
         userUid,
+        stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 7),
       });
+      
+      // Stripe APIエラーの場合、より詳細な情報を返す
+      if (stripeError.type && stripeError.type.startsWith('Stripe')) {
+        const errorDetails: any = {
+          error: 'Stripe APIエラーが発生しました。',
+          code: stripeError.code || 'unknown',
+          type: stripeError.type,
+        };
+        
+        // 本番環境でも特定のエラーについては詳細を返す
+        if (stripeError.code === 'resource_missing') {
+          errorDetails.error = '価格情報が見つかりません。Stripeの価格IDを確認してください。';
+          errorDetails.details = `Price ID: ${priceId}`;
+        } else if (stripeError.code === 'invalid_request_error') {
+          errorDetails.error = 'Stripeリクエストエラーが発生しました。';
+          errorDetails.details = stripeError.message;
+        } else if (stripeError.message) {
+          errorDetails.details = stripeError.message;
+        }
+        
+        // Stripeエラーの場合はここで返す（再スローしない）
+        return NextResponse.json(errorDetails, { status: 500 });
+      }
+      
+      // Stripeエラー以外の場合は再スローして外側のcatchで処理
       throw stripeError;
     }
 
@@ -240,6 +266,29 @@ export async function POST(req: NextRequest) {
       stack: error.stack?.split('\n').slice(0, 10).join('\n'),
     });
     
+    // Stripeエラーの場合（既に内側のcatchで処理されているはずだが、念のため）
+    if (error.type && error.type.startsWith('Stripe')) {
+      const errorDetails: any = {
+        error: 'Stripe APIエラーが発生しました。',
+        code: error.code || 'unknown',
+        type: error.type,
+      };
+      
+      if (error.code === 'resource_missing') {
+        errorDetails.error = '価格情報が見つかりません。管理者にお問い合わせください。';
+      } else if (error.code === 'invalid_request_error') {
+        errorDetails.error = 'Stripeリクエストエラーが発生しました。';
+      }
+      
+      // 開発環境では詳細情報を含める
+      if (process.env.NODE_ENV === 'development') {
+        errorDetails.details = error.message;
+        errorDetails.requestId = error.requestId;
+      }
+      
+      return NextResponse.json(errorDetails, { status: 500 });
+    }
+    
     // 開発環境ではより詳細なエラー情報を返す
     if (process.env.NODE_ENV === 'development') {
       let errorMessage = '決済セッションの作成に失敗しました。';
@@ -250,11 +299,6 @@ export async function POST(req: NextRequest) {
       
       if (error.code) {
         errorMessage += `\nエラーコード: ${error.code}`;
-      }
-      
-      // Stripe関連のエラーの場合
-      if (error.type && error.type.startsWith('Stripe')) {
-        errorMessage += '\n\nStripe APIエラーが発生しました。環境変数STRIPE_SECRET_KEYが正しく設定されているか確認してください。';
       }
       
       return NextResponse.json(

@@ -140,6 +140,28 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = errorData.error || 'Failed to create checkout session';
+        const errorCode = errorData.code;
+        const errorDetails = errorData.details;
+        
+        console.error('Checkout session creation failed:', {
+          status: response.status,
+          error: errorMessage,
+          code: errorCode,
+          details: errorDetails,
+          fullError: errorData,
+        });
+        
+        // Stripe APIエラーの場合
+        if (errorCode || errorData.type?.startsWith('Stripe')) {
+          let userMessage = errorMessage;
+          if (errorCode === 'resource_missing') {
+            userMessage = '価格情報が見つかりません。管理者にお問い合わせください。';
+          } else if (errorDetails) {
+            userMessage += `\n\n詳細: ${errorDetails}`;
+          }
+          alert(userMessage);
+          return;
+        }
         
         // 認証エラーの場合は、より詳細なメッセージを表示
         if (errorMessage.includes('authentication') || errorMessage.includes('token') || errorMessage.includes('認証')) {
@@ -173,6 +195,8 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
           return;
         }
         
+        // その他のエラー
+        alert(`エラーが発生しました: ${errorMessage}${errorDetails ? `\n\n詳細: ${errorDetails}` : ''}`);
         throw new Error(errorMessage);
       }
 
