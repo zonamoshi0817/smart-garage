@@ -236,6 +236,17 @@ export async function POST(req: NextRequest) {
           errorDetails.error = 'Stripeへの接続に失敗しました。しばらく待ってから再度お試しください。';
           errorDetails.details = stripeError.message || 'An error occurred with our connection to Stripe.';
           errorDetails.retryable = true;
+          
+          // 接続エラーの詳細ログ
+          console.error('Stripe connection error details:', {
+            message: stripeError.message,
+            type: stripeError.type,
+            statusCode: stripeError.statusCode,
+            requestId: stripeError.requestId,
+            stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 10),
+            priceId,
+            userUid,
+          });
         } else if (stripeError.code === 'resource_missing') {
           errorDetails.error = '価格情報が見つかりません。Stripeの価格IDを確認してください。';
           errorDetails.details = `Price ID: ${priceId}`;
