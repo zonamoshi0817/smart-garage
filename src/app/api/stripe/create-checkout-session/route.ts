@@ -10,6 +10,7 @@ import { getPriceId } from '@/lib/plan';
 import { getAdminAuth } from '@/lib/firebaseAdmin';
 
 export const runtime = 'nodejs';
+export const maxDuration = 30; // Vercelのサーバーレス関数の最大実行時間（秒）
 
 export async function POST(req: NextRequest) {
   try {
@@ -192,14 +193,19 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Stripe設定の詳細ログ（本番環境でも出力してトラブルシューティング）
     console.log('Creating checkout session:', {
       plan,
       priceId,
       userUid,
       hasCustomerId: !!customerId,
       stripeKeySet: !!process.env.STRIPE_SECRET_KEY,
+      stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 10),
+      stripeKeyType: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_') ? 'live' : process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? 'test' : 'unknown',
       priceMonthly: process.env.NEXT_PUBLIC_PRICE_MONTHLY,
       priceYearly: process.env.NEXT_PUBLIC_PRICE_YEARLY,
+      nodeEnv: process.env.NODE_ENV,
+      timestamp: new Date().toISOString(),
     });
 
     // Checkout セッションを作成
@@ -244,8 +250,11 @@ export async function POST(req: NextRequest) {
             statusCode: stripeError.statusCode,
             requestId: stripeError.requestId,
             stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 10),
+            stripeKeyLength: process.env.STRIPE_SECRET_KEY?.length,
+            stripeKeyType: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_') ? 'live' : process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_') ? 'test' : 'unknown',
             priceId,
             userUid,
+            nodeEnv: process.env.NODE_ENV,
           });
         } else if (stripeError.code === 'resource_missing') {
           errorDetails.error = '価格情報が見つかりません。Stripeの価格IDを確認してください。';

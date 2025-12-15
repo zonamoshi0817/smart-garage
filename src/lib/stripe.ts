@@ -20,8 +20,10 @@ export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2025-10-29.clover',
   typescript: true,
   // リトライ設定（接続エラー時の自動リトライ）
-  maxNetworkRetries: 2,
-  timeout: 30000, // 30秒のタイムアウト
+  maxNetworkRetries: 3, // リトライ回数を3回に増やす
+  timeout: 20000, // 20秒のタイムアウト（Vercelのサーバーレス関数の制限を考慮）
+  // HTTPプロキシ設定（必要に応じて）
+  // httpAgent: ...,
   // Stripe-Account ヘッダーを使用する場合はここで設定
   // stripeAccount: process.env.STRIPE_ACCOUNT_ID,
 });
@@ -44,48 +46,74 @@ export async function createCheckoutSession({
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 
     (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://garagelog.jp');
   
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
-      },
-    ],
-    customer: customerId, // 既存の顧客がいる場合は再利用
-    client_reference_id: userUid, // Firebase UID を紐付け
-    success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl}/billing/cancel`,
-    allow_promotion_codes: true, // プロモーションコードの入力を許可
-    billing_address_collection: 'auto', // 住所情報を自動収集
-    // 3Dセキュア（EMV 3-D Secure）を有効化（日本では推奨/実質必須）
-    payment_method_options: {
-      card: {
-        request_three_d_secure: 'automatic', // 自動的に3Dセキュアを要求
-      },
-    },
-    subscription_data: {
-      trial_period_days: trialDays,
-      // トライアル終了時の自動課金を設定
-      trial_settings: {
-        end_behavior: {
-          missing_payment_method: 'cancel', // 支払い方法がない場合はキャンセル
+  console.log('Stripe Checkout Session create request:', {
+    priceId,
+    customerId: customerId || 'new',
+    userUid,
+    appUrl,
+    trialDays,
+  });
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      customer: customerId, // 既存の顧客がいる場合は再利用
+      client_reference_id: userUid, // Firebase UID を紐付け
+      success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/billing/cancel`,
+      allow_promotion_codes: true, // プロモーションコードの入力を許可
+      billing_address_collection: 'auto', // 住所情報を自動収集
+      // 3Dセキュア（EMV 3-D Secure）を有効化（日本では推奨/実質必須）
+      payment_method_options: {
+        card: {
+          request_three_d_secure: 'automatic', // 自動的に3Dセキュアを要求
         },
       },
-      metadata: {
-        firebaseUid: userUid, // メタデータにも UID を保存
+      subscription_data: {
+        trial_period_days: trialDays,
+        // トライアル終了時の自動課金を設定
+        trial_settings: {
+          end_behavior: {
+            missing_payment_method: 'cancel', // 支払い方法がない場合はキャンセル
+          },
+        },
+        metadata: {
+          firebaseUid: userUid, // メタデータにも UID を保存
+        },
       },
-    },
-    // subscription モードでは customer_creation は不要（自動的に作成される）
-    // customer_creation は payment モードでのみ使用可能
-    metadata: {
-      firebaseUid: userUid,
-    },
-    // 日本の税設定（将来的に対応する場合）
-    // automatic_tax: {
-    //   enabled: true,
-    // },
-  });
+      // subscription モードでは customer_creation は不要（自動的に作成される）
+      // customer_creation は payment モードでのみ使用可能
+      metadata: {
+        firebaseUid: userUid,
+      },
+      // 日本の税設定（将来的に対応する場合）
+      // automatic_tax: {
+      //   enabled: true,
+      // },
+    });
+    
+    console.log('Stripe Checkout Session created successfully:', {
+      sessionId: session.id,
+      url: session.url,
+    });
+    
+    return session;
+  } catch (error: any) {
+    console.error('Stripe API call failed in createCheckoutSession:', {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode,
+      requestId: error.requestId,
+    });
+    throw error;
+  }
 
   return session;
 }
