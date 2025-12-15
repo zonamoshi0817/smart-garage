@@ -231,8 +231,12 @@ export async function POST(req: NextRequest) {
           type: stripeError.type,
         };
         
-        // 本番環境でも特定のエラーについては詳細を返す
-        if (stripeError.code === 'resource_missing') {
+        // 接続エラーの場合
+        if (stripeError.type === 'StripeConnectionError' || stripeError.type === 'StripeAPIError') {
+          errorDetails.error = 'Stripeへの接続に失敗しました。しばらく待ってから再度お試しください。';
+          errorDetails.details = stripeError.message || 'An error occurred with our connection to Stripe.';
+          errorDetails.retryable = true;
+        } else if (stripeError.code === 'resource_missing') {
           errorDetails.error = '価格情報が見つかりません。Stripeの価格IDを確認してください。';
           errorDetails.details = `Price ID: ${priceId}`;
         } else if (stripeError.code === 'invalid_request_error') {
