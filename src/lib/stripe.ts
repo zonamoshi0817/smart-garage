@@ -114,8 +114,6 @@ export async function createCheckoutSession({
     });
     throw error;
   }
-
-  return session;
 }
 
 /**
