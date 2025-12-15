@@ -19,6 +19,9 @@ if (!process.env.STRIPE_SECRET_KEY && process.env.NODE_ENV === 'production') {
 export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2025-10-29.clover',
   typescript: true,
+  // リトライ設定（接続エラー時の自動リトライ）
+  maxNetworkRetries: 2,
+  timeout: 30000, // 30秒のタイムアウト
   // Stripe-Account ヘッダーを使用する場合はここで設定
   // stripeAccount: process.env.STRIPE_ACCOUNT_ID,
 });

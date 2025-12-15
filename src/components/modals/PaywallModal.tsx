@@ -154,11 +154,16 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
         // Stripe APIエラーの場合
         if (errorCode || errorData.type?.startsWith('Stripe')) {
           let userMessage = errorMessage;
-          if (errorCode === 'resource_missing') {
+          
+          // 接続エラーの場合は再試行を促す
+          if (errorData.type === 'StripeConnectionError' || errorData.type === 'StripeAPIError' || errorData.retryable) {
+            userMessage = 'Stripeへの接続に失敗しました。\n\nしばらく待ってから再度お試しください。';
+          } else if (errorCode === 'resource_missing') {
             userMessage = '価格情報が見つかりません。管理者にお問い合わせください。';
           } else if (errorDetails) {
             userMessage += `\n\n詳細: ${errorDetails}`;
           }
+          
           alert(userMessage);
           return;
         }
