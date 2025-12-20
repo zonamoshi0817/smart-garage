@@ -131,10 +131,18 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
       });
 
       // Checkout セッションを作成
+      console.log('Creating checkout session:', { plan });
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan, idToken }),
+      });
+      
+      console.log('Checkout session response status:', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
       });
 
       if (!response.ok) {
@@ -217,14 +225,45 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
         throw new Error(errorMessage);
       }
 
-      const { url } = await response.json();
+      let responseData: any;
+      try {
+        responseData = await response.json();
+        console.log('Checkout session response:', {
+          hasUrl: !!responseData.url,
+          url: responseData.url,
+          sessionId: responseData.sessionId,
+          fullResponse: responseData,
+        });
+      } catch (jsonError: any) {
+        console.error('Failed to parse response as JSON:', {
+          error: jsonError.message,
+          status: response.status,
+          statusText: response.statusText,
+        });
+        const text = await response.text();
+        console.error('Response text:', text.substring(0, 500));
+        throw new Error('サーバーからの応答の解析に失敗しました。');
+      }
 
-      if (!url) {
+      const { url } = responseData;
+
+      if (!url || typeof url !== 'string') {
+        console.error('Checkout URL is missing or invalid:', {
+          url,
+          type: typeof url,
+          responseData,
+        });
         throw new Error('Checkout URLの取得に失敗しました。');
       }
 
       // Stripe Checkout ページへリダイレクト
-      window.location.href = url;
+      console.log('Redirecting to Stripe Checkout:', url);
+      
+      // リダイレクト前に少し待機してログが確実に出力されるようにする
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // window.location.replace()を使用してブラウザ履歴に残さない
+      window.location.replace(url);
     } catch (error: any) {
       console.error('Failed to start checkout:', error);
       const errorMessage = error.message || 'エラーが発生しました';
