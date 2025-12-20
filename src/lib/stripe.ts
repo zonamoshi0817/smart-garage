@@ -55,55 +55,55 @@ export async function createCheckoutSession({
   });
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      customer: customerId, // 既存の顧客がいる場合は再利用
-      client_reference_id: userUid, // Firebase UID を紐付け
-      success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/billing/cancel`,
-      allow_promotion_codes: true, // プロモーションコードの入力を許可
-      billing_address_collection: 'auto', // 住所情報を自動収集
-      // 3Dセキュア（EMV 3-D Secure）を有効化（日本では推奨/実質必須）
-      payment_method_options: {
-        card: {
-          request_three_d_secure: 'automatic', // 自動的に3Dセキュアを要求
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    customer: customerId, // 既存の顧客がいる場合は再利用
+    client_reference_id: userUid, // Firebase UID を紐付け
+    success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${appUrl}/billing/cancel`,
+    allow_promotion_codes: true, // プロモーションコードの入力を許可
+    billing_address_collection: 'auto', // 住所情報を自動収集
+    // 3Dセキュア（EMV 3-D Secure）を有効化（日本では推奨/実質必須）
+    payment_method_options: {
+      card: {
+        request_three_d_secure: 'automatic', // 自動的に3Dセキュアを要求
+      },
+    },
+    subscription_data: {
+      trial_period_days: trialDays,
+      // トライアル終了時の自動課金を設定
+      trial_settings: {
+        end_behavior: {
+          missing_payment_method: 'cancel', // 支払い方法がない場合はキャンセル
         },
       },
-      subscription_data: {
-        trial_period_days: trialDays,
-        // トライアル終了時の自動課金を設定
-        trial_settings: {
-          end_behavior: {
-            missing_payment_method: 'cancel', // 支払い方法がない場合はキャンセル
-          },
-        },
-        metadata: {
-          firebaseUid: userUid, // メタデータにも UID を保存
-        },
-      },
-      // subscription モードでは customer_creation は不要（自動的に作成される）
-      // customer_creation は payment モードでのみ使用可能
       metadata: {
-        firebaseUid: userUid,
+        firebaseUid: userUid, // メタデータにも UID を保存
       },
-      // 日本の税設定（将来的に対応する場合）
-      // automatic_tax: {
-      //   enabled: true,
-      // },
-    });
+    },
+    // subscription モードでは customer_creation は不要（自動的に作成される）
+    // customer_creation は payment モードでのみ使用可能
+    metadata: {
+      firebaseUid: userUid,
+    },
+    // 日本の税設定（将来的に対応する場合）
+    // automatic_tax: {
+    //   enabled: true,
+    // },
+  });
     
     console.log('Stripe Checkout Session created successfully:', {
       sessionId: session.id,
       url: session.url,
     });
-    
-    return session;
+
+  return session;
   } catch (error: any) {
     console.error('Stripe API call failed in createCheckoutSession:', {
       message: error.message,

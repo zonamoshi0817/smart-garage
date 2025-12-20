@@ -138,17 +138,29 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData: any;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          // JSONパースに失敗した場合
+          const text = await response.text();
+          console.error('Failed to parse error response:', text);
+          errorData = { error: `Server error (${response.status}): ${text.substring(0, 200)}` };
+        }
+        
         const errorMessage = errorData.error || 'Failed to create checkout session';
         const errorCode = errorData.code;
         const errorDetails = errorData.details;
         
         console.error('Checkout session creation failed:', {
           status: response.status,
+          statusText: response.statusText,
           error: errorMessage,
           code: errorCode,
+          type: errorData.type,
           details: errorDetails,
           fullError: errorData,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
         });
         
         // Stripe APIエラーの場合

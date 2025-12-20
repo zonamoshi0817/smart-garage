@@ -212,11 +212,11 @@ export async function POST(req: NextRequest) {
     let session;
     try {
       session = await createCheckoutSession({
-        priceId,
-        customerId,
-        userUid,
-        trialDays: 7, // 7日間無料トライアル
-      });
+      priceId,
+      customerId,
+      userUid,
+      trialDays: 7, // 7日間無料トライアル
+    });
     } catch (stripeError: any) {
       console.error('Stripe Checkout Session creation failed:', {
         message: stripeError.message,
@@ -287,6 +287,7 @@ export async function POST(req: NextRequest) {
       type: error.type,
       statusCode: error.statusCode,
       requestId: error.requestId,
+      name: error.name,
       stack: error.stack?.split('\n').slice(0, 10).join('\n'),
     });
     
@@ -302,10 +303,13 @@ export async function POST(req: NextRequest) {
         errorDetails.error = '価格情報が見つかりません。管理者にお問い合わせください。';
       } else if (error.code === 'invalid_request_error') {
         errorDetails.error = 'Stripeリクエストエラーが発生しました。';
+      } else if (error.type === 'StripeConnectionError') {
+        errorDetails.error = 'Stripeへの接続に失敗しました。しばらく待ってから再度お試しください。';
+        errorDetails.retryable = true;
       }
       
-      // 開発環境では詳細情報を含める
-      if (process.env.NODE_ENV === 'development') {
+      // 本番環境でも接続エラーの場合は詳細を返す
+      if (error.type === 'StripeConnectionError' || process.env.NODE_ENV === 'development') {
         errorDetails.details = error.message;
         errorDetails.requestId = error.requestId;
       }
@@ -313,29 +317,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(errorDetails, { status: 500 });
     }
     
-    // 開発環境ではより詳細なエラー情報を返す
-    if (process.env.NODE_ENV === 'development') {
-      let errorMessage = '決済セッションの作成に失敗しました。';
-      
-      if (error.message) {
-        errorMessage += `\n\nエラー詳細: ${error.message}`;
+    // その他のエラーの場合
+    const errorResponse: any = {
+      error: '決済セッションの作成に失敗しました。',
+      code: error.code || 'unknown',
+    };
+    
+    // 開発環境または特定のエラーでは詳細情報を含める
+    if (process.env.NODE_ENV === 'development' || error.message?.includes('Price ID')) {
+      errorResponse.details = error.message;
+      if (error.stack) {
+        errorResponse.stack = error.stack.split('\n').slice(0, 5).join('\n');
       }
-      
-      if (error.code) {
-        errorMessage += `\nエラーコード: ${error.code}`;
-      }
-      
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: 500 }
-      );
     }
     
-    // 本番環境では一般的なメッセージのみ返す（セキュリティ対策）
-    return NextResponse.json(
-      { error: '決済セッションの作成に失敗しました。しばらく待ってから再度お試しください。' },
-      { status: 500 }
-    );
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
 
