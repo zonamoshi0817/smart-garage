@@ -16,12 +16,21 @@ if (!process.env.STRIPE_SECRET_KEY && process.env.NODE_ENV === 'production') {
  * Stripe インスタンス
  * API バージョンは最新の安定版を使用
  */
+// Stripe SDKの初期化時に詳細なログを出力
+console.log('Initializing Stripe SDK:', {
+  hasKey: !!stripeSecretKey,
+  keyPrefix: stripeSecretKey?.substring(0, 10) || 'N/A',
+  keyType: stripeSecretKey?.startsWith('sk_live_') ? 'live' : stripeSecretKey?.startsWith('sk_test_') ? 'test' : 'unknown',
+  keyLength: stripeSecretKey?.length || 0,
+  nodeEnv: process.env.NODE_ENV,
+});
+
 export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2025-10-29.clover',
   typescript: true,
   // リトライ設定（接続エラー時の自動リトライ）
   maxNetworkRetries: 3, // リトライ回数を3回に増やす
-  timeout: 20000, // 20秒のタイムアウト（Vercelのサーバーレス関数の制限を考慮）
+  timeout: 30000, // 30秒のタイムアウト（Vercelのサーバーレス関数の制限を考慮、maxDuration=30と合わせる）
   // HTTPプロキシ設定（必要に応じて）
   // httpAgent: ...,
   // Stripe-Account ヘッダーを使用する場合はここで設定
