@@ -147,13 +147,19 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
 
       if (!response.ok) {
         let errorData: any;
+        let responseText: string = '';
         try {
-          errorData = await response.json();
+          responseText = await response.text();
+          console.error('Error response text (raw):', responseText);
+          errorData = JSON.parse(responseText);
         } catch (e) {
           // JSONパースに失敗した場合
-          const text = await response.text();
-          console.error('Failed to parse error response:', text);
-          errorData = { error: `Server error (${response.status}): ${text.substring(0, 200)}` };
+          console.error('Failed to parse error response as JSON:', e);
+          console.error('Response text:', responseText.substring(0, 500));
+          errorData = { 
+            error: `Server error (${response.status}): ${responseText.substring(0, 200)}`,
+            rawResponse: responseText.substring(0, 500),
+          };
         }
         
         const errorMessage = errorData.error || 'Failed to create checkout session';
@@ -169,6 +175,7 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
           details: errorDetails,
           fullError: errorData,
           responseHeaders: Object.fromEntries(response.headers.entries()),
+          responseText: responseText.substring(0, 1000), // 最初の1000文字をログに出力
         });
         
         // Stripe APIエラーの場合

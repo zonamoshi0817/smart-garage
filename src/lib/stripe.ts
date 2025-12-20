@@ -119,7 +119,39 @@ export async function createCheckoutSession({
       code: error.code,
       statusCode: error.statusCode,
       requestId: error.requestId,
+      name: error.name,
+      cause: error.cause,
+      errno: error.errno,
+      syscall: error.syscall,
+      hostname: error.hostname,
+      code: error.code,
+      // ネットワークエラーの詳細
+      ...(error.errno && {
+        errno: error.errno,
+        syscall: error.syscall,
+        hostname: error.hostname,
+        code: error.code,
+      }),
+      // スタックトレースの最初の数行
+      stack: error.stack?.split('\n').slice(0, 10).join('\n'),
     });
+    
+    // より詳細なエラー情報をログに出力
+    if (error.cause) {
+      console.error('Stripe error cause:', error.cause);
+    }
+    
+    // ネットワークエラーの場合、より詳細な情報を出力
+    if (error.errno || error.syscall) {
+      console.error('Network error details:', {
+        errno: error.errno,
+        syscall: error.syscall,
+        hostname: error.hostname,
+        code: error.code,
+        message: error.message,
+      });
+    }
+    
     throw error;
   }
 }

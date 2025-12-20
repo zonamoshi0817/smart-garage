@@ -14,8 +14,32 @@ export const maxDuration = 30; // Vercelのサーバーレス関数の最大実�
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('Checkout session creation request received:', {
+      timestamp: new Date().toISOString(),
+      nodeEnv: process.env.NODE_ENV,
+    });
+    
     // リクエストボディをパース
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+      console.log('Request body parsed:', {
+        hasPlan: !!body.plan,
+        plan: body.plan,
+        hasIdToken: !!body.idToken,
+        idTokenLength: body.idToken?.length,
+        hasCustomerId: !!body.customerId,
+      });
+    } catch (jsonError: any) {
+      console.error('Failed to parse request body as JSON:', {
+        error: jsonError.message,
+        name: jsonError.name,
+      });
+      return NextResponse.json(
+        { error: 'リクエストボディの解析に失敗しました。', details: jsonError.message },
+        { status: 400 }
+      );
+    }
     const { plan, customerId, idToken: rawIdToken } = body as {
       plan: 'monthly' | 'yearly';
       customerId?: string;
@@ -288,7 +312,17 @@ export async function POST(req: NextRequest) {
       statusCode: error.statusCode,
       requestId: error.requestId,
       name: error.name,
-      stack: error.stack?.split('\n').slice(0, 10).join('\n'),
+      stack: error.stack?.split('\n').slice(0, 20).join('\n'),
+      cause: error.cause,
+      // 環境変数の状態を確認（機密情報は含めない）
+      envCheck: {
+        hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+        stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.substring(0, 10),
+        hasFirebaseServiceAccount: !!process.env.FIREBASE_SERVICE_ACCOUNT_BASE64,
+        hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID,
+        hasPriceMonthly: !!process.env.NEXT_PUBLIC_PRICE_MONTHLY,
+        hasPriceYearly: !!process.env.NEXT_PUBLIC_PRICE_YEARLY,
+      },
     });
     
     // Stripeエラーの場合（既に内側のcatchで処理されているはずだが、念のため）

@@ -124,6 +124,58 @@ export async function GET(req: NextRequest) {
       };
     }
 
+    // 4. fetch APIを使用してStripe APIへの直接接続をテスト（SDKを経由しない）
+    let fetchTestResult: any = null;
+    try {
+      console.log('Testing direct fetch to Stripe API...');
+      const fetchResponse = await fetch('https://api.stripe.com/v1/account', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${stripeKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        // Vercelのサーバーレス関数での接続問題を回避するための設定
+        signal: AbortSignal.timeout(30000), // 30秒のタイムアウト
+      });
+      
+      if (fetchResponse.ok) {
+        const fetchData = await fetchResponse.json();
+        fetchTestResult = {
+          success: true,
+          accountId: fetchData.id,
+          type: fetchData.type,
+        };
+        console.log('Direct fetch to Stripe API succeeded');
+      } else {
+        const errorText = await fetchResponse.text();
+        fetchTestResult = {
+          success: false,
+          error: {
+            status: fetchResponse.status,
+            statusText: fetchResponse.statusText,
+            body: errorText.substring(0, 200),
+          },
+        };
+        console.error('Direct fetch to Stripe API failed:', fetchTestResult.error);
+      }
+    } catch (fetchError: any) {
+      console.error('Direct fetch to Stripe API error:', {
+        message: fetchError.message,
+        name: fetchError.name,
+        cause: fetchError.cause,
+        stack: fetchError.stack?.split('\n').slice(0, 5).join('\n'),
+      });
+      fetchTestResult = {
+        success: false,
+        error: {
+          message: fetchError.message,
+          name: fetchError.name,
+          cause: fetchError.cause,
+        },
+      };
+    }
+    testResults.directFetch = fetchTestResult;
+
     // すべてのテストが失敗した場合
     const allFailed = Object.values(testResults).every((result: any) => result && !result.success);
     
@@ -138,7 +190,12 @@ export async function GET(req: NextRequest) {
           'Stripe DashboardでAPIキーが有効か確認してください',
           'Stripeのステータスページ（https://status.stripe.com/）で障害がないか確認してください',
           'Vercelのネットワーク設定を確認してください',
+          'Vercelサポートに問い合わせて、egressネットワークブロックがないか確認してください',
         ],
+        networkDiagnostics: {
+          directFetchFailed: fetchTestResult && !fetchTestResult.success,
+          stripeSDKFailed: testResults.accountRetrieve && !testResults.accountRetrieve.success,
+        },
       }, { status: 500 });
     }
 
