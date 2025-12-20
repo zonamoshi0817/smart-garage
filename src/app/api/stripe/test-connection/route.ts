@@ -20,41 +20,149 @@ export async function GET(req: NextRequest) {
       length: stripeKey?.length || 0,
     };
 
-    // 簡単なStripe API呼び出しをテスト（アカウント情報を取得）
+    console.log('Stripe connection test started:', {
+      keyInfo,
+      timestamp: new Date().toISOString(),
+      nodeEnv: process.env.NODE_ENV,
+    });
+
+    // 複数のStripe API呼び出しをテストして、どのAPIが失敗するかを確認
+    const testResults: any = {
+      accountRetrieve: null,
+      balanceRetrieve: null,
+      priceList: null,
+    };
+
+    // 1. アカウント情報の取得をテスト
     try {
+      console.log('Testing stripe.accounts.retrieve()...');
       const account = await stripe.accounts.retrieve();
-      
-      return NextResponse.json({
+      testResults.accountRetrieve = {
         success: true,
-        keyInfo,
-        stripeAccount: {
-          id: account.id,
-          type: account.type,
-          country: account.country,
-        },
-        message: 'Stripe APIへの接続に成功しました',
+        accountId: account.id,
+        type: account.type,
+        country: account.country,
+      };
+      console.log('stripe.accounts.retrieve() succeeded');
+    } catch (error: any) {
+      console.error('stripe.accounts.retrieve() failed:', {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+        statusCode: error.statusCode,
+        requestId: error.requestId,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n'),
       });
-    } catch (stripeError: any) {
+      testResults.accountRetrieve = {
+        success: false,
+        error: {
+          message: error.message,
+          type: error.type,
+          code: error.code,
+          statusCode: error.statusCode,
+          requestId: error.requestId,
+        },
+      };
+    }
+
+    // 2. バランス情報の取得をテスト（より軽量なAPI）
+    try {
+      console.log('Testing stripe.balance.retrieve()...');
+      const balance = await stripe.balance.retrieve();
+      testResults.balanceRetrieve = {
+        success: true,
+        available: balance.available.length,
+        pending: balance.pending.length,
+      };
+      console.log('stripe.balance.retrieve() succeeded');
+    } catch (error: any) {
+      console.error('stripe.balance.retrieve() failed:', {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+        statusCode: error.statusCode,
+        requestId: error.requestId,
+      });
+      testResults.balanceRetrieve = {
+        success: false,
+        error: {
+          message: error.message,
+          type: error.type,
+          code: error.code,
+          statusCode: error.statusCode,
+          requestId: error.requestId,
+        },
+      };
+    }
+
+    // 3. 価格一覧の取得をテスト（実際に使用しているAPI）
+    try {
+      console.log('Testing stripe.prices.list()...');
+      const prices = await stripe.prices.list({ limit: 1 });
+      testResults.priceList = {
+        success: true,
+        count: prices.data.length,
+      };
+      console.log('stripe.prices.list() succeeded');
+    } catch (error: any) {
+      console.error('stripe.prices.list() failed:', {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+        statusCode: error.statusCode,
+        requestId: error.requestId,
+      });
+      testResults.priceList = {
+        success: false,
+        error: {
+          message: error.message,
+          type: error.type,
+          code: error.code,
+          statusCode: error.statusCode,
+          requestId: error.requestId,
+        },
+      };
+    }
+
+    // すべてのテストが失敗した場合
+    const allFailed = Object.values(testResults).every((result: any) => result && !result.success);
+    
+    if (allFailed) {
       return NextResponse.json({
         success: false,
         keyInfo,
-        error: {
-          message: stripeError.message,
-          type: stripeError.type,
-          code: stripeError.code,
-          statusCode: stripeError.statusCode,
-        },
-        message: 'Stripe APIへの接続に失敗しました',
+        testResults,
+        message: 'すべてのStripe API呼び出しが失敗しました。ネットワーク接続の問題の可能性があります。',
+        suggestions: [
+          'VercelからStripe APIへのネットワーク接続を確認してください',
+          'Stripe DashboardでAPIキーが有効か確認してください',
+          'Stripeのステータスページ（https://status.stripe.com/）で障害がないか確認してください',
+          'Vercelのネットワーク設定を確認してください',
+        ],
       }, { status: 500 });
     }
+
+    // 少なくとも1つのテストが成功した場合
+    return NextResponse.json({
+      success: true,
+      keyInfo,
+      testResults,
+      message: '一部のStripe API呼び出しが成功しました',
+    });
   } catch (error: any) {
+    console.error('Unexpected error in test-connection:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack?.split('\n').slice(0, 10).join('\n'),
+    });
     return NextResponse.json({
       success: false,
       error: {
         message: error.message,
         name: error.name,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n'),
       },
-      message: 'エラーが発生しました',
+      message: '予期しないエラーが発生しました',
     }, { status: 500 });
   }
 }
