@@ -22,8 +22,16 @@ function initializeFirebaseAdmin(): App {
   }
 
   // 環境変数から Service Account を取得
-  const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  // 環境変数から改行文字や空白を削除（Vercelの環境変数に改行が含まれる可能性があるため）
+  const rawServiceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+  const serviceAccountBase64 = typeof rawServiceAccountBase64 === 'string'
+    ? rawServiceAccountBase64.trim().replace(/\r?\n/g, '').replace(/\s+/g, '')
+    : rawServiceAccountBase64;
+  
+  const rawProjectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const projectId = typeof rawProjectId === 'string'
+    ? rawProjectId.trim().replace(/\r?\n/g, '').replace(/\s+/g, '')
+    : rawProjectId;
 
   // デバッグ用: 環境変数の存在確認（値はログに出力しない）
   console.log('Firebase Admin initialization check:', {

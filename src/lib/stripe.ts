@@ -6,10 +6,26 @@
 import Stripe from 'stripe';
 
 // ビルド時はダミー値を使用
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_for_build';
+// 環境変数から改行文字や空白を削除（Vercelの環境変数に改行が含まれる可能性があるため）
+const rawStripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_for_build';
+const stripeSecretKey = typeof rawStripeSecretKey === 'string' 
+  ? rawStripeSecretKey.trim().replace(/\r?\n/g, '').replace(/\s+/g, '') 
+  : rawStripeSecretKey;
 
 if (!process.env.STRIPE_SECRET_KEY && process.env.NODE_ENV === 'production') {
   console.warn('STRIPE_SECRET_KEY is not set in environment variables');
+}
+
+// デバッグ用：Stripeキーに無効な文字が含まれていないか確認
+if (stripeSecretKey && typeof stripeSecretKey === 'string') {
+  const invalidChars = stripeSecretKey.match(/[^\x20-\x7E]/);
+  if (invalidChars) {
+    console.warn('Stripe secret key contains invalid characters:', {
+      invalidChars: invalidChars,
+      keyLength: stripeSecretKey.length,
+      keyPrefix: stripeSecretKey.substring(0, 10),
+    });
+  }
 }
 
 /**
@@ -29,8 +45,8 @@ export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2025-10-29.clover',
   typescript: true,
   // リトライ設定（接続エラー時の自動リトライ）
-  maxNetworkRetries: 3, // リトライ回数を3回に増やす
-  timeout: 30000, // 30秒のタイムアウト（Vercelのサーバーレス関数の制限を考慮、maxDuration=30と合わせる）
+  maxNetworkRetries: 2, // リトライ回数を2回に減らす（以前の設定に戻す）
+  timeout: 20000, // 20秒のタイムアウト（以前の設定に戻す）
   // HTTPエージェントの設定は削除（以前の動作していた状態に戻す）
   // Stripe-Account ヘッダーを使用する場合はここで設定
   // stripeAccount: process.env.STRIPE_ACCOUNT_ID,
@@ -113,44 +129,67 @@ export async function createCheckoutSession({
 
   return session;
   } catch (error: any) {
-    console.error('Stripe API call failed in createCheckoutSession:', {
+    // Stripe SDKの内部エラーを詳細にログ出力
+    const errorDetails: any = {
       message: error.message,
       type: error.type,
       code: error.code,
       statusCode: error.statusCode,
       requestId: error.requestId,
       name: error.name,
-      cause: error.cause,
-      errno: error.errno,
-      syscall: error.syscall,
-      hostname: error.hostname,
-      code: error.code,
-      // ネットワークエラーの詳細
-      ...(error.errno && {
-        errno: error.errno,
-        syscall: error.syscall,
-        hostname: error.hostname,
-        code: error.code,
-      }),
-      // スタックトレースの最初の数行
-      stack: error.stack?.split('\n').slice(0, 10).join('\n'),
-    });
+      stack: error.stack?.split('\n').slice(0, 15).join('\n'),
+    };
     
-    // より詳細なエラー情報をログに出力
+    // エラーオブジェクトのすべてのプロパティを確認
+    const errorKeys = Object.keys(error);
+    console.error('Stripe error all properties:', errorKeys);
+    
+    // エラーオブジェクトをシリアライズ可能な形式に変換
+    try {
+      const errorObj: any = {};
+      for (const key of Object.getOwnPropertyNames(error)) {
+        try {
+          errorObj[key] = (error as any)[key];
+        } catch (e) {
+          errorObj[key] = '[Unable to serialize]';
+        }
+      }
+      console.error('Stripe error full object:', JSON.stringify(errorObj, null, 2));
+    } catch (serializeError) {
+      console.error('Failed to serialize error object:', serializeError);
+    }
+    
+    // causeプロパティがある場合
     if (error.cause) {
+      errorDetails.cause = error.cause;
       console.error('Stripe error cause:', error.cause);
+      
+      // causeがエラーオブジェクトの場合、その詳細も出力
+      if (error.cause instanceof Error) {
+        console.error('Stripe error cause details:', {
+          message: error.cause.message,
+          name: error.cause.name,
+          stack: error.cause.stack,
+          ...(error.cause as any).errno && { errno: (error.cause as any).errno },
+          ...(error.cause as any).syscall && { syscall: (error.cause as any).syscall },
+          ...(error.cause as any).hostname && { hostname: (error.cause as any).hostname },
+          ...(error.cause as any).code && { code: (error.cause as any).code },
+        });
+      }
     }
     
-    // ネットワークエラーの場合、より詳細な情報を出力
-    if (error.errno || error.syscall) {
-      console.error('Network error details:', {
+    // ネットワークエラーのプロパティを確認
+    if (error.errno || error.syscall || error.hostname) {
+      errorDetails.networkError = {
         errno: error.errno,
         syscall: error.syscall,
         hostname: error.hostname,
         code: error.code,
-        message: error.message,
-      });
+      };
+      console.error('Network error details:', errorDetails.networkError);
     }
+    
+    console.error('Stripe API call failed in createCheckoutSession:', errorDetails);
     
     throw error;
   }
