@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
     // Firebase ID Token を検証
     let userUid: string;
     let userEmail: string | undefined;
+    let userName: string | undefined;
     try {
       // Firebase Admin SDKの初期化を試みる
       let auth;
@@ -125,6 +126,7 @@ export async function POST(req: NextRequest) {
       const decodedToken = await auth.verifyIdToken(idToken);
       userUid = decodedToken.uid;
       userEmail = decodedToken.email;
+      userName = decodedToken.name; // ユーザーの表示名を取得
       
       if (!userUid) {
         console.error('User UID is missing from decoded token');
@@ -239,6 +241,8 @@ export async function POST(req: NextRequest) {
       priceId,
       customerId,
       userUid,
+      userEmail,
+      userName,
       trialDays: 7, // 7日間無料トライアル
     });
     } catch (stripeError: any) {

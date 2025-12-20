@@ -59,11 +59,15 @@ export async function createCheckoutSession({
   priceId,
   customerId,
   userUid,
+  userEmail,
+  userName,
   trialDays = 7, // デフォルトで7日間の無料トライアル
 }: {
   priceId: string;
   customerId?: string;
   userUid: string;
+  userEmail?: string;
+  userName?: string;
   trialDays?: number;
 }) {
   // APP_URLが設定されていない場合は、デフォルトでlocalhostを使用（開発環境）
@@ -88,6 +92,8 @@ export async function createCheckoutSession({
       },
     ],
     customer: customerId, // 既存の顧客がいる場合は再利用
+    customer_email: userEmail, // 顧客のメールアドレスを設定
+    customer_creation: customerId ? undefined : 'always', // 新規顧客の場合は作成
     client_reference_id: userUid, // Firebase UID を紐付け
     success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/billing/cancel`,
