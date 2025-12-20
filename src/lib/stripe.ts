@@ -4,8 +4,6 @@
  */
 
 import Stripe from 'stripe';
-import https from 'https';
-import http from 'http';
 
 // ビルド時はダミー値を使用
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_for_build';
@@ -27,27 +25,13 @@ console.log('Initializing Stripe SDK:', {
   nodeEnv: process.env.NODE_ENV,
 });
 
-// Node.jsのHTTPエージェントを明示的に設定（Vercelのサーバーレス関数での接続問題を回避）
-
-// カスタムHTTPSエージェント（接続プールとタイムアウト設定）
-// Stripe APIはHTTPSのみを使用するため、HTTPSエージェントを設定
-const httpsAgent = new https.Agent({
-  keepAlive: true,
-  keepAliveMsecs: 30000,
-  maxSockets: 50,
-  maxFreeSockets: 10,
-  timeout: 30000,
-});
-
 export const stripe = new Stripe(stripeSecretKey, {
   apiVersion: '2025-10-29.clover',
   typescript: true,
   // リトライ設定（接続エラー時の自動リトライ）
   maxNetworkRetries: 3, // リトライ回数を3回に増やす
   timeout: 30000, // 30秒のタイムアウト（Vercelのサーバーレス関数の制限を考慮、maxDuration=30と合わせる）
-  // HTTPエージェントを明示的に設定（Vercelのサーバーレス関数での接続問題を回避）
-  // Stripe SDKは内部的にhttpAgentを使用してHTTPSリクエストも処理する
-  httpAgent: httpsAgent,
+  // HTTPエージェントの設定は削除（以前の動作していた状態に戻す）
   // Stripe-Account ヘッダーを使用する場合はここで設定
   // stripeAccount: process.env.STRIPE_ACCOUNT_ID,
 });
