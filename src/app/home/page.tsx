@@ -965,71 +965,224 @@ function DashboardContent({
   // SEO/アクセシビリティ用のh1タグ（非表示）
   const pageTitle = `ホーム${car ? ' - ' + car.name : ' - garage log'}`;
 
-  // 月別費用データの計算
-  const monthlyExpenseData = useMemo(() => {
+  // 期間選択の状態管理
+  const [expensePeriod, setExpensePeriod] = useState<'monthly' | 'yearly' | 'all'>('monthly');
+
+  // 費用データの計算（期間に応じて）
+  const expenseData = useMemo(() => {
     const now = new Date();
-    const months = [];
     
-    // 過去6ヶ月のデータを生成
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = date.toLocaleDateString('ja-JP', { month: 'long' });
+    if (expensePeriod === 'monthly') {
+      // 月次: 過去6ヶ月のデータ
+      const months = [];
       
-      // その月のメンテナンス費用を計算
-      const maintenanceCost = maintenanceRecords
-        .filter(record => {
-          const recordDate = toDate(record.date) || new Date();
-          return recordDate.getFullYear() === date.getFullYear() && 
-                 recordDate.getMonth() === date.getMonth();
-        })
-        .reduce((sum, record) => sum + (record.cost || 0), 0);
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthName = date.toLocaleDateString('ja-JP', { month: 'long' });
+        
+        // その月のメンテナンス費用を計算
+        const maintenanceCost = maintenanceRecords
+          .filter(record => {
+            const recordDate = toDate(record.date) || new Date();
+            return recordDate.getFullYear() === date.getFullYear() && 
+                   recordDate.getMonth() === date.getMonth();
+          })
+          .reduce((sum, record) => sum + (record.cost || 0), 0);
+        
+        // その月の給油費用を計算
+        const fuelCost = fuelLogs
+          .filter(log => {
+            const logDate = toDate(log.date) || new Date();
+            return logDate.getFullYear() === date.getFullYear() && 
+                   logDate.getMonth() === date.getMonth();
+          })
+          .reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
+        
+        // その月のカスタマイズ費用を計算
+        const customizationCost = customizations
+          .filter(custom => {
+            const customDate = toDate(custom.date) || new Date();
+            return customDate.getFullYear() === date.getFullYear() && 
+                   customDate.getMonth() === date.getMonth();
+          })
+          .reduce((sum, custom) => {
+            const partsCost = custom.partsCostJpy || 0;
+            const laborCost = custom.laborCostJpy || 0;
+            const otherCost = custom.otherCostJpy || 0;
+            return sum + partsCost + laborCost + otherCost;
+          }, 0);
+        
+        const totalCost = maintenanceCost + fuelCost + customizationCost;
+        
+        months.push({
+          month: monthName,
+          monthKey,
+          maintenanceCost,
+          fuelCost,
+          customizationCost,
+          cost: totalCost,
+          cumulativeCost: 0
+        });
+      }
       
-      // その月の給油費用を計算
-      const fuelCost = fuelLogs
-        .filter(log => {
-          const logDate = toDate(log.date) || new Date();
-          return logDate.getFullYear() === date.getFullYear() && 
-                 logDate.getMonth() === date.getMonth();
-        })
-        .reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
-      
-      // その月のカスタマイズ費用を計算
-      const customizationCost = customizations
-        .filter(custom => {
-          const customDate = toDate(custom.date) || new Date();
-          return customDate.getFullYear() === date.getFullYear() && 
-                 customDate.getMonth() === date.getMonth();
-        })
-        .reduce((sum, custom) => {
-          const partsCost = custom.partsCostJpy || 0;
-          const laborCost = custom.laborCostJpy || 0;
-          const otherCost = custom.otherCostJpy || 0;
-          return sum + partsCost + laborCost + otherCost;
-        }, 0);
-      
-      const totalCost = maintenanceCost + fuelCost + customizationCost;
-      
-      months.push({
-        month: monthName,
-        monthKey,
-        maintenanceCost,
-        fuelCost,
-        customizationCost,
-        cost: totalCost, // 互換性のため
-        cumulativeCost: 0 // 後で計算
+      // 累積費用を計算
+      let cumulative = 0;
+      months.forEach(month => {
+        cumulative += month.cost;
+        month.cumulativeCost = cumulative;
       });
+      
+      return months;
+    } else if (expensePeriod === 'yearly') {
+      // 年次: 過去3年のデータ
+      const years = [];
+      
+      for (let i = 2; i >= 0; i--) {
+        const year = now.getFullYear() - i;
+        const yearStart = new Date(year, 0, 1);
+        const yearEnd = new Date(year, 11, 31);
+        
+        // その年のメンテナンス費用を計算
+        const maintenanceCost = maintenanceRecords
+          .filter(record => {
+            const recordDate = toDate(record.date) || new Date();
+            return recordDate >= yearStart && recordDate <= yearEnd;
+          })
+          .reduce((sum, record) => sum + (record.cost || 0), 0);
+        
+        // その年の給油費用を計算
+        const fuelCost = fuelLogs
+          .filter(log => {
+            const logDate = toDate(log.date) || new Date();
+            return logDate >= yearStart && logDate <= yearEnd;
+          })
+          .reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
+        
+        // その年のカスタマイズ費用を計算
+        const customizationCost = customizations
+          .filter(custom => {
+            const customDate = toDate(custom.date) || new Date();
+            return customDate >= yearStart && customDate <= yearEnd;
+          })
+          .reduce((sum, custom) => {
+            const partsCost = custom.partsCostJpy || 0;
+            const laborCost = custom.laborCostJpy || 0;
+            const otherCost = custom.otherCostJpy || 0;
+            return sum + partsCost + laborCost + otherCost;
+          }, 0);
+        
+        const totalCost = maintenanceCost + fuelCost + customizationCost;
+        
+        years.push({
+          month: `${year}年`,
+          monthKey: `${year}`,
+          maintenanceCost,
+          fuelCost,
+          customizationCost,
+          cost: totalCost,
+          cumulativeCost: 0
+        });
+      }
+      
+      // 累積費用を計算
+      let cumulative = 0;
+      years.forEach(year => {
+        cumulative += year.cost;
+        year.cumulativeCost = cumulative;
+      });
+      
+      return years;
+    } else {
+      // 全期間: 全データを月次で集計
+      const allMonths = new Map<string, {
+        month: string;
+        monthKey: string;
+        maintenanceCost: number;
+        fuelCost: number;
+        customizationCost: number;
+        cost: number;
+        cumulativeCost: number;
+        date: Date;
+      }>();
+      
+      // 全データから年月を抽出
+      [...maintenanceRecords, ...fuelLogs, ...customizations].forEach(item => {
+        const itemDate = toDate((item as any).date) || new Date();
+        const monthKey = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!allMonths.has(monthKey)) {
+          const date = new Date(itemDate.getFullYear(), itemDate.getMonth(), 1);
+          allMonths.set(monthKey, {
+            month: date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' }),
+            monthKey,
+            maintenanceCost: 0,
+            fuelCost: 0,
+            customizationCost: 0,
+            cost: 0,
+            cumulativeCost: 0,
+            date
+          });
+        }
+      });
+      
+      // 各月の費用を計算
+      allMonths.forEach((monthData, monthKey) => {
+        const date = monthData.date;
+        
+        // メンテナンス費用
+        monthData.maintenanceCost = maintenanceRecords
+          .filter(record => {
+            const recordDate = toDate(record.date) || new Date();
+            return recordDate.getFullYear() === date.getFullYear() && 
+                   recordDate.getMonth() === date.getMonth();
+          })
+          .reduce((sum, record) => sum + (record.cost || 0), 0);
+        
+        // 給油費用
+        monthData.fuelCost = fuelLogs
+          .filter(log => {
+            const logDate = toDate(log.date) || new Date();
+            return logDate.getFullYear() === date.getFullYear() && 
+                   logDate.getMonth() === date.getMonth();
+          })
+          .reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
+        
+        // カスタマイズ費用
+        monthData.customizationCost = customizations
+          .filter(custom => {
+            const customDate = toDate(custom.date) || new Date();
+            return customDate.getFullYear() === date.getFullYear() && 
+                   customDate.getMonth() === date.getMonth();
+          })
+          .reduce((sum, custom) => {
+            const partsCost = custom.partsCostJpy || 0;
+            const laborCost = custom.laborCostJpy || 0;
+            const otherCost = custom.otherCostJpy || 0;
+            return sum + partsCost + laborCost + otherCost;
+          }, 0);
+        
+        monthData.cost = monthData.maintenanceCost + monthData.fuelCost + monthData.customizationCost;
+      });
+      
+      // 日付順にソート
+      const sortedMonths = Array.from(allMonths.values()).sort((a, b) => 
+        a.date.getTime() - b.date.getTime()
+      );
+      
+      // 累積費用を計算
+      let cumulative = 0;
+      sortedMonths.forEach(month => {
+        cumulative += month.cost;
+        month.cumulativeCost = cumulative;
+      });
+      
+      return sortedMonths;
     }
-    
-    // 累積費用を計算
-    let cumulative = 0;
-    months.forEach(month => {
-      cumulative += month.cost;
-      month.cumulativeCost = cumulative;
-    });
-    
-    return months;
-  }, [maintenanceRecords, fuelLogs, customizations]);
+  }, [expensePeriod, maintenanceRecords, fuelLogs, customizations]);
+
+  // 後方互換性のため、monthlyExpenseDataを維持
+  const monthlyExpenseData = expenseData;
 
 
 
@@ -1558,11 +1711,42 @@ function DashboardContent({
             <section className="w-full">
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">月別費用推移</h3>
+                  <h3 className="font-semibold">
+                    {expensePeriod === 'monthly' ? '月別費用推移' : 
+                     expensePeriod === 'yearly' ? '年別費用推移' : 
+                     '費用推移（全期間）'}
+                  </h3>
                   <div className="flex gap-2 text-sm">
-                    <button className="px-3 py-1 rounded-full bg-blue-100 text-blue-700">月次</button>
-                    <button className="px-3 py-1 rounded-full text-gray-600 hover:bg-gray-100">年次</button>
-                    <button className="px-3 py-1 rounded-full text-gray-600 hover:bg-gray-100">全期間</button>
+                    <button 
+                      onClick={() => setExpensePeriod('monthly')}
+                      className={`px-3 py-1 rounded-full transition-colors ${
+                        expensePeriod === 'monthly'
+                          ? 'bg-blue-100 text-blue-700 font-medium'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      月次
+                    </button>
+                    <button 
+                      onClick={() => setExpensePeriod('yearly')}
+                      className={`px-3 py-1 rounded-full transition-colors ${
+                        expensePeriod === 'yearly'
+                          ? 'bg-blue-100 text-blue-700 font-medium'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      年次
+                    </button>
+                    <button 
+                      onClick={() => setExpensePeriod('all')}
+                      className={`px-3 py-1 rounded-full transition-colors ${
+                        expensePeriod === 'all'
+                          ? 'bg-blue-100 text-blue-700 font-medium'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      全期間
+                    </button>
                 </div>
                 </div>
                 <div className="mt-4 h-64">
