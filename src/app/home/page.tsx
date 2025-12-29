@@ -33,6 +33,7 @@ import { usePremiumGuard } from "@/hooks/usePremium";
 import MyCarPage from "@/components/mycar/MyCarPage";
 import NextMaintenanceSuggestion from "@/components/mycar/NextMaintenanceSuggestion";
 import { generateMaintenanceSuggestions } from "@/lib/maintenanceSuggestions";
+import UnifiedCTA from "@/components/UnifiedCTA";
 import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 
@@ -1206,8 +1207,41 @@ function DashboardContent({
   return (
     <>
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">ホーム</h1>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold">ホーム</h1>
+          {/* Primaryアクション: 記録を追加 */}
+          {car && (
+            <UnifiedCTA
+              onMaintenance={() => setShowMaintenanceModal(true)}
+              onFuel={() => setShowFuelLogModal(true)}
+              onCustom={() => setShowCustomizationModal(true)}
+            />
+          )}
+        </div>
+        {/* クイックアクション */}
+        {car && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowFuelLogModal(true)}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              給油
+            </button>
+            <button
+              onClick={() => setShowMaintenanceModal(true)}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              整備
+            </button>
+            <button
+              onClick={() => setShowCustomizationModal(true)}
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              カスタム
+            </button>
+          </div>
+        )}
       </div>
 
 
@@ -1279,76 +1313,98 @@ function DashboardContent({
         )}
         
               {car ? (
-                <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
-                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-                    <img
-                      src={car.imagePath || "/car.jpg"}
-                      alt={car.name || "My Car"}
-                      className="w-full h-44 md:h-full object-cover rounded-xl"
-                      onLoad={() => {
-                        // 画像読み込み完了時の処理
-                      }}
-                      onError={() => {
-                        // 画像読み込みエラー時の処理
-                      }}
-                    />
-                  </div>
-                  <div className="flex flex-col justify-between gap-4">
+                <>
+                  {/* 上：サマリー */}
+                  <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 mb-4">
+                    <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                      <img
+                        src={car.imagePath || "/car.jpg"}
+                        alt={car.name || "My Car"}
+                        className="w-full h-44 md:h-full object-cover rounded-xl"
+                        onLoad={() => {
+                          // 画像読み込み完了時の処理
+                        }}
+                        onError={() => {
+                          // 画像読み込みエラー時の処理
+                        }}
+                      />
+                    </div>
                     <div>
-                      <h2 className="text-xl font-bold">
+                      <h2 className="text-xl font-bold mb-3">
                         {car.name}
                         {car.modelCode ? `（${car.modelCode}）` : ""}
                       </h2>
-                      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                        <Spec label="グレード" value={car.modelCode || "未設定"} />
-                        <Spec
-                          label="年式"
-                          value={car.year ? `${car.year}年` : "未設定"}
-                        />
-                        <Spec
-                          label="走行距離"
-                          value={
-                            car.odoKm
+                      {/* 主要KPI: 走行距離・車検期限を強調 */}
+                      <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">走行距離</div>
+                          <div className="text-lg font-bold text-gray-900">
+                            {car.odoKm
                               ? `${car.odoKm.toLocaleString()} km`
-                              : "未設定"
-                          }
-                        />
-                        <Spec 
-                          label="車検期限" 
-                          value={
-                            car.inspectionExpiry
-                              ? (car.inspectionExpiry.toDate ? car.inspectionExpiry.toDate() : new Date(car.inspectionExpiry as any)).toLocaleDateString('ja-JP', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })
-                              : "未設定"
-                          } 
-                        />
+                              : "未設定"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">車検期限</div>
+                          {car.inspectionExpiry ? (() => {
+                            const expiryDate = car.inspectionExpiry.toDate ? car.inspectionExpiry.toDate() : new Date(car.inspectionExpiry as any);
+                            const today = new Date();
+                            const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                            const isNearExpiry = daysUntilExpiry <= 30;
+                            return (
+                              <div>
+                                <div className={`text-lg font-bold ${isNearExpiry ? daysUntilExpiry <= 7 ? 'text-red-600' : daysUntilExpiry <= 14 ? 'text-orange-600' : 'text-yellow-600' : 'text-gray-900'}`}>
+                                  {expiryDate.toLocaleDateString('ja-JP', {
+                                    year: 'numeric',
+                                    month: 'numeric',
+                                    day: 'numeric'
+                                  })}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  あと{daysUntilExpiry}日
+                                </div>
+                              </div>
+                            );
+                          })() : (
+                            <div className="text-lg font-bold text-gray-900">未設定</div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button 
-                        onClick={() => {
-                          console.log("Navigate to vehicle data, activeCarId:", activeCarId);
-                          setCurrentPage('my-car');
-                        }}
-                        className="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-500 flex-1 sm:flex-none"
-                      >
-                        📊 マイカーを見る
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setShowFuelLogModal(true);
-                        }}
-                        className="rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm font-medium hover:bg-emerald-500 flex-1 sm:flex-none flex items-center justify-center gap-1.5"
-                      >
-                        <span>⛽</span>
-                        <span>給油を登録</span>
-                      </button>
+                      {/* 履歴の充実度 */}
+                      {(() => {
+                        const maintenanceCount = maintenanceRecords.length;
+                        const latestMaintenance = maintenanceRecords.length > 0 ? maintenanceRecords.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0] : null;
+                        const evidenceCount = maintenanceRecords.filter(r => r.attachments && r.attachments.length > 0).length;
+                        const evidenceRate = maintenanceCount > 0 ? Math.round((evidenceCount / maintenanceCount) * 100) : 0;
+                        return (
+                          <div className="flex items-center gap-4 text-xs text-gray-600 pt-3 border-t border-gray-200">
+                            <span>記録: {maintenanceCount}件</span>
+                            <span>証憑: {evidenceCount}件（{evidenceRate}%）</span>
+                            <span>直近整備: {latestMaintenance ? (latestMaintenance.date?.toDate ? latestMaintenance.date.toDate() : toDate(latestMaintenance.date) || new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }) : 'なし'}</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
-                </div>
+                  {/* 下：アクション */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <button 
+                      onClick={() => {
+                        console.log("Navigate to vehicle data, activeCarId:", activeCarId);
+                        setCurrentPage('my-car');
+                      }}
+                      className="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      マイカーを見る →
+                    </button>
+                    {/* Primary CTA: 記録を追加 */}
+                    <UnifiedCTA
+                      onMaintenance={() => setShowMaintenanceModal(true)}
+                      onFuel={() => setShowFuelLogModal(true)}
+                      onCustom={() => setShowCustomizationModal(true)}
+                    />
+                  </div>
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                   <div className="text-gray-400 mb-4">
@@ -1388,34 +1444,78 @@ function DashboardContent({
               
               {maintenanceRecords.length > 0 ? (
                 <div className="space-y-3">
-                  {maintenanceRecords
-                    .sort((a, b) => toMillis(b.date) - toMillis(a.date))
-                    .slice(0, 3)
-                    .map((record) => (
-                    <div key={record.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium text-gray-900">{record.title}</h4>
-                </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {(record.date?.toDate ? record.date.toDate() : new Date()).toLocaleDateString('ja-JP')} • {record.mileage?.toLocaleString()}km
-                            {record.cost && (
-                              <span className="ml-2 font-medium text-gray-900">
-                                ¥{record.cost.toLocaleString()}
-                              </span>
+                  {/* 最新1件 */}
+                  {(() => {
+                    const latest = maintenanceRecords.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
+                    return (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-xs text-gray-500 mb-1">最新の整備</div>
+                            <div className="text-sm font-medium text-gray-900">{latest.title}</div>
+                          </div>
+                          <div className="text-right">
+                            {latest.cost && (
+                              <div className="text-sm font-bold text-gray-900">
+                                ¥{latest.cost.toLocaleString()}
+                              </div>
                             )}
-                          </p>
-                          {record.description && (
-                            <p className="text-sm text-gray-500 line-clamp-2">
-                              {record.description}
-                            </p>
-                          )}
-              </div>
-                        {/* 詳細ボタンは削除 - クリックでマイカーページへ */}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })()}
+
+                  {/* ミニ統計（2つまで） */}
+                  {(() => {
+                    const totalCost = maintenanceRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
+                    const recentCount = maintenanceRecords.filter(r => {
+                      const recordDate = toDate(r.date) || new Date();
+                      const threeMonthsAgo = new Date();
+                      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                      return recordDate >= threeMonthsAgo;
+                    }).length;
+                    return (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="text-center p-2 bg-gray-50 rounded-lg">
+                          <div className="text-xs font-bold text-blue-600">
+                            ¥{totalCost.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">総費用</div>
+                        </div>
+                        <div className="text-center p-2 bg-gray-50 rounded-lg">
+                          <div className="text-xs font-bold text-green-600">
+                            {recentCount}件
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">直近3ヶ月</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 最近の履歴（直近3件） */}
+                  <div className="space-y-2">
+                    {maintenanceRecords
+                      .sort((a, b) => toMillis(b.date) - toMillis(a.date))
+                      .slice(0, 3)
+                      .map((record) => (
+                      <div key={record.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{record.title}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">
+                              {(record.date?.toDate ? record.date.toDate() : toDate(record.date) || new Date()).toLocaleDateString('ja-JP')} • {record.mileage?.toLocaleString()}km
+                            </div>
+                          </div>
+                          {record.cost && (
+                            <div className="text-sm font-medium text-gray-900">
+                              ¥{record.cost.toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                   {maintenanceRecords.length > 3 && (
                     <div className="pt-2 text-center border-t border-gray-200">
                       <button
@@ -1434,14 +1534,14 @@ function DashboardContent({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">メンテナンスがありません</h4>
-                  <p className="text-gray-500 mb-4">まずはメンテナンスを1件追加しましょう</p>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">最初の整備を1件追加しましょう</h4>
+                  <p className="text-gray-500 mb-4 text-sm">オイル交換や車検の記録からでOKです</p>
                   <div className="flex items-center justify-center">
                     <button
                       onClick={() => activeCarId ? setShowMaintenanceModal(true) : setCurrentPage('my-car')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                     >
-                      メンテナンスを追加
+                      整備を追加
                     </button>
                   </div>
                 </div>
@@ -1479,143 +1579,106 @@ function DashboardContent({
                     </button>
                   </div>
                 ) : car && fuelLogs.length > 0 ? (
-                    <div className="space-y-4">
-                      {/* 最新の給油情報 */}
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <SectionHeader title="最新の給油" size="sm" />
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">
-                            {(toDate(fuelLogs[0].date) || new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
-                          </div>
-                          <div className="text-xs text-gray-500">日時</div>
-                        </div>
-                        <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">
-                                {(() => {
-                                  const amt = getDisplayAmount(fuelLogs[0]);
-                                  return `${(amt.value || 0).toLocaleString()}${amt.unit}`;
-                                })()}
-                              </div>
-                              <div className="text-xs text-gray-500">給油量</div>
-                        </div>
-                        <div className="text-center">
-                              <div className="text-lg font-bold text-gray-900">
-                                ¥{getDisplayCost(fuelLogs[0]).toLocaleString()}
-                              </div>
-                          <div className="text-xs text-gray-500">金額</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                            <div className="text-sm font-bold text-gray-900">
-                          {(() => {
-                            const amt = getDisplayAmount(fuelLogs[0]);
-                            const cost = getDisplayCost(fuelLogs[0]);
-                            const unitPrice = amt.value > 0 ? Math.round(cost / amt.value) : 0;
-                            return `¥${unitPrice.toLocaleString()}/${amt.unit}`;
-                          })()}
-                        </div>
-                            <div className="text-xs text-gray-500">単価</div>
-                      </div>
-                        </div>
-                      </div>
-
-                      {/* 給油統計 */}
+                    <div className="space-y-3">
+                      {/* 最新1件 */}
                       {(() => {
-                        const currentEfficiency = calculateFuelEfficiency(fuelLogs);
-                        const averageEfficiency = calculateAverageFuelEfficiency(fuelLogs);
-                        const totalFuelCost = fuelLogs.reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
-                        const totalFuelAmount = fuelLogs.reduce((sum, log) => sum + ((log.quantity || 0) / 1000 || log.fuelAmount || 0), 0);
-                        const avgPricePerLiter = totalFuelAmount > 0 ? totalFuelCost / totalFuelAmount : 0;
-
+                        const latest = fuelLogs.sort((a, b) => {
+                          const aSeconds = a.date?.seconds || 0;
+                          const bSeconds = b.date?.seconds || 0;
+                          return bSeconds - aSeconds;
+                        })[0];
+                        const amt = getDisplayAmount(latest);
                         return (
-                          <div className="bg-gray-50 rounded-lg p-4">
-                            <h4 className="text-sm font-medium text-gray-700 mb-3">統計情報</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="text-center">
-                                <div className="text-sm font-bold text-blue-600">
-                                  {currentEfficiency ? `${currentEfficiency} km/L` : '--'}
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">最新の給油</div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {(latest.date?.toDate ? latest.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} • {((latest.quantity || 0) / 1000 || latest.fuelAmount || 0).toLocaleString()}L
                                 </div>
-                                <div className="text-xs text-gray-500">現在の燃費</div>
                               </div>
-                              <div className="text-center">
-                                <div className="text-sm font-bold text-green-600">
-                                  {averageEfficiency ? `${averageEfficiency} km/L` : '--'}
+                              <div className="text-right">
+                                <div className="text-sm font-bold text-gray-900">
+                                  ¥{getDisplayCost(latest).toLocaleString()}
                                 </div>
-                                <div className="text-xs text-gray-500">平均燃費</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-sm font-bold text-orange-600">
-                                  ¥{Math.round(avgPricePerLiter).toLocaleString()}
-                                </div>
-                                <div className="text-xs text-gray-500">平均単価</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-sm font-bold text-purple-600">
-                                  ¥{totalFuelCost.toLocaleString()}
-                                </div>
-                                <div className="text-xs text-gray-500">総給油費</div>
                               </div>
                             </div>
                           </div>
                         );
                       })()}
 
-                      {/* 最近の給油履歴 */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">最近の給油履歴（上位3件）</h4>
-                        <div className="space-y-2">
-                          {fuelLogs
-                            .sort((a, b) => {
-                              const aSeconds = a.date?.seconds || 0;
-                              const bSeconds = b.date?.seconds || 0;
-                              return bSeconds - aSeconds;
-                            })
-                            .slice(0, 3)
-                            .map((log) => (
-                            <div key={log.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                  <div className="text-center">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
-                                    </div>
-                                    <div className="text-xs text-gray-500">日付</div>
-                                  </div>
-                                  <div className="text-center">
-                                    <div className="text-sm font-medium text-gray-900">{((log.quantity || 0) / 1000 || log.fuelAmount || 0)}L</div>
-                                    <div className="text-xs text-gray-500">給油量</div>
-                                  </div>
-                                  <div className="text-center">
-                                    <div className="text-sm font-medium text-gray-900">¥{(log.totalCostJpy || log.cost || 0).toLocaleString()}</div>
-                                    <div className="text-xs text-gray-500">金額</div>
-                                  </div>
-                                  {log.isFullTank && (
-                                    <div className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                      満タン
-                    </div>
-                  )}
-                </div>
-                                <div className="text-right">
-                                  <div className="text-sm text-gray-600">{log.odoKm.toLocaleString()}km</div>
-                                  <div className="text-xs text-gray-500">走行距離</div>
-                                </div>
+                      {/* ミニ統計（2つまで） */}
+                      {(() => {
+                        const currentEfficiency = calculateFuelEfficiency(fuelLogs);
+                        // 前回からの走行距離を計算
+                        const sortedLogs = fuelLogs.sort((a, b) => {
+                          const aSeconds = a.date?.seconds || 0;
+                          const bSeconds = b.date?.seconds || 0;
+                          return bSeconds - aSeconds;
+                        });
+                        const latestKm = sortedLogs[0]?.odoKm || 0;
+                        const previousKm = sortedLogs[1]?.odoKm || 0;
+                        const distanceSinceLastRefuel = latestKm > 0 && previousKm > 0 ? latestKm - previousKm : null;
+                        return (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="text-xs font-bold text-blue-600">
+                                {currentEfficiency ? `${currentEfficiency} km/L` : '--'}
                               </div>
+                              <div className="text-xs text-gray-500 mt-1">現在の燃費</div>
                             </div>
-                          ))}
-                        </div>
-                        {fuelLogs.length > 3 && (
-                          <div className="pt-3 text-center border-t border-gray-200">
-                            <button
-                              onClick={() => setCurrentPage('fuel-logs')}
-                              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                            >
-                              もっと見る ({fuelLogs.length}件) →
-                            </button>
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="text-xs font-bold text-indigo-600">
+                                {distanceSinceLastRefuel !== null ? `${distanceSinceLastRefuel.toLocaleString()} km` : '--'}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">前回からの走行</div>
+                            </div>
                           </div>
-                        )}
+                        );
+                      })()}
+
+                      {/* 最近の給油履歴（直近3件） */}
+                      <div className="space-y-2">
+                        {fuelLogs
+                          .sort((a, b) => {
+                            const aSeconds = a.date?.seconds || 0;
+                            const bSeconds = b.date?.seconds || 0;
+                            return bSeconds - aSeconds;
+                          })
+                          .slice(0, 3)
+                          .map((log) => (
+                          <div key={log.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
+                            <div className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-600">
+                                  {(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                                </span>
+                                <span className="text-gray-900">
+                                  {((log.quantity || 0) / 1000 || log.fuelAmount || 0).toLocaleString()}L
+                                </span>
+                                <span className="text-gray-900 font-medium">
+                                  ¥{(log.totalCostJpy || log.cost || 0).toLocaleString()}
+                                </span>
+                              </div>
+                              {log.isFullTank && (
+                                <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                                  満タン
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                      {fuelLogs.length > 3 && (
+                        <div className="pt-2 text-center border-t border-gray-200">
+                          <button
+                            onClick={() => setCurrentPage('fuel-logs')}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            もっと見る ({fuelLogs.length}件) →
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-8">
@@ -1629,7 +1692,7 @@ function DashboardContent({
                       <div className="flex items-center justify-center">
                         <button
                           onClick={() => activeCarId ? setShowFuelLogModal(true) : setCurrentPage('my-car')}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                         >
                           給油を記録
                         </button>
@@ -1652,50 +1715,90 @@ function DashboardContent({
                 
                 {customizations.length > 0 ? (
                   <div className="space-y-3">
-                    {customizations
-                      .sort((a, b) => toMillis(b.date) - toMillis(a.date))
-                      .slice(0, 3)
-                      .map((customization) => (
-                      <div key={customization.id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-medium text-gray-900">{customization.title}</h4>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[customization.status]}`}>
-                                {STATUS_LABELS[customization.status]}
-                              </span>
+                    {/* 最新1件 */}
+                    {(() => {
+                      const latest = customizations.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
+                      const totalCost = (latest.partsCostJpy || 0) + (latest.laborCostJpy || 0) + (latest.otherCostJpy || 0);
+                      return (
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-xs text-gray-500 mb-1">最新のカスタマイズ</div>
+                              <div className="text-sm font-medium text-gray-900">{latest.title}</div>
                             </div>
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {customization.categories.slice(0, 2).map((category) => (
-                                <span key={category} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                  {CATEGORY_LABELS[category]}
-                                </span>
-                              ))}
-                              {customization.categories.length > 2 && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                  +{customization.categories.length - 2}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span>{(customization.date?.toDate ? customization.date.toDate() : new Date()).toLocaleDateString('ja-JP')}</span>
-                              {(customization.partsCostJpy || customization.laborCostJpy || customization.otherCostJpy) && (
-                                <span className="font-medium text-green-600">
-                                  ¥{((customization.partsCostJpy || 0) + (customization.laborCostJpy || 0) + (customization.otherCostJpy || 0)).toLocaleString()}
-                                </span>
+                            <div className="text-right">
+                              {totalCost > 0 && (
+                                <div className="text-sm font-bold text-gray-900">
+                                  ¥{totalCost.toLocaleString()}
+                                </div>
                               )}
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })()}
+
+                    {/* ミニ統計（2つまで） */}
+                    {(() => {
+                      const totalCost = customizations.reduce((sum, c) => 
+                        sum + (c.partsCostJpy || 0) + (c.laborCostJpy || 0) + (c.otherCostJpy || 0), 0);
+                      const categoryCount = new Set(customizations.flatMap(c => c.categories)).size;
+                      return (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="text-center p-2 bg-gray-50 rounded-lg">
+                            <div className="text-xs font-bold text-purple-600">
+                              ¥{totalCost.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">総費用</div>
+                          </div>
+                          <div className="text-center p-2 bg-gray-50 rounded-lg">
+                            <div className="text-xs font-bold text-indigo-600">
+                              {categoryCount}種類
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">カテゴリ</div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* 最近の履歴（直近3件） */}
+                    <div className="space-y-2">
+                      {customizations
+                        .sort((a, b) => toMillis(b.date) - toMillis(a.date))
+                        .slice(0, 3)
+                        .map((customization) => {
+                          const totalCost = (customization.partsCostJpy || 0) + (customization.laborCostJpy || 0) + (customization.otherCostJpy || 0);
+                          return (
+                            <div key={customization.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
+                              <div className="flex items-center justify-between text-sm">
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-900">{customization.title}</div>
+                                  <div className="text-xs text-gray-600 mt-0.5">
+                                    {(customization.date?.toDate ? customization.date.toDate() : toDate(customization.date) || new Date()).toLocaleDateString('ja-JP')}
+                                    {customization.categories.length > 0 && (
+                                      <span className="ml-2">
+                                        {CATEGORY_LABELS[customization.categories[0]]}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {totalCost > 0 && (
+                                  <div className="text-sm font-medium text-gray-900">
+                                    ¥{totalCost.toLocaleString()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
                     {customizations.length > 3 && (
-                      <div className="text-center">
+                      <div className="pt-2 text-center border-t border-gray-200">
                         <button
                           onClick={() => setCurrentPage('customizations')}
                           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
-                          すべてのカスタマイズを見る ({customizations.length}件)
+                          もっと見る ({customizations.length}件) →
                         </button>
                       </div>
                     )}
@@ -1707,12 +1810,12 @@ function DashboardContent({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                       </svg>
                     </div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-2">カスタマイズ記録がありません</h4>
-                    <p className="text-gray-500 mb-4">まずは1件追加してみましょう</p>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">最初のカスタマイズを追加しましょう</h4>
+                    <p className="text-gray-500 mb-4 text-sm">タイヤ/ホイール/足回りなどからでOKです</p>
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => (activeCarId && auth.currentUser) ? setShowCustomizationModal(true) : setCurrentPage('my-car')}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                       >
                         カスタマイズを追加
                       </button>
@@ -1725,7 +1828,7 @@ function DashboardContent({
             {/* 下段：月別費用推移 */}
             <section className="w-full">
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold">
                     {expensePeriod === 'monthly' ? '月別費用推移' : 
                      expensePeriod === 'yearly' ? '年別費用推移' : 
@@ -1764,6 +1867,42 @@ function DashboardContent({
                     </button>
                 </div>
                 </div>
+                {/* 要約値チップ（月次表示時のみ） */}
+                {expensePeriod === 'monthly' && monthlyExpenseData.length > 0 && (() => {
+                  const now = new Date();
+                  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                  const currentMonthData = monthlyExpenseData.find(m => m.monthKey === currentMonthKey) || monthlyExpenseData[monthlyExpenseData.length - 1];
+                  const previousMonthData = monthlyExpenseData[monthlyExpenseData.length - 2] || null;
+                  const totalCost = currentMonthData.cost;
+                  const diff = previousMonthData ? totalCost - previousMonthData.cost : 0;
+                  return (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      <div className="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="text-xs text-gray-600 mb-0.5">今月の総費用</div>
+                        <div className="text-lg font-bold text-gray-900">¥{totalCost.toLocaleString()}</div>
+                      </div>
+                      <div className="px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="text-xs text-gray-600 mb-0.5">内訳</div>
+                        <div className="text-sm text-gray-900">
+                          整備: ¥{currentMonthData.maintenanceCost.toLocaleString()} / 給油: ¥{currentMonthData.fuelCost.toLocaleString()} / カスタム: ¥{currentMonthData.customizationCost.toLocaleString()}
+                        </div>
+                      </div>
+                      {previousMonthData && (
+                        <div className={`px-3 py-1.5 rounded-lg border ${
+                          diff >= 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+                        }`}>
+                          <div className="text-xs text-gray-600 mb-0.5">前月比</div>
+                          <div className={`text-sm font-bold ${diff >= 0 ? 'text-red-700' : 'text-green-700'}`}>
+                            {diff >= 0 ? '+' : ''}¥{Math.abs(diff).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            前月: ¥{previousMonthData.cost.toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="mt-4 h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={monthlyExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
