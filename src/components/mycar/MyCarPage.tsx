@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { parseQuery } from '@/lib/urlParams';
 import { Car, MaintenanceRecord, FuelLog, Customization } from '@/types';
 import { usePremiumGuard } from '@/hooks/usePremium';
@@ -35,6 +35,7 @@ export default function MyCarPage({
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
   const isPremium = isPremiumPlan(userPlan);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const dayMs = 1000 * 60 * 60 * 24;
 

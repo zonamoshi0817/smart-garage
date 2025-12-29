@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Car, MaintenanceRecord, Customization } from '@/types';
 import { downloadMaintenancePDF, downloadBuildSheetPDF } from '@/lib/pdfExport';
 import { downloadSocialCardImage } from '@/lib/imageGeneration';
@@ -15,8 +16,8 @@ interface ShareAndPDFModalProps {
 }
 
 /**
- * PDF出力・公開設定モーダル
- * 車両履歴のPDF出力と公開マイカーページの設定を提供
+ * 共有用データの作成・公開設定モーダル
+ * 車両履歴のPDF作成と公開マイカーページの設定を提供
  */
 export default function ShareAndPDFModal({ 
   car, 
@@ -25,6 +26,7 @@ export default function ShareAndPDFModal({
   onClose,
   onCarUpdated
 }: ShareAndPDFModalProps) {
+  const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [activeTab, setActiveTab] = useState<'pdf' | 'public' | 'social'>('pdf');
@@ -91,7 +93,7 @@ export default function ShareAndPDFModal({
           car,
           maintenanceRecords
         });
-        alert('✅ メンテナンス履歴PDFを出力しました！');
+        alert('✅ メンテナンス履歴PDFを作成しました！');
       } else {
         // ビルドシートPDF
         const publicUrl = car.id ? `${window.location.origin}/c/${car.id}` : undefined;
@@ -101,7 +103,7 @@ export default function ShareAndPDFModal({
           maintenanceRecords,
           publicUrl
         });
-        alert('✅ ビルドシートPDFを出力しました！');
+        alert('✅ ビルドシートPDFを作成しました！');
       }
     } catch (error) {
       console.error('PDF生成エラー:', error);
@@ -144,7 +146,7 @@ export default function ShareAndPDFModal({
             <div>
               <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <span>📄</span>
-                <span>PDF出力・公開設定</span>
+                <span>共有用データの作成</span>
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 {car.name}{car.modelCode ? ` (${car.modelCode})` : ''}
@@ -152,9 +154,9 @@ export default function ShareAndPDFModal({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-300 hover:text-gray-500 transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -170,7 +172,7 @@ export default function ShareAndPDFModal({
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              PDF出力
+              PDF作成
             </button>
             <button
               onClick={() => setActiveTab('social')}
@@ -205,26 +207,42 @@ export default function ShareAndPDFModal({
                   <span>📄</span>
                   <span>車両履歴PDF</span>
                 </h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  全メンテナンス履歴・給油記録を証跡付きPDFで出力します
+                <p className="text-xs text-gray-600 mb-2">
+                  対象：メンテナンス・給油・証跡
+                </p>
+                <p className="text-sm text-gray-600 mb-3">
+                  全メンテナンス履歴・給油記録を証跡付きPDFで作成します
                 </p>
                 {maintenanceRecords.length > 0 ? (
-                  <p className="text-xs text-indigo-700 mb-4">
+                  <p className="text-xs text-indigo-700 mb-3">
                     📊 {maintenanceRecords.length}件のメンテナンス記録をPDFに含めます
                   </p>
                 ) : (
-                  <p className="text-xs text-orange-700 mb-4">
-                    ⚠️ メンテナンス記録がありません。先に記録を追加してください。
-                  </p>
+                  <div className="text-xs text-orange-700 mb-3 space-y-1">
+                    <p className="font-medium">
+                      ⚠️ 記録がありません。先に記録を追加してください。
+                    </p>
+                    {car.id && (
+                      <button
+                        onClick={() => {
+                          onClose();
+                          router.push(`/cars/${car.id}/maintenance`);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-700 underline"
+                      >
+                        メンテナンスを追加 →
+                      </button>
+                    )}
+                  </div>
                 )}
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleGeneratePDF('maintenance')}
                     disabled={isGenerating || maintenanceRecords.length === 0}
-                    className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
                     <span>📥</span>
-                    <span>{isGenerating ? 'PDF生成中...' : '履歴PDF発行'}</span>
+                    <span>{isGenerating ? 'PDF生成中...' : maintenanceRecords.length === 0 ? '履歴を追加してPDFを作成' : 'PDFを作成'}</span>
                   </button>
                 </div>
               </div>
@@ -235,26 +253,42 @@ export default function ShareAndPDFModal({
                   <span>🏎️</span>
                   <span>ビルドシートPDF</span>
                 </h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  カスタマイズ情報を中心としたビルドシート形式のPDFを出力します
+                <p className="text-xs text-gray-600 mb-2">
+                  対象：カスタマイズ
+                </p>
+                <p className="text-sm text-gray-600 mb-3">
+                  カスタマイズ情報を中心としたビルドシート形式のPDFを作成します
                 </p>
                 {customizations && customizations.length > 0 ? (
-                  <p className="text-xs text-blue-700 mb-4">
+                  <p className="text-xs text-blue-700 mb-3">
                     🎨 {customizations.length}件のカスタマイズ記録をPDFに含めます
                   </p>
                 ) : (
-                  <p className="text-xs text-orange-700 mb-4">
-                    ⚠️ カスタマイズ記録がありません。先に記録を追加してください。
-                  </p>
+                  <div className="text-xs text-orange-700 mb-3 space-y-1">
+                    <p className="font-medium">
+                      ⚠️ カスタマイズ記録がありません。先に記録を追加してください。
+                    </p>
+                    {car.id && (
+                      <button
+                        onClick={() => {
+                          onClose();
+                          router.push(`/cars/${car.id}?tab=customs`);
+                        }}
+                        className="text-blue-600 hover:text-blue-700 underline"
+                      >
+                        カスタマイズを追加 →
+                      </button>
+                    )}
+                  </div>
                 )}
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleGeneratePDF('buildsheet')}
                     disabled={isGenerating || !customizations || customizations.length === 0}
-                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
                   >
                     <span>📥</span>
-                    <span>{isGenerating ? 'PDF生成中...' : 'ビルドシートPDF発行'}</span>
+                    <span>{isGenerating ? 'PDF生成中...' : (!customizations || customizations.length === 0) ? 'カスタマイズを追加してPDFを作成' : 'PDFを作成'}</span>
                   </button>
                 </div>
               </div>
@@ -264,11 +298,18 @@ export default function ShareAndPDFModal({
                 <div className="flex items-start gap-3">
                   <span className="flex-shrink-0 text-2xl">ℹ️</span>
                   <div className="text-sm text-gray-600 space-y-2">
-                    <p className="font-medium text-gray-900">証跡機能について</p>
+                    <p className="font-medium text-gray-900">改ざん防止について</p>
                     <p>
-                      PDFには、すべてのデータに対するブロックチェーン検証IDが含まれています。
-                      データの改ざんがないことを第三者が検証できます。
+                      PDFには検証用IDが含まれ、第三者が改ざんの有無を確認できます。
                     </p>
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-blue-600 hover:text-blue-700">
+                        詳しく見る
+                      </summary>
+                      <p className="mt-2 text-gray-600">
+                        データはブロックチェーン技術で保護され、検証IDにより改ざんの有無を確認できます。
+                      </p>
+                    </details>
                   </div>
                 </div>
               </div>

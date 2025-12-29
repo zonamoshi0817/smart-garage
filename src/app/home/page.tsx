@@ -7,7 +7,8 @@ import { Timestamp } from "firebase/firestore";
 import AuthGate from "@/components/AuthGate";
 import { addCar, watchCars, updateCar } from "@/lib/cars";
 import type { Car, CarInput } from "@/types";
-import { auth, watchAuth } from "@/lib/firebase";
+import { auth, watchAuth, db } from "@/lib/firebase";
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import type { User } from "firebase/auth";
 import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords } from "@/lib/maintenance";
 import type { MaintenanceRecord } from "@/types";
@@ -79,7 +80,7 @@ export default function Home() {
   const [showOCRModal, setShowOCRModal] = useState(false);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
   const [currentUser, setCurrentUser] = useState<User | null>(null); // 現在のユーザー情報
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'share'>('dashboard');
   // 軽量トースト（成功フィードバック）
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   useEffect(() => {
@@ -566,6 +567,11 @@ export default function Home() {
               onClick={() => setCurrentPage('customizations')}
             />
             <NavItem 
+              label="共有" 
+              active={currentPage === 'share'} 
+              onClick={() => setCurrentPage('share')}
+            />
+            <NavItem 
               label="車両管理" 
               active={currentPage === 'car-management'} 
               onClick={() => setCurrentPage('car-management')}
@@ -738,6 +744,15 @@ export default function Home() {
                 setShowCustomizationModal={setShowCustomizationModal}
                 setEditingCustomization={setEditingCustomization}
                 setCustomizations={setCustomizations}
+              />
+            ) : currentPage === 'share' ? (
+              <ShareContent
+                cars={cars}
+                activeCarId={activeCarId}
+                car={car}
+                maintenanceRecords={maintenanceRecords}
+                customizations={customizations}
+                setShowShareAndPDFModal={setShowShareAndPDFModal}
               />
             ) : currentPage === 'data-management' ? (
               <DataManagementContent 
@@ -5316,6 +5331,384 @@ const MAINTENANCE_TITLE_OPTIONS = [
 ];
 
 // カスタマイズ一覧コンポーネント
+function ShareContent({
+  cars,
+  activeCarId,
+  car,
+  maintenanceRecords,
+  customizations,
+  setShowShareAndPDFModal
+}: {
+  cars: Car[];
+  activeCarId?: string;
+  car?: Car;
+  maintenanceRecords: MaintenanceRecord[];
+  customizations: Customization[];
+  setShowShareAndPDFModal: (show: boolean) => void;
+}) {
+  const router = useRouter();
+  const [purpose, setPurpose] = useState<'normal' | 'sale' | 'assess'>('normal');
+  const [saleProfile, setSaleProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [updatingLink, setUpdatingLink] = useState(false);
+  const [pageViewCount, setPageViewCount] = useState<number | null>(null);
+
+  // saleProfileを取得
+  useEffect(() => {
+    if (!activeCarId || !auth.currentUser) return;
+    
+    const loadSaleProfile = async () => {
+      setLoadingProfile(true);
+      try {
+        const carDoc = await getDoc(doc(db, 'users', auth.currentUser!.uid, 'cars', activeCarId));
+        if (carDoc.exists()) {
+          const carData = carDoc.data();
+          if (carData.activeSaleProfileId) {
+            const saleProfileDoc = await getDoc(doc(db, 'saleProfiles', carData.activeSaleProfileId));
+            if (saleProfileDoc.exists()) {
+              const profileData = { id: saleProfileDoc.id, ...saleProfileDoc.data() };
+              setSaleProfile(profileData);
+              
+              // 閲覧回数を取得（簡易版）
+              try {
+                const pageViewsQuery = query(
+                  collection(db, 'salePageViews'),
+                  where('saleProfileId', '==', profileData.id),
+                  where('event', '==', 'page_view')
+                );
+                const pageViewsSnapshot = await getDocs(pageViewsQuery);
+                setPageViewCount(pageViewsSnapshot.size);
+              } catch (error) {
+                console.error('Failed to load page views:', error);
+                setPageViewCount(null);
+              }
+            } else {
+              setSaleProfile(null);
+              setPageViewCount(null);
+            }
+          } else {
+            setSaleProfile(null);
+            setPageViewCount(null);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load sale profile:', error);
+        setSaleProfile(null);
+        setPageViewCount(null);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    loadSaleProfile();
+  }, [activeCarId]);
+
+  // 共有リンクを作成
+  const handleCreateLink = async () => {
+    if (!activeCarId || !auth.currentUser) return;
+    
+    try {
+      setUpdatingLink(true);
+      const { enableSaleMode } = await import('@/lib/saleProfileManager');
+      const saleProfileId = await enableSaleMode(activeCarId, {
+        visibility: purpose === 'normal' ? 'unlisted' : 'unlisted',
+        includeEvidence: purpose !== 'normal',
+        includeAmounts: false,
+        highlightTopN: 10,
+        analyticsEnabled: true,
+      });
+
+      // saleProfileを再取得
+      const saleProfileDoc = await getDoc(doc(db, 'saleProfiles', saleProfileId));
+      if (saleProfileDoc.exists()) {
+        setSaleProfile({ id: saleProfileDoc.id, ...saleProfileDoc.data() });
+      }
+    } catch (error: any) {
+      console.error('Failed to create share link:', error);
+      alert(`共有リンクの作成に失敗しました: ${error.message}`);
+    } finally {
+      setUpdatingLink(false);
+    }
+  };
+
+  // リンクをコピー
+  const handleCopyLink = async () => {
+    if (!saleProfile?.slug) return;
+    
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/s/${saleProfile.slug}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      // 3秒後に元に戻す（フィードバックを長めに）
+      setTimeout(() => setCopiedLink(false), 3000);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      alert('リンクのコピーに失敗しました');
+    }
+  };
+
+  // リンクを停止
+  const handleDisableLink = async () => {
+    if (!saleProfile || !activeCarId || !auth.currentUser) return;
+    
+    if (!confirm('リンクを無効化するとURLは閲覧できません。再開するまで有効になりません。よろしいですか？')) {
+      return;
+    }
+
+    try {
+      setUpdatingLink(true);
+      const { updateSaleProfileVisibility } = await import('@/lib/saleProfileManager');
+      await updateSaleProfileVisibility(saleProfile.id, 'disabled');
+      
+      // saleProfileを再取得
+        const user = auth.currentUser;
+        if (!user) return;
+        const carDoc = await getDoc(doc(db, 'users', user.uid, 'cars', activeCarId));
+      if (carDoc.exists()) {
+        const carData = carDoc.data();
+        if (carData.activeSaleProfileId) {
+          const saleProfileDoc = await getDoc(doc(db, 'saleProfiles', carData.activeSaleProfileId));
+          if (saleProfileDoc.exists()) {
+            setSaleProfile({ id: saleProfileDoc.id, ...saleProfileDoc.data() });
+          } else {
+            setSaleProfile(null);
+          }
+        } else {
+          setSaleProfile(null);
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to disable link:', error);
+      alert(`リンクの停止に失敗しました: ${error.message}`);
+    } finally {
+      setUpdatingLink(false);
+    }
+  };
+
+  // ステータスを判定
+  const linkStatus = saleProfile?.visibility === 'disabled' ? 'stopped' : saleProfile ? 'active' : 'not_created';
+  const shareUrl = saleProfile?.slug ? `${typeof window !== 'undefined' ? window.location.origin : ''}/s/${saleProfile.slug}` : null;
+
+  return (
+    <div className="space-y-6">
+      {/* ヘッダー */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">共有</h1>
+        <p className="text-sm text-gray-600">履歴をURLまたはPDFで渡せます</p>
+      </div>
+
+      {!car ? (
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+          <p className="text-gray-500 mb-4">車両を選択してください</p>
+          <p className="text-xs text-gray-400">右上のドロップダウンから車両を選択できます</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* 用途テンプレ（共通） */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-sm font-medium text-gray-700 mb-3">共有の用途</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPurpose('normal')}
+                className={`flex-1 px-4 py-2 rounded-lg border transition-colors text-sm font-medium ${
+                  purpose === 'normal'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                通常
+              </button>
+              <button
+                onClick={() => setPurpose('sale')}
+                className={`flex-1 px-4 py-2 rounded-lg border transition-colors text-sm font-medium ${
+                  purpose === 'sale'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                売却
+              </button>
+              <button
+                onClick={() => setPurpose('assess')}
+                className={`flex-1 px-4 py-2 rounded-lg border transition-colors text-sm font-medium ${
+                  purpose === 'assess'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                査定
+              </button>
+            </div>
+            {(purpose === 'sale' || purpose === 'assess') && (
+              <p className="mt-3 text-xs text-gray-500">
+                ※個人情報を含む証跡は自動でマスクされます（設定で変更可）
+              </p>
+            )}
+          </div>
+
+          {/* セクションA：共有リンク（公開ページ） */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">共有リンク（公開）</h2>
+            
+            {/* ステータス表示 */}
+            <div className="mb-4">
+              {linkStatus === 'not_created' && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                  <span>未作成</span>
+                </div>
+              )}
+              {linkStatus === 'active' && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-green-600">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span>公開中</span>
+                    {pageViewCount !== null && (
+                      <span className="text-xs text-gray-500 ml-2">（閲覧回数: {pageViewCount}）</span>
+                    )}
+                  </div>
+                  {saleProfile?.updatedAt && (
+                    <div className="text-xs text-gray-500 ml-4">
+                      最終更新: {new Date(saleProfile.updatedAt.toMillis?.() || saleProfile.updatedAt._seconds * 1000).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      })}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 ml-4">
+                    このリンクは「{purpose === 'normal' ? '通常' : purpose === 'sale' ? '売却' : '査定'}」表示です
+                  </div>
+                </div>
+              )}
+              {linkStatus === 'stopped' && (
+                <div className="flex items-center gap-2 text-sm text-red-600">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span>停止中</span>
+                </div>
+              )}
+            </div>
+
+            {/* Primary Action */}
+            {linkStatus === 'not_created' ? (
+              <div className="mb-4">
+                <button
+                  onClick={handleCreateLink}
+                  disabled={updatingLink || loadingProfile}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+                >
+                  {updatingLink ? '作成中...' : '共有リンクを作成'}
+                </button>
+              </div>
+            ) : linkStatus === 'active' && shareUrl ? (
+              <div className="mb-4">
+                {/* 共有リンク表示とコピーボタン */}
+                <div 
+                  className={`flex items-center gap-2 mb-3 p-3 rounded-lg border transition-colors ${
+                    copiedLink 
+                      ? 'bg-blue-50 border-blue-300' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">共有リンク</p>
+                    <p className="text-sm text-gray-900 truncate font-mono">
+                      {shareUrl}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCopyLink}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded text-sm transition-colors ${
+                      copiedLink
+                        ? 'bg-green-600 text-white'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {copiedLink ? '✓ コピー済み' : 'コピー'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Secondary Actions */}
+            {linkStatus === 'active' && shareUrl && (
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => window.open(shareUrl, '_blank')}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  公開ページを見る
+                </button>
+                <button
+                  onClick={() => router.push(`/vehicles/${activeCarId}/sale-mode`)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  共有設定
+                </button>
+              </div>
+            )}
+
+            {/* Danger Action（小さく、右寄せ、通常文字＋アイコン） */}
+            {linkStatus === 'active' && (
+              <div className="pt-3 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={handleDisableLink}
+                  disabled={updatingLink}
+                  className="flex items-center gap-1 text-xs text-gray-600 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  リンクを無効化
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* セクションB：PDFレポート */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">PDFレポート</h2>
+            
+            {/* 状態に応じたPrimary Action */}
+            {/* TODO: PDF生成状態を管理する必要がある（現時点では常に「作成前」として扱う） */}
+            <button
+              onClick={() => setShowShareAndPDFModal(true)}
+              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium mb-4"
+            >
+              PDFを作成
+            </button>
+
+            {/* Secondary Actions（作成前はdisabled） */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setShowShareAndPDFModal(true)}
+                disabled
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-400 rounded-lg cursor-not-allowed transition-colors text-sm"
+              >
+                プレビュー
+              </button>
+              <button
+                onClick={() => setShowShareAndPDFModal(true)}
+                disabled
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-400 rounded-lg cursor-not-allowed transition-colors text-sm"
+              >
+                ダウンロード
+              </button>
+            </div>
+
+            {/* 直近生成履歴 */}
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500 mb-1">直近生成履歴</p>
+              <p className="text-xs text-gray-400">（実装予定: 最終生成：YYYY/MM/DD（用途：{purpose === 'normal' ? '通常' : purpose === 'sale' ? '売却' : '査定'}））</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CustomizationsContent({ 
   cars, 
   activeCarId, 

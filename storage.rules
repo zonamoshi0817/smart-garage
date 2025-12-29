@@ -31,7 +31,13 @@ service firebase.storage {
       return request.resource.contentType.matches('image/(jpeg|jpg|png|webp|heic)');
     }
     
-    // Users can only access their own files
+    // Private evidences: オーナーのみアクセス可能
+    match /private/users/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+    
+    // Users can only access their own files (既存パス)
     match /users/{userId}/{allPaths=**} {
       // 読み取り: パス内のuserIdが自分
       allow read: if isOwner(userId);
@@ -46,6 +52,22 @@ service firebase.storage {
       
       // 削除: パス内のuserIdが自分
       allow delete: if isOwner(userId);
+    }
+    
+    // Public masked evidences: 公開ページから読み取り可能
+    match /public/sales/{saleProfileId}/{fileName} {
+      // 読み取り: saleProfileのvisibilityがpublicまたはunlistedの場合のみ
+      allow read: if firestore.get(/databases/(default)/documents/saleProfiles/$(saleProfileId)).data.visibility in ['public', 'unlisted'];
+      // 書き込み: オーナーのみ
+      allow write: if isAuthenticated()
+                   && firestore.get(/databases/(default)/documents/saleProfiles/$(saleProfileId)).data.ownerUid == request.auth.uid
+                   && hasValidMetadata()
+                   && isImageFile()
+                   && isValidImageSize()
+                   && isAllowedImageType();
+      // 削除: オーナーのみ
+      allow delete: if isAuthenticated()
+                    && firestore.get(/databases/(default)/documents/saleProfiles/$(saleProfileId)).data.ownerUid == request.auth.uid;
     }
     
     // Deny all other access

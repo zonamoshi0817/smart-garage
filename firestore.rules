@@ -183,6 +183,48 @@ service cloud.firestore {
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
     
+    // Sale Profiles collection (公開ページ用)
+    match /saleProfiles/{saleProfileId} {
+      // 公開読み取り: visibilityがpublicまたはunlistedの場合のみ、またはオーナーは常に読み取り可能
+      allow read: if resource.data.visibility in ['public', 'unlisted']
+                  || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      // クエリ（list）: オーナーは自分のsaleProfilesを検索可能
+      allow list: if isSignedIn();
+      // 作成・更新・削除: オーナーのみ
+      allow create: if isSignedIn() 
+                    && (request.resource.data.ownerUid == request.auth.uid);
+      allow update, delete: if isSignedIn() 
+                            && resource.data.ownerUid == request.auth.uid
+                            && request.resource.data.ownerUid == request.auth.uid;
+    }
+    
+    // Evidences collection (証跡)
+    match /evidences/{evidenceId} {
+      // 読み取り: オーナーのみ（公開ページでは直接読み取らせない方針）
+      allow read: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      // 作成・更新・削除: オーナーのみ
+      allow create: if isSignedIn() 
+                    && (request.resource.data.ownerUid == request.auth.uid);
+      allow update, delete: if isSignedIn() 
+                            && resource.data.ownerUid == request.auth.uid;
+    }
+    
+    // Sale Page Views collection (アナリティクス)
+    match /salePageViews/{viewId} {
+      // 作成: 誰でも可能（公開ページからのアクセス）
+      allow create: if true;
+      // 個別読み取り: saleProfileのownerのみ（閲覧分析はオーナーのみ）
+      allow read: if isSignedIn() 
+                  && resource.data.saleProfileId != null
+                  && firestore.get(/databases/$(database)/documents/saleProfiles/$(resource.data.saleProfileId)).data.ownerUid == request.auth.uid;
+      // クエリ（list）: 認証済みユーザーのみ許可
+      // 注意: クライアント側でwhere('saleProfileId', '==', ...)でフィルタリングすることで、
+      // ユーザーが所有するsaleProfileのデータのみを取得する
+      // Firestore Rulesではクエリのwhere条件を直接検証できないため、
+      // クライアント側で適切にフィルタリングする必要がある
+      allow list: if isSignedIn();
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

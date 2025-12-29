@@ -92,6 +92,43 @@ export interface CarInput {
   transmission?: string; // ミッション（例：6MT、AT、CVT、DCT）
   bodyColor?: string; // ボディカラー
   ownedSince?: Timestamp; // 所有開始年月
+  // Sell Boost用
+  activeSaleProfileId?: string; // アクティブな売却プロフィールID（売却モードON時のみ設定）
+}
+
+export interface CarInput {
+  name: string;
+  modelCode?: string;
+  year?: number;
+  odoKm?: number;
+  imagePath?: string;
+  inspectionExpiry?: Timestamp; // 車検期限（Timestamp型で保存）
+  firstRegYm?: string;
+  avgKmPerMonth?: number;
+  vehicleClass?: VehicleClass; // 車種クラス（コスト効率補正用）
+  status?: CarStatus; // 車両ステータス
+  soldDate?: Timestamp; // 売却日
+  soldPrice?: number; // 売却価格
+  soldTo?: string; // 売却先
+  soldNotes?: string; // 売却メモ
+  chassisNumber?: string; // 車台番号（QRコードから）
+  registrationNumber?: string; // 登録番号（ナンバープレート）
+  bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other'; // 車体形状
+  // 公開マイカーページ設定
+  isPublic?: boolean; // 公開設定
+  publicVanityUrl?: string; // カスタムURL（例：/c/fl5-ken）
+  publicTagline?: string; // 一言キャッチコピー
+  ownerPicks?: string[]; // OWNER'S PICKのカスタマイズID配列（最大3件）
+  ownerHandle?: string; // オーナーハンドルネーム
+  ownerRegion?: string; // 地域（都道府県）
+  ownerSocialLinks?: { instagram?: string; twitter?: string }; // SNSリンク
+  // 基本スペック（公開用）
+  driveType?: 'FF' | 'FR' | '4WD' | 'MR' | 'RR' | 'AWD'; // 駆動方式
+  transmission?: string; // ミッション（例：6MT、AT、CVT、DCT）
+  bodyColor?: string; // ボディカラー
+  ownedSince?: Timestamp; // 所有開始年月
+  // Sell Boost用
+  activeSaleProfileId?: string; // アクティブな売却プロフィールID（売却モードON時のみ設定）
 }
 
 // メンテナンス関連の型
@@ -120,6 +157,10 @@ export interface MaintenanceRecord extends BaseEntity {
   location?: string;
   items?: MaintenanceItem[];        // 明細行（将来対応）
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
+  // Sell Boost用フィールド
+  category?: string;      // カテゴリ（例: 'oil', 'tire', 'brake', 'battery', 'coolant', 'other'）
+  isPreventive?: boolean; // 予防整備かどうか
+  typeTag?: 'receipt_backed' | 'owner_log' | 'other'; // 記録の種類（証跡が紐づいたらreceipt_backed）
 }
 
 export interface MaintenanceInput {
@@ -132,6 +173,10 @@ export interface MaintenanceInput {
   location?: string;
   items?: MaintenanceItem[];        // 明細行（将来対応）
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
+  // Sell Boost用フィールド
+  category?: string;      // カテゴリ（必須推奨、既存データは'other'でバックフィル）
+  isPreventive?: boolean; // 予防整備かどうか
+  typeTag?: 'receipt_backed' | 'owner_log' | 'other'; // 記録の種類
 }
 
 /**
@@ -551,3 +596,51 @@ export interface UserDocument {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+// ========================================
+// 売却用公開ページ関連の型
+// ========================================
+
+/**
+ * 売却用プロフィール
+ * コレクション: saleProfiles/{saleProfileId}
+ */
+export interface SaleProfile extends BaseEntity {
+  vehicleId: string;                       // 車両ID（users/{userId}/cars/{carId}のcarId）
+  ownerUid: string;                        // オーナーUID
+  slug: string;                            // URLスラッグ（例: "abc123"）
+  visibility: 'unlisted' | 'public' | 'disabled'; // 公開設定
+  includeEvidence: boolean;                // 証跡を含めるか
+  includeAmounts: boolean;                 // 金額を含めるか
+  highlightTopN: number;                   // 重要イベント上位N件（デフォルト: 10）
+  analyticsEnabled: boolean;               // アナリティクス有効化
+}
+
+/**
+ * 証跡（メンテナンス記録の添付ファイルなど）
+ * コレクション: evidences/{evidenceId}
+ */
+export interface Evidence extends BaseEntity {
+  vehicleId: string;                       // 車両ID
+  saleProfileId?: string;                  // 売却プロフィールID（公開用パス生成に必要）
+  recordId?: string;                       // 関連するメンテナンス記録ID（オプション）
+  storagePath: string;                     // Storageパス（元画像、private/users/...）
+  maskedStoragePath?: string;              // マスク済み画像のStorageパス（public/sales/...）
+  maskStatus: 'none' | 'pending' | 'masked' | 'failed'; // マスク状態
+  maskPolicyVersion: string;               // マスクポリシーバージョン（将来の互換性用）
+}
+
+/**
+ * 売却ページ閲覧イベント
+ * コレクション: salePageViews（サブコレクションなし、直接コレクション）
+ */
+export interface SalePageView {
+  id?: string;                             // ドキュメントID（自動生成）
+  saleProfileId: string;                   // 売却プロフィールID
+  timestamp: Timestamp;                    // イベント発生時刻
+  hashIpUa?: string;                       // IP+UAのハッシュ（プライバシー保護）
+  referrer?: string;                       // リファラー
+  event: 'page_view' | 'pdf_download_assess' | 'pdf_download_handover' | 'copy_template'; // イベント種類
+}
+
+// MaintenanceRecordExtendedは削除（MaintenanceRecordに統合済み）
