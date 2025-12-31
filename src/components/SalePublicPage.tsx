@@ -328,6 +328,13 @@ export default function SalePublicPage({
             />
           </section>
         )}
+
+        {/* フッター（閲覧専用の明示） */}
+        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+          <p className="text-xs text-gray-500">
+            このページは履歴閲覧用です。第三者の閲覧・改ざん防止機能により保護されています。
+          </p>
+        </div>
       </div>
     </div>
   );

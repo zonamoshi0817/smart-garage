@@ -7,7 +7,7 @@
 
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, getDoc, serverTimestamp, query, where, limit, getDocs } from 'firebase/firestore';
-import type { SaleProfile } from '@/types';
+import type { SaleProfile, ShareProfile } from '@/types';
 /**
  * slugを生成（英数字のみ、安全なURL）
  */
@@ -135,4 +135,106 @@ export async function updateSaleProfileVisibility(
       updatedAt: serverTimestamp(),
     });
   }
+}
+
+/**
+ * 用途別ShareProfileを作成（新規実装）
+ * @param vehicleId 車両ID
+ * @param type 用途種別（'normal' | 'sale' | 'appraisal'）
+ * @param options オプション
+ */
+export async function createShareProfile(
+  vehicleId: string,
+  type: 'normal' | 'sale' | 'appraisal',
+  options: {
+    title?: string;
+    includeEvidence?: boolean;
+    includeAmounts?: boolean;
+    maskPolicy?: 'auto' | 'strict' | 'custom';
+  } = {}
+): Promise<string> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーがログインしていません');
+
+  const {
+    title,
+    includeEvidence = type !== 'normal',
+    includeAmounts = false,
+    maskPolicy = 'auto',
+  } = options;
+
+  // slugを生成
+  const slug = generateSlug();
+
+  // ShareProfileを作成（現時点ではsaleProfilesコレクションを使用）
+  const shareProfileRef = await addDoc(collection(db, 'saleProfiles'), {
+    vehicleId,
+    ownerUid: user.uid,
+    type, // 新規追加
+    status: 'active', // 新規追加
+    slug,
+    visibility: 'unlisted', // 後方互換性のため維持
+    includeEvidence,
+    includeAmounts,
+    highlightTopN: 10,
+    analyticsEnabled: true,
+    maskPolicy, // 新規追加
+    title, // 新規追加
+    createdBy: user.uid,
+    updatedBy: user.uid,
+    deletedAt: null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    lastPublishedAt: serverTimestamp(),
+  });
+
+  const shareProfileId = shareProfileRef.id;
+
+  // 車両のactiveShareProfileIdsを更新
+  const carRef = doc(db, 'users', user.uid, 'cars', vehicleId);
+  const carDoc = await getDoc(carRef);
+  const carData = carDoc.data() || {};
+  const existingIds = carData.activeShareProfileIds || {};
+  
+  await updateDoc(carRef, {
+    userId: user.uid,
+    activeShareProfileIds: {
+      ...existingIds,
+      [type]: shareProfileId,
+    },
+    updatedBy: user.uid,
+    updatedAt: serverTimestamp(),
+  });
+
+  return shareProfileId;
+}
+
+/**
+ * ShareProfileのstatusを更新（停止/再開）
+ */
+export async function updateShareProfileStatus(
+  shareProfileId: string,
+  status: 'active' | 'disabled'
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーがログインしていません');
+
+  // オーナーチェック
+  const shareProfileDoc = await getDoc(doc(db, 'saleProfiles', shareProfileId));
+  if (!shareProfileDoc.exists()) {
+    throw new Error('共有プロフィールが見つかりません');
+  }
+
+  const shareProfileData = shareProfileDoc.data() as ShareProfile;
+  if (shareProfileData.ownerUid !== user.uid) {
+    throw new Error('権限がありません');
+  }
+
+  // statusを更新
+  await updateDoc(doc(db, 'saleProfiles', shareProfileId), {
+    status,
+    visibility: status === 'active' ? 'unlisted' : 'disabled', // 後方互換性のため
+    updatedBy: user.uid,
+    updatedAt: serverTimestamp(),
+  });
 }
