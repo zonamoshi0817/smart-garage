@@ -55,10 +55,22 @@ export default async function SalePublicPageRoute({ params }: PageProps) {
     notFound();
   }
 
-  // 車両のactiveSaleProfileIdをチェック
+  // 車両のactiveShareProfileIdsをチェック（後方互換性のためactiveSaleProfileIdもチェック）
   const vehicle = await getVehicleByCarId(saleProfile.ownerUid, saleProfile.vehicleId);
-  if (!vehicle || vehicle.activeSaleProfileId !== saleProfile.id) {
-    // activeSaleProfileIdが一致しない、またはvehicleが存在しない場合は404
+  if (!vehicle) {
+    notFound();
+  }
+  
+  // ShareProfileのtypeを取得（後方互換性のため、typeがなければ'sale'とみなす）
+  const shareProfileType = (saleProfile as any).type || 'sale';
+  
+  // activeShareProfileIdsまたはactiveSaleProfileIdをチェック
+  const activeIds = vehicle.activeShareProfileIds || {};
+  const isActive = 
+    (activeIds[shareProfileType] === saleProfile.id) ||
+    (vehicle.activeSaleProfileId === saleProfile.id); // 後方互換
+  
+  if (!isActive) {
     notFound();
   }
 
@@ -77,6 +89,7 @@ export default async function SalePublicPageRoute({ params }: PageProps) {
       viewModel={viewModel}
       visibility={saleProfile.visibility}
       analyticsEnabled={saleProfile.analyticsEnabled}
+      type={shareProfileType as 'normal' | 'sale' | 'appraisal'}
     />
   );
 }
