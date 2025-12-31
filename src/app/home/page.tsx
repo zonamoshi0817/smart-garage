@@ -12,7 +12,7 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import type { User } from "firebase/auth";
 import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords } from "@/lib/maintenance";
 import type { MaintenanceRecord } from "@/types";
-import { downloadMaintenancePDF, type PDFExportOptions } from "@/lib/pdfExport";
+import { downloadMaintenancePDF, downloadBuildSheetPDF, type PDFExportOptions } from "@/lib/pdfExport";
 import { uploadCarImageWithProgress, isImageFile } from "@/lib/storage";
 import { compressImage, getCompressionInfo } from "@/lib/imageCompression";
 import { addCustomization, getCustomizations, updateCustomization, deleteCustomization, CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/customizations";
@@ -27,7 +27,6 @@ import FuelLogCard from "@/components/dashboard/FuelLogCard";
 import CustomizationModal from "@/components/modals/CustomizationModal";
 import PaywallModal from "@/components/modals/PaywallModal";
 import SellCarModal from "@/components/modals/SellCarModal";
-import ShareAndPDFModal from "@/components/modals/ShareAndPDFModal";
 import OCRModal from "@/components/modals/OCRModal";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import MyCarPage from "@/components/mycar/MyCarPage";
@@ -77,7 +76,6 @@ export default function Home() {
   const [editingCustomization, setEditingCustomization] = useState<Customization | null>(null);
   const [showFuelLogModal, setShowFuelLogModal] = useState(false);
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
-  const [showShareAndPDFModal, setShowShareAndPDFModal] = useState(false);
   const [showOCRModal, setShowOCRModal] = useState(false);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
   const [currentUser, setCurrentUser] = useState<User | null>(null); // 現在のユーザー情報
@@ -665,10 +663,6 @@ export default function Home() {
                         setShowEditCarModal(true);
                         setEditingCar(car);
                         break;
-                      case 'share':
-                        // PDF出力機能
-                        setShowShareAndPDFModal(true);
-                        break;
                       case 'ocr':
                         // OCR機能
                         setShowOCRModal(true);
@@ -753,7 +747,6 @@ export default function Home() {
                 car={car}
                 maintenanceRecords={maintenanceRecords}
                 customizations={customizations}
-                setShowShareAndPDFModal={setShowShareAndPDFModal}
               />
             ) : currentPage === 'data-management' ? (
               <DataManagementContent 
@@ -906,24 +899,6 @@ export default function Home() {
         />
       )}
 
-      {/* PDF出力モーダル */}
-      {showShareAndPDFModal && car && (
-        <ShareAndPDFModal
-          car={car}
-          maintenanceRecords={maintenanceRecords}
-          customizations={customizations}
-          onClose={() => setShowShareAndPDFModal(false)}
-          onCarUpdated={() => {
-            // 車両データを再読み込み
-            if (activeCarId) {
-              const activeCar = cars.find(c => c.id === activeCarId);
-              if (activeCar) {
-                // 車両リストを更新（watchCarsが自動的に更新するはず）
-              }
-            }
-          }}
-        />
-      )}
 
       {/* OCRモーダル */}
       {showOCRModal && car && (
@@ -5512,15 +5487,13 @@ function ShareContent({
   activeCarId,
   car,
   maintenanceRecords,
-  customizations,
-  setShowShareAndPDFModal
+  customizations
 }: {
   cars: Car[];
   activeCarId?: string;
   car?: Car;
   maintenanceRecords: MaintenanceRecord[];
   customizations: Customization[];
-  setShowShareAndPDFModal: (show: boolean) => void;
 }) {
   const router = useRouter();
   // 用途別ShareProfileを管理
@@ -5624,9 +5597,6 @@ function ShareContent({
           [type]: { id: profileDoc.id, ...profileDoc.data() }
         });
       }
-      
-      // ページを再読み込みしてShareProfileを再取得
-      window.location.reload();
     } catch (error: any) {
       console.error(`Failed to create ${type} link:`, error);
       alert(`共有リンクの作成に失敗しました: ${error.message}`);
@@ -5744,7 +5714,9 @@ function ShareContent({
             handleToggleLinkStatus={handleToggleLinkStatus}
             activeCarId={activeCarId}
             router={router}
-            setShowShareAndPDFModal={setShowShareAndPDFModal}
+            car={car}
+            maintenanceRecords={maintenanceRecords}
+            customizations={customizations}
           />
 
           {/* 用途別カード: 査定用リンク */}
@@ -5763,7 +5735,9 @@ function ShareContent({
             handleToggleLinkStatus={handleToggleLinkStatus}
             activeCarId={activeCarId}
             router={router}
-            setShowShareAndPDFModal={setShowShareAndPDFModal}
+            car={car}
+            maintenanceRecords={maintenanceRecords}
+            customizations={customizations}
           />
 
         </div>
@@ -5788,7 +5762,9 @@ function ShareLinkCard({
   handleToggleLinkStatus,
   activeCarId,
   router,
-  setShowShareAndPDFModal
+  car,
+  maintenanceRecords,
+  customizations
 }: {
   type: 'normal' | 'sale' | 'appraisal';
   title: string;
@@ -5804,12 +5780,42 @@ function ShareLinkCard({
   handleToggleLinkStatus: (type: 'normal' | 'sale' | 'appraisal', currentStatus: 'active' | 'disabled') => Promise<void>;
   activeCarId?: string;
   router: any;
-  setShowShareAndPDFModal?: (show: boolean) => void;
+  car?: Car | null;
+  maintenanceRecords?: MaintenanceRecord[];
+  customizations?: Customization[];
 }) {
   const { status, url, profile } = getShareLinkInfo(type);
   const pageViewCount = pageViewCounts[type];
   const copied = copiedLinks[type];
   const updating = updatingLinks[type];
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  // PDF生成ハンドラー
+  const handleGeneratePDF = async () => {
+    if (!car) return;
+    
+    setIsGeneratingPDF(true);
+    try {
+      if (type === 'sale' || type === 'appraisal') {
+        // 売却/査定用PDF: メンテナンス履歴PDF
+        if (!maintenanceRecords || maintenanceRecords.length === 0) {
+          alert('メンテナンス履歴がありません。先にメンテナンス記録を追加してください。');
+          setIsGeneratingPDF(false);
+          return;
+        }
+        await downloadMaintenancePDF({
+          car,
+          maintenanceRecords: maintenanceRecords || []
+        });
+        alert('✅ メンテナンス履歴PDFを作成しました！');
+      }
+    } catch (error) {
+      console.error('PDF生成エラー:', error);
+      alert('PDF生成中にエラーが発生しました。');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6">
@@ -5914,14 +5920,25 @@ function ShareLinkCard({
       )}
 
       {/* PDF生成（売却/査定用のみ） */}
-      {(type === 'sale' || type === 'appraisal') && setShowShareAndPDFModal && (
+      {(type === 'sale' || type === 'appraisal') && status === 'active' && (
         <div className="mb-3 pt-3 border-t border-gray-200">
           <button
-            onClick={() => setShowShareAndPDFModal(true)}
-            className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+            onClick={handleGeneratePDF}
+            disabled={isGeneratingPDF || !maintenanceRecords || maintenanceRecords.length === 0}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
           >
-            {type === 'sale' ? '売却用PDF生成' : '査定用PDF生成'}
+            {isGeneratingPDF 
+              ? 'PDF生成中...' 
+              : (!maintenanceRecords || maintenanceRecords.length === 0)
+                ? '履歴を追加してPDFを作成'
+                : type === 'sale' ? '売却用PDFを作成' : '査定用PDFを作成'
+            }
           </button>
+          {maintenanceRecords && maintenanceRecords.length > 0 && (
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              {maintenanceRecords.length}件の記録を含みます
+            </p>
+          )}
         </div>
       )}
 

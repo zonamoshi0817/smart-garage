@@ -1,7 +1,7 @@
 /**
- * 売却モード管理ページ
+ * 売却用リンク管理ページ
  * /vehicles/[vehicleId]/sale-mode
- * 売却モードON/OFF、分類ウィザード実行
+ * 売却用リンクの作成・管理、分類ウィザード実行
  */
 
 'use client';
@@ -97,7 +97,7 @@ function SaleModeContent() {
       setShowWizard(true);
     } catch (error: any) {
       console.error('Failed to enable sale mode:', error);
-      alert(`売却モードの有効化に失敗しました: ${error.message}`);
+      alert(`売却用リンクの作成に失敗しました: ${error.message}`);
     } finally {
       setUpdating(false);
     }
@@ -106,7 +106,7 @@ function SaleModeContent() {
   const handleDisableSaleMode = async () => {
     if (!auth.currentUser) return;
 
-    if (!confirm('売却モードを無効化しますか？公開ページは404になります。')) {
+    if (!confirm('売却用リンクを停止しますか？公開ページは404になります。')) {
       return;
     }
 
@@ -120,7 +120,7 @@ function SaleModeContent() {
       }
     } catch (error: any) {
       console.error('Failed to disable sale mode:', error);
-      alert(`売却モードの無効化に失敗しました: ${error.message}`);
+      alert(`売却用リンクの停止に失敗しました: ${error.message}`);
     } finally {
       setUpdating(false);
     }
@@ -148,7 +148,7 @@ function SaleModeContent() {
       }
     } catch (error: any) {
       console.error('Failed to update visibility:', error);
-      alert(`公開設定の更新に失敗しました: ${error.message}`);
+      alert(`公開範囲の更新に失敗しました: ${error.message}`);
     } finally {
       setUpdating(false);
     }
@@ -218,19 +218,19 @@ function SaleModeContent() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-md p-6">
-        <h1 className="text-2xl font-bold mb-6">売却モード管理</h1>
+        <h1 className="text-2xl font-bold mb-6">売却用リンク</h1>
 
         {!saleProfile ? (
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 rounded-lg">
               <p className="text-gray-700 mb-4">
-                売却モードをONにすると、査定用の公開ページが作成されます。
+                売却用リンクを作成すると、査定用の公開ページが作成されます。
               </p>
               {unclassifiedRecords.length > 0 && (
                 <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">
                     直近12ヶ月に未分類のメンテナンス記録が{unclassifiedRecords.length}件あります。
-                    売却モードON時に分類ウィザードが表示されます。
+                    リンク作成時に分類ウィザードが表示されます。
                   </p>
                 </div>
               )}
@@ -239,7 +239,7 @@ function SaleModeContent() {
                 disabled={updating}
                 className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                売却モードをON
+                売却用リンクを作成
               </button>
             </div>
           </div>
@@ -247,13 +247,13 @@ function SaleModeContent() {
           <div className="space-y-6">
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-green-800">売却モード: ON</span>
+                <span className="font-medium text-green-800">売却用リンク：有効</span>
                 <button
                   onClick={handleDisableSaleMode}
                   disabled={updating}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                 >
-                  売却モードをOFF
+                  売却用リンクを停止
                 </button>
               </div>
               <p className="text-sm text-green-700">
@@ -270,8 +270,11 @@ function SaleModeContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                公開設定
+                公開範囲
               </label>
+              <p className="text-xs text-gray-500 mb-3">
+                リンクを知っている人だけがアクセスできます（推奨: unlisted）。検索エンジンにはインデックスされません。
+              </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleUpdateVisibility('unlisted')}
@@ -282,7 +285,7 @@ function SaleModeContent() {
                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                   } disabled:opacity-50`}
                 >
-                  unlisted（noindex）
+                  unlisted（推奨）
                 </button>
                 <button
                   onClick={() => handleUpdateVisibility('public')}

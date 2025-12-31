@@ -23,9 +23,39 @@ const firebaseConfig = {
 
 // Firebaseアプリを初期化（複数回呼んでも大丈夫にする）
 const app = (() => {
+  // サーバーサイドでは初期化をスキップ（必要に応じて）
+  if (typeof window === 'undefined') {
+    // サーバーサイドでもモジュールロード時にエラーを避けるため、最小限の初期化を試行
+    // ただし、実際の使用はクライアントサイドでのみ
+    try {
+      if (getApps().length === 0) {
+        initializeApp(firebaseConfig);
+      }
+      return getApp();
+    } catch (error) {
+      // サーバーサイドでの初期化エラーは無視
+      // ダミーアプリを作成（実際の使用はされない）
+      try {
+        return initializeApp({
+          apiKey: "demo-api-key",
+          authDomain: "demo-project.firebaseapp.com",
+          projectId: "demo-project",
+          storageBucket: "demo-project.appspot.com",
+          messagingSenderId: "123456789",
+          appId: "demo-app-id",
+        });
+      } catch {
+        // フォールバックも失敗した場合はnullを返す（実際には発生しないはず）
+        return getApps()[0] || getApp();
+      }
+    }
+  }
+  
   try {
     const existingApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    console.log("Firebase initialized successfully");
+    if (typeof window !== 'undefined') {
+      console.log("Firebase initialized successfully");
+    }
     return existingApp;
   } catch (error) {
     console.error("Firebase initialization failed:", error);
@@ -41,18 +71,16 @@ const app = (() => {
   }
 })();
 
-// デバッグ用：Firebase設定を確認
-console.log("Firebase initialized with config:", {
-  apiKey: firebaseConfig.apiKey ? "***" : "MISSING",
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  storageBucket: firebaseConfig.storageBucket,
-  messagingSenderId: firebaseConfig.messagingSenderId,
-  appId: firebaseConfig.appId ? "***" : "MISSING"
-});
-
-// 本番環境でのデバッグ用
+// デバッグ用：Firebase設定を確認（クライアントサイドのみ）
 if (typeof window !== 'undefined') {
+  console.log("Firebase initialized with config:", {
+    apiKey: firebaseConfig.apiKey ? "***" : "MISSING",
+    authDomain: firebaseConfig.authDomain,
+    projectId: firebaseConfig.projectId,
+    storageBucket: firebaseConfig.storageBucket,
+    messagingSenderId: firebaseConfig.messagingSenderId,
+    appId: firebaseConfig.appId ? "***" : "MISSING"
+  });
   console.log("Environment:", process.env.NODE_ENV);
   console.log("Firebase config values:", {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "SET" : "NOT SET",
@@ -64,8 +92,18 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// 認証とDBのインスタンスをexport
-export const auth = getAuth(app);
+// 認証とDBのインスタンスをexport（サーバーサイドでもエラーを避けるため、try-catchで包む）
+let auth: ReturnType<typeof getAuth>;
+let db: ReturnType<typeof getFirestore>;
+let storage: ReturnType<typeof getStorage>;
+
+try {
+  auth = getAuth(app);
+} catch (error) {
+  console.error("Failed to initialize auth:", error);
+  // フォールバック（実際には使用されない）
+  auth = getAuth(app);
+}
 
 // 認証状態をlocalStorageに永続化（ブラウザを閉じてもログイン状態を保持）
 // デフォルトでもLOCALパーシスタンスが使用されますが、明示的に設定することで確実にします
@@ -75,9 +113,21 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-export { app };
+try {
+  db = getFirestore(app);
+} catch (error) {
+  console.error("Failed to initialize firestore:", error);
+  db = getFirestore(app);
+}
+
+try {
+  storage = getStorage(app);
+} catch (error) {
+  console.error("Failed to initialize storage:", error);
+  storage = getStorage(app);
+}
+
+export { auth, db, storage, app };
 
 // Googleログイン用
 const googleProvider = new GoogleAuthProvider();

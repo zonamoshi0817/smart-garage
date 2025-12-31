@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Car, MaintenanceRecord, Customization } from '@/types';
 import { downloadMaintenancePDF, downloadBuildSheetPDF } from '@/lib/pdfExport';
-import { downloadSocialCardImage } from '@/lib/imageGeneration';
 import { updateCar } from '@/lib/cars';
 
 interface ShareAndPDFModalProps {
@@ -28,8 +27,7 @@ export default function ShareAndPDFModal({
 }: ShareAndPDFModalProps) {
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pdf' | 'public' | 'social'>('pdf');
+  const [activeTab, setActiveTab] = useState<'pdf' | 'public'>('pdf');
   
   // 公開設定の状態
   const [isPublic, setIsPublic] = useState(car.isPublic || false);
@@ -113,22 +111,6 @@ export default function ShareAndPDFModal({
     }
   };
 
-  const handleGenerateSocialImage = async (type: 'og' | 'instagram' | 'story') => {
-    setIsGeneratingImage(true);
-    try {
-      await downloadSocialCardImage({
-        car,
-        customizations: customizations || [],
-        type
-      });
-      alert(`✅ ${type === 'og' ? 'OG画像' : type === 'instagram' ? 'Instagram投稿用画像' : 'Instagram Story用画像'}を出力しました！`);
-    } catch (error) {
-      console.error('画像生成エラー:', error);
-      alert('画像生成中にエラーが発生しました。');
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
 
 
   return (
@@ -173,16 +155,6 @@ export default function ShareAndPDFModal({
               }`}
             >
               PDF作成
-            </button>
-            <button
-              onClick={() => setActiveTab('social')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'social'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              SNS用画像
             </button>
             <button
               onClick={() => setActiveTab('public')}
@@ -314,82 +286,6 @@ export default function ShareAndPDFModal({
                 </div>
               </div>
             </>
-          )}
-
-          {activeTab === 'social' && (
-            <div className="space-y-4">
-              {/* OG画像 */}
-              <div className="p-5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <span>🌐</span>
-                  <span>OG画像（リンクカード用）</span>
-                </h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  X / LINE / Discordなどにリンクを貼ったときに表示される画像（1200×630px）
-                </p>
-                <button
-                  onClick={() => handleGenerateSocialImage('og')}
-                  disabled={isGeneratingImage}
-                  className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
-                >
-                  <span>📥</span>
-                  <span>{isGeneratingImage ? '画像生成中...' : 'OG画像をダウンロード'}</span>
-                </button>
-              </div>
-
-              {/* Instagram投稿用 */}
-              <div className="p-5 bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl border border-pink-200">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <span>📷</span>
-                  <span>Instagram投稿用（1:1）</span>
-                </h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  Instagramの投稿に使用する正方形の画像（1080×1080px）
-                </p>
-                <button
-                  onClick={() => handleGenerateSocialImage('instagram')}
-                  disabled={isGeneratingImage}
-                  className="w-full px-4 py-3 bg-pink-600 hover:bg-pink-700 disabled:bg-pink-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
-                >
-                  <span>📥</span>
-                  <span>{isGeneratingImage ? '画像生成中...' : 'Instagram用画像をダウンロード'}</span>
-                </button>
-              </div>
-
-              {/* Instagram Story用 */}
-              <div className="p-5 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <span>📱</span>
-                  <span>Instagram Story用（9:16）</span>
-                </h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  Instagram Storyに使用する縦長の画像（1080×1920px）
-                </p>
-                <button
-                  onClick={() => handleGenerateSocialImage('story')}
-                  disabled={isGeneratingImage}
-                  className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
-                >
-                  <span>📥</span>
-                  <span>{isGeneratingImage ? '画像生成中...' : 'Story用画像をダウンロード'}</span>
-                </button>
-              </div>
-
-              {/* 使い方 */}
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 text-2xl">💡</span>
-                  <div className="text-sm text-gray-600 space-y-2">
-                    <p className="font-medium text-gray-900">使い方</p>
-                    <ul className="list-disc list-inside space-y-1">
-                      <li>生成した画像をSNSにアップロード</li>
-                      <li>本文に公開マイカーページのURLを貼り付け</li>
-                      <li>ハッシュタグ #GarageLog #愛車ログ を追加</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
 
           {activeTab === 'public' && (
