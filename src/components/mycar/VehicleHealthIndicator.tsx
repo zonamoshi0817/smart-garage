@@ -9,7 +9,7 @@ interface HealthIndicatorItem {
   id: string;
   label: string;
   icon: string;
-  status: 'good' | 'warning' | 'critical';
+  status: 'good' | 'warning' | 'critical' | 'unknown'; // 'unknown'を追加：記録がない場合
   remainingKm?: number;
   remainingDays?: number;
   lastChangeDate?: Date | null;
@@ -20,6 +20,7 @@ interface HealthIndicatorItem {
   recommendedMonths?: number;
   monthsSinceChange?: number;
   onClick: () => void;
+  hasRecord: boolean; // 記録の有無
 }
 
 interface VehicleHealthIndicatorProps {
@@ -45,8 +46,9 @@ export default function VehicleHealthIndicator({
         id: 'oil',
         label: 'オイル交換',
         icon: '',
-        status: 'warning',
+        status: 'unknown', // 記録がない場合は 'unknown'
         recommendedInterval: 5000,
+        hasRecord: false,
         onClick: () => onQuickAdd('oil')
       };
     }
@@ -79,6 +81,7 @@ export default function VehicleHealthIndicator({
       recommendedInterval,
       kmSinceChange,
       daysSinceChange,
+      hasRecord: true,
       onClick: () => onQuickAdd('oil')
     };
   };
@@ -97,8 +100,9 @@ export default function VehicleHealthIndicator({
         id: 'brake-tire',
         label: 'ブレーキ&タイヤ',
         icon: '',
-        status: 'good',
+        status: 'unknown', // 記録がない場合は 'unknown'
         recommendedInterval: 30000,
+        hasRecord: false,
         onClick: () => onQuickAdd('brake')
       };
     }
@@ -122,6 +126,7 @@ export default function VehicleHealthIndicator({
       lastChangeMileage: lastBrakeTire.mileage,
       recommendedInterval,
       kmSinceChange,
+      hasRecord: true,
       onClick: () => onQuickAdd('brake')
     };
   };
@@ -137,8 +142,9 @@ export default function VehicleHealthIndicator({
         id: 'battery',
         label: 'バッテリー',
         icon: '',
-        status: 'warning',
+        status: 'unknown', // 記録がない場合は 'unknown'
         recommendedMonths: 36,
+        hasRecord: false,
         onClick: () => onQuickAdd('battery')
       };
     }
@@ -160,6 +166,7 @@ export default function VehicleHealthIndicator({
       lastChangeDate,
       recommendedMonths,
       monthsSinceChange,
+      hasRecord: true,
       onClick: () => onQuickAdd('battery')
     };
   };
@@ -170,7 +177,7 @@ export default function VehicleHealthIndicator({
     calculateBatteryAge()
   ];
   
-  const getStatusStyles = (status: 'good' | 'warning' | 'critical') => {
+  const getStatusStyles = (status: 'good' | 'warning' | 'critical' | 'unknown') => {
     switch (status) {
       case 'good':
         return {
@@ -208,6 +215,18 @@ export default function VehicleHealthIndicator({
           badgeBorder: 'border-red-200',
           hover: 'hover:bg-gray-50 hover:border-gray-300 hover:shadow-md'
         };
+      case 'unknown':
+        return {
+          bg: 'bg-white',
+          border: 'border-gray-200',
+          iconBg: 'bg-gray-50',
+          iconColor: 'text-gray-500',
+          dot: 'bg-gray-400',
+          badgeBg: 'bg-gray-50',
+          badgeText: 'text-gray-600',
+          badgeBorder: 'border-gray-200',
+          hover: 'hover:bg-gray-50 hover:border-gray-300 hover:shadow-md'
+        };
     }
   };
 
@@ -240,7 +259,7 @@ export default function VehicleHealthIndicator({
             <button
               key={item.id}
               onClick={item.onClick}
-              className={`group w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 ${styles.bg} ${styles.border} ${styles.hover}`}
+              className={`group w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 cursor-pointer ${styles.bg} ${styles.border} ${styles.hover}`}
             >
               {/* アイコン */}
               <div className="relative flex-shrink-0">
@@ -258,7 +277,7 @@ export default function VehicleHealthIndicator({
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="font-semibold text-sm text-gray-900">{item.label}</div>
                   <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${styles.badgeBg} ${styles.badgeText} border ${styles.badgeBorder}`}>
-                    {item.status === 'good' ? '良好' : item.status === 'warning' ? '注意' : '要対応'}
+                    {item.status === 'good' ? '良好' : item.status === 'warning' ? '注意' : item.status === 'critical' ? '要対応' : '要記録'}
                   </span>
                 </div>
                 <div className="space-y-1">
@@ -274,7 +293,7 @@ export default function VehicleHealthIndicator({
                         前回: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} ({item.lastChangeMileage.toLocaleString()}km) • 経過: {item.kmSinceChange.toLocaleString()}km / {item.daysSinceChange}日
                       </div>
                       <div className="text-[10px] text-gray-500">
-                        推奨: {item.recommendedInterval?.toLocaleString()}km または 6ヶ月ごと
+                        目安: {item.recommendedInterval?.toLocaleString()}km または 6ヶ月ごと（推奨値）
                       </div>
                       {/* 注意の理由を具体化 */}
                       {item.status !== 'good' && (
@@ -286,8 +305,8 @@ export default function VehicleHealthIndicator({
                   ) : item.id === 'oil' ? (
                     <>
                       <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 記録を追加してください</div>
-                      <div className="text-xs text-gray-500">推奨: 5,000km または 6ヶ月ごと</div>
-                      <div className="text-xs text-amber-600 mt-1">記録なし</div>
+                      <div className="text-xs text-gray-500">目安: 5,000km または 6ヶ月ごと（推奨値）</div>
+                      <div className="text-xs text-gray-600 mt-1">記録がないため未判定です</div>
                     </>
                   ) : null}
                   
@@ -303,7 +322,7 @@ export default function VehicleHealthIndicator({
                         前回: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} ({item.lastChangeMileage.toLocaleString()}km) • 経過: {item.kmSinceChange.toLocaleString()}km
                       </div>
                       <div className="text-[10px] text-gray-500">
-                        推奨: {item.recommendedInterval?.toLocaleString()}kmごと
+                        目安: {item.recommendedInterval?.toLocaleString()}kmごと（推奨値）
                       </div>
                       {/* 注意の理由を具体化 */}
                       {item.status !== 'good' && (
@@ -315,8 +334,8 @@ export default function VehicleHealthIndicator({
                   ) : item.id === 'brake-tire' ? (
                     <>
                       <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 記録を追加してください</div>
-                      <div className="text-xs text-gray-500">推奨: ブレーキ30,000km / タイヤ40,000kmごと</div>
-                      <div className="text-xs text-amber-600 mt-1">記録なし</div>
+                      <div className="text-xs text-gray-500">目安: ブレーキ30,000km / タイヤ40,000kmごと（推奨値）</div>
+                      <div className="text-xs text-gray-600 mt-1">記録がないため未判定です</div>
                     </>
                   ) : null}
                   
@@ -332,7 +351,7 @@ export default function VehicleHealthIndicator({
                         前回交換: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} • 経過: {item.monthsSinceChange}ヶ月
                       </div>
                       <div className="text-[10px] text-gray-500">
-                        推奨交換: {item.recommendedMonths}ヶ月（3年）ごと
+                        目安: {item.recommendedMonths}ヶ月（3年）ごと（推奨値）
                       </div>
                       {/* 注意の理由を具体化 */}
                       {item.status !== 'good' && (
@@ -343,9 +362,9 @@ export default function VehicleHealthIndicator({
                     </>
                   ) : item.id === 'battery' ? (
                     <>
-                      <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 36ヶ月</div>
-                      <div className="text-xs text-gray-500">推奨: 36ヶ月ごと</div>
-                      <div className="text-xs text-amber-600 mt-1">記録なし</div>
+                      <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 記録を追加してください</div>
+                      <div className="text-xs text-gray-500">目安: 36ヶ月ごと（推奨値）</div>
+                      <div className="text-xs text-gray-600 mt-1">記録がないため未判定です</div>
                     </>
                   ) : null}
                 </div>
