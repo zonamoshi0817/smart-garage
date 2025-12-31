@@ -16,6 +16,9 @@ interface SalePublicPageProps {
   analyticsEnabled: boolean;
 }
 
+// Feature flag: テンプレートブロックの表示制御
+const SHOW_TEMPLATE_BLOCK = false;
+
 export default function SalePublicPage({
   viewModel,
   visibility,
@@ -312,17 +315,19 @@ export default function SalePublicPage({
           </div>
         </section>
 
-        {/* コピペ文生成 */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            査定依頼用メッセージ
-          </h2>
-          <CopyTemplateButton
-            slug={slug}
-            vehicle={viewModel.vehicle}
-            analyticsEnabled={analyticsEnabled}
-          />
-        </section>
+        {/* コピペ文生成（feature flagで非表示） */}
+        {SHOW_TEMPLATE_BLOCK && (
+          <section className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              査定依頼用メッセージ
+            </h2>
+            <CopyTemplateButton
+              slug={slug}
+              vehicle={viewModel.vehicle}
+              analyticsEnabled={analyticsEnabled}
+            />
+          </section>
+        )}
       </div>
     </div>
   );
