@@ -598,6 +598,40 @@ export interface ShareProfile extends BaseEntity {
   sections?: string[];                     // 公開ページの構成セクション（将来用）
   viewCount?: number;                      // 閲覧回数（オーナー側のみ表示）
   lastPublishedAt?: Timestamp;             // 最終公開日時
+  
+  // SNS共有（通常リンク）用フィールド（type="normal"のみ利用）
+  sns?: {
+    conceptTitle?: string;                 // 短い肩書き（例：街乗り仕様）
+    conceptBody?: string;                 // 紹介文 30〜200字
+    highlightParts?: Array<{              // 主要カスタム最大6件
+      label: string;
+      value: string;
+    }>;
+    gallery?: Array<{                     // 画像3〜12枚
+      id: string;
+      path: string;                       // Storageパス
+      caption?: string;
+    }>;
+    socialLinks?: {                       // SNSリンク
+      youtube?: string;
+      instagram?: string;
+      x?: string;
+      web?: string;
+    };
+    build?: {
+      featured?: Array<{                  // 主要パーツ（最大6件）
+        label: string;
+        value: string;
+      }>;
+      categories?: Array<{                // カテゴリごとのビルド情報
+        name: string;
+        items: Array<{
+          name: string;
+          note?: string;
+        }>;
+      }>;
+    };
+  };
 }
 
 /**

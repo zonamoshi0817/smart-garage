@@ -245,3 +245,42 @@ export async function updateShareProfileStatus(
     updatedAt: serverTimestamp(),
   });
 }
+
+/**
+ * ShareProfileのSNS共有設定を更新（type="normal"のみ）
+ */
+export async function updateShareProfileSNS(
+  shareProfileId: string,
+  snsData: {
+    conceptTitle?: string;
+    conceptBody?: string;
+    highlightParts?: Array<{ label: string; value: string }>;
+    gallery?: Array<{ id: string; path: string; caption?: string }>;
+    socialLinks?: { youtube?: string; instagram?: string; x?: string; web?: string };
+    build?: {
+      featured?: Array<{ label: string; value: string }>;
+      categories?: Array<{ name: string; items: Array<{ name: string; note?: string }> }>;
+    };
+  }
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーがログインしていません');
+
+  // オーナーチェック
+  const shareProfileDoc = await getDoc(doc(db, 'saleProfiles', shareProfileId));
+  if (!shareProfileDoc.exists()) {
+    throw new Error('共有プロフィールが見つかりません');
+  }
+
+  const shareProfileData = shareProfileDoc.data() as ShareProfile;
+  if (shareProfileData.ownerUid !== user.uid) {
+    throw new Error('権限がありません');
+  }
+
+  // snsフィールドを更新
+  await updateDoc(doc(db, 'saleProfiles', shareProfileId), {
+    sns: snsData,
+    updatedBy: user.uid,
+    updatedAt: serverTimestamp(),
+  });
+}

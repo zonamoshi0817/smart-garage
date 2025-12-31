@@ -70,6 +70,23 @@ service firebase.storage {
                     && firestore.get(/databases/(default)/documents/saleProfiles/$(saleProfileId)).data.ownerUid == request.auth.uid;
     }
     
+    // SNS共有用ギャラリー画像: 公開ページから読み取り可能
+    match /share/{shareProfileId}/gallery/{fileName} {
+      // 読み取り: shareProfileがactiveかつvisibilityがdisabledでない場合のみ（未ログインでも可）
+      allow read: if firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.status == 'active'
+                   && firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.visibility != 'disabled';
+      // 書き込み: オーナーのみ
+      allow write: if isAuthenticated()
+                   && firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.ownerUid == request.auth.uid
+                   && hasValidMetadata()
+                   && isImageFile()
+                   && isValidImageSize()
+                   && isAllowedImageType();
+      // 削除: オーナーのみ
+      allow delete: if isAuthenticated()
+                    && firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.ownerUid == request.auth.uid;
+    }
+    
     // Deny all other access
     match /{allPaths=**} {
       allow read, write: if false;

@@ -3,7 +3,7 @@
  */
 
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
-import type { Car, MaintenanceRecord, SaleProfile, Evidence } from "@/types";
+import type { Car, MaintenanceRecord, SaleProfile, Evidence, Customization } from "@/types";
 import { Timestamp } from "firebase-admin/firestore";
 
 /**
@@ -158,6 +158,36 @@ export async function getEvidences(vehicleId: string): Promise<Evidence[]> {
       createdAt: data.createdAt as Timestamp,
       updatedAt: data.updatedAt as Timestamp,
     } as Evidence;
+  });
+}
+
+/**
+ * カスタマイズを取得（サーバーサイド用）
+ */
+export async function getCustomizationsForPublic(
+  userId: string,
+  carId: string
+): Promise<Customization[]> {
+  const db = getAdminFirestore();
+  const snapshot = await db
+    .collection('users')
+    .doc(userId)
+    .collection('cars')
+    .doc(carId)
+    .collection('customizations')
+    .where('deletedAt', '==', null)
+    .get();
+
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      deletedAt: data.deletedAt || null,
+      createdAt: data.createdAt as Timestamp,
+      updatedAt: data.updatedAt as Timestamp,
+      date: data.date as Timestamp,
+    } as Customization;
   });
 }
 

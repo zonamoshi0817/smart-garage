@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebaseAdmin';
 import { getSaleProfileBySlug } from '@/lib/saleProfile';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
 export const runtime = 'nodejs';
@@ -59,6 +59,23 @@ export async function POST(
 
     // Firestoreに記録
     const db = getAdminFirestore();
+    
+    // page_viewイベントの場合はviewCountもインクリメント
+    if (event === 'page_view') {
+      // TransactionでviewCountをインクリメント
+      await db.runTransaction(async (transaction) => {
+        const saleProfileRef = db.collection('saleProfiles').doc(saleProfile.id!);
+        const saleProfileDoc = await transaction.get(saleProfileRef);
+        
+        if (saleProfileDoc.exists) {
+          const currentViewCount = saleProfileDoc.data()?.viewCount || 0;
+          transaction.update(saleProfileRef, {
+            viewCount: currentViewCount + 1,
+          });
+        }
+      });
+    }
+    
     await db.collection('salePageViews').add({
       saleProfileId: saleProfile.id!,
       timestamp: Timestamp.now(),
