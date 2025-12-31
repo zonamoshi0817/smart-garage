@@ -167,7 +167,8 @@ export async function createShareProfile(
   const slug = generateSlug();
 
   // ShareProfileを作成（現時点ではsaleProfilesコレクションを使用）
-  const shareProfileRef = await addDoc(collection(db, 'saleProfiles'), {
+  // undefinedのフィールドは削除（Firestoreはundefinedを許可しない）
+  const shareProfileData: any = {
     vehicleId,
     ownerUid: user.uid,
     type, // 新規追加
@@ -179,14 +180,20 @@ export async function createShareProfile(
     highlightTopN: 10,
     analyticsEnabled: true,
     maskPolicy, // 新規追加
-    title, // 新規追加
     createdBy: user.uid,
     updatedBy: user.uid,
     deletedAt: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     lastPublishedAt: serverTimestamp(),
-  });
+  };
+  
+  // titleが定義されている場合のみ追加
+  if (title !== undefined && title !== null) {
+    shareProfileData.title = title;
+  }
+  
+  const shareProfileRef = await addDoc(collection(db, 'saleProfiles'), shareProfileData);
 
   const shareProfileId = shareProfileRef.id;
 

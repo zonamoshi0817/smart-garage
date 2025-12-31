@@ -1029,66 +1029,66 @@ function DashboardContent({
     
     if (expensePeriod === 'monthly') {
       // 月次: 過去6ヶ月のデータ
-      const months = [];
+    const months = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('ja-JP', { month: 'long' });
       
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const monthName = date.toLocaleDateString('ja-JP', { month: 'long' });
-        
-        // その月のメンテナンス費用を計算
-        const maintenanceCost = maintenanceRecords
-          .filter(record => {
-            const recordDate = toDate(record.date) || new Date();
-            return recordDate.getFullYear() === date.getFullYear() && 
-                   recordDate.getMonth() === date.getMonth();
-          })
-          .reduce((sum, record) => sum + (record.cost || 0), 0);
-        
-        // その月の給油費用を計算
-        const fuelCost = fuelLogs
-          .filter(log => {
-            const logDate = toDate(log.date) || new Date();
-            return logDate.getFullYear() === date.getFullYear() && 
-                   logDate.getMonth() === date.getMonth();
-          })
-          .reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
-        
-        // その月のカスタマイズ費用を計算
-        const customizationCost = customizations
-          .filter(custom => {
-            const customDate = toDate(custom.date) || new Date();
-            return customDate.getFullYear() === date.getFullYear() && 
-                   customDate.getMonth() === date.getMonth();
-          })
-          .reduce((sum, custom) => {
-            const partsCost = custom.partsCostJpy || 0;
-            const laborCost = custom.laborCostJpy || 0;
-            const otherCost = custom.otherCostJpy || 0;
-            return sum + partsCost + laborCost + otherCost;
-          }, 0);
-        
-        const totalCost = maintenanceCost + fuelCost + customizationCost;
-        
-        months.push({
-          month: monthName,
-          monthKey,
-          maintenanceCost,
-          fuelCost,
-          customizationCost,
+      // その月のメンテナンス費用を計算
+      const maintenanceCost = maintenanceRecords
+        .filter(record => {
+          const recordDate = toDate(record.date) || new Date();
+          return recordDate.getFullYear() === date.getFullYear() && 
+                 recordDate.getMonth() === date.getMonth();
+        })
+        .reduce((sum, record) => sum + (record.cost || 0), 0);
+      
+      // その月の給油費用を計算
+      const fuelCost = fuelLogs
+        .filter(log => {
+          const logDate = toDate(log.date) || new Date();
+          return logDate.getFullYear() === date.getFullYear() && 
+                 logDate.getMonth() === date.getMonth();
+        })
+        .reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
+      
+      // その月のカスタマイズ費用を計算
+      const customizationCost = customizations
+        .filter(custom => {
+          const customDate = toDate(custom.date) || new Date();
+          return customDate.getFullYear() === date.getFullYear() && 
+                 customDate.getMonth() === date.getMonth();
+        })
+        .reduce((sum, custom) => {
+          const partsCost = custom.partsCostJpy || 0;
+          const laborCost = custom.laborCostJpy || 0;
+          const otherCost = custom.otherCostJpy || 0;
+          return sum + partsCost + laborCost + otherCost;
+        }, 0);
+      
+      const totalCost = maintenanceCost + fuelCost + customizationCost;
+      
+      months.push({
+        month: monthName,
+        monthKey,
+        maintenanceCost,
+        fuelCost,
+        customizationCost,
           cost: totalCost,
           cumulativeCost: 0
-        });
-      }
-      
-      // 累積費用を計算
-      let cumulative = 0;
-      months.forEach(month => {
-        cumulative += month.cost;
-        month.cumulativeCost = cumulative;
       });
-      
-      return months;
+    }
+    
+    // 累積費用を計算
+    let cumulative = 0;
+    months.forEach(month => {
+      cumulative += month.cost;
+      month.cumulativeCost = cumulative;
+    });
+    
+    return months;
     } else if (expensePeriod === 'yearly') {
       // 年次: 過去3年のデータ
       const years = [];
@@ -1248,7 +1248,7 @@ function DashboardContent({
       {/* ヘッダー */}
       <div className="mb-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">ホーム</h1>
+        <h1 className="text-2xl font-bold">ホーム</h1>
           {/* Primaryアクション: 記録を追加（グローバルCTA） */}
           {car && (
             <UnifiedCTA
@@ -1332,19 +1332,19 @@ function DashboardContent({
                 <>
                   {/* 上：サマリー */}
                   <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 mb-4">
-                    <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-                      <img
-                        src={car.imagePath || "/car.jpg"}
-                        alt={car.name || "My Car"}
-                        className="w-full h-44 md:h-full object-cover rounded-xl"
-                        onLoad={() => {
-                          // 画像読み込み完了時の処理
-                        }}
-                        onError={() => {
-                          // 画像読み込みエラー時の処理
-                        }}
-                      />
-                    </div>
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                    <img
+                      src={car.imagePath || "/car.jpg"}
+                      alt={car.name || "My Car"}
+                      className="w-full h-44 md:h-full object-cover rounded-xl"
+                      onLoad={() => {
+                        // 画像読み込み完了時の処理
+                      }}
+                      onError={() => {
+                        // 画像読み込みエラー時の処理
+                      }}
+                    />
+                  </div>
                     <div>
                       <h2 className="text-xl font-bold mb-3">
                         {car.name}
@@ -1371,14 +1371,14 @@ function DashboardContent({
                               <div>
                                 <div className={`text-lg font-bold ${isNearExpiry ? daysUntilExpiry <= 7 ? 'text-red-600' : daysUntilExpiry <= 14 ? 'text-orange-600' : 'text-yellow-600' : 'text-gray-900'}`}>
                                   {expiryDate.toLocaleDateString('ja-JP', {
-                                    year: 'numeric',
+                                  year: 'numeric',
                                     month: 'numeric',
-                                    day: 'numeric'
+                                  day: 'numeric'
                                   })}
-                                </div>
+                      </div>
                                 <div className="text-xs text-gray-500 mt-0.5">
                                   あと{daysUntilExpiry}日
-                                </div>
+                    </div>
                               </div>
                             );
                           })() : (
@@ -1418,16 +1418,16 @@ function DashboardContent({
                   </div>
                   {/* 下：アクション（1つに統一） */}
                   <div className="pt-4 border-t border-gray-200">
-                    <button 
-                      onClick={() => {
-                        console.log("Navigate to vehicle data, activeCarId:", activeCarId);
-                        setCurrentPage('my-car');
-                      }}
+                      <button 
+                        onClick={() => {
+                          console.log("Navigate to vehicle data, activeCarId:", activeCarId);
+                          setCurrentPage('my-car');
+                        }}
                       className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
-                    >
+                      >
                       マイカーを見る
-                    </button>
-                  </div>
+                      </button>
+                    </div>
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
@@ -1455,12 +1455,12 @@ function DashboardContent({
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-gray-900">最近のメンテナンス</h3>
-                  <button
-                    onClick={() => setCurrentPage('maintenance-history')}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    すべて見る →
-                  </button>
+                    <button
+                      onClick={() => setCurrentPage('maintenance-history')}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      すべて見る →
+                    </button>
                 </div>
               
               {maintenanceRecords.length > 0 ? (
@@ -1517,26 +1517,26 @@ function DashboardContent({
 
                   {/* 最近の履歴（直近3件） */}
                   <div className="space-y-2">
-                    {maintenanceRecords
-                      .sort((a, b) => toMillis(b.date) - toMillis(a.date))
-                      .slice(0, 3)
-                      .map((record) => (
+                  {maintenanceRecords
+                    .sort((a, b) => toMillis(b.date) - toMillis(a.date))
+                    .slice(0, 3)
+                    .map((record) => (
                       <div key={record.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
                         <div className="flex items-center justify-between text-sm">
-                          <div className="flex-1">
+                        <div className="flex-1">
                             <div className="font-medium text-gray-900">{record.title}</div>
                             <div className="text-xs text-gray-600 mt-0.5">
                               {(record.date?.toDate ? record.date.toDate() : toDate(record.date) || new Date()).toLocaleDateString('ja-JP')} • {record.mileage?.toLocaleString()}km
-                            </div>
+                </div>
                           </div>
-                          {record.cost && (
+                            {record.cost && (
                             <div className="text-sm font-medium text-gray-900">
-                              ¥{record.cost.toLocaleString()}
-                            </div>
+                                ¥{record.cost.toLocaleString()}
+              </div>
                           )}
-                        </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                   </div>
                   {maintenanceRecords.length > 3 && (
                     <div className="pt-2 text-center border-t border-gray-200">
@@ -1574,12 +1574,12 @@ function DashboardContent({
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-gray-900">最近の給油</h3>
-                  <button
-                    onClick={() => setCurrentPage('fuel-logs')}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    すべて見る →
-                  </button>
+                    <button
+                      onClick={() => setCurrentPage('fuel-logs')}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      すべて見る →
+                    </button>
                 </div>
                 
                 {!car ? (
@@ -1610,20 +1610,20 @@ function DashboardContent({
                         const amt = getDisplayAmount(latest);
                         return (
                           <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                               <div>
                                 <div className="text-xs text-gray-500 mb-1">最新の給油</div>
                                 <div className="text-sm font-medium text-gray-900">
                                   {(latest.date?.toDate ? latest.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} • {((latest.quantity || 0) / 1000 || latest.fuelAmount || 0).toLocaleString()}L
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-bold text-gray-900">
+                        </div>
+                      </div>
+                      <div className="text-right">
+                            <div className="text-sm font-bold text-gray-900">
                                   ¥{getDisplayCost(latest).toLocaleString()}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                        </div>
+                      </div>
+                        </div>
+                      </div>
                         );
                       })()}
 
@@ -1650,17 +1650,17 @@ function DashboardContent({
                         const previousKm = sortedLogs[1]?.odoKm || 0;
                         const distanceSinceLastRefuel = latestKm > 0 && previousKm > 0 ? latestKm - previousKm : null;
                         return (
-                          <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                             <div className="text-center p-2 bg-gray-50 rounded-lg">
                               <div className="text-xs font-bold text-blue-600">
                                 {avgPricePerLiter > 0 ? `¥${avgPricePerLiter.toLocaleString()}` : '--'}
-                              </div>
+                                </div>
                               <div className="text-xs text-gray-500 mt-1">平均単価</div>
-                            </div>
+                              </div>
                             <div className="text-center p-2 bg-gray-50 rounded-lg">
                               <div className="text-xs font-bold text-indigo-600">
                                 {distanceSinceLastRefuel !== null ? `${distanceSinceLastRefuel.toLocaleString()} km` : '--'}
-                              </div>
+                                </div>
                               <div className="text-xs text-gray-500 mt-1">前回からの走行</div>
                             </div>
                           </div>
@@ -1668,20 +1668,20 @@ function DashboardContent({
                       })()}
 
                       {/* 最近の給油履歴（直近3件） */}
-                      <div className="space-y-2">
-                        {fuelLogs
-                          .sort((a, b) => {
-                            const aSeconds = a.date?.seconds || 0;
-                            const bSeconds = b.date?.seconds || 0;
-                            return bSeconds - aSeconds;
-                          })
-                          .slice(0, 3)
-                          .map((log) => (
-                          <div key={log.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
+                        <div className="space-y-2">
+                          {fuelLogs
+                            .sort((a, b) => {
+                              const aSeconds = a.date?.seconds || 0;
+                              const bSeconds = b.date?.seconds || 0;
+                              return bSeconds - aSeconds;
+                            })
+                            .slice(0, 3)
+                            .map((log) => (
+                            <div key={log.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
                             <div className="flex items-center justify-between text-sm">
                               <div className="flex items-center gap-2">
                                 <span className="text-gray-600">
-                                  {(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                                      {(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                                 </span>
                                 <span className="text-gray-900">
                                   {((log.quantity || 0) / 1000 || log.fuelAmount || 0).toLocaleString()}L
@@ -1689,26 +1689,26 @@ function DashboardContent({
                                 <span className="text-gray-900 font-medium">
                                   ¥{(log.totalCostJpy || log.cost || 0).toLocaleString()}
                                 </span>
-                              </div>
-                              {log.isFullTank && (
+                                  </div>
+                                  {log.isFullTank && (
                                 <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
-                                  満タン
+                                      満タン
                                 </span>
-                              )}
+                  )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                      {fuelLogs.length > 3 && (
-                        <div className="pt-2 text-center border-t border-gray-200">
-                          <button
-                            onClick={() => setCurrentPage('fuel-logs')}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            もっと見る ({fuelLogs.length}件) →
-                          </button>
+                          ))}
                         </div>
-                      )}
+                        {fuelLogs.length > 3 && (
+                        <div className="pt-2 text-center border-t border-gray-200">
+                            <button
+                              onClick={() => setCurrentPage('fuel-logs')}
+                              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              もっと見る ({fuelLogs.length}件) →
+                            </button>
+                          </div>
+                        )}
                     </div>
                   ) : (
                     <div className="text-center py-8">
@@ -1800,32 +1800,32 @@ function DashboardContent({
 
                     {/* 最近の履歴（直近3件） */}
                     <div className="space-y-2">
-                      {customizations
-                        .sort((a, b) => toMillis(b.date) - toMillis(a.date))
-                        .slice(0, 3)
+                    {customizations
+                      .sort((a, b) => toMillis(b.date) - toMillis(a.date))
+                      .slice(0, 3)
                         .map((customization) => {
                           const totalCost = (customization.partsCostJpy || 0) + (customization.laborCostJpy || 0) + (customization.otherCostJpy || 0);
                           return (
                             <div key={customization.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
                               <div className="flex items-center justify-between text-sm">
-                                <div className="flex-1">
+                          <div className="flex-1">
                                   <div className="font-medium text-gray-900">{customization.title}</div>
                                   <div className="text-xs text-gray-600 mt-0.5">
                                     {(customization.date?.toDate ? customization.date.toDate() : toDate(customization.date) || new Date()).toLocaleDateString('ja-JP')}
                                     {customization.categories.length > 0 && (
                                       <span className="ml-2">
                                         {CATEGORY_LABELS[customization.categories[0]]}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
+                                </span>
+                              )}
+                            </div>
+                            </div>
                                 {totalCost > 0 && (
                                   <div className="text-sm font-medium text-gray-900">
                                     ¥{totalCost.toLocaleString()}
-                                  </div>
+                          </div>
                                 )}
-                              </div>
-                            </div>
+                        </div>
+                      </div>
                           );
                         })}
                     </div>

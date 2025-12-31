@@ -131,7 +131,7 @@ export async function createCheckoutSession({
     console.log('Stripe Checkout Session created successfully:', {
       sessionId: session.id,
       url: session.url,
-    });
+  });
 
   return session;
   } catch (error: any) {

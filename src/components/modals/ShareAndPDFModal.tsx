@@ -221,7 +221,7 @@ export default function ShareAndPDFModal({
                   <div className="text-xs text-orange-700 mb-3 space-y-1">
                     <p className="font-medium">
                       ⚠️ 記録がありません。先に記録を追加してください。
-                    </p>
+                  </p>
                     {car.id && (
                       <button
                         onClick={() => {
@@ -266,8 +266,8 @@ export default function ShareAndPDFModal({
                 ) : (
                   <div className="text-xs text-orange-700 mb-3 space-y-1">
                     <p className="font-medium">
-                      ⚠️ カスタマイズ記録がありません。先に記録を追加してください。
-                    </p>
+                    ⚠️ カスタマイズ記録がありません。先に記録を追加してください。
+                  </p>
                     {car.id && (
                       <button
                         onClick={() => {
@@ -308,7 +308,7 @@ export default function ShareAndPDFModal({
                       </summary>
                       <p className="mt-2 text-gray-600">
                         データはブロックチェーン技術で保護され、検証IDにより改ざんの有無を確認できます。
-                      </p>
+                    </p>
                     </details>
                   </div>
                 </div>
