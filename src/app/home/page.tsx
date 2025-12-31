@@ -983,6 +983,45 @@ function DashboardContent({
 
   // 期間選択の状態管理
   const [expensePeriod, setExpensePeriod] = useState<'monthly' | 'yearly' | 'all'>('monthly');
+  
+  // 共有状態（saleProfile）を取得
+  const [shareStatus, setShareStatus] = useState<'none' | 'active' | 'stopped' | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!activeCarId || !auth.currentUser || !car) return;
+    
+    const loadShareStatus = async () => {
+      try {
+        const carDoc = await getDoc(doc(db, 'users', auth.currentUser!.uid, 'cars', activeCarId));
+        if (carDoc.exists()) {
+          const carData = carDoc.data();
+          if (carData.activeSaleProfileId) {
+            const saleProfileDoc = await getDoc(doc(db, 'saleProfiles', carData.activeSaleProfileId));
+            if (saleProfileDoc.exists()) {
+              const profileData = saleProfileDoc.data();
+              setShareStatus(profileData.visibility === 'disabled' ? 'stopped' : 'active');
+              if (profileData.slug) {
+                setShareUrl(`${typeof window !== 'undefined' ? window.location.origin : ''}/s/${profileData.slug}`);
+              }
+            } else {
+              setShareStatus('none');
+              setShareUrl(null);
+            }
+          } else {
+            setShareStatus('none');
+            setShareUrl(null);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load share status:', error);
+        setShareStatus('none');
+        setShareUrl(null);
+      }
+    };
+    
+    loadShareStatus();
+  }, [activeCarId, car]);
 
   // 費用データの計算（期間に応じて）
   const expenseData = useMemo(() => {
@@ -1207,10 +1246,10 @@ function DashboardContent({
   return (
     <>
       {/* ヘッダー */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">ホーム</h1>
-          {/* Primaryアクション: 記録を追加 */}
+          {/* Primaryアクション: 記録を追加（グローバルCTA） */}
           {car && (
             <UnifiedCTA
               onMaintenance={() => setShowMaintenanceModal(true)}
@@ -1219,26 +1258,29 @@ function DashboardContent({
             />
           )}
         </div>
-        {/* クイックアクション */}
+        {/* ショートカット（小さめ、＋付き） */}
         {car && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-3">
             <button
               onClick={() => setShowFuelLogModal(true)}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-3 py-1 text-xs border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1"
             >
-              給油
+              <span>＋</span>
+              <span>給油</span>
             </button>
             <button
               onClick={() => setShowMaintenanceModal(true)}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-3 py-1 text-xs border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1"
             >
-              整備
+              <span>＋</span>
+              <span>整備</span>
             </button>
             <button
               onClick={() => setShowCustomizationModal(true)}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-3 py-1 text-xs border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1"
             >
-              カスタム
+              <span>＋</span>
+              <span>カスタム</span>
             </button>
           </div>
         )}
@@ -1334,7 +1376,7 @@ function DashboardContent({
                         {car.name}
                         {car.modelCode ? `（${car.modelCode}）` : ""}
                       </h2>
-                      {/* 主要KPI: 走行距離・車検期限を強調 */}
+                      {/* 主要KPI: 走行距離・車検期限・共有状態を強調 */}
                       <div className="grid grid-cols-2 gap-4 mb-3">
                         <div>
                           <div className="text-xs text-gray-500 mb-1">走行距離</div>
@@ -1375,34 +1417,42 @@ function DashboardContent({
                         const maintenanceCount = maintenanceRecords.length;
                         const latestMaintenance = maintenanceRecords.length > 0 ? maintenanceRecords.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0] : null;
                         const evidenceCount = maintenanceRecords.filter(r => r.attachments && r.attachments.length > 0).length;
-                        const evidenceRate = maintenanceCount > 0 ? Math.round((evidenceCount / maintenanceCount) * 100) : 0;
+                        const evidenceDisplay = evidenceCount > 0 
+                          ? `証憑: ${evidenceCount}件（${Math.round((evidenceCount / maintenanceCount) * 100)}%）`
+                          : '証憑: 未登録';
                         return (
-                          <div className="flex items-center gap-4 text-xs text-gray-600 pt-3 border-t border-gray-200">
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600 pt-3 border-t border-gray-200">
                             <span>記録: {maintenanceCount}件</span>
-                            <span>証憑: {evidenceCount}件（{evidenceRate}%）</span>
+                            <span>{evidenceDisplay}</span>
                             <span>直近整備: {latestMaintenance ? (latestMaintenance.date?.toDate ? latestMaintenance.date.toDate() : toDate(latestMaintenance.date) || new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }) : 'なし'}</span>
+                            {/* 共有状態 */}
+                            {shareStatus !== null && (
+                              <span>
+                                共有: {shareStatus === 'active' ? (
+                                  <span className="text-green-600">公開中</span>
+                                ) : shareStatus === 'stopped' ? (
+                                  <span className="text-gray-500">停止中</span>
+                                ) : (
+                                  <span className="text-gray-500">未設定</span>
+                                )}
+                              </span>
+                            )}
                           </div>
                         );
                       })()}
                     </div>
                   </div>
-                  {/* 下：アクション */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  {/* 下：アクション（1つに統一） */}
+                  <div className="pt-4 border-t border-gray-200">
                     <button 
                       onClick={() => {
                         console.log("Navigate to vehicle data, activeCarId:", activeCarId);
                         setCurrentPage('my-car');
                       }}
-                      className="px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                      className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
                     >
-                      マイカーを見る →
+                      マイカーを見る
                     </button>
-                    {/* Primary CTA: 記録を追加 */}
-                    <UnifiedCTA
-                      onMaintenance={() => setShowMaintenanceModal(true)}
-                      onFuel={() => setShowFuelLogModal(true)}
-                      onCustom={() => setShowCustomizationModal(true)}
-                    />
                   </div>
                 </>
               ) : (
@@ -1426,21 +1476,18 @@ function DashboardContent({
             </section>
 
             {/* メンテナンス、給油情報、カスタマイズ情報を3列に配置 */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
               {/* メンテナンス */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
-                <SectionHeader
-                  title="最近のメンテナンス"
-                  size="md"
-                  right={
-                    <button
-                      onClick={() => setCurrentPage('maintenance-history')}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      すべて見る →
-                    </button>
-                  }
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900">最近のメンテナンス</h3>
+                  <button
+                    onClick={() => setCurrentPage('maintenance-history')}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    すべて見る →
+                  </button>
+                </div>
               
               {maintenanceRecords.length > 0 ? (
                 <div className="space-y-3">
@@ -1466,32 +1513,33 @@ function DashboardContent({
                     );
                   })()}
 
-                  {/* ミニ統計（2つまで） */}
-                  {(() => {
-                    const totalCost = maintenanceRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
-                    const recentCount = maintenanceRecords.filter(r => {
-                      const recordDate = toDate(r.date) || new Date();
-                      const threeMonthsAgo = new Date();
-                      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-                      return recordDate >= threeMonthsAgo;
-                    }).length;
-                    return (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="text-center p-2 bg-gray-50 rounded-lg">
-                          <div className="text-xs font-bold text-blue-600">
-                            ¥{totalCost.toLocaleString()}
+                      {/* ミニ統計（2つ、期間統一：直近90日） */}
+                      {(() => {
+                        const now = new Date();
+                        const ninetyDaysAgo = new Date();
+                        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+                        const recentRecords = maintenanceRecords.filter(r => {
+                          const recordDate = toDate(r.date) || new Date();
+                          return recordDate >= ninetyDaysAgo;
+                        });
+                        const recentTotalCost = recentRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
+                        return (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="text-xs font-bold text-blue-600">
+                                {recentRecords.length}件
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">直近90日</div>
+                            </div>
+                            <div className="text-center p-2 bg-gray-50 rounded-lg">
+                              <div className="text-xs font-bold text-green-600">
+                                ¥{recentTotalCost.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">総費用</div>
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">総費用</div>
-                        </div>
-                        <div className="text-center p-2 bg-gray-50 rounded-lg">
-                          <div className="text-xs font-bold text-green-600">
-                            {recentCount}件
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">直近3ヶ月</div>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                        );
+                      })()}
 
                   {/* 最近の履歴（直近3件） */}
                   <div className="space-y-2">
@@ -1550,17 +1598,15 @@ function DashboardContent({
 
               {/* 最近の給油 */}
               <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
-                <SectionHeader
-                  title="最近の給油"
-                  right={
-                    <button
-                      onClick={() => setCurrentPage('fuel-logs')}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      すべて見る →
-                    </button>
-                  }
-                />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-900">最近の給油</h3>
+                  <button
+                    onClick={() => setCurrentPage('fuel-logs')}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    すべて見る →
+                  </button>
+                </div>
                 
                 {!car ? (
                   <div className="text-center py-8">
@@ -1607,10 +1653,20 @@ function DashboardContent({
                         );
                       })()}
 
-                      {/* ミニ統計（2つまで） */}
+                      {/* ミニ統計（2つ、期間統一：直近90日） */}
                       {(() => {
-                        const currentEfficiency = calculateFuelEfficiency(fuelLogs);
-                        // 前回からの走行距離を計算
+                        const now = new Date();
+                        const ninetyDaysAgo = new Date();
+                        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+                        const recentLogs = fuelLogs.filter(log => {
+                          const logDate = toDate(log.date) || new Date();
+                          return logDate >= ninetyDaysAgo;
+                        });
+                        const recentTotalCost = recentLogs.reduce((sum, log) => sum + (log.totalCostJpy || log.cost || 0), 0);
+                        // 平均単価を計算
+                        const totalFuelAmount = recentLogs.reduce((sum, log) => sum + ((log.quantity || 0) / 1000 || log.fuelAmount || 0), 0);
+                        const avgPricePerLiter = totalFuelAmount > 0 ? Math.round(recentTotalCost / totalFuelAmount) : 0;
+                        // 前回からの走行距離
                         const sortedLogs = fuelLogs.sort((a, b) => {
                           const aSeconds = a.date?.seconds || 0;
                           const bSeconds = b.date?.seconds || 0;
@@ -1623,9 +1679,9 @@ function DashboardContent({
                           <div className="grid grid-cols-2 gap-3">
                             <div className="text-center p-2 bg-gray-50 rounded-lg">
                               <div className="text-xs font-bold text-blue-600">
-                                {currentEfficiency ? `${currentEfficiency} km/L` : '--'}
+                                {avgPricePerLiter > 0 ? `¥${avgPricePerLiter.toLocaleString()}` : '--'}
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">現在の燃費</div>
+                              <div className="text-xs text-gray-500 mt-1">平均単価</div>
                             </div>
                             <div className="text-center p-2 bg-gray-50 rounded-lg">
                               <div className="text-xs font-bold text-indigo-600">
@@ -1738,16 +1794,23 @@ function DashboardContent({
                       );
                     })()}
 
-                    {/* ミニ統計（2つまで） */}
+                    {/* ミニ統計（2つ、期間統一：直近90日） */}
                     {(() => {
-                      const totalCost = customizations.reduce((sum, c) => 
+                      const now = new Date();
+                      const ninetyDaysAgo = new Date();
+                      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+                      const recentCustoms = customizations.filter(c => {
+                        const customDate = toDate(c.date) || new Date();
+                        return customDate >= ninetyDaysAgo;
+                      });
+                      const recentTotalCost = recentCustoms.reduce((sum, c) => 
                         sum + (c.partsCostJpy || 0) + (c.laborCostJpy || 0) + (c.otherCostJpy || 0), 0);
-                      const categoryCount = new Set(customizations.flatMap(c => c.categories)).size;
+                      const categoryCount = new Set(recentCustoms.flatMap(c => c.categories)).size;
                       return (
                         <div className="grid grid-cols-2 gap-3">
                           <div className="text-center p-2 bg-gray-50 rounded-lg">
                             <div className="text-xs font-bold text-purple-600">
-                              ¥{totalCost.toLocaleString()}
+                              ¥{recentTotalCost.toLocaleString()}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">総費用</div>
                           </div>
