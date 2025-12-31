@@ -146,7 +146,6 @@ export default function CustomPartsPanel({
         {Object.entries(customizationsByCategory).map(([category, items]) => {
           // 空のカテゴリも表示（純正パーツとして）
           const hasCustom = items.length > 0;
-          const hasCustom = items.length > 0;
           const categoryInfo = categoryLabels[category as keyof typeof categoryLabels];
           const isExpanded = expandedCategories.has(category);
           
