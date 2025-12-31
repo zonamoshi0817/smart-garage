@@ -5813,7 +5813,7 @@ function ShareLinkCard({
       if (!snsData.gallery || snsData.gallery.length === 0) return;
       
       const urls: Record<string, string> = {};
-      await Promise.all(snsData.gallery.map(async (img) => {
+      await Promise.all(snsData.gallery.map(async (img: { id: string; path: string; caption?: string }) => {
         try {
           const storageRef = ref(storage, img.path);
           const blob = await getBlob(storageRef);
@@ -5913,7 +5913,7 @@ function ShareLinkCard({
     
     setSnsData({
       ...snsData,
-      gallery: snsData.gallery.filter(img => img.id !== imageId)
+      gallery: snsData.gallery.filter((img: { id: string; path: string; caption?: string }) => img.id !== imageId)
     });
   };
 
@@ -6125,7 +6125,7 @@ function ShareLinkCard({
                   ハイライト（最大6件）
                 </label>
                 <div className="space-y-2">
-                  {snsData.highlightParts.map((part, index) => (
+                  {snsData.highlightParts.map((part: { label: string; value: string }, index: number) => (
                     <div key={index} className="flex gap-2">
                       <input
                         type="text"
@@ -6151,7 +6151,7 @@ function ShareLinkCard({
                       />
                       <button
                         onClick={() => {
-                          const newParts = snsData.highlightParts.filter((_, i) => i !== index);
+                          const newParts = snsData.highlightParts.filter((_: { label: string; value: string }, i: number) => i !== index);
                           setSnsData({ ...snsData, highlightParts: newParts });
                         }}
                         className="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
@@ -6182,7 +6182,7 @@ function ShareLinkCard({
                 </label>
                 {snsData.gallery.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mb-3">
-                    {snsData.gallery.map((img) => {
+                    {snsData.gallery.map((img: { id: string; path: string; caption?: string }) => {
                       const previewUrl = galleryPreviewUrls[img.id];
                       return (
                         <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden bg-gray-200 group">
@@ -6285,7 +6285,7 @@ function ShareLinkCard({
                   <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
                     {safeCustomizations.map((custom) => {
                       const isSelected = snsData.build.featured.some(
-                        f => f.label === (custom.brand || '') && f.value === custom.title
+                        (f: { label: string; value: string }) => f.label === (custom.brand || '') && f.value === custom.title
                       );
                       const isMaxReached = snsData.build.featured.length >= 6;
                       
@@ -6313,7 +6313,7 @@ function ShareLinkCard({
                                 setSnsData({ ...snsData, build: { ...snsData.build, featured: newFeatured } });
                               } else {
                                 const newFeatured = snsData.build.featured.filter(
-                                  f => !(f.label === (custom.brand || '') && f.value === custom.title)
+                                  (f: { label: string; value: string }) => !(f.label === (custom.brand || '') && f.value === custom.title)
                                 );
                                 setSnsData({ ...snsData, build: { ...snsData.build, featured: newFeatured } });
                               }
@@ -6345,12 +6345,12 @@ function ShareLinkCard({
                   <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="text-xs font-medium text-blue-900 mb-1">選択中のパーツ（{snsData.build.featured.length}/6）</div>
                     <div className="space-y-1">
-                      {snsData.build.featured.map((part, index) => (
+                      {snsData.build.featured.map((part: { label: string; value: string }, index: number) => (
                         <div key={index} className="flex items-center justify-between text-xs text-blue-800">
                           <span>{part.label}: {part.value}</span>
                           <button
                             onClick={() => {
-                              const newFeatured = snsData.build.featured.filter((_, i) => i !== index);
+                              const newFeatured = snsData.build.featured.filter((_: { label: string; value: string }, i: number) => i !== index);
                               setSnsData({ ...snsData, build: { ...snsData.build, featured: newFeatured } });
                             }}
                             className="text-red-600 hover:text-red-700"
@@ -6374,7 +6374,7 @@ function ShareLinkCard({
                       // galleryのpathをそのまま保存（画像は既にアップロード済み）
                       await updateShareProfileSNS(profile.id, {
                         ...snsData,
-                        gallery: snsData.gallery.map(img => ({
+                        gallery: snsData.gallery.map((img: { id: string; path: string; caption?: string }) => ({
                           id: img.id,
                           path: img.path,
                           caption: img.caption || undefined
