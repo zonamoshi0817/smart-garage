@@ -92,43 +92,13 @@ export interface CarInput {
   transmission?: string; // ミッション（例：6MT、AT、CVT、DCT）
   bodyColor?: string; // ボディカラー
   ownedSince?: Timestamp; // 所有開始年月
-  // Sell Boost用
-  activeSaleProfileId?: string; // アクティブな売却プロフィールID（売却モードON時のみ設定）
-}
-
-export interface CarInput {
-  name: string;
-  modelCode?: string;
-  year?: number;
-  odoKm?: number;
-  imagePath?: string;
-  inspectionExpiry?: Timestamp; // 車検期限（Timestamp型で保存）
-  firstRegYm?: string;
-  avgKmPerMonth?: number;
-  vehicleClass?: VehicleClass; // 車種クラス（コスト効率補正用）
-  status?: CarStatus; // 車両ステータス
-  soldDate?: Timestamp; // 売却日
-  soldPrice?: number; // 売却価格
-  soldTo?: string; // 売却先
-  soldNotes?: string; // 売却メモ
-  chassisNumber?: string; // 車台番号（QRコードから）
-  registrationNumber?: string; // 登録番号（ナンバープレート）
-  bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other'; // 車体形状
-  // 公開マイカーページ設定
-  isPublic?: boolean; // 公開設定
-  publicVanityUrl?: string; // カスタムURL（例：/c/fl5-ken）
-  publicTagline?: string; // 一言キャッチコピー
-  ownerPicks?: string[]; // OWNER'S PICKのカスタマイズID配列（最大3件）
-  ownerHandle?: string; // オーナーハンドルネーム
-  ownerRegion?: string; // 地域（都道府県）
-  ownerSocialLinks?: { instagram?: string; twitter?: string }; // SNSリンク
-  // 基本スペック（公開用）
-  driveType?: 'FF' | 'FR' | '4WD' | 'MR' | 'RR' | 'AWD'; // 駆動方式
-  transmission?: string; // ミッション（例：6MT、AT、CVT、DCT）
-  bodyColor?: string; // ボディカラー
-  ownedSince?: Timestamp; // 所有開始年月
-  // Sell Boost用
-  activeSaleProfileId?: string; // アクティブな売却プロフィールID（売却モードON時のみ設定）
+  // 共有プロフィール（用途別リンク対応）
+  activeSaleProfileId?: string; // アクティブな売却プロフィールID（後方互換、非推奨）
+  activeShareProfileIds?: {     // 用途別のアクティブShareProfile ID（新規）
+    normal?: string;              // 通常共有リンク
+    sale?: string;                // 売却用リンク
+    appraisal?: string;           // 査定用リンク
+  };
 }
 
 // メンテナンス関連の型
@@ -602,19 +572,39 @@ export interface UserDocument {
 // ========================================
 
 /**
- * 売却用プロフィール
- * コレクション: saleProfiles/{saleProfileId}
+ * 共有プロフィール（売却用プロフィールを拡張）
+ * コレクション: shareProfiles/{shareProfileId}（saleProfilesから段階的に移行）
+ * 
+ * 用途別に複数のShareProfileを持てる（通常/売却/査定）
+ * URLは用途を切り替えても変わらない（誤送信防止）
  */
-export interface SaleProfile extends BaseEntity {
+export interface ShareProfile extends BaseEntity {
   vehicleId: string;                       // 車両ID（users/{userId}/cars/{carId}のcarId）
   ownerUid: string;                        // オーナーUID
+  type: 'normal' | 'sale' | 'appraisal';  // 用途種別（新規追加）
+  status: 'active' | 'disabled';           // ステータス（visibilityの代替、新規追加）
   slug: string;                            // URLスラッグ（例: "abc123"）
-  visibility: 'unlisted' | 'public' | 'disabled'; // 公開設定
+  
+  // 後方互換性のため、既存フィールドも維持
+  visibility?: 'unlisted' | 'public' | 'disabled'; // 公開設定（非推奨、statusで代替）
   includeEvidence: boolean;                // 証跡を含めるか
   includeAmounts: boolean;                 // 金額を含めるか
   highlightTopN: number;                   // 重要イベント上位N件（デフォルト: 10）
   analyticsEnabled: boolean;               // アナリティクス有効化
+  
+  // 新規追加フィールド
+  title?: string;                          // 公開ページの見出し（任意）
+  maskPolicy?: 'auto' | 'strict' | 'custom'; // マスク強度
+  sections?: string[];                     // 公開ページの構成セクション（将来用）
+  viewCount?: number;                      // 閲覧回数（オーナー側のみ表示）
+  lastPublishedAt?: Timestamp;             // 最終公開日時
 }
+
+/**
+ * 売却用プロフィール（後方互換性のためのエイリアス）
+ * @deprecated ShareProfileを使用してください
+ */
+export type SaleProfile = ShareProfile;
 
 /**
  * 証跡（メンテナンス記録の添付ファイルなど）
