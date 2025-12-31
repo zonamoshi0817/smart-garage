@@ -37,7 +37,7 @@ export default function TokushoPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-3">連絡先</h2>
             <p className="text-gray-700">
               電話番号: 090-7320-0064<br />
-              メールアドレス: support@garagelog.jp<br />
+              メールアドレス: kobayashi0817@gmail.com<br />
               受付時間: 平日 10:00 - 18:00（土日祝除く）
             </p>
           </section>

@@ -84,7 +84,7 @@ export default function BillingCancelPage() {
         {/* サポート */}
         <div className="mt-8 text-sm text-gray-500">
           質問がありますか？{' '}
-          <a href="mailto:support@smartgarage.jp" className="text-blue-600 hover:underline">
+          <a href="mailto:kobayashi0817@gmail.com" className="text-blue-600 hover:underline">
             サポートに問い合わせる
           </a>
         </div>

@@ -25,7 +25,7 @@ export default function SupportPage() {
     const body = encodeURIComponent(
       `名前: ${feedbackForm.name}\nメール: ${feedbackForm.email}\n\n${feedbackForm.message}`
     );
-    const mailtoLink = `mailto:support@smartgarage.jp?subject=${subject}&body=${body}`;
+    const mailtoLink = `mailto:kobayashi0817@gmail.com?subject=${subject}&body=${body}`;
 
     // メールクライアントを開く
     window.location.href = mailtoLink;
@@ -166,10 +166,10 @@ export default function SupportPage() {
                 <div>
                   <div className="font-bold text-gray-900">メール</div>
                   <a 
-                    href="mailto:support@garagelog.jp" 
+                    href="mailto:kobayashi0817@gmail.com" 
                     className="text-blue-600 hover:underline"
                   >
-                    support@garagelog.jp
+                    kobayashi0817@gmail.com
                   </a>
                 </div>
               </div>

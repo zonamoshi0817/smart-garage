@@ -51,10 +51,10 @@ export default function MaintenanceModePage() {
             <p className="text-sm text-gray-600">
               お問い合わせ:{" "}
               <a 
-                href="mailto:support@garagelog.jp" 
+                href="mailto:kobayashi0817@gmail.com" 
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
-                support@garagelog.jp
+                kobayashi0817@gmail.com
               </a>
             </p>
           </div>
