@@ -1258,32 +1258,6 @@ function DashboardContent({
             />
           )}
         </div>
-        {/* ショートカット（小さめ、＋付き） */}
-        {car && (
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={() => setShowFuelLogModal(true)}
-              className="px-3 py-1 text-xs border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1"
-            >
-              <span>＋</span>
-              <span>給油</span>
-            </button>
-            <button
-              onClick={() => setShowMaintenanceModal(true)}
-              className="px-3 py-1 text-xs border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1"
-            >
-              <span>＋</span>
-              <span>整備</span>
-            </button>
-            <button
-              onClick={() => setShowCustomizationModal(true)}
-              className="px-3 py-1 text-xs border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-1"
-            >
-              <span>＋</span>
-              <span>カスタム</span>
-            </button>
-          </div>
-        )}
       </div>
 
 
