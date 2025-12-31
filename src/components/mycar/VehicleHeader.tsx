@@ -21,13 +21,14 @@ export default function VehicleHeader({
   // 車検期限までの日数
   const inspectionDaysLeft = daysFromNow(car.inspectionExpiry);
   
-  // バッジの色を決定
+  // バッジの色を決定（期限が遠いときはニュートラル、近づいたら注意色）
   const getBadgeColor = (daysLeft: number | null) => {
-    if (daysLeft === null) return 'bg-gray-100 text-gray-600';
+    if (daysLeft === null) return 'bg-gray-100 text-gray-600 border-gray-300';
     if (daysLeft < 0) return 'bg-red-100 text-red-700 border-red-300';
     if (daysLeft < 30) return 'bg-orange-100 text-orange-700 border-orange-300';
     if (daysLeft < 90) return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-    return 'bg-green-100 text-green-700 border-green-300';
+    // 期限が遠いときはニュートラル（グレー）
+    return 'bg-gray-100 text-gray-600 border-gray-300';
   };
   
   // 直近メンテ日のフォーマット

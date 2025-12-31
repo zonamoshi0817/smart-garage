@@ -265,73 +265,112 @@ export default function VehicleHealthIndicator({
                   {/* オイル交換 */}
                   {item.id === 'oil' && item.lastChangeDate && item.lastChangeMileage !== undefined && item.kmSinceChange !== undefined && item.remainingKm !== undefined && item.remainingDays !== undefined ? (
                     <>
+                      {/* 次の交換目安を1行で固定表示 */}
+                      <div className="text-sm font-semibold text-gray-900 mb-1">
+                        次回目安: <span className={item.remainingKm < 1000 || item.remainingDays < 30 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingKm.toLocaleString()}km</span> / <span className={item.remainingDays < 30 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingDays}日</span>
+                      </div>
+                      {/* 補足情報を小さく表示 */}
                       <div className="text-xs text-gray-600">
-                        前回: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} ({item.lastChangeMileage.toLocaleString()}km)
+                        前回: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} ({item.lastChangeMileage.toLocaleString()}km) • 経過: {item.kmSinceChange.toLocaleString()}km / {item.daysSinceChange}日
                       </div>
-                      <div className="text-xs text-gray-600">
-                        経過: <span className="font-semibold text-gray-900">{item.kmSinceChange.toLocaleString()}km</span> / <span className="font-semibold text-gray-900">{item.daysSinceChange}日</span>
-                        {' • '}推奨: {item.recommendedInterval?.toLocaleString()}km または 6ヶ月
+                      <div className="text-[10px] text-gray-500">
+                        推奨: {item.recommendedInterval?.toLocaleString()}km または 6ヶ月ごと
                       </div>
-                      <div className="text-xs font-semibold text-gray-900">
-                        残り約 <span className={item.remainingKm < 1000 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingKm.toLocaleString()} km</span> / <span className={item.remainingDays < 30 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingDays}日</span>
-                      </div>
+                      {/* 注意の理由を具体化 */}
+                      {item.status !== 'good' && (
+                        <div className="text-xs text-amber-600 mt-1">
+                          {item.daysSinceChange >= 180 ? '前回記録が6ヶ月以上前です' : item.remainingKm < 1000 ? '交換目安の距離が近づいています' : item.remainingDays < 30 ? '交換目安の日数が近づいています' : ''}
+                        </div>
+                      )}
                     </>
                   ) : item.id === 'oil' ? (
-                    <div className="text-xs text-gray-500">記録を追加して状態を確認（推奨: 5,000km または 6ヶ月ごと）</div>
+                    <>
+                      <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 記録を追加してください</div>
+                      <div className="text-xs text-gray-500">推奨: 5,000km または 6ヶ月ごと</div>
+                      <div className="text-xs text-amber-600 mt-1">記録なし</div>
+                    </>
                   ) : null}
                   
                   {/* ブレーキ&タイヤ */}
                   {item.id === 'brake-tire' && item.lastChangeDate && item.lastChangeMileage !== undefined && item.kmSinceChange !== undefined && item.remainingKm !== undefined ? (
                     <>
+                      {/* 次の交換目安を1行で固定表示 */}
+                      <div className="text-sm font-semibold text-gray-900 mb-1">
+                        次回目安: <span className={item.remainingKm < 5000 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingKm.toLocaleString()}km</span>
+                      </div>
+                      {/* 補足情報を小さく表示 */}
                       <div className="text-xs text-gray-600">
-                        前回: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} ({item.lastChangeMileage.toLocaleString()}km)
+                        前回: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} ({item.lastChangeMileage.toLocaleString()}km) • 経過: {item.kmSinceChange.toLocaleString()}km
                       </div>
-                      <div className="text-xs text-gray-600">
-                        経過: <span className="font-semibold text-gray-900">{item.kmSinceChange.toLocaleString()}km</span>
-                        {' • '}推奨: {item.recommendedInterval?.toLocaleString()}kmごと
+                      <div className="text-[10px] text-gray-500">
+                        推奨: {item.recommendedInterval?.toLocaleString()}kmごと
                       </div>
-                      <div className="text-xs font-semibold text-gray-900">
-                        残り約 <span className={item.remainingKm < 5000 ? 'text-amber-600' : 'text-gray-900'}>{item.remainingKm.toLocaleString()} km</span>
-                      </div>
+                      {/* 注意の理由を具体化 */}
+                      {item.status !== 'good' && (
+                        <div className="text-xs text-amber-600 mt-1">
+                          {item.remainingKm < 0 ? '交換時期を過ぎています' : '交換目安の距離が近づいています'}
+                        </div>
+                      )}
                     </>
                   ) : item.id === 'brake-tire' ? (
-                    <div className="text-xs text-gray-500">記録を追加して状態を確認（推奨: ブレーキ30,000km / タイヤ40,000kmごと）</div>
+                    <>
+                      <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 記録を追加してください</div>
+                      <div className="text-xs text-gray-500">推奨: ブレーキ30,000km / タイヤ40,000kmごと</div>
+                      <div className="text-xs text-amber-600 mt-1">記録なし</div>
+                    </>
                   ) : null}
                   
                   {/* バッテリー */}
                   {item.id === 'battery' && item.lastChangeDate && item.monthsSinceChange !== undefined ? (
                     <>
+                      {/* 次の交換目安を1行で固定表示 */}
+                      <div className="text-sm font-semibold text-gray-900 mb-1">
+                        次回目安: <span className={item.monthsSinceChange >= 24 ? 'text-amber-600' : item.monthsSinceChange >= 36 ? 'text-red-600' : 'text-gray-900'}>{Math.max(0, (item.recommendedMonths || 36) - item.monthsSinceChange)}ヶ月</span>
+                      </div>
+                      {/* 補足情報を小さく表示 */}
                       <div className="text-xs text-gray-600">
-                        前回交換: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        前回交換: {item.lastChangeDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })} • 経過: {item.monthsSinceChange}ヶ月
                       </div>
-                      <div className="text-xs text-gray-600">
-                        経過: <span className="font-semibold text-gray-900">{item.monthsSinceChange}ヶ月</span>
-                        {' • '}推奨交換: {item.recommendedMonths}ヶ月（3年）ごと
+                      <div className="text-[10px] text-gray-500">
+                        推奨交換: {item.recommendedMonths}ヶ月（3年）ごと
                       </div>
-                      <div className="text-xs font-semibold text-gray-900">
-                        残り約 <span className={item.monthsSinceChange >= 24 ? 'text-amber-600' : item.monthsSinceChange >= 36 ? 'text-red-600' : 'text-gray-900'}>{Math.max(0, (item.recommendedMonths || 36) - item.monthsSinceChange)}ヶ月</span>
-                      </div>
+                      {/* 注意の理由を具体化 */}
+                      {item.status !== 'good' && (
+                        <div className="text-xs text-amber-600 mt-1">
+                          {item.monthsSinceChange >= 36 ? '交換時期を過ぎています' : item.monthsSinceChange >= 24 ? '交換目安の時期が近づいています' : ''}
+                        </div>
+                      )}
                     </>
                   ) : item.id === 'battery' ? (
-                    <div className="text-xs text-gray-500">記録を追加して状態を確認（推奨: 36ヶ月ごと）</div>
+                    <>
+                      <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 36ヶ月</div>
+                      <div className="text-xs text-gray-500">推奨: 36ヶ月ごと</div>
+                      <div className="text-xs text-amber-600 mt-1">記録なし</div>
+                    </>
                   ) : null}
                 </div>
               </div>
               
-              {/* 追加アイコン */}
-              <div className="flex-shrink-0 text-gray-400 group-hover:text-gray-600 transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
+              {/* 追加ボタン（文字付き） */}
+              <div className="flex-shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    item.onClick();
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="hidden sm:inline">追加</span>
+                </button>
               </div>
             </button>
           );
         })}
       </div>
       
-      <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500 text-center">
-        クリックして次回メンテナンスを追加
-      </div>
     </div>
   );
 }

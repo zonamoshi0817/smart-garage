@@ -13,34 +13,45 @@ export default function CustomPartsPanel({
   onAddCustomization 
 }: CustomPartsPanelProps) {
   
-  // カスタマイズをカテゴリ別に集計
+  // カスタマイズをカテゴリ別に集計（順序: 重要なカテゴリを上位に固定）
   const customizationsByCategory = useMemo(() => {
-    const categories = {
-      engine: [] as Customization[],
-      exhaust: [] as Customization[],
-      intake: [] as Customization[],
-      suspension: [] as Customization[],
-      brake: [] as Customization[],
-      tire_wheel: [] as Customization[],
-      exterior: [] as Customization[],
-      interior: [] as Customization[],
-      electrical: [] as Customization[],
-      ecu: [] as Customization[],
-      drivetrain: [] as Customization[],
-      other: [] as Customization[]
-    };
+    // 優先順位: ホイール・タイヤ > 足回り（サスペンション） > ブレーキ > その他
+    const priorityOrder = [
+      'tire_wheel',
+      'suspension',
+      'brake',
+      'engine',
+      'exhaust',
+      'intake',
+      'exterior',
+      'interior',
+      'electrical',
+      'ecu',
+      'drivetrain',
+      'other'
+    ];
+    
+    const categories: Record<string, Customization[]> = {};
+    // 優先順位順に初期化
+    priorityOrder.forEach(cat => {
+      categories[cat] = [];
+    });
     
     customizations
       .filter(c => c.status === 'installed') // インストール済みのみ
       .forEach(custom => {
         custom.categories.forEach(cat => {
           if (cat in categories) {
-            categories[cat as keyof typeof categories].push(custom);
+            categories[cat].push(custom);
           }
         });
       });
     
-    return categories;
+    // 優先順位順に返す
+    return priorityOrder.reduce((acc, cat) => {
+      acc[cat] = categories[cat] || [];
+      return acc;
+    }, {} as Record<string, Customization[]>);
   }, [customizations]);
   
   // カテゴリ別の表示名
@@ -118,14 +129,23 @@ export default function CustomPartsPanel({
                 <p className="text-xs sm:text-sm font-semibold text-blue-700 mb-0.5 sm:mb-1 break-words">
                   カスタマイズを記録してみましょう！
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-600 break-words leading-relaxed">
+                <p className="text-[10px] sm:text-xs text-gray-600 break-words leading-relaxed mb-2">
                   パーツ交換や改造の履歴を記録すると、車両の詳細データとして一覧表示されます
                 </p>
+                {/* 入力の型を見せる例 */}
+                <div className="bg-white rounded-lg p-2.5 border border-blue-200">
+                  <p className="text-[10px] text-gray-500 mb-1.5 font-medium">入力例:</p>
+                  <div className="text-[10px] text-gray-700 space-y-1">
+                    <div><span className="font-semibold">ホイール（RAYS TE37）</span> / 取付日: 2024/01/15 / 価格: ¥150,000 / メモ: 18インチに交換</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
         {Object.entries(customizationsByCategory).map(([category, items]) => {
+          // 空のカテゴリも表示（純正パーツとして）
+          const hasCustom = items.length > 0;
           const hasCustom = items.length > 0;
           const categoryInfo = categoryLabels[category as keyof typeof categoryLabels];
           const isExpanded = expandedCategories.has(category);

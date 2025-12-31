@@ -179,7 +179,7 @@ export default function MyCarPage({
 
   const latestMaintenanceDate = latestMaintenance ? toJsDate(latestMaintenance.date) : null;
  
-  // クイックアクションの定義
+  // クイックアクションの定義（高頻度操作のみに絞る）
   const quickActions = [
     {
       id: 'fuel',
@@ -205,20 +205,10 @@ export default function MyCarPage({
       icon: '📸',
       isPremium: true,
       onClick: () => onOpenModal('ocr')
-    },
-    {
-      id: 'edit-car',
-      label: '車両情報編集',
-      icon: '📝',
-      onClick: () => onOpenModal('edit-car', { carId: car.id })
-    },
-    {
-      id: 'share',
-      label: 'PDF出力',
-      icon: '📤',
-      isPremium: true,
-      onClick: () => onOpenModal('share', { carId: car.id })
     }
+    // 「PDF出力」と「車両情報編集」は削除
+    // - PDF出力: 共有ページから到達可能
+    // - 車両情報編集: サマリーカード右上の編集ボタンなどからアクセス
   ];
   
   // ペイウォール表示ハンドラー
