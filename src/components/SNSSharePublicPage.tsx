@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import { storage } from '@/lib/firebase';
-import { ref, getBlob } from 'firebase/storage';
+import { ref, getDownloadURL } from 'firebase/storage';
 import type { ShareProfile, Car } from '@/types';
 
 interface SNSSharePublicPageProps {
@@ -39,8 +39,7 @@ export default function SNSSharePublicPage({
         const imagePromises = sns.gallery.map(async (item) => {
           try {
             const storageRef = ref(storage, item.path);
-            const blob = await getBlob(storageRef);
-            const url = URL.createObjectURL(blob);
+            const url = await getDownloadURL(storageRef);
             return { id: item.id, url, caption: item.caption };
           } catch (error) {
             console.error(`Failed to load image ${item.id}:`, error);
@@ -58,20 +57,6 @@ export default function SNSSharePublicPage({
     };
 
     loadGalleryImages();
-
-    // クリーンアップ: ObjectURLを解放
-    return () => {
-      setGalleryImages(prev => {
-        prev.forEach(img => {
-          try {
-            URL.revokeObjectURL(img.url);
-          } catch (e) {
-            // 既に解放済みの場合は無視
-          }
-        });
-        return [];
-      });
-    };
   }, [sns.gallery]);
 
   // ヒーロー画像（ギャラリーの最初の画像、または車両画像）
