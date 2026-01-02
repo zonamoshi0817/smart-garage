@@ -480,7 +480,7 @@ export default function Home() {
                     車検期限が過ぎています（{Math.abs(days)}日前）。早めに更新手続きを行ってください。
                   </div>
                   <button
-                    onClick={() => setCurrentPage('maintenance-history')}
+                    onClick={() => router.push('/maintenance')}
                     className="text-xs px-2 py-1 rounded-md bg-white border border-red-200 text-red-700 hover:bg-red-100"
                   >
                     対応する
@@ -494,7 +494,7 @@ export default function Home() {
                     車検期限まで残り {days}日です。点検や準備を進めましょう。
                   </div>
                   <button
-                    onClick={() => setCurrentPage('maintenance-history')}
+                    onClick={() => router.push('/maintenance')}
                     className="text-xs px-2 py-1 rounded-md bg-white border border-yellow-200 text-yellow-800 hover:bg-yellow-100"
                   >
                     対応する
@@ -554,11 +554,7 @@ export default function Home() {
               active={currentPage === 'fuel-logs'} 
               onClick={() => setCurrentPage('fuel-logs')}
             />
-            <NavItem 
-              label="メンテナンス" 
-              active={currentPage === 'maintenance-history'} 
-              onClick={() => setCurrentPage('maintenance-history')}
-            />
+            <MaintenanceNavLink />
             <NavItem 
               label="カスタマイズ" 
               active={currentPage === 'customizations'} 
@@ -646,15 +642,6 @@ export default function Home() {
                 setCarToSell={setCarToSell}
                 userPlan={userPlan}
                 checkFeature={checkFeature}
-              />
-            ) : currentPage === 'maintenance-history' ? (
-              <MaintenanceHistoryContent 
-                cars={cars}
-                activeCarId={activeCarId}
-                maintenanceRecords={allMaintenanceRecords}
-                setShowMaintenanceModal={setShowMaintenanceModal}
-                setShowEditMaintenanceModal={setShowEditMaintenanceModal}
-                setEditingMaintenanceRecord={setEditingMaintenanceRecord}
               />
             ) : currentPage === 'fuel-logs' ? (
               <FuelLogsContent 
@@ -1364,7 +1351,7 @@ function DashboardContent({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-gray-900">最近のメンテナンス</h3>
                     <button
-                      onClick={() => setCurrentPage('maintenance-history')}
+                      onClick={() => router.push('/maintenance')}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
                       すべて見る →
@@ -1449,7 +1436,7 @@ function DashboardContent({
                   {maintenanceRecords.length > 3 && (
                     <div className="pt-2 text-center border-t border-gray-200">
                       <button
-                        onClick={() => setCurrentPage('maintenance-history')}
+                        onClick={() => router.push('/maintenance')}
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                       >
                         もっと見る ({maintenanceRecords.length}件) →
@@ -4270,6 +4257,24 @@ function MyCarNavLink() {
       }
     >
       マイカー
+    </Link>
+  );
+}
+
+// URLベースのメンテナンスナビゲーションリンク
+function MaintenanceNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/maintenance';
+  
+  return (
+    <Link
+      href="/maintenance"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      メンテナンス
     </Link>
   );
 }
