@@ -74,11 +74,14 @@ service firebase.storage {
     
     // SNS共有用ギャラリー画像: 公開ページから読み取り可能
     match /share/{shareProfileId}/gallery/{fileName} {
-      // 読み取り: shareProfileがactiveかつvisibilityがdisabledでない場合のみ（未ログインでも可）
-      // statusフィールドが存在しない場合はvisibilityのみをチェック（後方互換性）
-      allow read: if ((firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.status == 'active'
-                       || !('status' in firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data)))
-                   && firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.visibility != 'disabled';
+      // 読み取り: オーナーは常に読み取り可能（編集ページで表示するため）
+      // または、shareProfileがactiveかつvisibilityがdisabledでない場合のみ（未ログインでも可）
+      // statusフィールドが存在しない場合は後方互換性のため許可
+      allow read: if (isAuthenticated() 
+                       && firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.ownerUid == request.auth.uid)
+                   || (firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.visibility != 'disabled'
+                       && (firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data.status == 'active'
+                           || !('status' in firestore.get(/databases/(default)/documents/saleProfiles/$(shareProfileId)).data)));
       // 書き込み: オーナーのみ（オーナーであれば常に許可）
       // hasValidMetadata()チェックを一時的に削除してデバッグ
       allow write: if isAuthenticated()
