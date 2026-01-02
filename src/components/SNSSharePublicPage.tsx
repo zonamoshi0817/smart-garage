@@ -11,6 +11,8 @@ import { ref, getDownloadURL } from 'firebase/storage';
 import type { ShareProfile, Car, Customization } from '@/types';
 import { CATEGORY_LABELS } from '@/lib/customizations';
 
+type SectionId = 'gallery' | 'build' | 'maintenance' | 'trust';
+
 interface SNSSharePublicPageProps {
   shareProfile: ShareProfile;
   vehicle: Car;
@@ -28,6 +30,7 @@ export default function SNSSharePublicPage({
   const [galleryImages, setGalleryImages] = useState<Array<{ id: string; url: string; caption?: string }>>([]);
   const [loadingImages, setLoadingImages] = useState(true);
   const [showAllGallery, setShowAllGallery] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionId>('gallery');
 
   // ギャラリー画像を読み込み（リトライ付き）
   useEffect(() => {
@@ -127,6 +130,40 @@ export default function SNSSharePublicPage({
   // モバイル用カルーセル表示画像（最初の3〜5枚）
   const mobileGalleryImages = galleryImages.slice(0, 5);
 
+  // スクロール監視でアクティブセクションを更新
+  useEffect(() => {
+    const sections: SectionId[] = ['gallery', 'build', 'maintenance', 'trust'];
+    const sectionElements = sections.map(id => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
+            const id = entry.target.id as SectionId;
+            if (sections.includes(id)) {
+              setActiveSection(id);
+            }
+          }
+        });
+      },
+      { threshold: [0.3], rootMargin: '-80px 0px -50% 0px' }
+    );
+
+    sectionElements.forEach((el) => observer.observe(el));
+
+    return () => {
+      sectionElements.forEach((el) => observer.unobserve(el));
+    };
+  }, [galleryImages.length, maintenanceRecords.length, buildCount]);
+
+  // 証跡ありのメンテナンス記録数をカウント
+  const evidenceCount = useMemo(() => {
+    return maintenanceRecords.filter(r => {
+      // evidence配列が存在し、かつ空でない場合
+      return r.evidence && Array.isArray(r.evidence) && r.evidence.length > 0;
+    }).length;
+  }, [maintenanceRecords]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -203,6 +240,80 @@ export default function SNSSharePublicPage({
           </div>
         </div>
       </section>
+
+      {/* ページ内ナビゲーション（sticky） */}
+      <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4">
+          <div 
+            className="flex gap-1 overflow-x-auto" 
+            style={{ 
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
+          >
+            <a
+              href="#gallery"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                activeSection === 'gallery'
+                  ? 'text-blue-600 border-blue-600'
+                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
+              }`}
+            >
+              ギャラリー
+            </a>
+            <a
+              href="#build"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('build')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                activeSection === 'build'
+                  ? 'text-blue-600 border-blue-600'
+                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
+              }`}
+            >
+              ビルド
+            </a>
+            {maintenanceCount > 0 && (
+              <a
+                href="#maintenance"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('maintenance')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                  activeSection === 'maintenance'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                整備履歴
+              </a>
+            )}
+            {(maintenanceCount > 0 || buildCount > 0) && (
+              <a
+                href="#trust"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('trust')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                  activeSection === 'trust'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                履歴の信頼性
+              </a>
+            )}
+          </div>
+        </div>
+      </nav>
 
       {/* Gallery Section */}
       {galleryImages.length > 0 && (
@@ -407,7 +518,7 @@ export default function SNSSharePublicPage({
 
       {/* Trust Section (履歴サマリ) */}
       {(maintenanceCount > 0 || buildCount > 0) && (
-        <section className="max-w-4xl mx-auto px-4 py-12">
+        <section id="trust" className="max-w-4xl mx-auto px-4 py-12 scroll-mt-20">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">履歴の信頼性</h2>
           
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
@@ -418,10 +529,15 @@ export default function SNSSharePublicPage({
                   <div className="text-xl font-bold text-gray-900">{maintenanceCount}件</div>
                 </div>
               )}
-              {buildCount > 0 && (
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">ビルド</div>
-                  <div className="text-xl font-bold text-gray-900">{buildCount}件</div>
+              {evidenceCount > 0 && (
+                <div className="relative group">
+                  <div className="text-xs text-gray-500 mb-1">
+                    証跡あり
+                    <span className="ml-1 text-gray-400 cursor-help" title="写真やレシートなどの証跡が添付されている記録数">
+                      ℹ️
+                    </span>
+                  </div>
+                  <div className="text-xl font-bold text-gray-900">{evidenceCount}件</div>
                 </div>
               )}
               {lastUpdated && (
@@ -430,8 +546,13 @@ export default function SNSSharePublicPage({
                   <div className="text-lg font-bold text-gray-900">{lastUpdated}</div>
                 </div>
               )}
-              <div>
-                <div className="text-xs text-gray-500 mb-1">改ざん防止</div>
+              <div className="relative group">
+                <div className="text-xs text-gray-500 mb-1">
+                  改ざん防止
+                  <span className="ml-1 text-gray-400 cursor-help" title="すべての記録はブロックチェーン技術により改ざんが防止されています">
+                    ℹ️
+                  </span>
+                </div>
                 <div className="text-lg font-bold text-gray-900">有効</div>
               </div>
             </div>
