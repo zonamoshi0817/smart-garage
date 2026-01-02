@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Timestamp } from "firebase/firestore";
@@ -1168,7 +1168,7 @@ function MaintenanceModal({
   );
 }
 
-export default function MaintenancePageRoute() {
+function MaintenancePageRouteContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1604,6 +1604,22 @@ export default function MaintenancePageRoute() {
         />
       )}
     </AuthGate>
+  );
+}
+
+export default function MaintenancePageRoute() {
+  return (
+    <Suspense fallback={
+      <AuthGate>
+        <div className="min-h-screen bg-gray-50 text-gray-900">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
+          </div>
+        </div>
+      </AuthGate>
+    }>
+      <MaintenancePageRouteContent />
+    </Suspense>
   );
 }
 
