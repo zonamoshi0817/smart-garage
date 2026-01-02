@@ -619,7 +619,7 @@ export interface ShareProfile extends BaseEntity {
       web?: string;
     };
     build?: {
-      featured?: Array<{                  // 主要パーツ（最大6件）
+      featured?: Array<{                  // 主要パーツ（最大30件）
         label: string;
         value: string;
       }>;

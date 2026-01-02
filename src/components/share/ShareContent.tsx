@@ -803,7 +803,7 @@ function ShareLinkCard({
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">
-                  主要パーツ（最大6件）
+                  主要パーツ（最大30件）
                 </label>
                 {(() => {
                   // デバッグ: customizationsの内容を確認
@@ -822,7 +822,7 @@ function ShareLinkCard({
                       const isSelected = snsData.build.featured.some(
                         (f: { label: string; value: string }) => f.label === (custom.brand || '') && f.value === custom.title
                       );
-                      const isMaxReached = snsData.build.featured.length >= 6;
+                      const isMaxReached = snsData.build.featured.length >= 30;
                       
                       return (
                         <label
@@ -840,7 +840,7 @@ function ShareLinkCard({
                             checked={isSelected}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                if (snsData.build.featured.length >= 6) return;
+                                if (snsData.build.featured.length >= 30) return;
                                 const newFeatured = [...snsData.build.featured, {
                                   label: custom.brand || custom.categories?.[0] || 'カスタム',
                                   value: custom.title
@@ -878,7 +878,7 @@ function ShareLinkCard({
                 )}
                 {snsData.build.featured.length > 0 && (
                   <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="text-xs font-medium text-blue-900 mb-1">選択中のパーツ（{snsData.build.featured.length}/6）</div>
+                    <div className="text-xs font-medium text-blue-900 mb-1">選択中のパーツ（{snsData.build.featured.length}/30）</div>
                     <div className="space-y-1">
                       {snsData.build.featured.map((part: { label: string; value: string }, index: number) => (
                         <div key={index} className="flex items-center justify-between text-xs text-blue-800">

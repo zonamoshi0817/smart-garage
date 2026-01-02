@@ -387,7 +387,7 @@ export default function SNSSharePublicPage({
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">推しパーツ</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {sns.build.featured.slice(0, 6).map((part, index) => {
+              {sns.build.featured.slice(0, 30).map((part, index) => {
                 // 最初の画像をパーツに関連付ける（ギャラリーから）
                 const relatedImage = galleryImages[index % galleryImages.length];
                 return (
