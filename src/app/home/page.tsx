@@ -38,6 +38,7 @@ import UnifiedCTA from "@/components/UnifiedCTA";
 import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 import ShareContent from "@/components/share/ShareContent";
+import { useSelectedCar } from "@/contexts/SelectedCarContext";
 
 // セクション見出しの統一コンポーネント
 function SectionHeader({ title, subtitle, size = 'md', right }: { title: string; subtitle?: string; size?: 'sm' | 'md'; right?: React.ReactNode }) {
@@ -62,6 +63,7 @@ function SectionHeader({ title, subtitle, size = 'md', right }: { title: string;
 export default function Home() {
   const router = useRouter();
   const pathname = usePathname();
+  const { selectedCarId, setSelectedCarId } = useSelectedCar();
   const [cars, setCars] = useState<Car[]>([]);
   const [activeCarId, setActiveCarId] = useState<string | undefined>(undefined);
   const [showAddCarModal, setShowAddCarModal] = useState(false);
@@ -131,7 +133,7 @@ export default function Home() {
     };
   }, []);
 
-  // 車両リストが変更されたときに自動選択
+  // 車両リストが変更されたときに自動選択（グローバルコンテキストを優先）
   useEffect(() => {
     if (cars.length === 0) {
       console.log("No cars available, clearing activeCarId");
@@ -146,14 +148,29 @@ export default function Home() {
       return;
     }
 
-    // activeCarIdが未設定、または選択されている車両が存在しない、またはアクティブでない場合は最初のアクティブ車両を選択
-    const currentCarExists = activeCarId ? activeCarsList.some(car => car.id === activeCarId) : false;
+    // 優先順位: 1) グローバルselectedCarId 2) 現在のactiveCarId 3) 最初の車
+    let targetCarId: string | undefined = undefined;
     
-    if (!activeCarId || !currentCarExists) {
-      console.log("Auto-selecting first active car:", activeCarsList[0].id, activeCarsList[0].name);
-      setActiveCarId(activeCarsList[0].id);
+    if (selectedCarId && activeCarsList.some(car => car.id === selectedCarId)) {
+      // グローバルコンテキストのselectedCarIdが有効な場合
+      targetCarId = selectedCarId;
+    } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
+      // 現在のactiveCarIdが有効な場合
+      targetCarId = activeCarId;
+    } else {
+      // 最初の車を選択
+      targetCarId = activeCarsList[0].id;
     }
-  }, [cars, activeCarId]);
+    
+    if (targetCarId && targetCarId !== activeCarId) {
+      console.log("Setting activeCarId from context/fallback:", targetCarId);
+      setActiveCarId(targetCarId);
+      // グローバルコンテキストも更新（まだ設定されていない場合）
+      if (!selectedCarId) {
+        setSelectedCarId(targetCarId);
+      }
+    }
+  }, [cars, activeCarId, selectedCarId, setSelectedCarId]);
 
 
   // 車両データの取得（認証状態に依存）
@@ -181,11 +198,28 @@ export default function Home() {
           console.log("Using real cars from Firestore");
           setCars(list);
           
-          // activeCarIdが未設定、または選択されている車両が存在しない場合は最初の車両を選択
-          const currentCarExists = activeCarId ? list.some(car => car.id === activeCarId) : false;
-          if (!activeCarId || !currentCarExists) {
-            console.log("Auto-selecting first car:", list[0].id);
-            setActiveCarId(list[0].id);
+          // 優先順位: 1) グローバルselectedCarId 2) 現在のactiveCarId 3) 最初の車
+          const activeCarsList = list.filter((c) => !c.status || c.status === 'active');
+          if (activeCarsList.length === 0) {
+            setCars([]);
+            return;
+          }
+          
+          let targetCarId: string | undefined = undefined;
+          if (selectedCarId && activeCarsList.some(car => car.id === selectedCarId)) {
+            targetCarId = selectedCarId;
+          } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
+            targetCarId = activeCarId;
+          } else {
+            targetCarId = activeCarsList[0].id;
+          }
+          
+          if (targetCarId && targetCarId !== activeCarId) {
+            console.log("Auto-selecting car from context/fallback:", targetCarId);
+            setActiveCarId(targetCarId);
+            if (!selectedCarId) {
+              setSelectedCarId(targetCarId);
+            }
           }
         } else {
           // データがない場合は空の配列を設定
@@ -445,8 +479,11 @@ export default function Home() {
                 <div className="relative">
                   <CarHeaderDropdown 
                     cars={activeCars}
-                    activeCarId={activeCarId}
-                    onSelectCar={(id) => setActiveCarId(id)}
+                    activeCarId={selectedCarId || activeCarId}
+                    onSelectCar={(id) => {
+                      setSelectedCarId(id);
+                      setActiveCarId(id);
+                    }}
                     onAddCar={() => setShowAddCarModal(true)}
                   />
                 </div>
@@ -1915,6 +1952,7 @@ function CarHeaderDropdown({
   onSelectCar: (id: string) => void;
   onAddCar: () => void;
 }) {
+  const { setSelectedCarId } = useSelectedCar();
   const [open, setOpen] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
@@ -2021,7 +2059,9 @@ function CarHeaderDropdown({
               <button
                 key={car.id}
                 onClick={() => {
-                  onSelectCar(car.id!);
+                  const carId = car.id!;
+                  setSelectedCarId(carId); // グローバルコンテキストを更新
+                  onSelectCar(carId);
                   setOpen(false);
                 }}
                 className={`w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
