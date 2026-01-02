@@ -31,16 +31,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // type="normal"の場合はSNS共有用のOG設定
   if (shareProfileType === 'normal' && vehicle) {
     const sns = (saleProfile as any).sns || {};
-    const title = sns.conceptTitle 
-      ? `${vehicle.name} | ${sns.conceptTitle} | GarageLog`
+    
+    // タイトル：車名＋型式
+    const title = vehicle.modelCode 
+      ? `${vehicle.name} (${vehicle.modelCode}) | GarageLog`
       : `${vehicle.name} | GarageLog`;
     
-    const description = sns.conceptBody || `${vehicle.name}のビルドとメンテナンス履歴`;
+    // サブ：ハイライトタグ3つ（またはconceptBody）
+    const highlightTags = sns.highlightParts && sns.highlightParts.length > 0
+      ? sns.highlightParts.slice(0, 3).map((p: any) => p.value).join(' / ')
+      : null;
+    const description = highlightTags 
+      ? `${highlightTags} | ${vehicle.name}のビルドとメンテナンス履歴`
+      : (sns.conceptBody || `${vehicle.name}のビルドとメンテナンス履歴`);
     
-    // ヒーロー画像（ギャラリーの最初の画像または車両画像）
+    // ヒーロー画像（ギャラリーの最初の画像が最優先、なければ車両画像）
+    // Storageパスの場合はgetDownloadURLが必要だが、OG画像では直接URLを使う
+    // 公開ページで使用されるURLを想定
     const heroImage = sns.gallery && sns.gallery.length > 0 
-      ? sns.gallery[0].path 
-      : vehicle.imageUrl;
+      ? `https://firebasestorage.googleapis.com/v0/b/smart-garage-74ad1.firebasestorage.app/o/${encodeURIComponent(sns.gallery[0].path)}?alt=media`
+      : ((vehicle as any).imageUrl || null);
 
     const metadata: Metadata = {
       title,
@@ -49,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         title,
         description,
         type: 'website',
-        ...(heroImage && { images: [{ url: heroImage }] }),
+        ...(heroImage && { images: [{ url: heroImage, width: 1200, height: 630 }] }),
       },
       twitter: {
         card: 'summary_large_image',
