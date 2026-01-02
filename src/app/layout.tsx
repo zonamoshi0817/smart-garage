@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { GoogleAnalyticsComponent } from "@/components/GoogleAnalytics";
 import ClientProviders from "@/components/common/ClientProviders";
+import { RouteDebugLogger } from "@/components/common/RouteDebugLogger";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -74,6 +76,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ClientProviders>
+          <Suspense fallback={null}>
+            <RouteDebugLogger />
+          </Suspense>
           {children}
         </ClientProviders>
         <GoogleAnalyticsComponent />

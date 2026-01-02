@@ -1,8 +1,8 @@
 // src/app/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useMemo, useState, useRef, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Timestamp } from "firebase/firestore";
 import AuthGate from "@/components/AuthGate";
@@ -60,9 +60,10 @@ function SectionHeader({ title, subtitle, size = 'md', right }: { title: string;
 }
 
 /* -------------------- ページ本体 -------------------- */
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { selectedCarId, setSelectedCarId } = useSelectedCar();
   const [cars, setCars] = useState<Car[]>([]);
   const [activeCarId, setActiveCarId] = useState<string | undefined>(undefined);
@@ -96,6 +97,15 @@ export default function Home() {
 
   // プレミアムガード
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
+
+  // URLクエリのtabパラメータを読み取ってcurrentPageを設定（ブリッジ遷移対応）
+  useEffect(() => {
+    const tab = searchParams?.get('tab');
+    const allowedTabs = new Set(['dashboard', 'my-car', 'maintenance-history', 'fuel-logs', 'customizations', 'notifications', 'share']);
+    if (tab && allowedTabs.has(tab)) {
+      setCurrentPage(tab as any);
+    }
+  }, [searchParams]);
 
   // 認証状態を監視
   useEffect(() => {
@@ -584,7 +594,10 @@ export default function Home() {
             <NavItem 
               label="ホーム" 
               active={currentPage === 'dashboard'} 
-              onClick={() => setCurrentPage('dashboard')}
+              onClick={() => {
+                setCurrentPage('dashboard');
+                router.push('/home?tab=dashboard');
+              }}
             />
             <MyCarNavLink />
             <GasNavLink />
@@ -828,6 +841,14 @@ export default function Home() {
       )}
 
     </AuthGate>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="p-6">読み込み中…</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
 
@@ -1618,7 +1639,10 @@ function DashboardContent({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold">最近のカスタマイズ</h3>
                   <button
-                    onClick={() => setCurrentPage('customizations')}
+                    onClick={() => {
+                      setCurrentPage('customizations');
+                      router.push('/home?tab=customizations');
+                    }}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
                     すべて見る →
@@ -1714,7 +1738,10 @@ function DashboardContent({
                     {customizations.length > 3 && (
                       <div className="pt-2 text-center border-t border-gray-200">
                         <button
-                          onClick={() => setCurrentPage('customizations')}
+                          onClick={() => {
+                            setCurrentPage('customizations');
+                            router.push('/home?tab=customizations');
+                          }}
                           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
                           もっと見る ({customizations.length}件) →

@@ -333,19 +333,40 @@ function ShareLinkCard({
     build: profile?.sns?.build || { featured: [], categories: [] },
   });
 
-  // ギャラリー画像のプレビューURLを読み込み
+  // ギャラリー画像のプレビューURLを読み込み（リトライ付き）
   useEffect(() => {
     const loadGalleryPreviews = async () => {
       if (!snsData.gallery || snsData.gallery.length === 0) return;
       
+      // リトライ付きでURLを取得（エラーは静かに処理）
+      const getDownloadURLWithRetry = async (storagePath: string, maxRetries = 1): Promise<string | null> => {
+        for (let i = 0; i <= maxRetries; i++) {
+          try {
+            const storageRef = ref(storage, storagePath);
+            const url = await getDownloadURL(storageRef);
+            return url;
+          } catch (error: any) {
+            // 最後のリトライでも失敗した場合のみ、警告ログを出力（コンソールエラーではなく）
+            if (i === maxRetries) {
+              console.warn(`Failed to load preview after ${maxRetries + 1} attempts:`, storagePath);
+            }
+            if (i < maxRetries) {
+              // 指数バックオフ: 0.5秒、1秒
+              await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+            } else {
+              return null;
+            }
+          }
+        }
+        return null;
+      };
+      
       const urls: Record<string, string> = {};
-      await Promise.all(snsData.gallery.map(async (img: { id: string; path: string; caption?: string }) => {
-        try {
-          const storageRef = ref(storage, img.path);
-          const url = await getDownloadURL(storageRef);
+      // 各画像の読み込みを並列実行し、エラーが発生したものはスキップ
+      await Promise.allSettled(snsData.gallery.map(async (img: { id: string; path: string; caption?: string }) => {
+        const url = await getDownloadURLWithRetry(img.path);
+        if (url) {
           urls[img.id] = url;
-        } catch (error) {
-          console.error(`Failed to load preview for ${img.id}:`, error);
         }
       }));
       setGalleryPreviewUrls(urls);

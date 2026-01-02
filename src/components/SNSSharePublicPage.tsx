@@ -5,16 +5,17 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { storage } from '@/lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
-import type { ShareProfile, Car } from '@/types';
+import type { ShareProfile, Car, Customization } from '@/types';
+import { CATEGORY_LABELS } from '@/lib/customizations';
 
 interface SNSSharePublicPageProps {
   shareProfile: ShareProfile;
   vehicle: Car;
   maintenanceRecords: any[];
-  customizations: any[];
+  customizations: Customization[];
 }
 
 export default function SNSSharePublicPage({
@@ -26,8 +27,9 @@ export default function SNSSharePublicPage({
   const sns = shareProfile.sns || {};
   const [galleryImages, setGalleryImages] = useState<Array<{ id: string; url: string; caption?: string }>>([]);
   const [loadingImages, setLoadingImages] = useState(true);
+  const [showAllGallery, setShowAllGallery] = useState(false);
 
-  // ギャラリー画像を読み込み
+  // ギャラリー画像を読み込み（リトライ付き）
   useEffect(() => {
     const loadGalleryImages = async () => {
       if (!sns.gallery || sns.gallery.length === 0) {
@@ -35,16 +37,36 @@ export default function SNSSharePublicPage({
         return;
       }
 
+      // リトライ付きでURLを取得（エラーは静かに処理）
+      const getDownloadURLWithRetry = async (storagePath: string, maxRetries = 1): Promise<string | null> => {
+        for (let i = 0; i <= maxRetries; i++) {
+          try {
+            const storageRef = ref(storage, storagePath);
+            const url = await getDownloadURL(storageRef);
+            return url;
+          } catch (error: any) {
+            // 最後のリトライでも失敗した場合のみ、警告ログを出力（コンソールエラーではなく）
+            if (i === maxRetries) {
+              console.warn(`Failed to load image after ${maxRetries + 1} attempts:`, storagePath);
+            }
+            if (i < maxRetries) {
+              // 指数バックオフ: 0.5秒、1秒
+              await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+            } else {
+              return null;
+            }
+          }
+        }
+        return null;
+      };
+
       try {
         const imagePromises = sns.gallery.map(async (item) => {
-          try {
-            const storageRef = ref(storage, item.path);
-            const url = await getDownloadURL(storageRef);
+          const url = await getDownloadURLWithRetry(item.path);
+          if (url) {
             return { id: item.id, url, caption: item.caption };
-          } catch (error) {
-            console.error(`Failed to load image ${item.id}:`, error);
-            return null;
           }
+          return null;
         });
 
         const images = (await Promise.all(imagePromises)).filter(Boolean) as Array<{ id: string; url: string; caption?: string }>;
@@ -60,71 +82,50 @@ export default function SNSSharePublicPage({
   }, [sns.gallery]);
 
   // ヒーロー画像（ギャラリーの最初の画像、または車両画像）
-  const heroImage = galleryImages.length > 0 ? galleryImages[0].url : vehicle.imageUrl || null;
-
-  // ハイライト情報を計算
-  const highlights = [];
-  if (vehicle.mileageKm) {
-    highlights.push({ label: '走行距離', value: `${vehicle.mileageKm.toLocaleString()}km` });
-  }
-  
-  // 直近整備日
-  if (maintenanceRecords.length > 0) {
-    const latestMaintenance = maintenanceRecords
-      .filter(r => r.date)
-      .sort((a, b) => {
-        const dateA = typeof a.date === 'string' ? new Date(a.date) : (a.date?.toDate?.() || new Date(a.date));
-        const dateB = typeof b.date === 'string' ? new Date(b.date) : (b.date?.toDate?.() || new Date(b.date));
-        return dateB.getTime() - dateA.getTime();
-      })[0];
-    
-    if (latestMaintenance) {
-      const date = typeof latestMaintenance.date === 'string' 
-        ? new Date(latestMaintenance.date) 
-        : (latestMaintenance.date?.toDate?.() || new Date(latestMaintenance.date));
-      highlights.push({ 
-        label: '直近整備', 
-        value: new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }).format(date)
-      });
-    }
-  }
-
-  // 主要カスタム（sns.highlightPartsまたはcustomizationsから）
-  if (sns.highlightParts && sns.highlightParts.length > 0) {
-    highlights.push(...sns.highlightParts.slice(0, 3 - highlights.length));
-  } else if (customizations.length > 0) {
-    const topCustom = customizations[0];
-    highlights.push({ 
-      label: '主要カスタム', 
-      value: `${topCustom.brand || ''} ${topCustom.title || ''}`.trim() || 'カスタマイズあり'
-    });
-  }
+  const heroImage = galleryImages.length > 0 ? galleryImages[0].url : ((vehicle as any).imageUrl || null);
 
   // 履歴サマリ
   const maintenanceCount = maintenanceRecords.filter(r => r.category !== 'fuel').length;
-  const fuelCount = maintenanceRecords.filter(r => r.category === 'fuel').length;
-  const customCount = customizations.length;
+  const buildCount = customizations.filter(c => c.status === 'installed').length;
   
-  // 継続期間
-  let recordPeriod = '---';
-  if (maintenanceRecords.length > 0) {
-    const dates = maintenanceRecords
-      .map(r => {
-        if (!r.date) return null;
-        if (typeof r.date === 'string') return new Date(r.date);
-        if (r.date?.toDate) return r.date.toDate();
-        return new Date(r.date);
-      })
-      .filter((d): d is Date => d !== null && !isNaN(d.getTime()))
-      .sort((a, b) => a.getTime() - b.getTime());
-    
-    if (dates.length > 0) {
-      const firstDate = dates[0];
-      const lastDate = dates[dates.length - 1];
-      const years = Math.floor((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24 * 365));
-      recordPeriod = years > 0 ? `${years}年` : '1年未満';
+  // 最終更新日の計算
+  const lastUpdated = useMemo(() => {
+    if (shareProfile.lastPublishedAt) {
+      const ts = shareProfile.lastPublishedAt;
+      const date = typeof ts === 'string' ? new Date(ts) : (ts?.toDate?.() || new Date((ts as any)?._seconds * 1000));
+      return new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+    } else if (shareProfile.updatedAt) {
+      const ts = shareProfile.updatedAt;
+      const date = typeof ts === 'string' ? new Date(ts) : (ts?.toDate?.() || new Date((ts as any)?._seconds * 1000));
+      return new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
     }
-  }
+    return null;
+  }, [shareProfile.lastPublishedAt, shareProfile.updatedAt]);
+
+  // カスタマイズをカテゴリ別に集計
+  const customizationsByCategory = useMemo(() => {
+    const categories: Record<string, Customization[]> = {};
+    customizations
+      .filter(c => c.status === 'installed')
+      .forEach(custom => {
+        custom.categories?.forEach((cat: string) => {
+          if (!categories[cat]) {
+            categories[cat] = [];
+          }
+          categories[cat].push(custom);
+        });
+      });
+    return categories;
+  }, [customizations]);
+
+  // 表示用ギャラリー画像（モバイルは最初の5枚、デスクトップは全てまたは最初の9枚）
+  const displayedGalleryImages = useMemo(() => {
+    if (showAllGallery) return galleryImages;
+    return galleryImages.slice(0, 9);
+  }, [galleryImages, showAllGallery]);
+
+  // モバイル用カルーセル表示画像（最初の3〜5枚）
+  const mobileGalleryImages = galleryImages.slice(0, 5);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -145,47 +146,99 @@ export default function SNSSharePublicPage({
             {vehicle.modelCode && <span className="text-2xl sm:text-3xl text-gray-300 ml-2">({vehicle.modelCode})</span>}
           </h1>
           
-          {sns.conceptTitle && (
-            <p className="text-xl sm:text-2xl text-gray-200 mb-6">
-              {sns.conceptTitle}
-            </p>
-          )}
-          
+          {/* 一言キャプション（conceptBody）- より目立つ位置に */}
           {sns.conceptBody && (
-            <p className="text-base sm:text-lg text-gray-300 mb-8 max-w-2xl">
+            <p className="text-lg sm:text-xl text-gray-100 mb-4 max-w-2xl font-medium leading-relaxed">
               {sns.conceptBody}
             </p>
           )}
+          
+          {sns.conceptTitle && (
+            <p className="text-base sm:text-lg text-gray-300 mb-6">
+              {sns.conceptTitle}
+            </p>
+          )}
 
-          {/* ハイライト */}
-          {highlights.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-              {highlights.map((highlight, index) => (
-                <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                  <div className="text-xs text-gray-300 mb-1">{highlight.label}</div>
-                  <div className="text-lg font-semibold">{highlight.value}</div>
-                </div>
+          {/* ハイライトタグ3点 */}
+          {sns.highlightParts && sns.highlightParts.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {sns.highlightParts.slice(0, 3).map((part, index) => (
+                <span 
+                  key={index}
+                  className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium border border-white/30"
+                >
+                  {part.value}
+                </span>
               ))}
             </div>
           )}
 
+          {/* 数字で伝える要約 */}
+          <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-8">
+            {buildCount > 0 && (
+              <span>ビルド {buildCount}件</span>
+            )}
+            {maintenanceCount > 0 && (
+              <span>整備 {maintenanceCount}件</span>
+            )}
+            {lastUpdated && (
+              <span>最終更新 {lastUpdated}</span>
+            )}
+          </div>
+
           {/* CTA */}
-          <a 
-            href="#build" 
-            className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
-          >
-            ビルドを見る
-          </a>
+          <div className="flex flex-wrap gap-3">
+            <a 
+              href="#gallery" 
+              className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+            >
+              ギャラリーを見る
+            </a>
+            <a 
+              href="#build" 
+              className="inline-block px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg font-medium transition-colors"
+            >
+              ビルドを見る
+            </a>
+          </div>
         </div>
       </section>
 
       {/* Gallery Section */}
       {galleryImages.length > 0 && (
-        <section className="max-w-4xl mx-auto px-4 py-12">
+        <section id="gallery" className="max-w-7xl mx-auto px-4 py-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">ギャラリー</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {galleryImages.map((img) => (
-              <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden bg-gray-200">
+          
+          {/* モバイル: カルーセル */}
+          <div className="block sm:hidden overflow-x-auto pb-4 -mx-4 px-4">
+            <div className="flex gap-4" style={{ width: 'max-content' }}>
+              {mobileGalleryImages.map((img, index) => (
+                <div 
+                  key={img.id} 
+                  className="relative flex-shrink-0 w-[80vw] aspect-[4/3] rounded-lg overflow-hidden bg-gray-200"
+                >
+                  <img 
+                    src={img.url} 
+                    alt={img.caption || `Gallery image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {img.caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2">
+                      {img.caption}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* デスクトップ: 3列グリッド */}
+          <div className="hidden sm:grid grid-cols-3 gap-4">
+            {displayedGalleryImages.map((img) => (
+              <div 
+                key={img.id} 
+                className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-200"
+              >
                 <img 
                   src={img.url} 
                   alt={img.caption || 'Gallery image'}
@@ -199,6 +252,18 @@ export default function SNSSharePublicPage({
               </div>
             ))}
           </div>
+
+          {/* もっと見るボタン（9枚以上の時） */}
+          {galleryImages.length > 9 && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setShowAllGallery(!showAllGallery)}
+                className="px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-gray-700 transition-colors"
+              >
+                {showAllGallery ? '折りたたむ' : `もっと見る (全${galleryImages.length}枚)`}
+              </button>
+            </div>
+          )}
         </section>
       )}
 
@@ -206,27 +271,103 @@ export default function SNSSharePublicPage({
       <section id="build" className="max-w-4xl mx-auto px-4 py-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">ビルド</h2>
         
-        {/* 主要パーツ（最大6件） */}
+        {/* 推しパーツ（featured）- 写真付きで上に固定 */}
         {sns.build?.featured && sns.build.featured.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-            {sns.build.featured.slice(0, 6).map((part, index) => (
-              <div key={index} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                <div className="text-xs text-gray-500 mb-1">{part.label}</div>
-                <div className="text-base font-semibold text-gray-900">{part.value}</div>
-              </div>
-            ))}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">推しパーツ</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {sns.build.featured.slice(0, 6).map((part, index) => {
+                // 最初の画像をパーツに関連付ける（ギャラリーから）
+                const relatedImage = galleryImages[index % galleryImages.length];
+                return (
+                  <div key={index} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                    {relatedImage && (
+                      <div className="aspect-[4/3] overflow-hidden bg-gray-200">
+                        <img 
+                          src={relatedImage.url} 
+                          alt={part.value}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="text-xs text-gray-500 mb-1">{part.label}</div>
+                      <div className="text-base font-semibold text-gray-900">{part.value}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
-        {/* カテゴリごとの詳細 */}
+        {/* カテゴリ別まとめ（件数表示） */}
+        {Object.keys(customizationsByCategory).length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">カテゴリ別</h3>
+            {Object.entries(customizationsByCategory)
+              .sort(([catA], [catB]) => {
+                // 優先順位: ホイール・タイヤ > 足回り > ブレーキ > その他
+                const priority: Record<string, number> = {
+                  'tire_wheel': 1,
+                  'suspension': 2,
+                  'brake': 3,
+                  'exterior': 4,
+                  'interior': 5,
+                  'intake': 6,
+                  'exhaust': 7,
+                  'ecu': 8,
+                  'electrical': 9,
+                  'drivetrain': 10,
+                  'other': 99,
+                };
+                return (priority[catA] || 50) - (priority[catB] || 50);
+              })
+              .map(([category, items]) => {
+                const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || category;
+                return (
+                  <details 
+                    key={category}
+                    className="bg-white rounded-lg border border-gray-200 p-4"
+                  >
+                    <summary className="font-semibold text-gray-900 cursor-pointer list-none">
+                      <div className="flex justify-between items-center">
+                        <span>{categoryLabel}</span>
+                        <span className="text-sm font-normal text-gray-500">{items.length}件</span>
+                      </div>
+                    </summary>
+                    <div className="mt-4 space-y-2 pt-4 border-t border-gray-100">
+                      {items.map((custom) => (
+                        <div key={custom.id} className="text-sm text-gray-700">
+                          <span className="font-medium">
+                            {custom.brand && `${custom.brand} `}
+                            {custom.title}
+                          </span>
+                          {custom.memo && (
+                            <span className="text-gray-500 ml-2">({custom.memo})</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                );
+              })}
+          </div>
+        )}
+
+        {/* カテゴリごとの詳細（sns.build.categories） */}
         {sns.build?.categories && sns.build.categories.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-4 mt-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">その他</h3>
             {sns.build.categories.map((category, index) => (
               <details key={index} className="bg-white rounded-lg border border-gray-200 p-4">
-                <summary className="font-semibold text-gray-900 cursor-pointer">
-                  {category.name}
+                <summary className="font-semibold text-gray-900 cursor-pointer list-none">
+                  <div className="flex justify-between items-center">
+                    <span>{category.name}</span>
+                    <span className="text-sm font-normal text-gray-500">{category.items.length}件</span>
+                  </div>
                 </summary>
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-2 pt-4 border-t border-gray-100">
                   {category.items.map((item, itemIndex) => (
                     <div key={itemIndex} className="text-sm text-gray-700">
                       <span className="font-medium">{item.name}</span>
@@ -242,6 +383,7 @@ export default function SNSSharePublicPage({
         {/* カスタマイズデータがない場合のフォールバック */}
         {(!sns.build?.featured || sns.build.featured.length === 0) && 
          (!sns.build?.categories || sns.build.categories.length === 0) &&
+         Object.keys(customizationsByCategory).length === 0 &&
          customizations.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -253,7 +395,7 @@ export default function SNSSharePublicPage({
                   </div>
                   {custom.categories && custom.categories.length > 0 && (
                     <div className="text-xs text-gray-500 mt-1">
-                      {custom.categories.join(' / ')}
+                      {custom.categories.map(cat => CATEGORY_LABELS[cat] || cat).join(' / ')}
                     </div>
                   )}
                 </div>
@@ -264,36 +406,34 @@ export default function SNSSharePublicPage({
       </section>
 
       {/* Trust Section (履歴サマリ) */}
-      {(maintenanceCount > 0 || fuelCount > 0 || customCount > 0) && (
+      {(maintenanceCount > 0 || buildCount > 0) && (
         <section className="max-w-4xl mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">信頼</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">履歴の信頼性</h2>
           
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {maintenanceCount > 0 && (
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">整備記録</div>
+                  <div className="text-xs text-gray-500 mb-1">総整備回数</div>
                   <div className="text-xl font-bold text-gray-900">{maintenanceCount}件</div>
                 </div>
               )}
-              {fuelCount > 0 && (
+              {buildCount > 0 && (
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">給油記録</div>
-                  <div className="text-xl font-bold text-gray-900">{fuelCount}件</div>
+                  <div className="text-xs text-gray-500 mb-1">ビルド</div>
+                  <div className="text-xl font-bold text-gray-900">{buildCount}件</div>
                 </div>
               )}
-              {customCount > 0 && (
+              {lastUpdated && (
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">カスタム</div>
-                  <div className="text-xl font-bold text-gray-900">{customCount}件</div>
+                  <div className="text-xs text-gray-500 mb-1">最終更新</div>
+                  <div className="text-lg font-bold text-gray-900">{lastUpdated}</div>
                 </div>
               )}
-              {recordPeriod !== '---' && (
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">継続期間</div>
-                  <div className="text-xl font-bold text-gray-900">{recordPeriod}</div>
-                </div>
-              )}
+              <div>
+                <div className="text-xs text-gray-500 mb-1">改ざん防止</div>
+                <div className="text-lg font-bold text-gray-900">有効</div>
+              </div>
             </div>
           </div>
 
@@ -305,7 +445,7 @@ export default function SNSSharePublicPage({
               </summary>
               <div className="mt-4 space-y-2">
                 {maintenanceRecords
-                  .filter(r => r.category !== 'fuel')
+                  .filter(r => r.category !== 'fuel' && r.title !== 'テスト')
                   .sort((a, b) => {
                     const dateA = typeof a.date === 'string' ? new Date(a.date) : (a.date?.toDate?.() || new Date(a.date));
                     const dateB = typeof b.date === 'string' ? new Date(b.date) : (b.date?.toDate?.() || new Date(b.date));

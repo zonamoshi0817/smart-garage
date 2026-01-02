@@ -12,7 +12,8 @@ import { toDate } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import { useSelectedCar } from "@/contexts/SelectedCarContext";
-import type { Car, MaintenanceRecord, Customization, User } from "@/types";
+import type { Car, MaintenanceRecord, Customization } from "@/types";
+import type { User } from "firebase/auth";
 import ShareContent from "@/components/share/ShareContent";
 import AddCarModal from "@/components/modals/AddCarModal";
 
@@ -244,6 +245,96 @@ function NavItem({
     >
       {label}
     </button>
+  );
+}
+
+// URLベースのマイカーナビゲーションリンク
+function MyCarNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/mycar';
+  
+  return (
+    <Link
+      href="/mycar"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      マイカー
+    </Link>
+  );
+}
+
+// URLベースのガソリンナビゲーションリンク
+function GasNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/gas';
+  
+  return (
+    <Link
+      href="/gas"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      ガソリン
+    </Link>
+  );
+}
+
+// URLベースのメンテナンスナビゲーションリンク
+function MaintenanceNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/maintenance';
+  
+  return (
+    <Link
+      href="/maintenance"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      メンテナンス
+    </Link>
+  );
+}
+
+// URLベースのカスタマイズナビゲーションリンク
+function CustomizationsNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/customizations';
+  
+  return (
+    <Link
+      href="/customizations"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      カスタマイズ
+    </Link>
+  );
+}
+
+// URLベースの車両管理ナビゲーションリンク
+function CarManagementNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/cars';
+  
+  return (
+    <Link
+      href="/cars"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      車両管理
+    </Link>
   );
 }
 
@@ -591,35 +682,15 @@ function SharePageContent() {
             <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
               <NavItem 
                 label="ホーム" 
-                active={false}
+                active={pathname === '/home'}
                 href="/home"
               />
-              <NavItem 
-                label="マイカー" 
-                active={false}
-                href="/home"
-              />
-              <NavItem 
-                label="ガソリン" 
-                active={false}
-                href="/home"
-              />
-              <NavItem 
-                label="メンテナンス" 
-                active={false}
-                href="/home"
-              />
-              <NavItem 
-                label="カスタマイズ" 
-                active={false}
-                href="/home"
-              />
+              <MyCarNavLink />
+              <GasNavLink />
+              <MaintenanceNavLink />
+              <CustomizationsNavLink />
               <ShareNavLink />
-              <NavItem 
-                label="車両管理" 
-                active={false}
-                href="/home"
-              />
+              <CarManagementNavLink />
               <NavItem 
                 label="データ" 
                 href="/data"
@@ -673,13 +744,11 @@ function SharePageContent() {
       {showAddCarModal && (
         <AddCarModal
           onClose={() => setShowAddCarModal(false)}
-          onAdded={async (carData) => {
+          onAdded={async () => {
             try {
-              const newCar = await addCar(carData);
               setShowAddCarModal(false);
-              if (newCar?.id) {
-                setActiveCarId(newCar.id);
-              }
+              // AddCarModal内で車両が追加されるため、ここでは何もしない
+              // 必要に応じて、watchCarsで自動的に更新される
             } catch (error) {
               console.error("Failed to add car:", error);
               alert("車両の追加に失敗しました");

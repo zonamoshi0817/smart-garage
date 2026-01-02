@@ -11,7 +11,8 @@ import { toMillis } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import { useSelectedCar } from "@/contexts/SelectedCarContext";
-import type { Car, Customization, User } from "@/types";
+import type { Car, Customization } from "@/types";
+import type { User } from "firebase/auth";
 import AddCarModal from "@/components/modals/AddCarModal";
 import CustomizationModal from "@/components/modals/CustomizationModal";
 
@@ -141,8 +142,8 @@ function CarHeaderDropdown({
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">{car.name}</div>
-                    {car.model && (
-                      <div className="text-xs text-gray-500 truncate">{car.model}</div>
+                    {car.modelCode && (
+                      <div className="text-xs text-gray-500 truncate">{car.modelCode}</div>
                     )}
                   </div>
                   {activeCarId === car.id && (
@@ -728,16 +729,12 @@ function CustomizationsPageRouteContent() {
     };
   }, []);
 
-  // URLクエリとグローバルコンテキストの同期
-  useEffect(() => {
-    if (urlCarId && urlCarId !== selectedCarId) {
-      // URLにcarパラメータがある場合、グローバルコンテキストを更新
-      setSelectedCarId(urlCarId);
-    } else if (!urlCarId && selectedCarId) {
-      // URLにcarパラメータがないが、グローバルコンテキストがある場合、URLを更新
-      router.push(`${pathname}?car=${selectedCarId}`);
-    }
-  }, [urlCarId, selectedCarId, setSelectedCarId, router, pathname]);
+  // URLクエリとグローバルコンテキストの同期（無効化）
+  // useEffect(() => {
+  //   if (urlCarId && urlCarId !== selectedCarId) {
+  //     setSelectedCarId(urlCarId);
+  //   }
+  // }, [urlCarId, selectedCarId, setSelectedCarId]);
 
   // 車両リストが変更されたときに自動選択（グローバルコンテキストを優先）
   useEffect(() => {
@@ -769,12 +766,9 @@ function CustomizationsPageRouteContent() {
       if (!selectedCarId) {
         setSelectedCarId(targetCarId);
       }
-      // URLも更新（まだ設定されていない場合）
-      if (!urlCarId) {
-        router.push(`${pathname}?car=${targetCarId}`);
-      }
+      // URLの更新は行わない（URLクエリは別のuseEffectで処理）
     }
-  }, [cars, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname]);
+  }, [cars, activeCarId, selectedCarId, urlCarId, setSelectedCarId]);
 
   // 車両データの取得
   useEffect(() => {
@@ -788,37 +782,8 @@ function CustomizationsPageRouteContent() {
     try {
       const off = watchCars((list) => {
         setCars(list);
-        
-        // 優先順位: 1) URLクエリ 2) グローバルselectedCarId 3) 現在のactiveCarId 4) 最初の車
-        const activeCarsList = list.filter((c) => !c.status || c.status === 'active');
-        if (activeCarsList.length === 0) {
-          setCars([]);
-          setLoading(false);
-          return;
-        }
-        
-        let targetCarId: string | undefined = undefined;
-        if (urlCarId && activeCarsList.some(car => car.id === urlCarId)) {
-          targetCarId = urlCarId;
-        } else if (selectedCarId && activeCarsList.some(car => car.id === selectedCarId)) {
-          targetCarId = selectedCarId;
-        } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
-          targetCarId = activeCarId;
-        } else {
-          targetCarId = activeCarsList[0].id;
-        }
-        
-        if (targetCarId && targetCarId !== activeCarId) {
-          setActiveCarId(targetCarId);
-          if (!selectedCarId) {
-            setSelectedCarId(targetCarId);
-          }
-          if (!urlCarId) {
-            router.push(`${pathname}?car=${targetCarId}`);
-          }
-        }
-        
         setLoading(false);
+        // 車両リスト変更時の処理は、別のuseEffectで処理する
       });
       return () => {
         off && off();
@@ -828,7 +793,7 @@ function CustomizationsPageRouteContent() {
       setCars([]);
       setLoading(false);
     }
-  }, [auth.currentUser, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname, authTrigger]);
+  }, [auth.currentUser, authTrigger]);
 
   // カスタマイズデータの取得
   useEffect(() => {
@@ -902,24 +867,24 @@ function CustomizationsPageRouteContent() {
               onClick={() => router.push('/home')}
               className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-80 transition-opacity"
             >
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span className="hidden sm:inline text-lg sm:text-xl font-bold text-gray-900">garage log</span>
+              <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
+              <span className="text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight text-gray-900 truncate">garage log</span>
             </button>
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-center">
-              <CarHeaderDropdown
-                cars={activeCars}
-                activeCarId={effectiveCarId}
-                onSelectCar={(id) => {
-                  setSelectedCarId(id);
-                  setActiveCarId(id);
-                  router.push(`${pathname}?car=${id}`);
-                }}
-                onAddCar={() => setShowAddCarModal(true)}
-              />
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+              {activeCars.length > 0 && (
+                <div className="relative">
+                  <CarHeaderDropdown
+                    cars={activeCars}
+                    activeCarId={effectiveCarId}
+                    onSelectCar={(id) => {
+                      setSelectedCarId(id);
+                      setActiveCarId(id);
+                      router.replace(`${pathname}?car=${id}`);
+                    }}
+                    onAddCar={() => setShowAddCarModal(true)}
+                  />
+                </div>
+              )}
               <button
                 onClick={() => {
                   if (confirm('ログアウトしますか？')) {
@@ -965,7 +930,7 @@ function CustomizationsPageRouteContent() {
             <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
               <NavItem 
                 label="ホーム" 
-                active={false}
+                active={pathname === '/home'}
                 href="/home"
               />
               <MyCarNavLink />
@@ -975,8 +940,8 @@ function CustomizationsPageRouteContent() {
               <ShareNavLink />
               <NavItem 
                 label="車両管理" 
-                active={false}
-                href="/home"
+                active={pathname === '/cars'}
+                href="/cars"
               />
               <NavItem 
                 label="データ" 

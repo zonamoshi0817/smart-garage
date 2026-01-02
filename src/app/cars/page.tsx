@@ -13,12 +13,12 @@ import { toDate, toMillis } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import { useSelectedCar } from "@/contexts/SelectedCarContext";
-import type { Car, MaintenanceRecord, Customization, User, FuelLog } from "@/types";
+import type { Car, MaintenanceRecord, Customization, FuelLog } from "@/types";
+import type { User } from "firebase/auth";
 import AddCarModal from "@/components/modals/AddCarModal";
 import SellCarModal from "@/components/modals/SellCarModal";
 import CarModal from "@/components/modals/CarModal";
 import FuelLogModal from "@/components/modals/FuelLogModal";
-import MaintenanceModal from "@/components/modals/MaintenanceModal";
 import CustomizationModal from "@/components/modals/CustomizationModal";
 
 // ヘッダー用車両ドロップダウン
@@ -113,11 +113,11 @@ function CarHeaderDropdown({
       {open && (
         <div className="absolute top-full left-0 mt-1 w-64 sm:w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[70vh] overflow-y-auto">
           <div className="p-2">
-            {cars.length === 0 ? (
+      {cars.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-500">
                 車が登録されていません
-              </div>
-            ) : (
+        </div>
+      ) : (
               cars.map((car) => (
                 <button
                   key={car.id}
@@ -147,8 +147,8 @@ function CarHeaderDropdown({
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">{car.name}</div>
-                    {car.model && (
-                      <div className="text-xs text-gray-500 truncate">{car.model}</div>
+                    {car.modelCode && (
+                      <div className="text-xs text-gray-500 truncate">{car.modelCode}</div>
                     )}
                   </div>
                   {activeCarId === car.id && (
@@ -1054,16 +1054,12 @@ function CarsPageRouteContent() {
     return () => unsubscribe();
   }, []);
 
-  // URLクエリとグローバルコンテキストの同期
-  useEffect(() => {
-    if (urlCarId && urlCarId !== selectedCarId) {
-      // URLにcarパラメータがある場合、グローバルコンテキストを更新
-      setSelectedCarId(urlCarId);
-    } else if (!urlCarId && selectedCarId) {
-      // URLにcarパラメータがないが、グローバルコンテキストがある場合、URLを更新
-      router.push(`${pathname}?car=${selectedCarId}`);
-    }
-  }, [urlCarId, selectedCarId, setSelectedCarId, router, pathname]);
+  // URLクエリとグローバルコンテキストの同期（無効化）
+  // useEffect(() => {
+  //   if (urlCarId && urlCarId !== selectedCarId) {
+  //     setSelectedCarId(urlCarId);
+  //   }
+  // }, [urlCarId, selectedCarId, setSelectedCarId]);
 
   // 車両リストが変更されたときに自動選択（グローバルコンテキストを優先）
   useEffect(() => {
@@ -1095,12 +1091,9 @@ function CarsPageRouteContent() {
       if (!selectedCarId) {
         setSelectedCarId(targetCarId);
       }
-      // URLも更新（まだ設定されていない場合）
-      if (!urlCarId) {
-        router.push(`${pathname}?car=${targetCarId}`);
-      }
+      // URLの更新は行わない（URLクエリは別のuseEffectで処理）
     }
-  }, [cars, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname]);
+  }, [cars, activeCarId, selectedCarId, urlCarId, setSelectedCarId]);
 
   // 車両データの取得
   useEffect(() => {
@@ -1114,36 +1107,8 @@ function CarsPageRouteContent() {
     try {
       const off = watchCars((list) => {
         setCars(list);
-        
-        // 優先順位: 1) URLクエリ 2) グローバルselectedCarId 3) 現在のactiveCarId 4) 最初の車
-        const activeCarsList = list.filter((c) => !c.status || c.status === 'active');
-        if (activeCarsList.length === 0) {
-          setLoading(false);
-          return;
-        }
-        
-        let targetCarId: string | undefined = undefined;
-        if (urlCarId && activeCarsList.some(car => car.id === urlCarId)) {
-          targetCarId = urlCarId;
-        } else if (selectedCarId && activeCarsList.some(car => car.id === selectedCarId)) {
-          targetCarId = selectedCarId;
-        } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
-          targetCarId = activeCarId;
-        } else {
-          targetCarId = activeCarsList[0].id;
-        }
-        
-        if (targetCarId && targetCarId !== activeCarId) {
-          setActiveCarId(targetCarId);
-          if (!selectedCarId) {
-            setSelectedCarId(targetCarId);
-          }
-          if (!urlCarId) {
-            router.push(`${pathname}?car=${targetCarId}`);
-          }
-        }
-        
         setLoading(false);
+        // 車両リスト変更時の処理は、別のuseEffectで処理する
       });
       return () => {
         off && off();
@@ -1153,7 +1118,7 @@ function CarsPageRouteContent() {
       setCars([]);
       setLoading(false);
     }
-  }, [auth.currentUser, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname, authTrigger]);
+  }, [auth.currentUser, authTrigger]);
 
   // メンテナンス記録の取得
   useEffect(() => {
@@ -1266,7 +1231,7 @@ function CarsPageRouteContent() {
                     onSelectCar={(id) => {
                       setSelectedCarId(id);
                       setActiveCarId(id);
-                      router.push(`${pathname}?car=${id}`);
+                      router.replace(`${pathname}?car=${id}`);
                     }}
                     onAddCar={() => setShowAddCarModal(true)}
                   />
@@ -1352,7 +1317,7 @@ function CarsPageRouteContent() {
                   className="block w-full text-center px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                 >
                   アップグレード
-                </Link>
+              </Link>
               </div>
             )}
           </aside>
@@ -1365,7 +1330,7 @@ function CarsPageRouteContent() {
               setActiveCarId={(id) => {
                 setSelectedCarId(id);
                 setActiveCarId(id);
-                router.push(`${pathname}?car=${id}`);
+                router.replace(`${pathname}?car=${id}`);
               }}
               setShowAddCarModal={setShowAddCarModal}
               setShowEditCarModal={setShowEditCarModal}
@@ -1395,13 +1360,17 @@ function CarsPageRouteContent() {
 
         {showEditCarModal && editingCar && (
           <CarModal
-            car={editingCar}
+            isOpen={showEditCarModal}
+            editingCar={editingCar}
+            title="車両を編集"
             onClose={() => {
               setShowEditCarModal(false);
               setEditingCar(null);
             }}
-            onSave={async (carId, carData) => {
-              await updateCar(carId, carData);
+            onSave={async (carData) => {
+              if (editingCar.id) {
+                await updateCar(editingCar.id, carData);
+              }
               setShowEditCarModal(false);
               setEditingCar(null);
             }}
@@ -1423,29 +1392,27 @@ function CarsPageRouteContent() {
           />
         )}
 
-        {showFuelLogModal && activeCarId && (
-          <FuelLogModal
-            car={cars.find(c => c.id === activeCarId)}
-            onClose={() => setShowFuelLogModal(false)}
-            onSuccess={() => setShowFuelLogModal(false)}
-          />
-        )}
+        {showFuelLogModal && activeCarId && (() => {
+          const car = cars.find(c => c.id === activeCarId);
+          if (!car) return null;
+          return (
+            <FuelLogModal
+              isOpen={showFuelLogModal}
+              car={car}
+              onClose={() => setShowFuelLogModal(false)}
+              onSuccess={() => setShowFuelLogModal(false)}
+            />
+          );
+        })()}
 
-        {showMaintenanceModal && activeCarId && (
-          <MaintenanceModal
-            carId={activeCarId}
-            carName={cars.find(c => c.id === activeCarId)?.name || "車"}
-            currentMileage={cars.find(c => c.id === activeCarId)?.odoKm}
-            onClose={() => setShowMaintenanceModal(false)}
-            onAdded={() => setShowMaintenanceModal(false)}
-          />
-        )}
+        {/* MaintenanceModalはCarCard内で直接使用されるため、ここでは使用しない */}
 
         {showCustomizationModal && activeCarId && (
           <CustomizationModal
+            isOpen={showCustomizationModal}
             carId={activeCarId}
             onClose={() => setShowCustomizationModal(false)}
-            onSuccess={() => setShowCustomizationModal(false)}
+            onSave={() => setShowCustomizationModal(false)}
           />
         )}
       </div>

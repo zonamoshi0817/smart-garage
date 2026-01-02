@@ -13,7 +13,8 @@ import { toDate, toMillis } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 import { usePremiumGuard } from "@/hooks/usePremium";
 import { useSelectedCar } from "@/contexts/SelectedCarContext";
-import type { Car, MaintenanceRecord, User } from "@/types";
+import type { Car, MaintenanceRecord } from "@/types";
+import type { User } from "firebase/auth";
 import AddCarModal from "@/components/modals/AddCarModal";
 
 // ヘッダー用車両ドロップダウン（mycar/page.tsxと同じ）
@@ -271,6 +272,24 @@ function MyCarNavLink() {
       }
     >
       マイカー
+    </Link>
+  );
+}
+
+// URLベースのガソリンナビゲーションリンク
+function GasNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/gas';
+  
+  return (
+    <Link
+      href="/gas"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      ガソリン
     </Link>
   );
 }
@@ -1217,16 +1236,12 @@ function MaintenancePageRouteContent() {
     };
   }, []);
 
-  // URLクエリとグローバルコンテキストの同期
-  useEffect(() => {
-    if (urlCarId && urlCarId !== selectedCarId) {
-      // URLにcarパラメータがある場合、グローバルコンテキストを更新
-      setSelectedCarId(urlCarId);
-    } else if (!urlCarId && selectedCarId) {
-      // URLにcarパラメータがないが、グローバルコンテキストがある場合、URLを更新
-      router.push(`${pathname}?car=${selectedCarId}`);
-    }
-  }, [urlCarId, selectedCarId, setSelectedCarId, router, pathname]);
+  // URLクエリとグローバルコンテキストの同期（無効化）
+  // useEffect(() => {
+  //   if (urlCarId && urlCarId !== selectedCarId) {
+  //     setSelectedCarId(urlCarId);
+  //   }
+  // }, [urlCarId, selectedCarId, setSelectedCarId]);
 
   // 車両リストが変更されたときに自動選択（グローバルコンテキストを優先）
   useEffect(() => {
@@ -1258,12 +1273,9 @@ function MaintenancePageRouteContent() {
       if (!selectedCarId) {
         setSelectedCarId(targetCarId);
       }
-      // URLも更新（まだ設定されていない場合）
-      if (!urlCarId) {
-        router.push(`${pathname}?car=${targetCarId}`);
-      }
+      // URLの更新は行わない（URLクエリは別のuseEffectで処理）
     }
-  }, [cars, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname]);
+  }, [cars, activeCarId, selectedCarId, urlCarId, setSelectedCarId]);
 
   // 車両データの取得
   useEffect(() => {
@@ -1273,39 +1285,8 @@ function MaintenancePageRouteContent() {
     
     try {
       const off = watchCars((list) => {
-        if (list.length > 0) {
-          setCars(list);
-          
-          // 優先順位: 1) URLクエリ 2) グローバルselectedCarId 3) 現在のactiveCarId 4) 最初の車
-          const activeCarsList = list.filter((c) => !c.status || c.status === 'active');
-          if (activeCarsList.length === 0) {
-            setCars([]);
-            return;
-          }
-          
-          let targetCarId: string | undefined = undefined;
-          if (urlCarId && activeCarsList.some(car => car.id === urlCarId)) {
-            targetCarId = urlCarId;
-          } else if (selectedCarId && activeCarsList.some(car => car.id === selectedCarId)) {
-            targetCarId = selectedCarId;
-          } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
-            targetCarId = activeCarId;
-          } else {
-            targetCarId = activeCarsList[0].id;
-          }
-          
-          if (targetCarId && targetCarId !== activeCarId) {
-            setActiveCarId(targetCarId);
-            if (!selectedCarId) {
-              setSelectedCarId(targetCarId);
-            }
-            if (!urlCarId) {
-              router.push(`${pathname}?car=${targetCarId}`);
-            }
-          }
-        } else {
-          setCars([]);
-        }
+        setCars(list);
+        // 車両リスト変更時の処理は、別のuseEffectで処理する
       });
       return () => {
         off && off();
@@ -1314,7 +1295,7 @@ function MaintenancePageRouteContent() {
       console.error("Error watching cars:", error);
       setCars([]);
     }
-  }, [auth.currentUser, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname, authTrigger]);
+  }, [auth.currentUser, authTrigger]);
 
   // 全メンテナンス記録を取得
   useEffect(() => {
@@ -1383,7 +1364,7 @@ function MaintenancePageRouteContent() {
                     onSelectCar={(id) => {
                       setSelectedCarId(id);
                       setActiveCarId(id);
-                      router.push(`${pathname}?car=${id}`);
+                      router.replace(`${pathname}?car=${id}`);
                     }}
                     onAddCar={() => setShowAddCarModal(true)}
                   />
@@ -1480,26 +1461,22 @@ function MaintenancePageRouteContent() {
             <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
               <NavItem 
                 label="ホーム" 
-                active={false}
+                active={pathname === '/home'}
                 href="/home"
               />
               <MyCarNavLink />
-              <NavItem 
-                label="ガソリン" 
-                active={false}
-                href="/home"
-              />
+              <GasNavLink />
               <MaintenanceNavLink />
               <NavItem 
                 label="カスタマイズ" 
-                active={false}
-                href="/home"
+                active={pathname === '/customizations'}
+                href="/customizations"
               />
               <ShareNavLink />
               <NavItem 
                 label="車両管理" 
-                active={false}
-                href="/home"
+                active={pathname === '/cars'}
+                href="/cars"
               />
               <NavItem 
                 label="データ" 
@@ -1555,13 +1532,11 @@ function MaintenancePageRouteContent() {
       {showAddCarModal && (
         <AddCarModal
           onClose={() => setShowAddCarModal(false)}
-          onAdded={async (carData) => {
+          onAdded={async () => {
             try {
-              const newCar = await addCar(carData);
               setShowAddCarModal(false);
-              if (newCar?.id) {
-                setActiveCarId(newCar.id);
-              }
+              // AddCarModal内で車両が追加されるため、ここでは何もしない
+              // 必要に応じて、watchCarsで自動的に更新される
             } catch (error) {
               console.error("Failed to add car:", error);
               alert("車両の追加に失敗しました");
