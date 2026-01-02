@@ -159,8 +159,8 @@ export default function SNSSharePublicPage({
   // 証跡ありのメンテナンス記録数をカウント
   const evidenceCount = useMemo(() => {
     return maintenanceRecords.filter(r => {
-      // evidence配列が存在し、かつ空でない場合
-      return r.evidence && Array.isArray(r.evidence) && r.evidence.length > 0;
+      // attachments配列が存在し、かつ空でない場合
+      return r.attachments && Array.isArray(r.attachments) && r.attachments.length > 0;
     }).length;
   }, [maintenanceRecords]);
 
@@ -382,32 +382,17 @@ export default function SNSSharePublicPage({
       <section id="build" className="max-w-4xl mx-auto px-4 py-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">ビルド</h2>
         
-        {/* 推しパーツ（featured）- 写真付きで上に固定 */}
+        {/* 推しパーツ（featured）- テキスト情報で表示 */}
         {sns.build?.featured && sns.build.featured.length > 0 && (
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">推しパーツ</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {sns.build.featured.slice(0, 30).map((part, index) => {
-                // 最初の画像をパーツに関連付ける（ギャラリーから）
-                const relatedImage = galleryImages[index % galleryImages.length];
-                return (
-                  <div key={index} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                    {relatedImage && (
-                      <div className="aspect-[4/3] overflow-hidden bg-gray-200">
-                        <img 
-                          src={relatedImage.url} 
-                          alt={part.value}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <div className="text-xs text-gray-500 mb-1">{part.label}</div>
-                      <div className="text-base font-semibold text-gray-900">{part.value}</div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {sns.build.featured.slice(0, 30).map((part, index) => (
+                <div key={index} className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+                  <div className="text-xs text-gray-500 mb-1">{part.label}</div>
+                  <div className="text-base font-semibold text-gray-900">{part.value}</div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -530,13 +515,8 @@ export default function SNSSharePublicPage({
                 </div>
               )}
               {evidenceCount > 0 && (
-                <div className="relative group">
-                  <div className="text-xs text-gray-500 mb-1">
-                    証跡あり
-                    <span className="ml-1 text-gray-400 cursor-help" title="写真やレシートなどの証跡が添付されている記録数">
-                      ℹ️
-                    </span>
-                  </div>
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">証跡あり</div>
                   <div className="text-xl font-bold text-gray-900">{evidenceCount}件</div>
                 </div>
               )}
@@ -558,41 +538,38 @@ export default function SNSSharePublicPage({
             </div>
           </div>
 
-          {/* 直近整備 */}
-          {maintenanceRecords.length > 0 && (
-            <details className="bg-white rounded-lg border border-gray-200 p-4">
-              <summary className="font-semibold text-gray-900 cursor-pointer mb-2">
-                直近整備
-              </summary>
-              <div className="mt-4 space-y-2">
-                {maintenanceRecords
-                  .filter(r => r.category !== 'fuel' && r.title !== 'テスト')
-                  .sort((a, b) => {
-                    const dateA = typeof a.date === 'string' ? new Date(a.date) : (a.date?.toDate?.() || new Date(a.date));
-                    const dateB = typeof b.date === 'string' ? new Date(b.date) : (b.date?.toDate?.() || new Date(b.date));
-                    return dateB.getTime() - dateA.getTime();
-                  })
-                  .slice(0, 5)
-                  .map((record, index) => {
-                    const recordDate = typeof record.date === 'string' 
-                      ? new Date(record.date) 
-                      : (record.date?.toDate?.() || new Date(record.date));
-                    return (
-                      <div key={index} className="text-sm text-gray-700 border-b border-gray-100 pb-2">
-                        <div className="font-medium">{record.title || 'メンテナンス'}</div>
-                        <div className="text-xs text-gray-500">
-                          {new Intl.DateTimeFormat('ja-JP', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          }).format(recordDate)}
-                        </div>
-                      </div>
-                    );
-                  })}
+          {/* 直近整備（1件表示） */}
+          {maintenanceRecords.length > 0 && (() => {
+            const latestRecord = maintenanceRecords
+              .filter(r => r.category !== 'fuel' && r.title !== 'テスト')
+              .sort((a, b) => {
+                const dateA = typeof a.date === 'string' ? new Date(a.date) : (a.date?.toDate?.() || new Date(a.date));
+                const dateB = typeof b.date === 'string' ? new Date(b.date) : (b.date?.toDate?.() || new Date(b.date));
+                return dateB.getTime() - dateA.getTime();
+              })[0];
+            
+            if (!latestRecord) return null;
+            
+            const recordDate = typeof latestRecord.date === 'string' 
+              ? new Date(latestRecord.date) 
+              : (latestRecord.date?.toDate?.() || new Date(latestRecord.date));
+            
+            return (
+              <div id="maintenance" className="bg-white rounded-lg border border-gray-200 p-4 scroll-mt-20">
+                <div className="font-semibold text-gray-900 mb-3">直近整備</div>
+                <div className="text-sm text-gray-700">
+                  <div className="font-medium">{latestRecord.title || 'メンテナンス'}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {new Intl.DateTimeFormat('ja-JP', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    }).format(recordDate)}
+                  </div>
+                </div>
               </div>
-            </details>
-          )}
+            );
+          })()}
         </section>
       )}
 
