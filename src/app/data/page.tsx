@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthGate from "@/components/AuthGate";
 import { watchCars } from "@/lib/cars";
@@ -10,6 +10,7 @@ import { getCustomizations } from "@/lib/customizations";
 import { auth, watchAuth } from "@/lib/firebase";
 import { isPremiumPlan } from "@/lib/plan";
 import { usePremiumGuard } from "@/hooks/usePremium";
+import { useSelectedCar } from "@/contexts/SelectedCarContext";
 import { downloadMaintenancePDF, type PDFExportOptions } from "@/lib/pdfExport";
 import type { Car, MaintenanceRecord, Customization, User } from "@/types";
 
@@ -25,6 +26,7 @@ function CarHeaderDropdown({
   onSelectCar: (id: string) => void;
   onAddCar: () => void;
 }) {
+  const { setSelectedCarId } = useSelectedCar();
   const [isOpen, setIsOpen] = useState(false);
   const activeCar = cars.find(c => c.id === activeCarId);
 
@@ -67,7 +69,9 @@ function CarHeaderDropdown({
                 <button
                   key={car.id}
                   onClick={() => {
-                    onSelectCar(car.id!);
+                    const carId = car.id!;
+                    setSelectedCarId(carId); // グローバルコンテキストを更新
+                    onSelectCar(carId);
                     setIsOpen(false);
                   }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
@@ -625,6 +629,9 @@ function DataManagementContent({
 export default function DataPageRoute() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { selectedCarId, setSelectedCarId } = useSelectedCar();
+  const urlCarId = searchParams?.get('car') || null;
   const { userPlan, checkFeature } = usePremiumGuard();
 
   // 状態管理
@@ -636,6 +643,11 @@ export default function DataPageRoute() {
   const [authTrigger, setAuthTrigger] = useState(0);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showAddCarModal, setShowAddCarModal] = useState(false);
+
+  // activeCarIdを決定（優先順位: URLクエリ > グローバルコンテキスト > ローカル状態）
+  const effectiveCarId = useMemo(() => {
+    return urlCarId || selectedCarId || activeCarId;
+  }, [urlCarId, selectedCarId, activeCarId]);
 
   // 認証状態を監視
   useEffect(() => {
@@ -658,17 +670,53 @@ export default function DataPageRoute() {
     return () => unsubscribe();
   }, []);
 
-  // 車両リストが変更されたときに自動選択
+  // URLクエリとグローバルコンテキストの同期
   useEffect(() => {
-    if (cars.length > 0 && !activeCarId) {
-      const activeCar = cars.find(c => !c.status || c.status === 'active');
-      if (activeCar) {
-        setActiveCarId(activeCar.id);
-      } else if (cars[0]) {
-        setActiveCarId(cars[0].id);
+    if (urlCarId && urlCarId !== selectedCarId) {
+      // URLにcarパラメータがある場合、グローバルコンテキストを更新
+      setSelectedCarId(urlCarId);
+    } else if (!urlCarId && selectedCarId) {
+      // URLにcarパラメータがないが、グローバルコンテキストがある場合、URLを更新
+      router.push(`${pathname}?car=${selectedCarId}`);
+    }
+  }, [urlCarId, selectedCarId, setSelectedCarId, router, pathname]);
+
+  // 車両リストが変更されたときに自動選択（グローバルコンテキストを優先）
+  useEffect(() => {
+    if (cars.length === 0) {
+      return;
+    }
+
+    const activeCarsList = cars.filter((c) => !c.status || c.status === 'active');
+    
+    if (activeCarsList.length === 0) {
+      return;
+    }
+
+    // 優先順位: 1) URLクエリ 2) グローバルselectedCarId 3) 現在のactiveCarId 4) 最初の車
+    let targetCarId: string | undefined = undefined;
+    
+    if (urlCarId && activeCarsList.some(car => car.id === urlCarId)) {
+      targetCarId = urlCarId;
+    } else if (selectedCarId && activeCarsList.some(car => car.id === selectedCarId)) {
+      targetCarId = selectedCarId;
+    } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
+      targetCarId = activeCarId;
+    } else {
+      targetCarId = activeCarsList[0].id;
+    }
+    
+    if (targetCarId && targetCarId !== activeCarId) {
+      setActiveCarId(targetCarId);
+      if (!selectedCarId) {
+        setSelectedCarId(targetCarId);
+      }
+      // URLも更新（まだ設定されていない場合）
+      if (!urlCarId) {
+        router.push(`${pathname}?car=${targetCarId}`);
       }
     }
-  }, [cars, activeCarId]);
+  }, [cars, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname]);
 
   // 車両データの取得
   useEffect(() => {
@@ -781,8 +829,12 @@ export default function DataPageRoute() {
                 <div className="relative">
                   <CarHeaderDropdown 
                     cars={activeCars}
-                    activeCarId={activeCarId}
-                    onSelectCar={(id) => setActiveCarId(id)}
+                    activeCarId={effectiveCarId}
+                    onSelectCar={(id) => {
+                      setSelectedCarId(id);
+                      setActiveCarId(id);
+                      router.push(`${pathname}?car=${id}`);
+                    }}
                     onAddCar={() => setShowAddCarModal(true)}
                   />
                 </div>
@@ -874,7 +926,7 @@ export default function DataPageRoute() {
               cars={cars}
               maintenanceRecords={maintenanceRecords}
               customizations={customizations}
-              activeCarId={activeCarId}
+              activeCarId={effectiveCarId}
             />
           </main>
         </div>

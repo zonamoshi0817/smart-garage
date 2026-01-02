@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthGate from "@/components/AuthGate";
 import { watchCars, addCar } from "@/lib/cars";
@@ -10,6 +10,7 @@ import { auth, watchAuth } from "@/lib/firebase";
 import { toDate } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 import { usePremiumGuard } from "@/hooks/usePremium";
+import { useSelectedCar } from "@/contexts/SelectedCarContext";
 import type { Car, FuelLog, User } from "@/types";
 import FuelLogModal from "@/components/modals/FuelLogModal";
 import FuelLogCard from "@/components/dashboard/FuelLogCard";
@@ -27,6 +28,7 @@ function CarHeaderDropdown({
   onSelectCar: (id: string) => void;
   onAddCar: () => void;
 }) {
+  const { setSelectedCarId } = useSelectedCar();
   const [open, setOpen] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
@@ -128,7 +130,9 @@ function CarHeaderDropdown({
               <button
                 key={car.id}
                 onClick={() => {
-                  onSelectCar(car.id!);
+                  const carId = car.id!;
+                  setSelectedCarId(carId); // グローバルコンテキストを更新
+                  onSelectCar(carId);
                   setOpen(false);
                 }}
                 className={`w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
@@ -736,6 +740,9 @@ function FuelLogsContent({
 export default function GasPageRoute() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { selectedCarId, setSelectedCarId } = useSelectedCar();
+  const urlCarId = searchParams?.get('car') || null;
   const [cars, setCars] = useState<Car[]>([]);
   const [activeCarId, setActiveCarId] = useState<string | undefined>(undefined);
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
@@ -747,6 +754,11 @@ export default function GasPageRoute() {
 
   // プレミアムガード
   const { userPlan } = usePremiumGuard();
+
+  // activeCarIdを決定（優先順位: URLクエリ > グローバルコンテキスト > ローカル状態）
+  const effectiveCarId = useMemo(() => {
+    return urlCarId || selectedCarId || activeCarId;
+  }, [urlCarId, selectedCarId, activeCarId]);
 
   // 認証状態を監視
   useEffect(() => {
@@ -771,7 +783,18 @@ export default function GasPageRoute() {
     };
   }, []);
 
-  // 車両リストが変更されたときに自動選択
+  // URLクエリとグローバルコンテキストの同期
+  useEffect(() => {
+    if (urlCarId && urlCarId !== selectedCarId) {
+      // URLにcarパラメータがある場合、グローバルコンテキストを更新
+      setSelectedCarId(urlCarId);
+    } else if (!urlCarId && selectedCarId) {
+      // URLにcarパラメータがないが、グローバルコンテキストがある場合、URLを更新
+      router.push(`${pathname}?car=${selectedCarId}`);
+    }
+  }, [urlCarId, selectedCarId, setSelectedCarId, router, pathname]);
+
+  // 車両リストが変更されたときに自動選択（グローバルコンテキストを優先）
   useEffect(() => {
     if (cars.length === 0) {
       return;
@@ -783,12 +806,30 @@ export default function GasPageRoute() {
       return;
     }
 
-    const currentCarExists = activeCarId ? activeCarsList.some(car => car.id === activeCarId) : false;
+    // 優先順位: 1) URLクエリ 2) グローバルselectedCarId 3) 現在のactiveCarId 4) 最初の車
+    let targetCarId: string | undefined = undefined;
     
-    if (!activeCarId || !currentCarExists) {
-      setActiveCarId(activeCarsList[0].id);
+    if (urlCarId && activeCarsList.some(car => car.id === urlCarId)) {
+      targetCarId = urlCarId;
+    } else if (selectedCarId && activeCarsList.some(car => car.id === selectedCarId)) {
+      targetCarId = selectedCarId;
+    } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
+      targetCarId = activeCarId;
+    } else {
+      targetCarId = activeCarsList[0].id;
     }
-  }, [cars, activeCarId]);
+    
+    if (targetCarId && targetCarId !== activeCarId) {
+      setActiveCarId(targetCarId);
+      if (!selectedCarId) {
+        setSelectedCarId(targetCarId);
+      }
+      // URLも更新（まだ設定されていない場合）
+      if (!urlCarId) {
+        router.push(`${pathname}?car=${targetCarId}`);
+      }
+    }
+  }, [cars, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname]);
 
   // 車両データの取得
   useEffect(() => {
@@ -802,9 +843,32 @@ export default function GasPageRoute() {
         if (list.length > 0) {
           setCars(list);
           
-          const currentCarExists = activeCarId ? list.some(car => car.id === activeCarId) : false;
-          if (!activeCarId || !currentCarExists) {
-            setActiveCarId(list[0].id);
+          // 優先順位: 1) URLクエリ 2) グローバルselectedCarId 3) 現在のactiveCarId 4) 最初の車
+          const activeCarsList = list.filter((c) => !c.status || c.status === 'active');
+          if (activeCarsList.length === 0) {
+            setCars([]);
+            return;
+          }
+          
+          let targetCarId: string | undefined = undefined;
+          if (urlCarId && activeCarsList.some(car => car.id === urlCarId)) {
+            targetCarId = urlCarId;
+          } else if (selectedCarId && activeCarsList.some(car => car.id === selectedCarId)) {
+            targetCarId = selectedCarId;
+          } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
+            targetCarId = activeCarId;
+          } else {
+            targetCarId = activeCarsList[0].id;
+          }
+          
+          if (targetCarId && targetCarId !== activeCarId) {
+            setActiveCarId(targetCarId);
+            if (!selectedCarId) {
+              setSelectedCarId(targetCarId);
+            }
+            if (!urlCarId) {
+              router.push(`${pathname}?car=${targetCarId}`);
+            }
           }
         } else {
           setCars([]);
@@ -817,7 +881,7 @@ export default function GasPageRoute() {
       console.error("Error watching cars:", error);
       setCars([]);
     }
-  }, [auth.currentUser, activeCarId, authTrigger]);
+  }, [auth.currentUser, activeCarId, selectedCarId, urlCarId, setSelectedCarId, router, pathname, authTrigger]);
 
   // 給油ログの取得
   useEffect(() => {
@@ -827,17 +891,17 @@ export default function GasPageRoute() {
       return;
     }
 
-    // activeCarIdが設定されるまで待つ（loadingはtrueのまま）
-    if (!activeCarId) {
+    // effectiveCarIdが設定されるまで待つ（loadingはtrueのまま）
+    if (!effectiveCarId) {
       setFuelLogs([]);
       // loadingはtrueのまま（isReadyの条件で制御）
       return;
     }
 
-    // activeCarIdが設定されたら、給油ログを取得開始
+    // effectiveCarIdが設定されたら、給油ログを取得開始
     setLoading(true);
     try {
-      const off = watchFuelLogs(activeCarId, (logs) => {
+      const off = watchFuelLogs(effectiveCarId, (logs) => {
         setFuelLogs(logs);
         setLoading(false);
       });
@@ -849,7 +913,7 @@ export default function GasPageRoute() {
       setFuelLogs([]);
       setLoading(false);
     }
-  }, [auth.currentUser, activeCarId, authTrigger]);
+  }, [auth.currentUser, effectiveCarId, authTrigger]);
 
   // 現在保有中の車両のみ
   const activeCars = useMemo(
@@ -858,12 +922,12 @@ export default function GasPageRoute() {
   );
 
   const car = useMemo(() => {
-    return cars.find((c) => c.id === activeCarId);
-  }, [cars, activeCarId]);
+    return cars.find((c) => c.id === effectiveCarId);
+  }, [cars, effectiveCarId]);
 
-  // activeCarIdが設定されるまでloadingをtrueのままにする
+  // effectiveCarIdが設定されるまでloadingをtrueのままにする
   // carsが空の場合は、まだデータを取得中なのでloadingを継続
-  const isReady = !loading && auth.currentUser && cars.length > 0 && activeCarId !== undefined;
+  const isReady = !loading && auth.currentUser && cars.length > 0 && effectiveCarId !== undefined;
 
   if (!isReady) {
     return (
@@ -895,8 +959,12 @@ export default function GasPageRoute() {
                 <div className="relative">
                   <CarHeaderDropdown 
                     cars={activeCars}
-                    activeCarId={activeCarId}
-                    onSelectCar={(id) => setActiveCarId(id)}
+                    activeCarId={effectiveCarId}
+                    onSelectCar={(id) => {
+                      setSelectedCarId(id);
+                      setActiveCarId(id);
+                      router.push(`${pathname}?car=${id}`);
+                    }}
                     onAddCar={() => setShowAddCarModal(true)}
                   />
                 </div>
@@ -1049,7 +1117,7 @@ export default function GasPageRoute() {
           <main className="space-y-6">
             <FuelLogsContent
               cars={cars}
-              activeCarId={activeCarId}
+              activeCarId={effectiveCarId}
               fuelLogs={fuelLogs}
               setShowFuelLogModal={setShowFuelLogModal}
             />
