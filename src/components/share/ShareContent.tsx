@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db, storage } from "@/lib/firebase";
 import { doc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getBlob } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { downloadMaintenancePDF } from "@/lib/pdfExport";
 import type { Car, MaintenanceRecord, Customization } from "@/types";
 
@@ -342,8 +342,7 @@ function ShareLinkCard({
       await Promise.all(snsData.gallery.map(async (img: { id: string; path: string; caption?: string }) => {
         try {
           const storageRef = ref(storage, img.path);
-          const blob = await getBlob(storageRef);
-          const url = URL.createObjectURL(blob);
+          const url = await getDownloadURL(storageRef);
           urls[img.id] = url;
         } catch (error) {
           console.error(`Failed to load preview for ${img.id}:`, error);
@@ -353,17 +352,6 @@ function ShareLinkCard({
     };
 
     loadGalleryPreviews();
-
-    // クリーンアップ
-    return () => {
-      Object.values(galleryPreviewUrls).forEach(url => {
-        try {
-          URL.revokeObjectURL(url);
-        } catch (e) {
-          // 既に解放済みの場合は無視
-        }
-      });
-    };
   }, [snsData.gallery]);
 
   // プロフィールが変更されたときに状態を更新
@@ -898,14 +886,7 @@ function ShareLinkCard({
                     try {
                       const { updateShareProfileSNS } = await import('@/lib/saleProfileManager');
                       // galleryのpathをそのまま保存（画像は既にアップロード済み）
-                      await updateShareProfileSNS(profile.id, {
-                        ...snsData,
-                        gallery: snsData.gallery.map((img: { id: string; path: string; caption?: string }) => ({
-                          id: img.id,
-                          path: img.path,
-                          caption: img.caption || undefined
-                        }))
-                      });
+                      await updateShareProfileSNS(profile.id, snsData);
                       alert('✅ SNS共有設定を保存しました！');
                       // ShareProfileを再取得
                       const profileDoc = await getDoc(doc(db, 'saleProfiles', profile.id));

@@ -277,9 +277,31 @@ export async function updateShareProfileSNS(
     throw new Error('権限がありません');
   }
 
+  // undefinedの値を削除（Firestoreはundefinedをサポートしない）
+  const cleanSnsData: any = {};
+  if (snsData.conceptTitle !== undefined) cleanSnsData.conceptTitle = snsData.conceptTitle;
+  if (snsData.conceptBody !== undefined) cleanSnsData.conceptBody = snsData.conceptBody;
+  if (snsData.highlightParts !== undefined) cleanSnsData.highlightParts = snsData.highlightParts;
+  if (snsData.gallery !== undefined) {
+    cleanSnsData.gallery = snsData.gallery.map((img: any) => {
+      const cleanImg: any = { id: img.id, path: img.path };
+      if (img.caption !== undefined && img.caption !== '') cleanImg.caption = img.caption;
+      return cleanImg;
+    });
+  }
+  if (snsData.socialLinks !== undefined) {
+    const cleanSocialLinks: any = {};
+    if (snsData.socialLinks.youtube !== undefined && snsData.socialLinks.youtube !== '') cleanSocialLinks.youtube = snsData.socialLinks.youtube;
+    if (snsData.socialLinks.instagram !== undefined && snsData.socialLinks.instagram !== '') cleanSocialLinks.instagram = snsData.socialLinks.instagram;
+    if (snsData.socialLinks.x !== undefined && snsData.socialLinks.x !== '') cleanSocialLinks.x = snsData.socialLinks.x;
+    if (snsData.socialLinks.web !== undefined && snsData.socialLinks.web !== '') cleanSocialLinks.web = snsData.socialLinks.web;
+    if (Object.keys(cleanSocialLinks).length > 0) cleanSnsData.socialLinks = cleanSocialLinks;
+  }
+  if (snsData.build !== undefined) cleanSnsData.build = snsData.build;
+
   // snsフィールドを更新
   await updateDoc(doc(db, 'saleProfiles', shareProfileId), {
-    sns: snsData,
+    sns: cleanSnsData,
     updatedBy: user.uid,
     updatedAt: serverTimestamp(),
   });
