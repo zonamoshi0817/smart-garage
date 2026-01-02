@@ -32,7 +32,6 @@ import PaywallModal from "@/components/modals/PaywallModal";
 import SellCarModal from "@/components/modals/SellCarModal";
 import OCRModal from "@/components/modals/OCRModal";
 import { usePremiumGuard } from "@/hooks/usePremium";
-import MyCarPage from "@/components/mycar/MyCarPage";
 import NextMaintenanceSuggestion from "@/components/mycar/NextMaintenanceSuggestion";
 import { generateMaintenanceSuggestions } from "@/lib/maintenanceSuggestions";
 import UnifiedCTA from "@/components/UnifiedCTA";
@@ -549,11 +548,7 @@ export default function Home() {
               active={currentPage === 'dashboard'} 
               onClick={() => setCurrentPage('dashboard')}
             />
-            <NavItem 
-              label="マイカー" 
-              active={currentPage === 'my-car'} 
-              onClick={() => setCurrentPage('my-car')}
-            />
+            <MyCarNavLink />
             <NavItem 
               label="ガソリン" 
               active={currentPage === 'fuel-logs'} 
@@ -632,69 +627,6 @@ export default function Home() {
                 setShowCustomizationModal={setShowCustomizationModal}
                 setShowAddCarModal={setShowAddCarModal}
               />
-            ) : currentPage === 'my-car' ? (
-              // 新しいマイカーページ（全車両を表示、売却済み・廃車済みはREAD ONLYモード）
-              car ? (
-                <MyCarPage
-                  car={car}
-                  maintenanceRecords={maintenanceRecords}
-                  fuelLogs={fuelLogs}
-                  customizations={customizations}
-                  readOnly={car.status === 'sold' || car.status === 'scrapped' || car.status === 'downgraded_premium'} // READ ONLYモード
-                  onOpenModal={(modalType, data) => {
-                    // モーダル表示ハンドラー
-                    switch (modalType) {
-                      case 'fuel':
-                        setShowFuelLogModal(true);
-                        break;
-                      case 'maintenance':
-                        setMaintenanceTemplate(data?.template || null);
-                        setShowMaintenanceModal(true);
-                        break;
-                      case 'customization':
-                        setShowCustomizationModal(true);
-                        break;
-                      case 'change-car-image':
-                        setShowEditCarModal(true);
-                        setEditingCar(car);
-                        break;
-                      case 'edit-car':
-                        // 車両情報編集
-                        setShowEditCarModal(true);
-                        setEditingCar(car);
-                        break;
-                      case 'ocr':
-                        // OCR機能
-                        setShowOCRModal(true);
-                        break;
-                      // その他のモーダルは今後実装
-                      default:
-                        console.log('Modal not implemented:', modalType, data);
-                    }
-                  }}
-                />
-              ) : activeCars.length === 0 ? (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                  <p className="text-gray-500 mb-4">現在保有中の車両がありません</p>
-                  <button
-                    onClick={() => setShowAddCarModal(true)}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    車両を追加
-                  </button>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                  <p className="text-gray-500 mb-4">車両を選択してください</p>
-                  <p className="text-xs text-gray-400 mb-4">右上のドロップダウンから車両を選択できます</p>
-                  <button
-                    onClick={() => setShowAddCarModal(true)}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    車両を追加
-                  </button>
-                </div>
-              )
             ) : currentPage === 'car-management' ? (
               <CarManagementContent 
                 cars={cars}
@@ -927,8 +859,8 @@ export default function Home() {
 
 /* -------------------- ページコンテンツ -------------------- */
 function DashboardContent({ 
-  cars, 
-  activeCarId, 
+  cars,
+  activeCarId,
   car, 
   maintenanceRecords,
   fuelLogs,
@@ -953,6 +885,7 @@ function DashboardContent({
   setShowCustomizationModal: (show: boolean) => void;
   setShowAddCarModal: (show: boolean) => void;
 }) {
+  const router = useRouter();
   // SEO/アクセシビリティ用のh1タグ（非表示）
   const pageTitle = `ホーム${car ? ' - ' + car.name : ' - garage log'}`;
 
@@ -965,7 +898,7 @@ function DashboardContent({
   
   useEffect(() => {
     if (!activeCarId || !auth.currentUser || !car) return;
-    
+
     const loadShareStatus = async () => {
       try {
         const carDoc = await getDoc(doc(db, 'users', auth.currentUser!.uid, 'cars', activeCarId));
@@ -978,7 +911,7 @@ function DashboardContent({
               setShareStatus(profileData.visibility === 'disabled' ? 'stopped' : 'active');
               if (profileData.slug) {
                 setShareUrl(`${typeof window !== 'undefined' ? window.location.origin : ''}/s/${profileData.slug}`);
-              }
+      }
             } else {
               setShareStatus('none');
               setShareUrl(null);
@@ -1010,7 +943,7 @@ function DashboardContent({
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('ja-JP', { month: 'long' });
-      
+
       // その月のメンテナンス費用を計算
       const maintenanceCost = maintenanceRecords
         .filter(record => {
@@ -1396,7 +1329,7 @@ function DashboardContent({
                       <button 
                         onClick={() => {
                           console.log("Navigate to vehicle data, activeCarId:", activeCarId);
-                          setCurrentPage('my-car');
+                          router.push('/mycar');
                         }}
                       className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
                       >
@@ -1535,7 +1468,7 @@ function DashboardContent({
                   <p className="text-gray-500 mb-4 text-sm">オイル交換や車検の記録からでOKです</p>
                   <div className="flex items-center justify-center">
                     <button
-                      onClick={() => activeCarId ? setShowMaintenanceModal(true) : setCurrentPage('my-car')}
+                      onClick={() => activeCarId ? setShowMaintenanceModal(true) : router.push('/mycar')}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                     >
                       整備を追加
@@ -1696,7 +1629,7 @@ function DashboardContent({
                       <p className="text-gray-500 mb-4">1件目の給油を記録しましょう</p>
                       <div className="flex items-center justify-center">
                         <button
-                          onClick={() => activeCarId ? setShowFuelLogModal(true) : setCurrentPage('my-car')}
+                          onClick={() => activeCarId ? setShowFuelLogModal(true) : router.push('/mycar')}
                           className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                         >
                           給油を記録
@@ -1826,7 +1759,7 @@ function DashboardContent({
                     <p className="text-gray-500 mb-4 text-sm">タイヤ/ホイール/足回りなどからでOKです</p>
                     <div className="flex items-center justify-center">
                       <button
-                        onClick={() => (activeCarId && auth.currentUser) ? setShowCustomizationModal(true) : setCurrentPage('my-car')}
+                        onClick={() => (activeCarId && auth.currentUser) ? setShowCustomizationModal(true) : router.push('/mycar')}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
                       >
                         カスタマイズを追加
@@ -4320,6 +4253,24 @@ function NavItem({
     >
       {label}
     </button>
+  );
+}
+
+// URLベースのマイカーナビゲーションリンク
+function MyCarNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/mycar';
+  
+  return (
+    <Link
+      href="/mycar"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      マイカー
+    </Link>
   );
 }
 
