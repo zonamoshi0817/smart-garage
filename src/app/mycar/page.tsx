@@ -595,8 +595,8 @@ export default function MyCarPageRoute() {
               />
               <NavItem 
                 label="データ" 
-                active={false}
-                href="/home"
+                href="/data"
+                active={pathname === '/data'}
               />
             </nav>
 

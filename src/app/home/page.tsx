@@ -61,6 +61,7 @@ function SectionHeader({ title, subtitle, size = 'md', right }: { title: string;
 /* -------------------- ページ本体 -------------------- */
 export default function Home() {
   const router = useRouter();
+  const pathname = usePathname();
   const [cars, setCars] = useState<Car[]>([]);
   const [activeCarId, setActiveCarId] = useState<string | undefined>(undefined);
   const [showAddCarModal, setShowAddCarModal] = useState(false);
@@ -82,7 +83,7 @@ export default function Home() {
   const [showOCRModal, setShowOCRModal] = useState(false);
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
   const [currentUser, setCurrentUser] = useState<User | null>(null); // 現在のユーザー情報
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'car-management' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'share'>('dashboard');
+  const [currentPage, setCurrentPage] = useState<'dashboard' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'notifications' | 'share'>('dashboard');
   // 軽量トースト（成功フィードバック）
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   useEffect(() => {
@@ -553,16 +554,16 @@ export default function Home() {
             <MaintenanceNavLink />
             <CustomizationsNavLink />
             <ShareNavLink />
-            <NavItem 
-              label="車両管理" 
-              active={currentPage === 'car-management'} 
-              onClick={() => setCurrentPage('car-management')}
-            />
-            <NavItem 
-              label="データ" 
-              active={currentPage === 'data-management'} 
-              onClick={() => setCurrentPage('data-management')}
-            />
+            <CarManagementNavLink />
+            <Link
+              href="/data"
+              className={
+                "w-full text-left px-3 py-2 rounded-xl transition block " +
+                (pathname === '/data' ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+              }
+            >
+              データ
+            </Link>
             </nav>
 
             {/* 設定リンク */}
@@ -615,26 +616,6 @@ export default function Home() {
                 setShowCustomizationModal={setShowCustomizationModal}
                 setShowAddCarModal={setShowAddCarModal}
               />
-            ) : currentPage === 'car-management' ? (
-              <CarManagementContent 
-                cars={cars}
-                activeCarId={activeCarId}
-                setActiveCarId={setActiveCarId}
-                setShowAddCarModal={setShowAddCarModal}
-                setShowEditCarModal={setShowEditCarModal}
-                setEditingCar={setEditingCar}
-                maintenanceRecords={maintenanceRecords}
-                fuelLogs={fuelLogs}
-                customizations={customizations}
-                setCurrentPage={setCurrentPage}
-                setShowFuelLogModal={setShowFuelLogModal}
-                setShowMaintenanceModal={setShowMaintenanceModal}
-                setShowCustomizationModal={setShowCustomizationModal}
-                setShowSellCarModal={setShowSellCarModal}
-                setCarToSell={setCarToSell}
-                userPlan={userPlan}
-                checkFeature={checkFeature}
-              />
             ) : currentPage === 'share' ? (
               <ShareContent
                 cars={cars}
@@ -642,13 +623,6 @@ export default function Home() {
                 car={car}
                 maintenanceRecords={maintenanceRecords}
                 customizations={customizations}
-              />
-            ) : currentPage === 'data-management' ? (
-              <DataManagementContent 
-                cars={cars}
-                maintenanceRecords={allMaintenanceRecords}
-                customizations={customizations}
-                activeCarId={activeCarId}
               />
             ) : (
               <NotificationsContent 
@@ -841,7 +815,7 @@ function DashboardContent({
   maintenanceRecords: MaintenanceRecord[];
   fuelLogs: FuelLog[];
   customizations: Customization[];
-  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications' | 'my-car') => void;
+  setCurrentPage: (page: 'dashboard' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'notifications' | 'my-car') => void;
   setActiveCarId: (id: string) => void;
   setShowMaintenanceModal: (show: boolean) => void;
   setShowFuelLogModal: (show: boolean) => void;
@@ -3470,731 +3444,7 @@ function EditMaintenanceModal({
   );
 }
 
-function CarManagementContent({ 
-  cars, 
-  activeCarId, 
-  setActiveCarId, 
-  setShowAddCarModal,
-  setShowEditCarModal,
-  setEditingCar,
-  maintenanceRecords,
-  fuelLogs,
-  customizations,
-  setCurrentPage,
-  setShowFuelLogModal,
-  setShowMaintenanceModal,
-  setShowCustomizationModal,
-  setShowSellCarModal,
-  setCarToSell,
-  userPlan,
-  checkFeature
-}: {
-  cars: Car[];
-  activeCarId?: string;
-  setActiveCarId: (id: string) => void;
-  setShowAddCarModal: (show: boolean) => void;
-  setShowEditCarModal: (show: boolean) => void;
-  setEditingCar: (car: Car | null) => void;
-  maintenanceRecords: MaintenanceRecord[];
-  fuelLogs: FuelLog[];
-  customizations: Customization[];
-  setShowSellCarModal: (show: boolean) => void;
-  setCarToSell: (car: Car | null) => void;
-  setCurrentPage: (page: 'dashboard' | 'car-management' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'data-management' | 'notifications') => void;
-  setShowFuelLogModal: (show: boolean) => void;
-  setShowMaintenanceModal: (show: boolean) => void;
-  setShowCustomizationModal: (show: boolean) => void;
-  userPlan: 'free' | 'premium' | 'premium_monthly' | 'premium_yearly';
-  checkFeature: (feature: any, currentUsage?: any, variant?: any) => boolean;
-}) {
-
-  const handleDeleteCar = async (carId: string, carName: string) => {
-    if (!confirm(`「${carName}」を削除しますか？この操作は取り消せません。`)) {
-      return;
-    }
-    
-    try {
-      const { removeCar } = await import("@/lib/cars");
-      await removeCar(carId);
-      console.log("Car deleted successfully:", carId);
-      
-      // 削除された車が現在選択中の車の場合、選択を解除
-      if (activeCarId === carId) {
-        setActiveCarId("");
-      }
-    } catch (error) {
-      console.error("Error deleting car:", error);
-      alert("車両の削除に失敗しました。もう一度お試しください。");
-    }
-  };
-
-  const handleEditCar = (car: Car) => {
-    setEditingCar(car);
-    setShowEditCarModal(true);
-  };
-
-  // クイックアクションハンドラー
-  const handleAddFuel = (carId: string) => {
-    setActiveCarId(carId);
-    setShowFuelLogModal(true);
-  };
-
-  const handleAddMaintenance = (carId: string) => {
-    setActiveCarId(carId);
-    setShowMaintenanceModal(true);
-  };
-
-  const handleAddCustomization = (carId: string) => {
-    setActiveCarId(carId);
-    setShowCustomizationModal(true);
-  };
-
-  // 車両をステータスで分類
-  const activeCars = cars.filter(car => !car.status || car.status === 'active');
-  const soldCars = cars.filter(car => car.status === 'sold');
-  const scrappedCars = cars.filter(car => car.status === 'scrapped');
-  const downgradedCars = cars.filter(car => car.status === 'downgraded_premium');
-
-  return (
-    <>
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">車両管理</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              // 車両数制限をチェック
-              if (!checkFeature('multiple_cars', { carCount: activeCars.length }, 'minimal')) {
-                return;
-              }
-              setShowAddCarModal(true);
-            }}
-            className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-          >
-            + 車を追加
-          </button>
-        </div>
-      </div>
-
-      {/* 現在保有中の車両 */}
-      <div className="mb-8">
-        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <span>🚗</span>
-          <span>現在保有中</span>
-          <span className="text-sm font-normal text-gray-500">({activeCars.length}台)</span>
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeCars.length === 0 ? (
-          <div className="col-span-full bg-white rounded-2xl border border-gray-200 p-8 text-center">
-            <div className="text-gray-500 mb-4">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">車が登録されていません</h3>
-            <p className="text-gray-500 mb-4">まず車を追加して、メンテナンスを管理しましょう。</p>
-            <div className="flex gap-2 justify-center">
-              <button
-                onClick={() => {
-                  // 車両数制限をチェック
-                  if (!checkFeature('multiple_cars', { carCount: cars.length }, 'minimal')) {
-                    return;
-                  }
-                  setShowAddCarModal(true);
-                }}
-                className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
-              >
-                車を追加
-              </button>
-            </div>
-          </div>
-          ) : (
-            <>
-              {activeCars.map((car) => (
-                <CarCard
-                  key={car.id}
-                  car={car}
-                  isActive={car.id === activeCarId}
-                  onSelect={() => car.id && setActiveCarId(car.id)}
-                  onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
-                  onEdit={() => handleEditCar(car)}
-                  onMarkAsSold={() => {
-                    setCarToSell(car);
-                    setShowSellCarModal(true);
-                  }}
-                  maintenanceRecords={maintenanceRecords}
-                  fuelLogs={fuelLogs}
-                  onAddFuel={handleAddFuel}
-                  onAddMaintenance={handleAddMaintenance}
-                  onAddCustomization={handleAddCustomization}
-                  checkFeature={checkFeature}
-                />
-              ))}
-              
-              {/* 無料プランユーザー向けのアップグレード訴求 */}
-              {userPlan === 'free' && activeCars.length === 1 && (
-              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-dashed border-blue-300 p-6 flex flex-col items-center justify-center text-center hover:border-blue-400 transition">
-                <div className="text-4xl mb-3">🚗✨</div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  もう1台追加しませんか？
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  プレミアムプランなら、無制限に車両を登録できます。
-                </p>
-                <button
-                  onClick={() => {
-                    checkFeature('multiple_cars', { carCount: 999 }, 'hero');
-                  }}
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 font-bold hover:shadow-lg transition"
-                >
-                  プレミアムを見る
-                </button>
-              </div>
-            )}
-          </>
-          )}
-        </div>
-      </div>
-
-      {/* 売却済み車両 */}
-      {soldCars.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <span>📦</span>
-            <span>売却済み</span>
-            <span className="text-sm font-normal text-gray-500">({soldCars.length}台)</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {soldCars.map((car) => (
-              <CarCard
-                key={car.id}
-                car={car}
-                isActive={false}
-                isSold={true}
-                onSelect={() => {
-                  if (car.id) {
-                    setActiveCarId(car.id);
-                    setCurrentPage('my-car' as any);
-                  }
-                } }
-                onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
-                onEdit={() => handleEditCar(car)}
-                onMarkAsSold={() => { } }
-                maintenanceRecords={maintenanceRecords}
-                fuelLogs={fuelLogs}
-                onAddFuel={handleAddFuel}
-                onAddMaintenance={handleAddMaintenance}
-                onAddCustomization={handleAddCustomization} checkFeature={function (feature: any, currentUsage?: any, variant?: any): boolean {
-                  throw new Error("Function not implemented.");
-                } }              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 廃車済み車両 */}
-      {scrappedCars.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <span>🏭</span>
-            <span>廃車済み</span>
-            <span className="text-sm font-normal text-gray-500">({scrappedCars.length}台)</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {scrappedCars.map((car) => (
-              <CarCard
-                key={car.id}
-                car={car}
-                isActive={false}
-                isScrapped={true}
-                onSelect={() => {
-                  if (car.id) {
-                    setActiveCarId(car.id);
-                    setCurrentPage('my-car' as any);
-                  }
-                } }
-                onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
-                onEdit={() => handleEditCar(car)}
-                onMarkAsSold={() => { } }
-                maintenanceRecords={maintenanceRecords}
-                fuelLogs={fuelLogs}
-                onAddFuel={handleAddFuel}
-                onAddMaintenance={handleAddMaintenance}
-                onAddCustomization={handleAddCustomization} checkFeature={function (feature: any, currentUsage?: any, variant?: any): boolean {
-                  throw new Error("Function not implemented.");
-                } }              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ダウングレード車両（プラン制限） */}
-      {downgradedCars.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <span>🔒</span>
-            <span>閲覧専用（プラン制限）</span>
-            <span className="text-sm font-normal text-gray-500">({downgradedCars.length}台)</span>
-          </h2>
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">💡</span>
-              <div className="text-sm text-blue-800">
-                <p className="font-semibold mb-1">無料プランでは1台のみ編集可能です</p>
-                <p>
-                  プレミアムプランに再登録すると、これらの車両もすぐに編集できるようになります。
-                  過去データの閲覧・PDF出力は引き続き可能です。
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {downgradedCars.map((car) => (
-              <CarCard
-                key={car.id}
-                car={car}
-                isActive={false}
-                isDowngraded={true}
-                onSelect={() => {
-                  if (car.id) {
-                    setActiveCarId(car.id);
-                    setCurrentPage('my-car' as any);
-                  }
-                } }
-                onDelete={() => car.id && handleDeleteCar(car.id, car.name)}
-                onEdit={() => handleEditCar(car)}
-                onMarkAsSold={() => { } }
-                maintenanceRecords={maintenanceRecords}
-                fuelLogs={fuelLogs}
-                onAddFuel={handleAddFuel}
-                onAddMaintenance={handleAddMaintenance}
-                onAddCustomization={handleAddCustomization} checkFeature={function (feature: any, currentUsage?: any, variant?: any): boolean {
-                  throw new Error("Function not implemented.");
-                } }              />
-            ))}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-function CarCard({ 
-  car, 
-  isActive, 
-  isSold = false,
-  isScrapped = false,
-  isDowngraded = false,
-  onSelect,
-  onDelete,
-  onEdit,
-  onMarkAsSold,
-  maintenanceRecords,
-  fuelLogs,
-  onAddFuel,
-  onAddMaintenance,
-  onAddCustomization,
-  checkFeature
-}: { 
-  car: Car; 
-  isActive: boolean;
-  isSold?: boolean;
-  isScrapped?: boolean;
-  isDowngraded?: boolean;
-  onSelect: () => void;
-  onDelete: () => void;
-  onEdit: () => void;
-  onMarkAsSold: () => void;
-  maintenanceRecords: MaintenanceRecord[];
-  fuelLogs: FuelLog[];
-  onAddFuel: (carId: string) => void;
-  onAddMaintenance: (carId: string) => void;
-  onAddCustomization: (carId: string) => void;
-  checkFeature: (feature: any, currentUsage?: any, variant?: any) => boolean;
-}) {
-  // テスト車両でも編集・削除を許可（デバッグ用）
-  const isTestCar = false; // car.id?.startsWith('test');
-  
-  // ドロップダウンメニューの状態
-  const [showDropdown, setShowDropdown] = useState(false);
-  
-  // ドロップダウンメニューを閉じる
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowDropdown(false);
-    };
-    
-    if (showDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [showDropdown]);
-  
-  // 次のメンテナンスタスクを計算
-  const getNextMaintenanceTask = () => {
-    if (!car.id) return null;
-    
-    // この車のメンテナンス記録を取得
-    const carMaintenanceRecords = maintenanceRecords
-      .filter(record => record.carId === car.id)
-      .sort((a, b) => toMillis(b.date) - toMillis(a.date));
-    
-    if (carMaintenanceRecords.length === 0) return null;
-    
-    // 最新のメンテナンス記録を取得
-    const latestRecord = carMaintenanceRecords[0];
-    
-    // オイル交換の場合は5,000km後を想定
-    if (latestRecord.title.includes('オイル') || latestRecord.title.includes('オイル交換')) {
-      const nextMileage = (latestRecord.mileage || 0) + 5000;
-      const remainingKm = nextMileage - (car.odoKm || 0);
-      
-      if (remainingKm > 0) {
-        // avgKmPerMonthを使って期限日を推定
-        let estimatedDays: number | null = null;
-        if (car.avgKmPerMonth && car.avgKmPerMonth > 0) {
-          estimatedDays = Math.round((remainingKm / car.avgKmPerMonth) * 30);
-        }
-        
-        return {
-          title: 'オイル交換',
-          remainingKm,
-          nextMileage,
-          estimatedDays,
-          type: 'mileage'
-        };
-      }
-    }
-    
-    // その他のメンテナンスの場合は3ヶ月後を想定
-    const nextDate = toDate(latestRecord.date) || new Date();
-    nextDate.setMonth(nextDate.getMonth() + 3);
-    const today = new Date();
-    const daysUntilNext = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysUntilNext > 0) {
-      return {
-        title: latestRecord.title,
-        daysUntilNext,
-        nextDate,
-        type: 'date'
-      };
-    }
-    
-    return null;
-  };
-  
-  const nextTask = getNextMaintenanceTask();
-  
-  // 期限バッジの計算
-  const getDeadlineBadges = () => {
-    const badges = [];
-    
-    // 車検期限
-    if (car.inspectionExpiry) {
-      const expiryDate = car.inspectionExpiry.toDate ? car.inspectionExpiry.toDate() : new Date(car.inspectionExpiry as any);
-      const today = new Date();
-      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysUntilExpiry > 0) {
-        let badgeColor = 'bg-gray-100 text-gray-700';
-        if (daysUntilExpiry <= 30) {
-          badgeColor = 'bg-red-100 text-red-700';
-        } else if (daysUntilExpiry <= 60) {
-          badgeColor = 'bg-yellow-100 text-yellow-700';
-        }
-        
-        badges.push({
-          type: 'inspection',
-          text: `車検 ${daysUntilExpiry}日`,
-          color: badgeColor
-        });
-      }
-    }
-    
-    // 保険期限（現在は未実装のため、ダミーデータ）
-    // TODO: 保険データが実装されたら実際の期限を計算
-    
-    return badges;
-  };
-  
-  const deadlineBadges = getDeadlineBadges();
-  
-  return (
-    <div 
-      className={`bg-white rounded-2xl border p-4 transition relative ${
-        isSold || isScrapped || isDowngraded
-          ? 'border-gray-300 opacity-75'
-          : isActive 
-          ? 'border-blue-500 ring-2 ring-blue-100' 
-          : 'border-gray-200 hover:border-gray-300'
-      }`}
-    >
-      {/* ステータスバッジ（売却済み・廃車済み・ダウングレード） */}
-      {isSold && (
-        <div className="absolute top-2 left-2 z-10">
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 border border-orange-300">
-            📦 売却済み
-          </span>
-        </div>
-      )}
-      {isScrapped && (
-        <div className="absolute top-2 left-2 z-10">
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300">
-            🏭 廃車済み
-          </span>
-        </div>
-      )}
-      {isDowngraded && (
-        <div className="absolute top-2 left-2 z-10">
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-300">
-            🔒 閲覧専用
-          </span>
-        </div>
-      )}
-    
-      {/* 編集・削除ボタン（テスト車両以外） - 右上に1つだけ */}
-      {!isTestCar && (
-        <div className="absolute top-3 right-3">
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDropdown(!showDropdown);
-              }}
-              className="w-9 h-9 rounded-xl bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-700 transition-all flex items-center justify-center shadow-md border border-gray-200 hover:border-gray-300 hover:shadow-lg"
-              title="車両設定"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
-            
-            {/* ドロップダウンメニュー */}
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-20 overflow-hidden">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                    setShowDropdown(false);
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors flex items-center gap-3"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  <span>編集</span>
-                </button>
-                {!isSold && !isScrapped && !isDowngraded ? (
-                  <>
-                    <div className="h-px bg-gray-200 my-1"></div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMarkAsSold();
-                        setShowDropdown(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-medium text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-3"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
-                      <span>売却済みにする</span>
-                    </button>
-                  </>
-                ) : isSold || isScrapped ? (
-                  <>
-                    <div className="h-px bg-gray-200 my-1"></div>
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (confirm(`「${car.name}」を現在保有中に戻しますか？`)) {
-                          try {
-                            const { restoreCarToActive } = await import("@/lib/cars");
-                            await restoreCarToActive(car.id!);
-                          } catch (error) {
-                            console.error('Error restoring car:', error);
-                            alert('復元に失敗しました');
-                          }
-                        }
-                        setShowDropdown(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm font-medium text-green-600 hover:bg-green-50 transition-colors flex items-center gap-3"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                      </svg>
-                      <span>現在保有中に戻す</span>
-                    </button>
-                  </>
-                ) : isDowngraded ? (
-                  <>
-                    <div className="h-px bg-gray-200 my-1"></div>
-                    <div className="px-4 py-3 text-sm text-blue-700 bg-blue-50 rounded-lg mx-2">
-                      <p className="font-semibold mb-1">🚀 編集するには</p>
-                      <p className="text-xs text-blue-600 mb-2">
-                        プレミアムプランに再登録すると、この車両を編集できるようになります。
-                      </p>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // ペイウォール表示（将来実装）
-                          checkFeature('multiple_cars', { carCount: 999 }, 'hero');
-                          setShowDropdown(false);
-                        }}
-                        className="text-xs font-semibold text-blue-700 hover:text-blue-800 underline"
-                      >
-                        プレミアムを見る →
-                      </button>
-                    </div>
-                  </>
-                ) : null}
-                <div className="h-px bg-gray-200 my-1"></div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                    setShowDropdown(false);
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <span>削除</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {/* 車両情報（クリック可能） */}
-      <div 
-        className="cursor-pointer"
-        onClick={() => {
-          console.log("Car card clicked:", car.name, car.id);
-          onSelect();
-        }}
-      >
-        <div className="aspect-video rounded-xl overflow-hidden bg-gray-100 mb-4">
-          <img
-            src={car.imagePath || "/car.jpg"}
-            alt={car.name}
-            className="w-full h-full object-cover"
-            onLoad={() => {
-              // 画像読み込み完了時の処理（必要に応じて）
-            }}
-            onError={() => {
-              // 画像読み込みエラー時の処理（必要に応じて）
-            }}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <h3 className="font-semibold text-lg">
-            {car.name}
-            {car.modelCode && `（${car.modelCode}）`}
-          </h3>
-          
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {car.year && (
-              <div>
-                <span className="text-gray-500">年式:</span>
-                <span className="ml-1 font-medium">{car.year}年</span>
-              </div>
-            )}
-            {car.odoKm && (
-              <div>
-                <span className="text-gray-500">走行距離:</span>
-                <span className="ml-1 font-medium">{car.odoKm.toLocaleString()} km</span>
-              </div>
-            )}
-          </div>
-          
-          {/* 次にやること */}
-          {nextTask && (
-            <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-xs text-blue-700 font-medium">
-                次: {nextTask.title}
-                {nextTask.type === 'mileage' ? (
-                  <>
-                    <span className="ml-1">
-                      {nextTask.remainingKm?.toLocaleString()}km後
-                    </span>
-                    {nextTask.estimatedDays && (
-                      <span className="ml-1 text-blue-600">
-                        （概ね{nextTask.estimatedDays}日後）
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span className="ml-1">
-                    {nextTask.daysUntilNext}日後
-                  </span>
-                )}
-              </div>
-              {nextTask.type === 'date' && nextTask.nextDate && (
-                <div className="text-xs text-blue-600 mt-1">
-                  {(nextTask.nextDate instanceof Date ? nextTask.nextDate : new Date()).toLocaleDateString('ja-JP')}
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* 期限バッジ */}
-          {deadlineBadges.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {deadlineBadges.map((badge, index) => (
-                <span
-                  key={index}
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}
-                >
-                  {badge.text}
-                </span>
-              ))}
-            </div>
-          )}
-          
-          {isActive && !isSold && !isScrapped && (
-            <div className="text-xs text-blue-600 font-medium">
-              現在選択中
-            </div>
-          )}
-          
-          {/* 売却情報 */}
-          {isSold && car.soldDate && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <div className="text-xs text-gray-600 space-y-1">
-                <div>
-                  売却日: <span className="font-semibold text-gray-800">
-                    {toDate(car.soldDate)?.toLocaleDateString('ja-JP') || '---'}
-                  </span>
-                </div>
-                {car.soldPrice && (
-                  <div>
-                    売却価格: <span className="font-semibold text-orange-600">
-                      ¥{car.soldPrice.toLocaleString()}
-                    </span>
-                  </div>
-                )}
-                {car.soldTo && (
-                  <div>
-                    売却先: <span className="font-semibold text-gray-800">{car.soldTo}</span>
-                  </div>
-                )}
-                {car.soldNotes && (
-                  <div className="text-gray-700 mt-2">{car.soldNotes}</div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+// CarManagementContentとCarCardは/cars/page.tsxに移動しました
 
 /* -------------------- 小さなUI部品 -------------------- */
 function NavItem({ 
@@ -4304,6 +3554,23 @@ function ShareNavLink() {
       }
     >
       共有
+    </Link>
+  );
+}
+
+function CarManagementNavLink() {
+  const pathname = usePathname();
+  const isActive = pathname === '/cars';
+  
+  return (
+    <Link
+      href="/cars"
+      className={
+        "w-full text-left px-3 py-2 rounded-xl transition block " +
+        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
+      }
+    >
+      車両管理
     </Link>
   );
 }

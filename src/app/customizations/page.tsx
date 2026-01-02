@@ -898,8 +898,8 @@ export default function CustomizationsPageRoute() {
               />
               <NavItem 
                 label="データ" 
-                active={false}
-                href="/home"
+                href="/data"
+                active={pathname === '/data'}
               />
             </nav>
 

@@ -1435,8 +1435,8 @@ export default function MaintenancePageRoute() {
               />
               <NavItem 
                 label="データ" 
-                active={false}
-                href="/home"
+                href="/data"
+                active={pathname === '/data'}
               />
             </nav>
 
