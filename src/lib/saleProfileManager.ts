@@ -141,12 +141,12 @@ export async function updateSaleProfileVisibility(
 /**
  * 用途別ShareProfileを作成（新規実装）
  * @param vehicleId 車両ID
- * @param type 用途種別（'normal' | 'sale' | 'appraisal'）
+ * @param type 用途種別（'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser'）
  * @param options オプション
  */
 export async function createShareProfile(
   vehicleId: string,
-  type: 'normal' | 'sale' | 'appraisal',
+  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser',
   options: {
     title?: string;
     includeEvidence?: boolean;

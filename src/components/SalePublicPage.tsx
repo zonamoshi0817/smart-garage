@@ -8,17 +8,13 @@ import { useEffect } from 'react';
 import type { SalePublicViewModel } from '@/lib/saleProfile';
 import ConsumablesTable from './ConsumablesTable';
 import EvidenceGallery from './EvidenceGallery';
-import CopyTemplateButton from './CopyTemplateButton';
 
 interface SalePublicPageProps {
   viewModel: SalePublicViewModel;
   visibility: 'unlisted' | 'public' | 'disabled';
   analyticsEnabled: boolean;
-  type?: 'normal' | 'sale' | 'appraisal'; // 用途種別（デフォルト: 'sale'）
+  type?: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser'; // 用途種別（デフォルト: 'sale'）
 }
-
-// Feature flag: テンプレートブロックの表示制御
-const SHOW_TEMPLATE_BLOCK = false;
 
 export default function SalePublicPage({
   viewModel,
@@ -30,8 +26,10 @@ export default function SalePublicPage({
   
   // 用途別の表示内容を決定
   const isNormal = type === 'normal';
-  const isSale = type === 'sale';
-  const isAppraisal = type === 'appraisal';
+  const isSale = type === 'sale' || type === 'sale_buyer';
+  const isAppraisal = type === 'appraisal' || type === 'sale_appraiser';
+  const isBuyer = type === 'sale_buyer';
+  const isAppraiser = type === 'sale_appraiser';
 
   // ページビューイベントを記録
   useEffect(() => {
@@ -86,8 +84,8 @@ export default function SalePublicPage({
     if (isNormal) {
       // 通常: シンプルな車両サマリーのみ（体験重視）
       return null; // 通常は要点セクションを表示しない
-    } else if (isSale) {
-      // 売却: 直近整備/消耗品交換/総費用/管理指標
+    } else if (isSale || isBuyer) {
+      // 買い手向け: 直近整備/消耗品交換/総費用/管理指標（見栄えと安心中心）
       const totalCost = viewModel.recent12MonthsSummary.reduce((sum, item) => sum + (item.amountYen || 0), 0);
       const maintenanceCount = viewModel.recent12MonthsSummary.length;
       const evidenceRate = maintenanceCount > 0 
@@ -181,8 +179,8 @@ export default function SalePublicPage({
           </div>
         </section>
       );
-    } else if (isAppraisal) {
-      // 査定: 交換履歴一覧/検証ID（一覧性重視）
+    } else if (isAppraisal || isAppraiser) {
+      // 査定会社向け: 交換履歴一覧/検証ID（確認可能性中心）
       return (
         <section className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">査定の要点</h2>
@@ -473,20 +471,6 @@ export default function SalePublicPage({
             </a>
           </div>
         </section>
-
-        {/* コピペ文生成（feature flagで非表示） */}
-        {SHOW_TEMPLATE_BLOCK && (
-          <section className="bg-white rounded-2xl border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              査定依頼用メッセージ
-            </h2>
-            <CopyTemplateButton
-              slug={slug}
-              vehicle={viewModel.vehicle}
-              analyticsEnabled={analyticsEnabled}
-            />
-          </section>
-        )}
 
         {/* フッター（閲覧専用の明示） */}
         <div className="mt-8 pt-6 border-t border-gray-200 text-center">

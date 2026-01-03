@@ -581,7 +581,7 @@ export interface UserDocument {
 export interface ShareProfile extends BaseEntity {
   vehicleId: string;                       // 車両ID（users/{userId}/cars/{carId}のcarId）
   ownerUid: string;                        // オーナーUID
-  type: 'normal' | 'sale' | 'appraisal';  // 用途種別（新規追加）
+  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';  // 用途種別（新規追加）
   status: 'active' | 'disabled';           // ステータス（visibilityの代替、新規追加）
   slug: string;                            // URLスラッグ（例: "abc123"）
   

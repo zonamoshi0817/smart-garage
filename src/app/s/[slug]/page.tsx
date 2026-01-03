@@ -125,9 +125,15 @@ export default async function SalePublicPageRoute({ params }: PageProps) {
   // ShareProfileのtypeを取得（後方互換性のため、typeがなければ'sale'とみなす）
   const shareProfileType = (saleProfile as any).type || 'sale';
   
+  // sale_buyerとsale_appraiserはsaleとして扱う（後方互換性）
+  const normalizedType = shareProfileType === 'sale_buyer' || shareProfileType === 'sale_appraiser' 
+    ? shareProfileType 
+    : (shareProfileType === 'sale' || shareProfileType === 'appraisal' ? shareProfileType : 'sale');
+  
   // activeShareProfileIdsまたはactiveSaleProfileIdをチェック
   const activeIds = vehicle.activeShareProfileIds || {};
   const isActive = 
+    (activeIds[normalizedType] === saleProfile.id) ||
     (activeIds[shareProfileType] === saleProfile.id) ||
     (vehicle.activeSaleProfileId === saleProfile.id); // 後方互換
   
@@ -203,7 +209,7 @@ export default async function SalePublicPageRoute({ params }: PageProps) {
       viewModel={viewModel}
       visibility={saleProfile.visibility}
       analyticsEnabled={saleProfile.analyticsEnabled}
-      type={shareProfileType as 'normal' | 'sale' | 'appraisal'}
+      type={normalizedType as 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser'}
     />
   );
 }
