@@ -73,13 +73,17 @@ export default function SalePublicPage({
     return `¥${yen.toLocaleString()}`;
   };
 
-  // 査定士向け要点データを計算
-  const latestMaintenance = viewModel.recent12MonthsSummary.length > 0 
-    ? viewModel.recent12MonthsSummary[0]
+  // 査定士向け要点データを計算（安全なデフォルト値を使用）
+  const recent12MonthsSummary = viewModel.recent12MonthsSummary || [];
+  const consumables = viewModel.consumables || [];
+  const evidences = viewModel.evidences || [];
+  
+  const latestMaintenance = recent12MonthsSummary.length > 0 
+    ? recent12MonthsSummary[0]
     : null;
   
-  const consumablesSummary = viewModel.consumables
-    .filter(c => c.lastReplacedDate)
+  const consumablesSummary = consumables
+    .filter(c => c && c.lastReplacedDate)
     .sort((a, b) => {
       const timeA = a.lastReplacedDate ? new Date(a.lastReplacedDate).getTime() : 0;
       const timeB = b.lastReplacedDate ? new Date(b.lastReplacedDate).getTime() : 0;
@@ -87,7 +91,7 @@ export default function SalePublicPage({
     })
     .slice(0, 3); // 最新3件
 
-  const evidenceCount = viewModel.evidences.length;
+  const evidenceCount = evidences.length;
 
   // 用途別のサマリーセクション（最上段）
   const renderSummarySection = () => {
@@ -96,22 +100,24 @@ export default function SalePublicPage({
       return null; // 通常は要点セクションを表示しない
     } else if (isSale || isBuyer) {
       // 買い手向け: 直近整備/消耗品交換/総費用/管理指標（見栄えと安心中心）
-      const totalCost = viewModel.recent12MonthsSummary.reduce((sum, item) => sum + (item.amountYen || 0), 0);
-      const maintenanceCount = viewModel.recent12MonthsSummary.length;
+      const totalCost = recent12MonthsSummary.reduce((sum, item) => sum + (item?.amountYen || 0), 0);
+      const maintenanceCount = recent12MonthsSummary.length;
       const evidenceRate = maintenanceCount > 0 
         ? Math.round((evidenceCount / maintenanceCount) * 100) 
         : 0;
       
       // 継続記録期間を計算（最初の記録から最後の記録まで）
       let recordPeriod = '---';
-      if (viewModel.recent12MonthsSummary.length > 0) {
-        const sorted = [...viewModel.recent12MonthsSummary].sort((a, b) => 
+      if (recent12MonthsSummary.length > 0) {
+        const sorted = [...recent12MonthsSummary].filter(item => item?.date).sort((a, b) => 
           new Date(a.date).getTime() - new Date(b.date).getTime()
         );
-        const firstDate = new Date(sorted[0].date);
-        const lastDate = new Date(sorted[sorted.length - 1].date);
-        const months = Math.round((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
-        recordPeriod = `${months}ヶ月`;
+        if (sorted.length > 0) {
+          const firstDate = new Date(sorted[0].date);
+          const lastDate = new Date(sorted[sorted.length - 1].date);
+          const months = Math.round((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+          recordPeriod = `${months}ヶ月`;
+        }
       }
 
       // 車検残日数を計算
@@ -204,13 +210,13 @@ export default function SalePublicPage({
       const customizationCount = viewModel.recordCounts?.customization || 0;
       
       // C. 証跡（マスク済）
-      const evidenceBreakdown = viewModel.evidences.length > 0 
+      const evidenceBreakdown = evidences.length > 0 
         ? '領収書・明細等' // 簡易表示（将来的に内訳を追加可能）
         : '';
       
       // D. 消耗品（登録済/未登録）
-      const consumablesRegistered = viewModel.consumables.filter(c => c.lastReplacedDate).length;
-      const consumablesTotal = viewModel.consumables.length; // 固定5項目（oil, tire, brake, battery, coolant）
+      const consumablesRegistered = consumables.filter(c => c && c.lastReplacedDate).length;
+      const consumablesTotal = consumables.length; // 固定5項目（oil, tire, brake, battery, coolant）
       const consumablesUnregistered = consumablesTotal - consumablesRegistered;
       
       return (
@@ -336,9 +342,9 @@ export default function SalePublicPage({
               </p>
             </div>
           )}
-          {viewModel.recent12MonthsSummary.length > 0 ? (
+          {recent12MonthsSummary.length > 0 ? (
             <div className="space-y-3">
-              {viewModel.recent12MonthsSummary.map((item, index) => (
+              {recent12MonthsSummary.map((item, index) => (
                 <div
                   key={index}
                   className="border-b border-gray-100 pb-3 last:border-b-0"
@@ -383,12 +389,12 @@ export default function SalePublicPage({
           <h2 className="text-xl font-bold text-gray-900 mb-4">
             交換履歴一覧
           </h2>
-          <ConsumablesTable consumables={viewModel.consumables} />
-          {viewModel.recent12MonthsSummary.length > 0 && (
+          <ConsumablesTable consumables={consumables} />
+          {recent12MonthsSummary.length > 0 && (
             <div className="mt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">主要整備履歴</h3>
               <div className="space-y-3">
-                {viewModel.recent12MonthsSummary
+                {recent12MonthsSummary
                   .filter(item => {
                     // 大きな修理・重要カスタムを抽出
                     const categories = ['エンジン', 'トランスミッション', 'サスペンション', 'ブレーキ', 'ボディ', '冷却', '電気'];
@@ -430,7 +436,7 @@ export default function SalePublicPage({
           <h2 className="text-xl font-bold text-gray-900 mb-4">
             消耗品交換一覧
           </h2>
-          <ConsumablesTable consumables={viewModel.consumables} />
+          <ConsumablesTable consumables={consumables} />
         </section>
         )}
 
@@ -467,12 +473,12 @@ export default function SalePublicPage({
 
         {/* 証跡（includeEvidenceがtrueの場合のみ） */}
         {/* visibility='disabled'の場合は証跡を表示しない（既に404だが、念のため） */}
-        {viewModel.evidences.length > 0 && visibility !== 'disabled' && (
+        {evidences.length > 0 && visibility !== 'disabled' && (
           <section className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
               {isNormal ? 'メンテナンス証跡' : '証跡（マスク済み）'}
             </h2>
-            <EvidenceGallery evidences={viewModel.evidences} />
+            <EvidenceGallery evidences={evidences} />
           </section>
         )}
 
@@ -520,7 +526,7 @@ export default function SalePublicPage({
                   <li>売りポイント（自動生成）</li>
                   <li>直近12ヶ月サマリー</li>
                   <li>消耗品交換一覧</li>
-                  {viewModel.evidences.length > 0 && <li>証跡（マスク済み）</li>}
+                  {evidences.length > 0 && <li>証跡（マスク済み）</li>}
                   <li>検証ID（ブロックチェーン検証ID）</li>
                 </ul>
               </div>
@@ -546,7 +552,7 @@ export default function SalePublicPage({
                 譲渡用PDF
               </a>
               <div className="mt-2 text-xs text-gray-600">
-                整備履歴（詳細） + 消耗品一覧 + {viewModel.evidences.length > 0 ? '証跡一覧' : '（証跡なし）'}
+                整備履歴（詳細） + 消耗品一覧 + {evidences.length > 0 ? '証跡一覧' : '（証跡なし）'}
               </div>
               <button
                 onClick={(e) => {
@@ -566,7 +572,7 @@ export default function SalePublicPage({
                   <li>次回推奨メンテナンス（自動生成）</li>
                   <li>重要整備履歴（主要カテゴリ中心）</li>
                   <li>消耗品交換一覧（推奨交換時期付き）</li>
-                  {viewModel.evidences.length > 0 && <li>証跡一覧</li>}
+                  {evidences.length > 0 && <li>証跡一覧</li>}
                 </ul>
               </div>
             </div>
