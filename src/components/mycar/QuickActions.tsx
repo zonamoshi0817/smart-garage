@@ -55,11 +55,16 @@ export default function QuickActions({ actions, isPremium, onLockedClick }: Quic
         </button>
       )}
 
+      {/* 左側フェード（スクロール可能を示す） */}
+      {showLeftScroll && (
+        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent pointer-events-none z-0" />
+      )}
+
       {/* アクションボタン（横スクロール） */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex gap-2.5 sm:gap-3 lg:gap-4 overflow-x-auto scrollbar-hide py-2 px-1"
+        className="flex gap-2.5 sm:gap-3 lg:gap-4 overflow-x-auto scrollbar-hide py-2 px-1 relative"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {actions.map((action) => {
@@ -98,11 +103,17 @@ export default function QuickActions({ actions, isPremium, onLockedClick }: Quic
         })}
       </div>
 
+      {/* 右側フェード（スクロール可能を示す） */}
+      {showRightScroll && (
+        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none z-0" />
+      )}
+
       {/* 右スクロールボタン */}
       {showRightScroll && (
         <button
           onClick={() => scroll('right')}
           className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors"
+          title="他の操作を見る"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

@@ -277,7 +277,7 @@ export default function VehicleHealthIndicator({
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="font-semibold text-sm text-gray-900">{item.label}</div>
                   <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${styles.badgeBg} ${styles.badgeText} border ${styles.badgeBorder}`}>
-                    {item.status === 'good' ? '良好' : item.status === 'warning' ? '注意' : item.status === 'critical' ? '要対応' : '要記録'}
+                    {item.status === 'good' ? '良好' : item.status === 'warning' ? '注意' : item.status === 'critical' ? '超過' : '未登録'}
                   </span>
                 </div>
                 <div className="space-y-1">
@@ -304,9 +304,8 @@ export default function VehicleHealthIndicator({
                     </>
                   ) : item.id === 'oil' ? (
                     <>
-                      <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 記録を追加してください</div>
+                      <div className="text-sm font-semibold text-gray-900 mb-1">交換日を登録すると次回目安を自動計算します</div>
                       <div className="text-xs text-gray-500">目安: 5,000km または 6ヶ月ごと（推奨値）</div>
-                      <div className="text-xs text-gray-600 mt-1">記録がないため未判定です</div>
                     </>
                   ) : null}
                   
@@ -333,9 +332,8 @@ export default function VehicleHealthIndicator({
                     </>
                   ) : item.id === 'brake-tire' ? (
                     <>
-                      <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 記録を追加してください</div>
+                      <div className="text-sm font-semibold text-gray-900 mb-1">交換日を登録すると次回目安を自動計算します</div>
                       <div className="text-xs text-gray-500">目安: ブレーキ30,000km / タイヤ40,000kmごと（推奨値）</div>
-                      <div className="text-xs text-gray-600 mt-1">記録がないため未判定です</div>
                     </>
                   ) : null}
                   
@@ -362,15 +360,14 @@ export default function VehicleHealthIndicator({
                     </>
                   ) : item.id === 'battery' ? (
                     <>
-                      <div className="text-sm font-semibold text-gray-900 mb-1">次回目安: 記録を追加してください</div>
+                      <div className="text-sm font-semibold text-gray-900 mb-1">交換日を登録すると次回目安を自動計算します</div>
                       <div className="text-xs text-gray-500">目安: 36ヶ月ごと（推奨値）</div>
-                      <div className="text-xs text-gray-600 mt-1">記録がないため未判定です</div>
                     </>
                   ) : null}
                 </div>
               </div>
               
-              {/* 追加ボタン（文字付き） */}
+              {/* 追加ボタン（具体化） */}
               <div className="flex-shrink-0">
                 <div
                   onClick={(e) => {
@@ -391,7 +388,10 @@ export default function VehicleHealthIndicator({
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                  <span className="hidden sm:inline">追加</span>
+                  <span className="hidden sm:inline">
+                    {item.id === 'oil' ? '交換を記録' : item.id === 'brake-tire' ? '交換を記録' : item.id === 'battery' ? '交換を記録' : '追加'}
+                  </span>
+                  <span className="sm:hidden">追加</span>
                 </div>
               </div>
             </button>

@@ -72,6 +72,8 @@ export default function CustomPartsPanel({
   
   // 開閉状態を管理
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  // フィルタ状態（カスタムありのみ表示）
+  const [showCustomOnly, setShowCustomOnly] = useState(true);
   
   const toggleCategory = (category: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -84,37 +86,94 @@ export default function CustomPartsPanel({
   };
 
   const installedCount = customizations.filter(c => c.status === 'installed').length;
+  
+  // カスタムありのカテゴリのみフィルタ
+  const filteredCategories = useMemo(() => {
+    if (!showCustomOnly) {
+      return Object.entries(customizationsByCategory);
+    }
+    return Object.entries(customizationsByCategory).filter(([_, items]) => items.length > 0);
+  }, [customizationsByCategory, showCustomOnly]);
+  
+  // 最終更新日を計算
+  const lastUpdatedDate = useMemo(() => {
+    if (customizations.length === 0) return null;
+    const dates = customizations
+      .filter(c => c.status === 'installed' && c.installedDate)
+      .map(c => {
+        const date = c.installedDate;
+        if (!date) return null;
+        if (date instanceof Date) return date;
+        if (typeof date === 'object' && 'toDate' in date && typeof date.toDate === 'function') {
+          try {
+            return date.toDate();
+          } catch {
+            return null;
+          }
+        }
+        const parsed = new Date(date);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      })
+      .filter((d): d is Date => d !== null);
+    
+    if (dates.length === 0) return null;
+    return new Date(Math.max(...dates.map(d => d.getTime())));
+  }, [customizations]);
 
   return (
     <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200">
       {/* ヘッダー */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
-        <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <span className="flex-shrink-0">🔧</span>
-          <span className="break-words">カスタムパーツ一覧</span>
+      <div className="flex flex-col gap-2 sm:gap-0 mb-3 sm:mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="flex-shrink-0">🔧</span>
+            <span className="break-words">カスタムパーツ一覧</span>
+            {installedCount > 0 && (
+              <span className="text-xs sm:text-sm font-normal text-gray-500 flex-shrink-0 hidden sm:inline">
+                ({installedCount}件のカスタマイズ)
+              </span>
+            )}
+          </h2>
           {installedCount > 0 && (
-            <span className="text-xs sm:text-sm font-normal text-gray-500 flex-shrink-0 hidden sm:inline">
-              ({installedCount}件のカスタマイズ)
-            </span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0">
+              <span className="text-xs text-gray-500 sm:hidden">
+                ({installedCount}件のカスタマイズ)
+              </span>
+              <button
+                onClick={() => {
+                  if (expandedCategories.size > 0) {
+                    setExpandedCategories(new Set());
+                  } else {
+                    setExpandedCategories(new Set(Object.keys(customizationsByCategory)));
+                  }
+                }}
+                className="text-xs sm:text-sm text-cyan-600 hover:text-cyan-800 font-semibold transition-colors whitespace-nowrap"
+              >
+                {expandedCategories.size > 0 ? '全て閉じる' : '全て開く'}
+              </button>
+            </div>
           )}
-        </h2>
+        </div>
+        {/* サマリーとフィルタ */}
         {installedCount > 0 && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0">
-            <span className="text-xs text-gray-500 sm:hidden">
-              ({installedCount}件のカスタマイズ)
-            </span>
-            <button
-              onClick={() => {
-                if (expandedCategories.size > 0) {
-                  setExpandedCategories(new Set());
-                } else {
-                  setExpandedCategories(new Set(Object.keys(customizationsByCategory)));
-                }
-              }}
-              className="text-xs sm:text-sm text-cyan-600 hover:text-cyan-800 font-semibold transition-colors whitespace-nowrap"
-            >
-              {expandedCategories.size > 0 ? '全て閉じる' : '全て開く'}
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-3">
+              <span>カスタム合計: <span className="font-semibold text-gray-900">{installedCount}件</span></span>
+              {lastUpdatedDate && (
+                <span>最終更新: <span className="font-semibold text-gray-900">
+                  {lastUpdatedDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </span></span>
+              )}
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showCustomOnly}
+                onChange={(e) => setShowCustomOnly(e.target.checked)}
+                className="w-4 h-4 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
+              />
+              <span className="text-xs">カスタムありのみ</span>
+            </label>
           </div>
         )}
       </div>
@@ -143,7 +202,7 @@ export default function CustomPartsPanel({
             </div>
           </div>
         )}
-        {Object.entries(customizationsByCategory).map(([category, items]) => {
+        {filteredCategories.map(([category, items]) => {
           // 空のカテゴリも表示（純正パーツとして）
           const hasCustom = items.length > 0;
           const categoryInfo = categoryLabels[category as keyof typeof categoryLabels];
@@ -199,10 +258,10 @@ function PartAccordion({
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-2">
           {isStock ? (
-            <span className="text-xs sm:text-sm text-gray-500 italic whitespace-nowrap">純正</span>
+            <span className="text-xs sm:text-sm text-gray-400 italic whitespace-nowrap opacity-60">純正</span>
           ) : (
             <span className="text-[10px] sm:text-xs bg-cyan-600 text-white px-1.5 sm:px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
-              カスタム {parts.length}
+              カスタム {parts.length}件
             </span>
           )}
           <svg 

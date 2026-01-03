@@ -344,11 +344,11 @@ export default function MyCarPage({
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50/30 p-3 sm:p-4 lg:p-5 shadow-sm">
+              <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 lg:p-5 shadow-sm opacity-90">
                 <SectionHeader
                   title="クイック操作"
                   subtitle="よく使う操作に素早くアクセス"
-                  right={<div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md"><span>⚡ ショートカット</span></div>}
+                  size="sm"
                 />
                 <div className="mt-3 sm:mt-4 -mx-1">
                   <QuickActions

@@ -135,7 +135,8 @@ export default function VehicleHeader({
           {latestMaintenance && (
             <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
               <span className="text-xs font-semibold">
-                直近メンテ: {formatMaintenanceDate(latestMaintenance)}
+                直近整備: {formatMaintenanceDate(latestMaintenance)}
+                {latestMaintenance.title && `（${latestMaintenance.title}）`}
               </span>
             </div>
           )}
