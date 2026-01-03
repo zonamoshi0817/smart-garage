@@ -53,6 +53,16 @@ export default function SalePublicPage({
     }).format(dateObj);
   };
 
+  // PR2: YYYY/MM/DD形式の日付フォーマット
+  const formatDateShort = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return new Intl.DateTimeFormat('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(dateObj);
+  };
+
   const formatMileage = (km?: number) => {
     if (!km) return '---';
     return `${km.toLocaleString()}km`;
@@ -117,23 +127,23 @@ export default function SalePublicPage({
           <h2 className="text-xl font-bold text-gray-900 mb-4">査定の要点</h2>
           <div className="grid md:grid-cols-4 gap-4">
             {/* 直近整備 */}
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">直近整備</div>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-2">直近整備</div>
               {latestMaintenance ? (
                 <div>
                   <div className="font-semibold text-gray-900 text-sm">{latestMaintenance.title}</div>
-                  <div className="text-xs text-gray-600 mt-1">
+                  <div className="text-xs text-gray-700 mt-1">
                     {formatDate(latestMaintenance.date)}
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-gray-500">記録なし</div>
+                <div className="text-sm text-gray-700">記録なし</div>
               )}
             </div>
 
             {/* 消耗品交換の最新 */}
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">消耗品交換</div>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-2">消耗品交換</div>
               {consumablesSummary.length > 0 ? (
                 <div className="space-y-1">
                   {consumablesSummary.slice(0, 2).map((item) => {
@@ -145,7 +155,7 @@ export default function SalePublicPage({
                       coolant: 'クーラント',
                     };
                     return (
-                      <div key={item.type} className="text-xs">
+                      <div key={item.type} className="text-xs text-gray-900">
                         <span className="font-medium">{typeLabels[item.type]}:</span>{' '}
                         {item.lastReplacedDate ? formatDate(item.lastReplacedDate).split('年')[0] + '年' : '---'}
                       </div>
@@ -153,14 +163,14 @@ export default function SalePublicPage({
                   })}
                 </div>
               ) : (
-                <div className="text-sm text-gray-500">記録なし</div>
+                <div className="text-sm text-gray-700">記録なし</div>
               )}
             </div>
 
             {/* 管理指標 */}
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">管理指標</div>
-              <div className="space-y-1 text-xs">
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-2">管理指標</div>
+              <div className="space-y-1 text-xs text-gray-900">
                 <div>記録期間: {recordPeriod}</div>
                 <div>証憑率: {evidenceRate}%</div>
                 <div>総費用: {formatAmount(totalCost)}</div>
@@ -171,60 +181,90 @@ export default function SalePublicPage({
             </div>
 
             {/* 証跡点数 */}
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">証跡</div>
+            <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-2">証跡</div>
               <div className="text-2xl font-bold text-blue-600">{evidenceCount}</div>
-              <div className="text-xs text-gray-600">マスク済み証跡</div>
+              <div className="text-xs text-gray-700">マスク済み証跡</div>
             </div>
           </div>
         </section>
       );
     } else if (isAppraisal || isAppraiser) {
-      // 査定会社向け: 交換履歴一覧/検証ID（確認可能性中心）
+      // PR2: 査定会社向け - 4カード構成（査定判断に直結するKPI）
+      
+      // A. 直近整備のデータ
+      const latestMaintenanceDate = latestMaintenance 
+        ? formatDateShort(latestMaintenance.date)
+        : null;
+      const latestMaintenanceMileage = latestMaintenance?.mileageKm;
+      
+      // B. 記録件数
+      const maintenanceCount = viewModel.recordCounts?.maintenance || 0;
+      const fuelCount = viewModel.recordCounts?.fuel || 0;
+      const customizationCount = viewModel.recordCounts?.customization || 0;
+      
+      // C. 証跡（マスク済）
+      const evidenceBreakdown = viewModel.evidences.length > 0 
+        ? '領収書・明細等' // 簡易表示（将来的に内訳を追加可能）
+        : '';
+      
+      // D. 消耗品（登録済/未登録）
+      const consumablesRegistered = viewModel.consumables.filter(c => c.lastReplacedDate).length;
+      const consumablesTotal = viewModel.consumables.length; // 固定5項目（oil, tire, brake, battery, coolant）
+      const consumablesUnregistered = consumablesTotal - consumablesRegistered;
+      
       return (
         <section className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">査定の要点</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* 交換履歴一覧（全件） */}
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">交換履歴一覧</div>
-              {viewModel.consumables.filter(c => c.lastReplacedDate).length > 0 ? (
-                <div className="space-y-1">
-                  {viewModel.consumables
-                    .filter(c => c.lastReplacedDate)
-                    .map((item) => {
-                      const typeLabels: { [key: string]: string } = {
-                        oil: 'オイル',
-                        tire: 'タイヤ',
-                        brake: 'ブレーキ',
-                        battery: 'バッテリー',
-                        coolant: 'クーラント',
-                      };
-                      return (
-                        <div key={item.type} className="text-xs">
-                          <span className="font-medium">{typeLabels[item.type]}:</span>{' '}
-                          {item.lastReplacedDate ? formatDate(item.lastReplacedDate) : '---'}
-                          {item.lastReplacedKm && ` (${formatMileage(item.lastReplacedKm)})`}
-                        </div>
-                      );
-                    })}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* A. 直近整備 */}
+            <div className={`bg-white rounded-lg p-4 border ${latestMaintenance ? 'border-gray-200' : 'border-gray-100 bg-gray-50'}`}>
+              <div className="text-sm font-medium text-gray-700 mb-2">直近整備</div>
+              {latestMaintenance ? (
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">最終整備日</div>
+                  <div className="font-semibold text-gray-900 text-sm mb-2">{latestMaintenanceDate}</div>
+                  {latestMaintenanceMileage !== undefined && (
+                    <>
+                      <div className="text-xs text-gray-600 mb-1">整備時走行距離</div>
+                      <div className="font-semibold text-gray-900 text-sm">{formatMileage(latestMaintenanceMileage)}</div>
+                    </>
+                  )}
                 </div>
               ) : (
-                <div className="text-sm text-gray-500">記録なし</div>
+                <div className="text-sm text-gray-700">未登録（入力なし）</div>
               )}
             </div>
 
-            {/* 証跡・検証ID */}
-            <div className="bg-white rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">証跡・検証</div>
-              <div className="space-y-2">
-                <div>
-                  <div className="text-xs text-gray-500">証跡点数</div>
-                  <div className="text-xl font-bold text-blue-600">{evidenceCount}</div>
-                </div>
-                <div className="text-xs text-gray-500">
-                  改ざん防止: 有効（ブロックチェーン検証ID）
-                </div>
+            {/* B. 記録件数 */}
+            <div className={`bg-white rounded-lg p-4 border ${maintenanceCount + fuelCount + customizationCount > 0 ? 'border-gray-200' : 'border-gray-100 bg-gray-50'}`}>
+              <div className="text-sm font-medium text-gray-700 mb-2">記録件数</div>
+              <div className="space-y-1 text-sm">
+                <div className="text-gray-900">整備 <span className="font-semibold">{maintenanceCount}</span>件</div>
+                <div className="text-gray-900">給油 <span className="font-semibold">{fuelCount}</span>件</div>
+                <div className="text-gray-900">カスタム <span className="font-semibold">{customizationCount}</span>件</div>
+              </div>
+            </div>
+
+            {/* C. 証跡（マスク済） */}
+            <div className={`bg-white rounded-lg p-4 border ${evidenceCount > 0 ? 'border-gray-200' : 'border-gray-100 bg-gray-50'}`}>
+              <div className="text-sm font-medium text-gray-700 mb-2">証跡（マスク済）</div>
+              <div className="text-2xl font-bold text-blue-600 mb-1">{evidenceCount}</div>
+              <div className="text-xs text-gray-700">件</div>
+              {evidenceBreakdown && (
+                <div className="text-xs text-gray-600 mt-1">{evidenceBreakdown}</div>
+              )}
+              {evidenceCount === 0 && (
+                <div className="text-xs text-gray-700 mt-1">証跡なし</div>
+              )}
+            </div>
+
+            {/* D. 消耗品 */}
+            <div className={`bg-white rounded-lg p-4 border ${consumablesRegistered > 0 ? 'border-gray-200' : 'border-gray-100 bg-gray-50'}`}>
+              <div className="text-sm font-medium text-gray-700 mb-2">消耗品</div>
+              <div className="space-y-1 text-sm">
+                <div className="text-gray-900">登録済 <span className="font-semibold">{consumablesRegistered}</span> / {consumablesTotal}</div>
+                <div className="text-gray-900">未登録 <span className="font-semibold">{consumablesUnregistered}</span> / {consumablesTotal}</div>
               </div>
             </div>
           </div>
@@ -248,33 +288,38 @@ export default function SalePublicPage({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             {viewModel.vehicle.year && (
               <div>
-                <div className="text-gray-500">年式</div>
-                <div className="font-medium">{viewModel.vehicle.year}年</div>
+                <div className="text-gray-600">年式</div>
+                <div className="font-medium text-gray-900">{viewModel.vehicle.year}年</div>
               </div>
             )}
             {viewModel.vehicle.odoKm !== undefined && (
               <div>
-                <div className="text-gray-500">走行距離</div>
-                <div className="font-medium">{formatMileage(viewModel.vehicle.odoKm)}</div>
+                <div className="text-gray-600">走行距離</div>
+                <div className="font-medium text-gray-900">{formatMileage(viewModel.vehicle.odoKm)}</div>
               </div>
             )}
             {viewModel.vehicle.inspectionExpiry && (
               <div>
-                <div className="text-gray-500">車検満了</div>
-                <div className="font-medium">
+                <div className="text-gray-600">車検満了</div>
+                <div className="font-medium text-gray-900">
                   {formatDate(viewModel.vehicle.inspectionExpiry)}
                 </div>
               </div>
             )}
             {viewModel.vehicle.modelCode && (
               <div>
-                <div className="text-gray-500">型式</div>
-                <div className="font-medium">{viewModel.vehicle.modelCode}</div>
+                <div className="text-gray-600">型式</div>
+                <div className="font-medium text-gray-900">{viewModel.vehicle.modelCode}</div>
               </div>
             )}
           </div>
-          <div className="mt-4 text-xs text-gray-500">
-            本情報は売主により提供されており、内容の正確性については保証いたしません。
+          <div className="mt-4 text-xs text-gray-600 leading-relaxed">
+            <p className="mb-1">
+              本ページはオーナーの入力および証跡（領収書等）に基づき作成されています。証跡の有無により情報の信頼度が異なります。
+            </p>
+            <p className="text-gray-500">
+              記載内容の正確性については、オーナーの入力データに依存するため、完全な保証はできかねます。
+            </p>
           </div>
         </section>
 
@@ -434,49 +479,161 @@ export default function SalePublicPage({
         {/* PDFダウンロード */}
         <section className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">PDFダウンロード</h2>
-          <div className="flex gap-4">
-            <a
-              href={`/api/s/${slug}/pdf?type=assess`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => {
-                if (analyticsEnabled) {
-                  fetch(`/api/s/${slug}/event`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ event: 'pdf_download_assess' }),
-                  }).catch(() => {});
-                }
-              }}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              査定用PDF
-            </a>
-            <a
-              href={`/api/s/${slug}/pdf?type=handover`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => {
-                if (analyticsEnabled) {
-                  fetch(`/api/s/${slug}/event`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ event: 'pdf_download_handover' }),
-                  }).catch(() => {});
-                }
-              }}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              譲渡用PDF
-            </a>
+          <div className="space-y-6">
+            {/* 査定用PDF */}
+            <div>
+              <a
+                href={`/api/s/${slug}/pdf?type=assess`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  if (analyticsEnabled) {
+                    fetch(`/api/s/${slug}/event`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ event: 'pdf_download_assess' }),
+                    }).catch(() => {});
+                  }
+                }}
+                className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                査定用PDF
+              </a>
+              <div className="mt-2 text-xs text-gray-600">
+                マスク済み証跡 + 検証ID + 消耗品一覧 + 直近12ヶ月サマリー
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  const details = document.getElementById('assess-pdf-details');
+                  if (details) {
+                    details.classList.toggle('hidden');
+                  }
+                }}
+                className="mt-1 text-xs text-blue-600 hover:text-blue-800 underline"
+              >
+                含まれる内容を詳しく見る
+              </button>
+              <div id="assess-pdf-details" className="hidden mt-2 p-3 bg-gray-50 rounded border border-gray-200 text-xs text-gray-700">
+                <ul className="list-disc list-inside space-y-1">
+                  <li>車両概要</li>
+                  <li>売りポイント（自動生成）</li>
+                  <li>直近12ヶ月サマリー</li>
+                  <li>消耗品交換一覧</li>
+                  {viewModel.evidences.length > 0 && <li>証跡（マスク済み）</li>}
+                  <li>検証ID（ブロックチェーン検証ID）</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* 譲渡用PDF */}
+            <div>
+              <a
+                href={`/api/s/${slug}/pdf?type=handover`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  if (analyticsEnabled) {
+                    fetch(`/api/s/${slug}/event`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ event: 'pdf_download_handover' }),
+                    }).catch(() => {});
+                  }
+                }}
+                className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                譲渡用PDF
+              </a>
+              <div className="mt-2 text-xs text-gray-600">
+                整備履歴（詳細） + 消耗品一覧 + {viewModel.evidences.length > 0 ? '証跡一覧' : '（証跡なし）'}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  const details = document.getElementById('handover-pdf-details');
+                  if (details) {
+                    details.classList.toggle('hidden');
+                  }
+                }}
+                className="mt-1 text-xs text-green-600 hover:text-green-800 underline"
+              >
+                含まれる内容を詳しく見る
+              </button>
+              <div id="handover-pdf-details" className="hidden mt-2 p-3 bg-gray-50 rounded border border-gray-200 text-xs text-gray-700">
+                <ul className="list-disc list-inside space-y-1">
+                  <li>車両概要</li>
+                  <li>次回推奨メンテナンス（自動生成）</li>
+                  <li>重要整備履歴（主要カテゴリ中心）</li>
+                  <li>消耗品交換一覧（推奨交換時期付き）</li>
+                  {viewModel.evidences.length > 0 && <li>証跡一覧</li>}
+                </ul>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* フッター（閲覧専用の明示） */}
-        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-          <p className="text-xs text-gray-500">
-            このページは履歴閲覧用です。第三者の閲覧・改ざん防止機能により保護されています。
-          </p>
+        {/* フッター（PR5: 発行日時・検証ID・改ざん防止の説明） */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-gray-500">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              {viewModel.saleProfile.issuedAt && (
+                <div>
+                  発行日時: <span className="text-gray-700">{formatDateShort(viewModel.saleProfile.issuedAt)}</span>
+                </div>
+              )}
+              {viewModel.saleProfile.lastUpdatedAt && viewModel.saleProfile.lastUpdatedAt !== viewModel.saleProfile.issuedAt && (
+                <div>
+                  最終更新: <span className="text-gray-700">{formatDateShort(viewModel.saleProfile.lastUpdatedAt)}</span>
+                </div>
+              )}
+              {viewModel.saleProfile.verificationId && (
+                <div className="flex items-center gap-2">
+                  検証ID: <span className="text-gray-700 font-mono">{viewModel.saleProfile.verificationId}</span>
+                  <button
+                    onClick={(e) => {
+                      navigator.clipboard.writeText(viewModel.saleProfile.verificationId || '');
+                      // 簡易的なフィードバック（必要に応じてトーストに変更可能）
+                      const btn = e.currentTarget;
+                      const svg = btn.querySelector('svg');
+                      if (svg) {
+                        const originalHTML = svg.outerHTML;
+                        btn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>';
+                        setTimeout(() => {
+                          btn.innerHTML = originalHTML;
+                        }, 1000);
+                      }
+                    }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    title="検証IDをコピー"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="text-gray-400">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  const details = document.getElementById('integrity-details');
+                  if (details) {
+                    details.classList.toggle('hidden');
+                  }
+                }}
+                className="hover:text-gray-600 underline"
+              >
+                改ざん防止について
+              </button>
+              <div id="integrity-details" className="hidden mt-2 p-2 bg-gray-50 rounded border border-gray-200 text-left">
+                <p className="text-xs text-gray-600">
+                  このページは第三者の閲覧・改ざん防止機能により保護されています。検証IDにより情報の整合性を確認できます。
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

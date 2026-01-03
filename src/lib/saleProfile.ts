@@ -3,7 +3,7 @@
  */
 
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
-import type { Car, MaintenanceRecord, SaleProfile, Evidence, Customization } from "@/types";
+import type { Car, MaintenanceRecord, SaleProfile, Evidence, Customization, FuelLog } from "@/types";
 import { Timestamp } from "firebase-admin/firestore";
 
 /**
@@ -45,8 +45,18 @@ export interface SalePublicViewModel {
     slug: string;
     includeAmounts: boolean;
     highlightTopN: number;
+    // PR5: 発行日時と検証ID
+    issuedAt?: string; // ISO string形式（JSONシリアライズ可能）
+    lastUpdatedAt?: string; // ISO string形式（JSONシリアライズ可能）
+    verificationId?: string; // 検証ID（短い文字列）
   };
   unclassifiedCount: number; // 未分類レコード数（直近12ヶ月）
+  // PR2: 記録件数カウント用
+  recordCounts: {
+    maintenance: number; // 整備件数
+    fuel: number; // 給油件数
+    customization: number; // カスタム件数
+  };
 }
 
 /**
@@ -192,6 +202,35 @@ export async function getCustomizationsForPublic(
 }
 
 /**
+ * 給油ログを取得（サーバーサイド用）
+ */
+export async function getFuelLogsForPublic(
+  userId: string,
+  carId: string
+): Promise<FuelLog[]> {
+  const db = getAdminFirestore();
+  const snapshot = await db
+    .collection('users')
+    .doc(userId)
+    .collection('fuelLogs')
+    .where('carId', '==', carId)
+    .where('deletedAt', '==', null)
+    .get();
+
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      deletedAt: data.deletedAt || null,
+      createdAt: data.createdAt as Timestamp,
+      updatedAt: data.updatedAt as Timestamp,
+      date: data.date as Timestamp,
+    } as FuelLog;
+  });
+}
+
+/**
  * 直近12ヶ月サマリーを生成
  */
 function generateRecent12MonthsSummary(
@@ -302,10 +341,11 @@ function generateConsumablesTable(
     const date = consumables[type].date;
     // Dateオブジェクトかどうかを確認してからISO文字列に変換
     const isoDate = date instanceof Date ? date.toISOString() : undefined;
+    // 最終交換日が存在しない場合は、交換時走行距離もundefinedにする（整合性を保つ）
     return {
       type,
       lastReplacedDate: isoDate,
-      lastReplacedMileageKm: consumables[type].mileage,
+      lastReplacedMileageKm: isoDate ? consumables[type].mileage : undefined,
     };
   });
 }
@@ -392,6 +432,48 @@ export async function generateSalePublicViewModel(
       }));
   }
 
+  // PR2: 記録件数をカウント（全期間）
+  const fuelLogs = await getFuelLogsForPublic(saleProfile.ownerUid, saleProfile.vehicleId);
+  const customizations = await getCustomizationsForPublic(saleProfile.ownerUid, saleProfile.vehicleId);
+  
+  const recordCounts = {
+    maintenance: allRecords.length, // 全期間の整備件数
+    fuel: fuelLogs.length, // 全期間の給油件数
+    customization: customizations.filter(c => c.status === 'installed').length, // インストール済みカスタム件数
+  };
+
+  // PR5: 発行日時と検証IDを生成
+  let issuedAt: string | undefined;
+  if (saleProfile.createdAt) {
+    if (saleProfile.createdAt.toDate && typeof saleProfile.createdAt.toDate === 'function') {
+      // Firestore Timestamp
+      issuedAt = saleProfile.createdAt.toDate().toISOString();
+    } else if (saleProfile.createdAt instanceof Date) {
+      // Dateオブジェクト
+      issuedAt = saleProfile.createdAt.toISOString();
+    } else if (typeof saleProfile.createdAt === 'string') {
+      // ISO文字列
+      issuedAt = saleProfile.createdAt;
+    }
+  }
+  
+  let lastUpdatedAt: string | undefined;
+  if (saleProfile.updatedAt) {
+    if (saleProfile.updatedAt.toDate && typeof saleProfile.updatedAt.toDate === 'function') {
+      // Firestore Timestamp
+      lastUpdatedAt = saleProfile.updatedAt.toDate().toISOString();
+    } else if (saleProfile.updatedAt instanceof Date) {
+      // Dateオブジェクト
+      lastUpdatedAt = saleProfile.updatedAt.toISOString();
+    } else if (typeof saleProfile.updatedAt === 'string') {
+      // ISO文字列
+      lastUpdatedAt = saleProfile.updatedAt;
+    }
+  }
+  
+  // 検証IDはslugをベースに生成（既存データ互換性のため、slugが無い場合はundefined）
+  const verificationId = saleProfile.slug ? `V-${saleProfile.slug.substring(0, 8).toUpperCase()}` : undefined;
+
   return {
     vehicle: {
       name: vehicle.name,
@@ -408,8 +490,12 @@ export async function generateSalePublicViewModel(
       slug: saleProfile.slug,
       includeAmounts: saleProfile.includeAmounts,
       highlightTopN: saleProfile.highlightTopN,
+      issuedAt, // PR5: 発行日時
+      lastUpdatedAt, // PR5: 最終更新日時
+      verificationId, // PR5: 検証ID
     },
     unclassifiedCount, // 未分類レコード数（直近12ヶ月）
+    recordCounts, // PR2: 記録件数
   };
 }
 

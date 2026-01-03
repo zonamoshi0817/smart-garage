@@ -31,23 +31,33 @@ function formatAmount(yen?: number): string {
 }
 
 // 日本語フォントを追加する関数
-async function setupJapaneseFont(pdf: jsPDF) {
+// 注意: jsPDFはデフォルトで日本語をサポートしていないため、フォントファイルが必要です
+// フォントファイルが準備されていない場合は、文字化けが発生します
+async function setupJapaneseFont(pdf: jsPDF): Promise<boolean> {
   try {
     // フォントファイルが準備されている場合は読み込む
     try {
       // 動的インポートを安全に実行（ファイルが存在しない場合はエラーを無視）
       const fontModule = await import('@/lib/fonts/notoSansJP').catch(() => null);
       if (fontModule && fontModule.NotoSansJPBase64 && fontModule.NotoSansJPName) {
-        pdf.addFileToVFS('NotoSansJP-Regular.ttf', fontModule.NotoSansJPBase64);
-        pdf.addFont('NotoSansJP-Regular.ttf', fontModule.NotoSansJPName, 'normal');
-        pdf.setFont(fontModule.NotoSansJPName);
-        return true;
+        // Base64データが正しいフォントファイルか確認（TTFファイルは通常0x00 0x01 0x00 0x00で始まる）
+        const base64Data = fontModule.NotoSansJPBase64;
+        if (base64Data && base64Data.length > 100) {
+          try {
+            pdf.addFileToVFS('NotoSansJP-Regular.ttf', base64Data);
+            pdf.addFont('NotoSansJP-Regular.ttf', fontModule.NotoSansJPName, 'normal');
+            pdf.setFont(fontModule.NotoSansJPName);
+            return true;
+          } catch (fontError) {
+            console.warn('Failed to add Japanese font to PDF:', fontError);
+          }
+        }
       }
     } catch (fontError) {
       // フォントファイルが準備されていない場合は、デフォルトフォントを使用
       console.warn('Japanese font not available, using default font:', fontError);
     }
-    // デフォルトフォントを使用
+    // デフォルトフォントを使用（日本語は文字化けします）
     pdf.setFont('helvetica');
     return false;
   } catch (error) {
@@ -174,7 +184,8 @@ async function generateAssessPDF(viewModel: any): Promise<Buffer> {
 
     const label = typeLabels[item.type] || item.type;
     const dateStr = item.lastReplacedDate ? formatDate(item.lastReplacedDate) : '---';
-    const mileageStr = formatMileage(item.lastReplacedMileageKm);
+    // 最終交換日が存在しない場合は、交換時走行距離も必ず---にする
+    const mileageStr = item.lastReplacedDate ? formatMileage(item.lastReplacedMileageKm) : '---';
 
     pdf.text(`${label}`, 25, y);
     pdf.text(`${dateStr}`, 80, y);
@@ -345,7 +356,8 @@ async function generateHandoverPDF(viewModel: any): Promise<Buffer> {
 
     const label = typeLabels[item.type] || item.type;
     const dateStr = item.lastReplacedDate ? formatDate(item.lastReplacedDate) : '---';
-    const mileageStr = formatMileage(item.lastReplacedMileageKm);
+    // 最終交換日が存在しない場合は、交換時走行距離も必ず---にする
+    const mileageStr = item.lastReplacedDate ? formatMileage(item.lastReplacedMileageKm) : '---';
     const recommendation = recommendationsMap[item.type] || '---';
 
     pdf.text(`${label}`, 25, y);
@@ -389,7 +401,12 @@ export async function GET(
 
     // SaleProfileを取得
     const saleProfile = await getSaleProfileBySlug(slug);
-    if (!saleProfile || saleProfile.visibility === 'disabled') {
+    if (!saleProfile) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    // statusまたはvisibilityで無効化チェック（後方互換性）
+    const isDisabled = saleProfile.status === 'disabled' || saleProfile.visibility === 'disabled';
+    if (isDisabled) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -413,8 +430,17 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('PDF generation error:', error);
+    console.error('Error stack:', error.stack);
+    // エラーの詳細をログに出力（デバッグ用）
+    if (error.message) {
+      console.error('Error message:', error.message);
+    }
     return NextResponse.json(
-      { error: 'Failed to generate PDF', details: error.message },
+      { 
+        error: 'Failed to generate PDF', 
+        details: error.message || 'Unknown error',
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

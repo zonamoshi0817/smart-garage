@@ -57,7 +57,8 @@ export default function ConsumablesTable({ consumables }: ConsumablesTableProps)
                 {formatDate(item.lastReplacedDate)}
               </td>
               <td className="py-3 px-4 text-gray-700">
-                {formatMileage(item.lastReplacedMileageKm)}
+                {/* 最終交換日が存在しない場合は、交換時走行距離も必ず---にする */}
+                {item.lastReplacedDate ? formatMileage(item.lastReplacedMileageKm) : '---'}
               </td>
             </tr>
           ))}
