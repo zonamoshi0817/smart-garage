@@ -144,34 +144,47 @@ export default function ShareContent({
     }
   };
 
-  // 売却用リンクを作成（1つに統合）
-  const handleCreateSaleLink = async () => {
+  // 売却用リンクを作成（買い手向けと査定会社向けの2リンクを同時に作成）
+  const handleCreateSaleLinks = async () => {
     if (!activeCarId || !auth.currentUser) return;
     
     try {
-      setUpdatingLinks({ ...updatingLinks, sale_buyer: true });
+      setUpdatingLinks({ ...updatingLinks, sale_buyer: true, sale_appraiser: true });
       const { createShareProfile } = await import('@/lib/saleProfileManager');
       
-      // 売却用リンクを作成
-      const saleProfileId = await createShareProfile(activeCarId, 'sale_buyer', {
+      // 買い手向けリンクを作成
+      const buyerProfileId = await createShareProfile(activeCarId, 'sale_buyer', {
+        includeEvidence: true,
+        includeAmounts: false,
+        maskPolicy: 'strict',
+      });
+
+      // 査定会社向けリンクを作成
+      const appraiserProfileId = await createShareProfile(activeCarId, 'sale_appraiser', {
         includeEvidence: true,
         includeAmounts: false,
         maskPolicy: 'strict',
       });
 
       // ShareProfileを再取得
-      const saleDoc = await getDoc(doc(db, 'saleProfiles', saleProfileId));
-      if (saleDoc.exists()) {
-        setShareProfiles({
-          ...shareProfiles,
-          sale_buyer: { id: saleDoc.id, ...saleDoc.data() }
-        });
+      const [buyerDoc, appraiserDoc] = await Promise.all([
+        getDoc(doc(db, 'saleProfiles', buyerProfileId)),
+        getDoc(doc(db, 'saleProfiles', appraiserProfileId))
+      ]);
+
+      const updatedProfiles = { ...shareProfiles };
+      if (buyerDoc.exists()) {
+        updatedProfiles.sale_buyer = { id: buyerDoc.id, ...buyerDoc.data() };
       }
+      if (appraiserDoc.exists()) {
+        updatedProfiles.sale_appraiser = { id: appraiserDoc.id, ...appraiserDoc.data() };
+      }
+      setShareProfiles(updatedProfiles);
     } catch (error: any) {
-      console.error('Failed to create sale link:', error);
+      console.error('Failed to create sale links:', error);
       alert(`共有リンクの作成に失敗しました: ${error.message}`);
     } finally {
-      setUpdatingLinks({ ...updatingLinks, sale_buyer: false });
+      setUpdatingLinks({ ...updatingLinks, sale_buyer: false, sale_appraiser: false });
     }
   };
 
@@ -375,7 +388,7 @@ export default function ShareContent({
               updatingLinks={updatingLinks}
               loadingProfiles={loadingProfiles}
               getShareLinkInfo={getShareLinkInfo}
-              handleCreateSaleLink={handleCreateSaleLink}
+              handleCreateSaleLinks={handleCreateSaleLinks}
               handleCopyLink={handleCopyLink}
               handleToggleLinkStatus={handleToggleLinkStatus}
               handleRegenerateSlug={handleRegenerateSlug}
@@ -1370,7 +1383,7 @@ function SaleLinkCard({
   updatingLinks: { normal?: boolean; sale_buyer?: boolean; sale_appraiser?: boolean; sale?: boolean; appraisal?: boolean };
   loadingProfiles: boolean;
   getShareLinkInfo: (type: 'normal' | 'sale_buyer' | 'sale_appraiser') => { status: string; url: string | null; profile?: any };
-  handleCreateSaleLink: () => Promise<void>;
+  handleCreateSaleLinks: () => Promise<void>;
   handleCopyLink: (type: 'normal' | 'sale_buyer' | 'sale_appraiser') => Promise<void>;
   handleToggleLinkStatus: (type: 'normal' | 'sale_buyer' | 'sale_appraiser', currentStatus: 'active' | 'disabled') => Promise<void>;
   handleRegenerateSlug: (type: 'normal' | 'sale_buyer' | 'sale_appraiser') => Promise<void>;
@@ -1384,7 +1397,7 @@ function SaleLinkCard({
   // 売却用リンクは1つに統合（sale_buyerを使用、sale_appraiserは後方互換性のため残す）
   const saleInfo = getShareLinkInfo('sale_buyer');
   const saleCreated = saleInfo.status !== 'not_created';
-  const creating = updatingLinks.sale_buyer;
+  const creating = updatingLinks.sale_buyer || updatingLinks.sale_appraiser;
 
   // リンクカードの状態管理
   const [showMenu, setShowMenu] = useState(false);
@@ -1560,7 +1573,7 @@ function SaleLinkCard({
             <p className="text-sm text-gray-500 mb-2">リンク未作成</p>
             <p className="text-xs text-gray-400 mb-3">作成するとURLが発行されます。いつでも停止できます。</p>
             <button
-              onClick={handleCreateSaleLink}
+              onClick={handleCreateSaleLinks}
               disabled={creating || loadingProfiles}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
             >
