@@ -35,17 +35,21 @@ async function setupJapaneseFont(pdf: jsPDF) {
   try {
     // フォントファイルが準備されている場合は読み込む
     try {
-      const { NotoSansJPBase64, NotoSansJPName } = await import('@/lib/fonts/notoSansJP');
-      pdf.addFileToVFS('NotoSansJP-Regular.ttf', NotoSansJPBase64);
-      pdf.addFont('NotoSansJP-Regular.ttf', NotoSansJPName, 'normal');
-      pdf.setFont(NotoSansJPName);
-      return true;
+      // 動的インポートを安全に実行（ファイルが存在しない場合はエラーを無視）
+      const fontModule = await import('@/lib/fonts/notoSansJP').catch(() => null);
+      if (fontModule && fontModule.NotoSansJPBase64 && fontModule.NotoSansJPName) {
+        pdf.addFileToVFS('NotoSansJP-Regular.ttf', fontModule.NotoSansJPBase64);
+        pdf.addFont('NotoSansJP-Regular.ttf', fontModule.NotoSansJPName, 'normal');
+        pdf.setFont(fontModule.NotoSansJPName);
+        return true;
+      }
     } catch (fontError) {
       // フォントファイルが準備されていない場合は、デフォルトフォントを使用
       console.warn('Japanese font not available, using default font:', fontError);
-      pdf.setFont('helvetica');
-      return false;
     }
+    // デフォルトフォントを使用
+    pdf.setFont('helvetica');
+    return false;
   } catch (error) {
     console.error('Failed to setup Japanese font:', error);
     pdf.setFont('helvetica');

@@ -3,6 +3,8 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import type { Car, Customization, MaintenanceRecord } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { carId: string } }
