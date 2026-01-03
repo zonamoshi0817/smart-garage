@@ -296,6 +296,12 @@ export default function ShareContent({
                 査定
               </button>
             </div>
+            {/* タブ説明文 */}
+            <div className="px-4 py-2 text-xs text-gray-600">
+              {activeTab === 'normal' && 'SNSで紹介'}
+              {activeTab === 'sale' && '買い手向け'}
+              {activeTab === 'appraisal' && '査定会社向け（証跡マスク＋検証ID）'}
+            </div>
           </div>
 
           {/* タブに応じたコンテンツ表示 */}
@@ -346,7 +352,7 @@ export default function ShareContent({
             <ShareLinkCard
               type="appraisal"
               title="査定用リンク"
-              description="査定会社向けに履歴を共有（交換履歴一覧・検証ID・証憑（マスク））"
+              description="査定会社向けに履歴を共有"
               shareProfiles={shareProfiles}
               pageViewCounts={pageViewCounts}
               copiedLinks={copiedLinks}
@@ -611,19 +617,74 @@ function ShareLinkCard({
     }
   };
 
+  // 共有される内容の定義（用途別）
+  const getSharedContents = () => {
+    if (type === 'appraisal') {
+      return [
+        '車両概要（年式/走行距離/車検）',
+        '整備履歴（一覧）',
+        '消耗品交換一覧',
+        '証跡（個人情報は自動マスク）',
+        '検証ID（改ざん防止）'
+      ];
+    } else if (type === 'sale') {
+      return [
+        '車両概要',
+        '整備履歴',
+        'カスタマイズ履歴',
+        '証跡（個人情報は自動マスク）'
+      ];
+    } else {
+      return [
+        '車両情報',
+        '整備履歴',
+        'カスタマイズ履歴'
+      ];
+    }
+  };
+
+  // CTAボタンの文言（用途別）
+  const getCreateButtonText = () => {
+    if (type === 'appraisal') {
+      return '査定用リンクを発行';
+    } else if (type === 'sale') {
+      return '売却用リンクを発行';
+    } else {
+      return '共有リンクを作成';
+    }
+  };
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 max-w-3xl mx-auto">
       <div className="mb-4">
         <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
         <p className="text-xs text-gray-500 mt-1">{description}</p>
       </div>
 
+      {/* 共有される内容（査定・売却タブのみ） */}
+      {(type === 'appraisal' || type === 'sale') && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+          <p className="text-xs font-medium text-gray-700 mb-2">共有される内容</p>
+          <ul className="space-y-1">
+            {getSharedContents().map((content, index) => (
+              <li key={index} className="text-xs text-gray-600 flex items-start gap-2">
+                <span className="text-blue-600 mt-0.5">•</span>
+                <span>{content}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ステータス表示 */}
-      <div className="mb-4">
+      <div className="mb-3">
         {status === 'not_created' && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-            <span>未作成</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+              <span className="font-medium">リンク未作成</span>
+            </div>
+            <p className="text-xs text-gray-500 ml-4">作成するとURLが発行されます。いつでも停止できます。</p>
           </div>
         )}
         {status === 'active' && (
@@ -654,6 +715,22 @@ function ShareLinkCard({
         )}
       </div>
 
+      {/* 相手が見るプレビュー（空状態でも表示） */}
+      {status === 'not_created' && (
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-xs font-medium text-gray-700 mb-2">相手が見る画面</p>
+          <div className="bg-white rounded border border-gray-200 p-4 min-h-[200px] flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <p className="text-xs">作成すると、{type === 'appraisal' ? '査定会社' : type === 'sale' ? '買い手' : '相手'}はこのページを閲覧できます</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Primary Action */}
       {status === 'not_created' ? (
         <div className="mb-4">
@@ -662,8 +739,9 @@ function ShareLinkCard({
             disabled={updating || loadingProfiles}
             className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
           >
-            {updating ? '作成中...' : '共有リンクを作成'}
+            {updating ? '作成中...' : getCreateButtonText()}
           </button>
+          <p className="text-xs text-gray-500 mt-2 text-center">発行後に公開範囲・停止・再発行ができます</p>
         </div>
       ) : status === 'active' && url ? (
         <div className="mb-4">
