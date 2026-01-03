@@ -53,6 +53,7 @@ garage logは、車両のメンテナンス管理と整備計画機能を提供�
 - **MaintenanceRecord**: メンテナンス記録
 - **Customization**: カスタマイズ記録
 - **InsurancePolicy**: 保険契約情報
+- **ShareProfile**: 共有プロフィール（SNS紹介・売却用）
 
 ### ユーザー関連フィールド
 - **userId**: 必須フィールド。Firestoreセキュリティルールで使用。`request.auth.uid`と一致する必要がある
@@ -634,15 +635,259 @@ score = round((progress + overPenalty) * 100)
   - 全車両履歴書（PDF）: Cloud Functionsで署名トークン生成
   - 車両別履歴書（PDF）: Cloud Functionsで署名トークン生成
   - 履歴共有URL生成: Cloud Functionsで署名トークン生成（30日有効）
-- **データ統計表示**:
-  - 登録車両数
-  - メンテナンス記録数
-  - 総データサイズ
 
-#### UI改善
-- カスタマイズ画面からCSV出力ボタンを削除
-- エクスポート機能をデータページに集約
-- 車両別PDF出力機能
+### 12. 共有機能（Share Profile）🆕
+
+#### 12.1. 概要
+車両のメンテナンス履歴やカスタマイズ情報を第三者と共有する機能です。用途別に3種類の共有リンクを作成できます。
+
+**用途別リンク:**
+- **通常（SNS紹介）**: SNSで車を紹介するためのページ
+- **売却（買い手向け）**: 買い手向けの履歴共有ページ
+- **売却（査定会社向け）**: 査定会社向けの履歴共有ページ（証跡マスク＋検証ID）
+
+#### 12.2. データモデル
+
+**ShareProfile（saleProfilesコレクション）:**
+```typescript
+interface ShareProfile extends BaseEntity {
+  vehicleId: string;                       // 車両ID
+  ownerUid: string;                        // オーナーUID
+  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';  // 用途種別
+  status: 'active' | 'disabled';           // ステータス
+  slug: string;                            // URLスラッグ（例: "abc123"）
+  visibility?: 'unlisted' | 'public' | 'disabled'; // 公開設定（後方互換）
+  includeEvidence: boolean;                // 証跡を含めるか
+  includeAmounts: boolean;                 // 金額を含めるか
+  highlightTopN: number;                   // 重要イベント上位N件（デフォルト: 10）
+  analyticsEnabled: boolean;               // アナリティクス有効化
+  maskPolicy?: 'auto' | 'strict' | 'custom'; // マスク強度
+  viewCount?: number;                      // 閲覧回数
+  lastPublishedAt?: Timestamp;             // 最終公開日時
+  issuedAt?: Timestamp;                    // 発行日時（PR5）
+  lastUpdatedAt?: Timestamp;               // 最終更新日時（PR5）
+  verificationId?: string;                  // 検証ID（PR5）
+  
+  // SNS共有（通常リンク）用フィールド（type="normal"のみ）
+  sns?: {
+    settings?: {
+      showPricesInDetails?: boolean;        // Detailsセクション内に価格を表示するか
+    };
+    conceptTitle?: string;                 // 短い肩書き
+    conceptBody?: string;                 // 紹介文（30〜200字）
+    highlightParts?: Array<{              // 主要カスタム最大6件
+      label: string;
+      value: string;
+    }>;
+    gallery?: Array<{                     // 画像3〜12枚
+      id: string;
+      path: string;
+      caption?: string;
+    }>;
+    socialLinks?: {                       // SNSリンク
+      youtube?: string;
+      instagram?: string;
+      x?: string;
+      web?: string;
+    };
+    build?: {
+      featured?: Array<{                  // 主要パーツ（最大30件）
+        label: string;
+        value: string;
+        priceAmount?: number;              // 具体的な価格（JPY）
+        priceCurrency?: 'JPY';
+        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET';
+        priceAsOf?: string;               // 価格の時点（YYYY-MM形式）
+        priceVisibility?: 'HIDE' | 'SHOW';
+      }>;
+      categories?: Array<{                // カテゴリごとのビルド情報
+        name: string;
+        items: Array<{
+          name: string;
+          note?: string;
+        }>;
+      }>;
+    };
+  };
+}
+```
+
+**車両のactiveShareProfileIds:**
+```typescript
+interface Car {
+  // ... 他のフィールド
+  activeShareProfileIds?: {
+    normal?: string;        // 通常リンクのShareProfile ID
+    sale_buyer?: string;    // 買い手向けリンクのShareProfile ID
+    sale_appraiser?: string; // 査定会社向けリンクのShareProfile ID
+  };
+  // 後方互換性のため
+  activeSaleProfileId?: string;
+}
+```
+
+#### 12.3. UI仕様
+
+**共有ページ（/share）:**
+- **タブ構成**: 
+  - 「SNS（紹介）」タブ: SNSで車を紹介するページ
+  - 「売却」タブ: 買い手・査定会社向けの履歴共有
+
+**SNS（紹介）タブ:**
+- タイトル: "SNS紹介リンク"
+- 説明: "SNSで車を紹介するページ"
+- リンク作成ボタン: "SNS紹介リンクを作成"
+- リンクカード:
+  - 状態表示（未作成/公開中/停止中）
+  - URL表示とコピーボタン（主CTA）
+  - 公開ページを見るボタン（サブCTA）
+  - 設定メニュー（"..."ボタン）:
+    - リンク設定
+    - 共有内容を編集
+    - リンクを再生成
+    - リンクを停止（確認ダイアログ付き）
+  - 追加情報: 対象車両名、最終更新日、閲覧回数
+
+**売却タブ:**
+- **送付先セグメント**: 「買い手向け」/「査定会社向け」を切り替え
+- **リンク作成**: 「共有リンクを作成」ボタン1つで、買い手向けと査定会社向けの2リンクを同時に作成
+- **リンクカード（統合表示）**:
+  - 送付先セグメントで表示するリンクを切り替え
+  - 共有される内容（要点バッジ＋詳細アコーディオン）:
+    - 車両概要（年式/走行距離/車検）
+    - 整備履歴（一覧）
+    - 消耗品交換一覧
+    - 証跡（個人情報は自動マスク）
+    - 検証ID（改ざん防止）
+  - 状態表示、URL表示、コピーボタン、公開ページを見るボタン
+  - 設定メニュー（"..."ボタン）
+
+**デフォルト設定:**
+- 売却用リンク: `visibility: 'unlisted'`（限定公開）
+- 証跡: 含める（`includeEvidence: true`）
+- 金額: 含めない（`includeAmounts: false`）
+- マスク強度: `'strict'`（厳格）
+
+#### 12.4. 公開ページ仕様
+
+**URL形式:**
+- `/s/[slug]` - 用途別に同じURL形式を使用（誤送信防止）
+
+**用途別表示内容:**
+
+**通常（SNS紹介）ページ:**
+- ヒーロー画像（ギャラリーの最初の画像、または車両画像）
+- 車両概要（車名、年式、型式、走行距離、車検）
+- 紹介文（conceptBody）
+- 主要パーツ（highlightParts）
+- ギャラリー（3〜12枚）
+- ビルド詳細（カテゴリごと、Detailsセクション内に価格表示）
+- 整備履歴サマリー
+- SNSリンク
+
+**買い手向けページ:**
+- 査定の要点（4カード）:
+  - 直近整備（日付＋走行距離）
+  - 消耗品交換（最新3件）
+  - 管理指標（記録期間、証憑率、総費用、車検残日数）
+  - 証跡点数
+- 車両サマリー
+- 信頼性説明（証跡ベースの説明）
+- 消耗品交換一覧
+- 整備履歴（直近12ヶ月）
+- 証跡ギャラリー（マスク済み）
+
+**査定会社向けページ:**
+- 査定の要点（4カード）:
+  - A. 直近整備: 最終整備日（YYYY/MM/DD）＋整備時走行距離（km）、未登録時は「未登録（入力なし）」
+  - B. 記録件数: 整備◯件 / 給油◯件 / カスタム◯件
+  - C. 証跡（マスク済）: 証跡◯件（マスク済）＋内訳（領収書/明細等）
+  - D. 消耗品: 登録済◯ / 未登録◯（固定5項目）
+- 車両サマリー
+- 信頼性説明（PR3）:
+  - "本ページはオーナーの入力および証跡（領収書等）に基づき作成されています。証跡の有無により情報の信頼度が異なります。"
+  - "記載内容の正確性については、オーナーの入力データに依存するため、完全な保証はできかねます。"
+- 消耗品交換一覧（PR1対応: 最終交換日が---の場合は交換時走行距離も---）
+- 整備履歴（詳細）
+- 証跡ギャラリー（マスク済み）
+- PDF生成ボタン:
+  - 査定用PDF: "マスク＋検証ID＋消耗品一覧"
+  - 譲渡用PDF: "整備履歴（詳細）＋（必要に応じて）証跡一覧"
+  - 含まれる内容の詳細説明（アコーディオン）
+- 改ざん防止情報（PR5）:
+  - 発行日時、最終更新、検証ID（コピー可能）
+  - "改ざん防止について"説明リンク
+
+**データ一貫性（PR1）:**
+- 消耗品交換一覧: `lastReplacedDate`が存在しない場合、`lastReplacedMileageKm`も表示しない（---）
+- 最終交換日が---の場合、交換時走行距離も必ず---
+
+**null安全性:**
+- `viewModel.recent12MonthsSummary`、`viewModel.consumables`、`viewModel.evidences`に安全なデフォルト値（空配列）を設定
+- 配列要素へのアクセス時にnull/undefinedチェックを実施
+
+#### 12.5. PDF生成機能
+
+**査定用PDF:**
+- 車両概要
+- 売りポイント
+- 直近12ヶ月サマリー
+- 消耗品交換一覧
+- 日本語フォント対応（Noto Sans JP）
+
+**譲渡用PDF:**
+- 車両概要
+- 次回推奨メンテナンス
+- 重要整備履歴
+- 消耗品交換一覧
+
+**技術仕様:**
+- ライブラリ: jsPDF 3.0.3, jsPDF-AutoTable 5.0.2
+- 日本語フォント: Noto Sans JP（Base64エンコード）
+- フォント設定スクリプト: `scripts/setup-japanese-font.sh`
+- タイムスタンプ変換: Firestore Timestamp → ISO string（PR5対応）
+
+#### 12.6. リンク管理機能
+
+**リンク作成:**
+- 通常リンク: 1リンク作成
+- 売却用リンク: 買い手向けと査定会社向けの2リンクを同時に作成（`handleCreateSaleLinks`）
+
+**リンク操作:**
+- リンクをコピー（主CTA）
+- 公開ページを見る（サブCTA）
+- リンク設定（公開範囲: unlisted/public）
+- リンクを再生成（slug変更、確認ダイアログ）
+- リンクを停止（無効化、確認ダイアログ）
+- リンクを再開（停止されたリンクを有効化）
+
+**状態管理:**
+- `status: 'active' | 'disabled'` - リンクの有効/無効
+- `visibility: 'unlisted' | 'public' | 'disabled'` - 公開範囲（後方互換）
+- `disabled`状態のリンクは404を返す
+
+#### 12.7. セキュリティ・プライバシー
+
+**アクセス制御:**
+- オーナーのみがリンクを作成・編集・削除可能
+- 公開ページは`slug`による認証（トークンベースではない）
+- `activeShareProfileIds`と一致する場合のみ表示
+
+**個人情報保護:**
+- 証跡画像は自動マスク処理（`maskPolicy: 'strict'`）
+- 金額情報はデフォルトで非表示（`includeAmounts: false`）
+- 検証IDによる改ざん防止
+
+**SEO設定:**
+- `unlisted`の場合は`robots: { index: false, follow: false }`
+- `public`の場合は`robots: { index: true, follow: true }`
+
+#### 12.8. アナリティクス
+
+**ページビュー追跡:**
+- `analyticsEnabled: true`の場合、ページビューイベントを記録
+- `/api/s/[slug]/event`エンドポイントにPOSTリクエスト
+- オーナー側で閲覧回数（`viewCount`）を表示
 
 ### 11. 通知設定
 - テスト通知機能
@@ -786,6 +1031,83 @@ type CustomCategory = 'exterior' | 'interior' | 'intake' | 'exhaust' | 'ecu' |
 type CustomStatus = 'planned' | 'ordered' | 'installed' | 'removed_temp' | 'removed';
 ```
 
+### 共有プロフィール（shareProfiles / saleProfiles）
+```typescript
+interface ShareProfile extends BaseEntity {
+  vehicleId: string;                       // 車両ID
+  ownerUid: string;                        // オーナーUID
+  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';  // 用途種別
+  status: 'active' | 'disabled';           // ステータス
+  slug: string;                            // URLスラッグ
+  visibility?: 'unlisted' | 'public' | 'disabled'; // 公開設定（後方互換）
+  includeEvidence: boolean;                // 証跡を含めるか
+  includeAmounts: boolean;                 // 金額を含めるか
+  highlightTopN: number;                   // 重要イベント上位N件
+  analyticsEnabled: boolean;               // アナリティクス有効化
+  maskPolicy?: 'auto' | 'strict' | 'custom'; // マスク強度
+  viewCount?: number;                      // 閲覧回数
+  lastPublishedAt?: Timestamp;             // 最終公開日時
+  issuedAt?: Timestamp;                    // 発行日時
+  lastUpdatedAt?: Timestamp;               // 最終更新日時
+  verificationId?: string;                  // 検証ID
+  
+  // SNS共有（通常リンク）用フィールド（type="normal"のみ）
+  sns?: {
+    settings?: {
+      showPricesInDetails?: boolean;        // Detailsセクション内に価格を表示するか
+    };
+    conceptTitle?: string;                 // 短い肩書き
+    conceptBody?: string;                 // 紹介文（30〜200字）
+    highlightParts?: Array<{              // 主要カスタム最大6件
+      label: string;
+      value: string;
+    }>;
+    gallery?: Array<{                     // 画像3〜12枚
+      id: string;
+      path: string;
+      caption?: string;
+    }>;
+    socialLinks?: {                       // SNSリンク
+      youtube?: string;
+      instagram?: string;
+      x?: string;
+      web?: string;
+    };
+    build?: {
+      featured?: Array<{                  // 主要パーツ（最大30件）
+        label: string;
+        value: string;
+        priceAmount?: number;              // 具体的な価格（JPY）
+        priceCurrency?: 'JPY';
+        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET';
+        priceAsOf?: string;               // 価格の時点（YYYY-MM形式）
+        priceVisibility?: 'HIDE' | 'SHOW';
+      }>;
+      categories?: Array<{                // カテゴリごとのビルド情報
+        name: string;
+        items: Array<{
+          name: string;
+          note?: string;
+        }>;
+      }>;
+    };
+  };
+}
+```
+
+**車両のactiveShareProfileIds:**
+```typescript
+interface Car {
+  // ... 他のフィールド
+  activeShareProfileIds?: {
+    normal?: string;        // 通常リンクのShareProfile ID
+    sale_buyer?: string;    // 買い手向けリンクのShareProfile ID
+    sale_appraiser?: string; // 査定会社向けリンクのShareProfile ID
+  };
+  // 後方互換性のため
+  activeSaleProfileId?: string;
+}
+```
 
 ## UI/UX仕様
 
@@ -847,6 +1169,84 @@ type CustomStatus = 'planned' | 'ordered' | 'installed' | 'removed_temp' | 'remo
 - 入力値の検証（Zod）
 - エラーハンドリング
 - 画像アップロードのセキュリティ（認証済みユーザーのみ）
+
+### 共有プロフィール（shareProfiles / saleProfiles）
+```typescript
+interface ShareProfile extends BaseEntity {
+  vehicleId: string;                       // 車両ID
+  ownerUid: string;                        // オーナーUID
+  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';  // 用途種別
+  status: 'active' | 'disabled';           // ステータス
+  slug: string;                            // URLスラッグ
+  visibility?: 'unlisted' | 'public' | 'disabled'; // 公開設定（後方互換）
+  includeEvidence: boolean;                // 証跡を含めるか
+  includeAmounts: boolean;                 // 金額を含めるか
+  highlightTopN: number;                   // 重要イベント上位N件
+  analyticsEnabled: boolean;               // アナリティクス有効化
+  maskPolicy?: 'auto' | 'strict' | 'custom'; // マスク強度
+  viewCount?: number;                      // 閲覧回数
+  lastPublishedAt?: Timestamp;             // 最終公開日時
+  issuedAt?: Timestamp;                    // 発行日時
+  lastUpdatedAt?: Timestamp;               // 最終更新日時
+  verificationId?: string;                  // 検証ID
+  
+  // SNS共有（通常リンク）用フィールド（type="normal"のみ）
+  sns?: {
+    settings?: {
+      showPricesInDetails?: boolean;        // Detailsセクション内に価格を表示するか
+    };
+    conceptTitle?: string;                 // 短い肩書き
+    conceptBody?: string;                 // 紹介文（30〜200字）
+    highlightParts?: Array<{              // 主要カスタム最大6件
+      label: string;
+      value: string;
+    }>;
+    gallery?: Array<{                     // 画像3〜12枚
+      id: string;
+      path: string;
+      caption?: string;
+    }>;
+    socialLinks?: {                       // SNSリンク
+      youtube?: string;
+      instagram?: string;
+      x?: string;
+      web?: string;
+    };
+    build?: {
+      featured?: Array<{                  // 主要パーツ（最大30件）
+        label: string;
+        value: string;
+        priceAmount?: number;              // 具体的な価格（JPY）
+        priceCurrency?: 'JPY';
+        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET';
+        priceAsOf?: string;               // 価格の時点（YYYY-MM形式）
+        priceVisibility?: 'HIDE' | 'SHOW';
+      }>;
+      categories?: Array<{                // カテゴリごとのビルド情報
+        name: string;
+        items: Array<{
+          name: string;
+          note?: string;
+        }>;
+      }>;
+    };
+  };
+}
+```
+
+**車両のactiveShareProfileIds:**
+```typescript
+interface Car {
+  // ... 他のフィールド
+  activeShareProfileIds?: {
+    normal?: string;        // 通常リンクのShareProfile ID
+    sale_buyer?: string;    // 買い手向けリンクのShareProfile ID
+    sale_appraiser?: string; // 査定会社向けリンクのShareProfile ID
+  };
+  // 後方互換性のため
+  activeSaleProfileId?: string;
+}
+```
 
 ### 監査証跡
 ```typescript
