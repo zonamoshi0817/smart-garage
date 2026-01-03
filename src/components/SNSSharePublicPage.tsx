@@ -387,12 +387,59 @@ export default function SNSSharePublicPage({
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">推しパーツ</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {sns.build.featured.slice(0, 30).map((part, index) => (
-                <div key={index} className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
-                  <div className="text-xs text-gray-500 mb-1">{part.label}</div>
-                  <div className="text-base font-semibold text-gray-900">{part.value}</div>
-                </div>
-              ))}
+              {sns.build.featured.slice(0, 30).map((part: any, index) => {
+                const showPriceInDetails = shareProfile.sns?.settings?.showPricesInDetails && part.priceAmount && part.priceVisibility !== 'HIDE';
+                const formatPrice = (amount: number): string => {
+                  return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 }).format(amount);
+                };
+                const getPriceKindLabel = (kind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET'): string => {
+                  switch (kind) {
+                    case 'PARTS_ONLY': return 'パーツ代のみ';
+                    case 'INSTALLED': return '工賃込み';
+                    case 'MARKET': return '相場';
+                    default: return '';
+                  }
+                };
+                return (
+                  <details key={index} className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                    <summary className="p-4 cursor-pointer list-none">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="text-xs text-gray-500 mb-1">{part.label}</div>
+                          <div className="text-base font-semibold text-gray-900">{part.value}</div>
+                        </div>
+                        <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </summary>
+                    <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+                      {showPriceInDetails ? (
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-600">参考価格: </span>
+                            <span className="font-semibold text-gray-900">{formatPrice(part.priceAmount)}</span>
+                          </div>
+                          {part.priceKind && (
+                            <div>
+                              <span className="text-gray-600">価格の種類: </span>
+                              <span className="text-gray-900">{getPriceKindLabel(part.priceKind)}</span>
+                            </div>
+                          )}
+                          {part.priceAsOf && (
+                            <div>
+                              <span className="text-gray-600">時点: </span>
+                              <span className="text-gray-900">{part.priceAsOf}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">価格情報は表示されません</div>
+                      )}
+                    </div>
+                  </details>
+                );
+              })}
             </div>
           </div>
         )}

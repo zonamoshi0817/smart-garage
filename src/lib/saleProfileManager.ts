@@ -7,6 +7,7 @@
 
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, getDoc, serverTimestamp, query, where, limit, getDocs } from 'firebase/firestore';
+import { removeUndefined } from '@/lib/validators';
 import type { SaleProfile, ShareProfile } from '@/types';
 /**
  * slugを生成（英数字のみ、安全なURL）
@@ -247,6 +248,69 @@ export async function updateShareProfileStatus(
 }
 
 /**
+ * ShareProfileのvisibilityを更新
+ */
+export async function updateShareProfileVisibility(
+  shareProfileId: string,
+  visibility: 'unlisted' | 'public' | 'disabled'
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーがログインしていません');
+
+  // オーナーチェック
+  const shareProfileDoc = await getDoc(doc(db, 'saleProfiles', shareProfileId));
+  if (!shareProfileDoc.exists()) {
+    throw new Error('共有プロフィールが見つかりません');
+  }
+
+  const shareProfileData = shareProfileDoc.data() as ShareProfile;
+  if (shareProfileData.ownerUid !== user.uid) {
+    throw new Error('権限がありません');
+  }
+
+  // visibilityを更新
+  await updateDoc(doc(db, 'saleProfiles', shareProfileId), {
+    visibility,
+    status: visibility === 'disabled' ? 'disabled' : 'active', // statusも同期
+    updatedBy: user.uid,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * ShareProfileのslugを再生成（リンク再発行）
+ */
+export async function regenerateShareProfileSlug(
+  shareProfileId: string
+): Promise<string> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('ユーザーがログインしていません');
+
+  // オーナーチェック
+  const shareProfileDoc = await getDoc(doc(db, 'saleProfiles', shareProfileId));
+  if (!shareProfileDoc.exists()) {
+    throw new Error('共有プロフィールが見つかりません');
+  }
+
+  const shareProfileData = shareProfileDoc.data() as ShareProfile;
+  if (shareProfileData.ownerUid !== user.uid) {
+    throw new Error('権限がありません');
+  }
+
+  // 新しいslugを生成
+  const newSlug = generateSlug();
+
+  // slugを更新
+  await updateDoc(doc(db, 'saleProfiles', shareProfileId), {
+    slug: newSlug,
+    updatedBy: user.uid,
+    updatedAt: serverTimestamp(),
+  });
+
+  return newSlug;
+}
+
+/**
  * ShareProfileのSNS共有設定を更新（type="normal"のみ）
  */
 export async function updateShareProfileSNS(
@@ -258,8 +322,20 @@ export async function updateShareProfileSNS(
     gallery?: Array<{ id: string; path: string; caption?: string }>;
     socialLinks?: { youtube?: string; instagram?: string; x?: string; web?: string };
     build?: {
-      featured?: Array<{ label: string; value: string }>;
+      featured?: Array<{
+        label: string;
+        value: string;
+        priceAmount?: number;
+        priceCurrency?: 'JPY';
+        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET';
+        priceAsOf?: string;
+        priceRounding?: 0 | 100 | 1000 | 10000;
+        priceVisibility?: 'HIDE' | 'SHOW';
+      }>;
       categories?: Array<{ name: string; items: Array<{ name: string; note?: string }> }>;
+    };
+    settings?: {
+      showPricesInDetails?: boolean;
     };
   }
 ): Promise<void> {
@@ -297,7 +373,16 @@ export async function updateShareProfileSNS(
     if (snsData.socialLinks.web !== undefined && snsData.socialLinks.web !== '') cleanSocialLinks.web = snsData.socialLinks.web;
     if (Object.keys(cleanSocialLinks).length > 0) cleanSnsData.socialLinks = cleanSocialLinks;
   }
-  if (snsData.build !== undefined) cleanSnsData.build = snsData.build;
+  if (snsData.build !== undefined) {
+    cleanSnsData.build = removeUndefined(snsData.build);
+  }
+  if (snsData.settings !== undefined) {
+    const cleanSettings: any = {};
+    if (snsData.settings.showPricesInDetails !== undefined) {
+      cleanSettings.showPricesInDetails = snsData.settings.showPricesInDetails;
+    }
+    if (Object.keys(cleanSettings).length > 0) cleanSnsData.settings = cleanSettings;
+  }
 
   // snsフィールドを更新
   await updateDoc(doc(db, 'saleProfiles', shareProfileId), {

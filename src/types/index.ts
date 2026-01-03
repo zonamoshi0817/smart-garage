@@ -601,6 +601,9 @@ export interface ShareProfile extends BaseEntity {
   
   // SNS共有（通常リンク）用フィールド（type="normal"のみ利用）
   sns?: {
+    settings?: {
+      showPricesInDetails?: boolean;        // Detailsセクション内に価格を表示するか（デフォルト: false）
+    };
     conceptTitle?: string;                 // 短い肩書き（例：街乗り仕様）
     conceptBody?: string;                 // 紹介文 30〜200字
     highlightParts?: Array<{              // 主要カスタム最大6件
@@ -622,6 +625,12 @@ export interface ShareProfile extends BaseEntity {
       featured?: Array<{                  // 主要パーツ（最大30件）
         label: string;
         value: string;
+        priceAmount?: number;              // 具体的な価格（JPY）
+        priceCurrency?: 'JPY';             // 通貨（デフォルト: JPY）
+        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET'; // 価格の種類（パーツ代のみ/工賃込み/相場）
+        priceAsOf?: string;                // 価格の時点（YYYY-MM形式推奨）
+        priceRounding?: 0 | 100 | 1000 | 10000; // 表示時の丸め（オプション）
+        priceVisibility?: 'HIDE' | 'SHOW'; // 個別の表示設定（オプション）
       }>;
       categories?: Array<{                // カテゴリごとのビルド情報
         name: string;
