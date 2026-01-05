@@ -630,7 +630,7 @@ function ShareLinkCard({
   const handleDragStart = (e: React.DragEvent, imageId: string) => {
     setDraggedImageId(imageId);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', imageId);
+    e.dataTransfer.setData('text/plain', imageId);
     // ドラッグ中の画像を半透明に
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '0.5';
@@ -641,27 +641,41 @@ function ShareLinkCard({
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '1';
     }
-    setDraggedImageId(null);
-    setDragOverImageId(null);
+    // ドロップされなかった場合もクリア
+    if (draggedImageId) {
+      setDraggedImageId(null);
+      setDragOverImageId(null);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent, imageId: string) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
     if (draggedImageId && draggedImageId !== imageId) {
       setDragOverImageId(imageId);
     }
   };
 
-  const handleDragLeave = () => {
-    setDragOverImageId(null);
+  const handleDragLeave = (e: React.DragEvent) => {
+    // 子要素に移動した場合は無視
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    // 要素の範囲外に出た場合のみ処理
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverImageId(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, targetImageId: string) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOverImageId(null);
 
     if (!draggedImageId || draggedImageId === targetImageId) {
+      setDraggedImageId(null);
       return;
     }
 
@@ -670,6 +684,7 @@ function ShareLinkCard({
     const targetIndex = currentGallery.findIndex((img: { id: string }) => img.id === targetImageId);
 
     if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedImageId(null);
       return;
     }
 
@@ -681,6 +696,8 @@ function ShareLinkCard({
       ...snsData,
       gallery: currentGallery,
     });
+    
+    setDraggedImageId(null);
   };
 
   // PDF生成ハンドラー
@@ -1037,19 +1054,20 @@ function ShareLinkCard({
                       return (
                         <div
                           key={img.id}
-                          draggable
+                          draggable={true}
                           onDragStart={(e) => handleDragStart(e, img.id)}
                           onDragEnd={handleDragEnd}
                           onDragOver={(e) => handleDragOver(e, img.id)}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, img.id)}
-                          className={`relative aspect-square rounded-lg overflow-hidden bg-gray-200 group cursor-move transition-all ${
-                            isDragging ? 'opacity-50 scale-95' : ''
+                          className={`relative aspect-square rounded-lg overflow-hidden bg-gray-200 group cursor-move transition-all select-none ${
+                            isDragging ? 'opacity-50 scale-95 z-50' : ''
                           } ${
-                            isDragOver ? 'ring-2 ring-blue-500 ring-offset-2 scale-105' : ''
+                            isDragOver ? 'ring-2 ring-blue-500 ring-offset-2 scale-105 z-40' : ''
                           } ${
                             isHero ? 'ring-2 ring-yellow-400 ring-offset-1' : ''
                           }`}
+                          style={{ touchAction: 'none' }}
                         >
                           {previewUrl ? (
                             <img 
@@ -1064,17 +1082,24 @@ function ShareLinkCard({
                             </div>
                           )}
                           {isHero && (
-                            <div className="absolute top-1 left-1 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded">
+                            <div className="absolute top-1 left-1 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded z-20">
                               ヒーロー
                             </div>
                           )}
+                          {/* ドラッグ可能インジケーター */}
+                          <div className="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs z-20 pointer-events-none">
+                            ⋮⋮
+                          </div>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               handleImageDelete(img.id);
                             }}
-                            className="absolute top-1 right-1 w-6 h-6 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs z-10"
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="absolute top-1 right-1 w-6 h-6 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs z-30"
                             title="画像を削除"
+                            type="button"
                           >
                             ×
                           </button>
