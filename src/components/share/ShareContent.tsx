@@ -459,6 +459,8 @@ function ShareLinkCard({
   const [showPricesInDetails, setShowPricesInDetails] = useState(profile?.sns?.settings?.showPricesInDetails || false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
+  const [dragOverImageId, setDragOverImageId] = useState<string | null>(null);
   
   // SNS編集用の状態
   const [snsData, setSnsData] = useState({
@@ -621,6 +623,63 @@ function ShareLinkCard({
     setSnsData({
       ...snsData,
       gallery: snsData.gallery.filter((img: { id: string; path: string; caption?: string }) => img.id !== imageId)
+    });
+  };
+
+  // ドラッグ&ドロップハンドラー
+  const handleDragStart = (e: React.DragEvent, imageId: string) => {
+    setDraggedImageId(imageId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', imageId);
+    // ドラッグ中の画像を半透明に
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5';
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1';
+    }
+    setDraggedImageId(null);
+    setDragOverImageId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, imageId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedImageId && draggedImageId !== imageId) {
+      setDragOverImageId(imageId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverImageId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetImageId: string) => {
+    e.preventDefault();
+    setDragOverImageId(null);
+
+    if (!draggedImageId || draggedImageId === targetImageId) {
+      return;
+    }
+
+    const currentGallery = [...snsData.gallery];
+    const draggedIndex = currentGallery.findIndex((img: { id: string }) => img.id === draggedImageId);
+    const targetIndex = currentGallery.findIndex((img: { id: string }) => img.id === targetImageId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      return;
+    }
+
+    // 順序を変更
+    const [removed] = currentGallery.splice(draggedIndex, 1);
+    currentGallery.splice(targetIndex, 0, removed);
+
+    setSnsData({
+      ...snsData,
+      gallery: currentGallery,
     });
   };
 
@@ -965,32 +1024,71 @@ function ShareLinkCard({
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   ギャラリー画像（最大12枚）
                 </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  最初の画像がヒーロー画像として表示されます。ドラッグ&ドロップで順序を変更できます。
+                </p>
                 {snsData.gallery.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mb-3">
-                    {snsData.gallery.map((img: { id: string; path: string; caption?: string }) => {
+                    {snsData.gallery.map((img: { id: string; path: string; caption?: string }, index: number) => {
                       const previewUrl = galleryPreviewUrls[img.id];
+                      const isDragging = draggedImageId === img.id;
+                      const isDragOver = dragOverImageId === img.id;
+                      const isHero = index === 0;
                       return (
-                        <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden bg-gray-200 group">
+                        <div
+                          key={img.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, img.id)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => handleDragOver(e, img.id)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, img.id)}
+                          className={`relative aspect-square rounded-lg overflow-hidden bg-gray-200 group cursor-move transition-all ${
+                            isDragging ? 'opacity-50 scale-95' : ''
+                          } ${
+                            isDragOver ? 'ring-2 ring-blue-500 ring-offset-2 scale-105' : ''
+                          } ${
+                            isHero ? 'ring-2 ring-yellow-400 ring-offset-1' : ''
+                          }`}
+                        >
                           {previewUrl ? (
                             <img 
                               src={previewUrl} 
                               alt={img.caption || 'Gallery image'}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover pointer-events-none"
+                              draggable={false}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
                               読み込み中...
                             </div>
                           )}
+                          {isHero && (
+                            <div className="absolute top-1 left-1 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded">
+                              ヒーロー
+                            </div>
+                          )}
                           <button
-                            onClick={() => handleImageDelete(img.id)}
-                            className="absolute top-1 right-1 w-6 h-6 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleImageDelete(img.id);
+                            }}
+                            className="absolute top-1 right-1 w-6 h-6 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs z-10"
+                            title="画像を削除"
                           >
                             ×
                           </button>
                           {img.caption && (
                             <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
                               {img.caption}
+                            </div>
+                          )}
+                          {/* ドラッグ中のインジケーター */}
+                          {isDragging && (
+                            <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                              <div className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium">
+                                移動中...
+                              </div>
                             </div>
                           )}
                         </div>
