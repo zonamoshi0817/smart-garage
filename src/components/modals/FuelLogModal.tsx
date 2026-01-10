@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { addFuelLog, updateFuelLog, getFuelLogs, type FuelLogInput } from "@/lib/fuelLogs";
 import { updateCar } from "@/lib/cars";
 import type { Car, FuelLog } from "@/types";
@@ -39,8 +39,21 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
   const [odoWarning, setOdoWarning] = useState<string | null>(null);
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<string | null>(null);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isEditing = !!editingFuelLog;
+
+  // モバイルデバイスかどうかを判定（クライアントサイドのみ）
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) ||
+        window.matchMedia('(pointer: coarse)').matches;
+      setIsMobileDevice(mobile);
+      console.log('[FuelLog] Mobile device detected:', mobile);
+    }
+  }, []);
 
   // ODO距離の検証関数
   const validateOdoDistance = (odoKm: number) => {
@@ -460,8 +473,13 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                       type="button"
                       onClick={() => {
                         console.log('[FuelLog] OCR button clicked, opening file picker');
-                        // フリーミアムモデル: まず体験させる（ボタンクリック時はチェックしない）
-                        document.getElementById('receipt-file-input')?.click();
+                        console.log('[FuelLog] isMobileDevice:', isMobileDevice);
+                        
+                        // ファイル入力の値をリセット（同じファイルを再度選択できるように）
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                          fileInputRef.current.click();
+                        }
                       }}
                       disabled={isOcrProcessing}
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -479,20 +497,28 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          レシートを撮影/選択
+                          {isMobileDevice ? 'レシートを撮影' : 'レシート画像を選択'}
                         </>
                       )}
                     </button>
                     <input
+                      ref={fileInputRef}
                       id="receipt-file-input"
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      capture={isMobileDevice ? "environment" : undefined}
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
+                          console.log('[FuelLog] File selected:', file.name, file.type, file.size);
                           handleReceiptScan(file);
+                        } else {
+                          console.log('[FuelLog] No file selected');
+                        }
+                        // ファイル入力をリセット（同じファイルを再度選択できるように）
+                        if (e.target) {
+                          e.target.value = '';
                         }
                       }}
                       disabled={isOcrProcessing}
