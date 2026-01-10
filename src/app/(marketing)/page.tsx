@@ -22,6 +22,8 @@ const DESIGN_TOKENS = {
     sm: "shadow-sm",
     md: "shadow-md",
     lg: "shadow-lg",
+    xl: "shadow-xl",
+    xxl: "shadow-2xl",
   },
   accent: {
     blue: "blue-600",
@@ -54,71 +56,80 @@ export default function LandingPage() {
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* 背景：薄いブルー系グラデーション + ほんのりノイズ（最新LP感） */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/40 via-white to-indigo-50/30"></div>
+      {/* 背景：薄い放射グラデーション + ごく薄いテクスチャ（最新感、白の清潔感は維持） */}
       <div 
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563eb' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          background: 'radial-gradient(ellipse at top, rgba(37, 99, 235, 0.04) 0%, rgba(255, 255, 255, 0) 70%)',
+        }}
+      ></div>
+      <div 
+        className="absolute inset-0 opacity-[0.015]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       ></div>
       
-      <div className={`${DESIGN_TOKENS.container} relative py-20 lg:py-32`}>
-        {/* メイングリッド：左（コンテンツ）+ 右（モック） */}
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center mb-20">
-          {/* 左側：H1 + ベネフィット + CTA */}
-          <div className="space-y-8 slide-in-left-on-scroll">
+      <div className={`${DESIGN_TOKENS.container} relative py-16 lg:py-24`}>
+        {/* メイングリッド：モバイルでは画像→テキストの順、デスクトップでは左（コンテンツ）+ 右（モック） */}
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-16 lg:mb-20">
+          {/* 左側：H1 + ベネフィット + CTA（モバイルでは2番目） */}
+          <div className="space-y-6 slide-in-left-on-scroll order-2 lg:order-1">
             {/* バッジ */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200/60 text-sm font-medium text-slate-700 shadow-sm">
               <Sparkles className="h-4 w-4 text-blue-600" />
               <span>クルマの記録を、もっとスマートに</span>
             </div>
             
-            {/* H1：改行を自然に */}
-            <h1 className="text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight text-slate-900 leading-[1.05]">
+            {/* H1：改行を自然に、縦リズムを詰める */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight text-slate-900 leading-[1.05] mt-4">
               クルマと、<br className="hidden sm:block" />
               <span className="text-blue-600">ずっと</span>いい関係。
             </h1>
             
-            {/* サブコピー */}
-            <p className="text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
+            {/* サブコピー：行幅を最適化 */}
+            <p className="text-base lg:text-lg text-slate-600 leading-relaxed max-w-lg mt-4">
               メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。
             </p>
 
-            {/* 3つのベネフィット（H1直下） */}
-            <div className="flex flex-col gap-3 pt-2">
-              <div className="flex items-center gap-3 text-base text-slate-700">
-                <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Camera className="h-5 w-5 text-blue-600" />
+            {/* 3つのベネフィット（H1直下、縦リズムを詰める） */}
+            <div className="flex flex-col gap-2.5 mt-5">
+              <div className="flex items-center gap-3 text-sm lg:text-base text-slate-700">
+                <div className="h-9 w-9 lg:h-10 lg:w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Camera className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
                 </div>
                 <span className="font-medium">レシートOCRで最短10秒入力</span>
               </div>
-              <div className="flex items-center gap-3 text-base text-slate-700">
-                <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Timer className="h-5 w-5 text-blue-600" />
+              <div className="flex items-center gap-3 text-sm lg:text-base text-slate-700">
+                <div className="h-9 w-9 lg:h-10 lg:w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Timer className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
                 </div>
                 <span className="font-medium">次回メンテ自動リマインド</span>
               </div>
-              <div className="flex items-center gap-3 text-base text-slate-700">
-                <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-blue-600" />
+              <div className="flex items-center gap-3 text-sm lg:text-base text-slate-700">
+                <div className="h-9 w-9 lg:h-10 lg:w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
                 </div>
                 <span className="font-medium">署名付きPDFで第三者に証明</span>
               </div>
             </div>
             
-            {/* CTA：Primary + Secondary */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4">
-              <div className="flex flex-col gap-2">
-                <HeroCTAButtonsPrimary variant="primary" />
-                <p className="text-xs text-slate-500 pl-1">30秒で開始・クレカ不要</p>
-              </div>
+            {/* CTA：Primary + Secondary（縦リズムを詰める） */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-6">
+              <HeroCTAButtonsPrimary variant="primary" />
               <HeroCTAButtonsPrimary variant="secondary" />
+            </div>
+
+            {/* 信頼要素のチップ3つ（CTA直下） */}
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <TrustChip icon={<Check className="h-3.5 w-3.5" />} text="クレカ不要" />
+              <TrustChip icon={<Clock className="h-3.5 w-3.5" />} text="30秒で開始" />
+              <TrustChip icon={<Download className="h-3.5 w-3.5" />} text="データはいつでもエクスポート" />
             </div>
           </div>
           
-          {/* 右側：プロダクトスクショ（注釈付き） */}
-          <div className="relative slide-in-right-on-scroll lg:mt-0 mt-12">
+          {/* 右側：プロダクトスクショ（注釈付き、モバイルでは1番目） */}
+          <div className="relative slide-in-right-on-scroll lg:mt-0 order-1 lg:order-2">
             <HeroScreenshot />
           </div>
         </div>
@@ -157,8 +168,8 @@ function Hero() {
 function HeroScreenshot() {
   return (
     <div className="relative">
-      {/* スクショカード：大きめの角丸、柔らかいシャドウ、外周余白 */}
-      <div className="relative rounded-3xl border border-slate-200/60 bg-white shadow-2xl overflow-hidden p-4 lg:p-6">
+      {/* スクショカード：大きめの角丸、柔らかいシャドウ（強調要素なのでxl使用）、外周余白 */}
+      <div className={`relative ${DESIGN_TOKENS.radius.lg} border border-slate-200/60 bg-white ${DESIGN_TOKENS.shadow.xl} overflow-hidden p-4 lg:p-6`}>
         {/* ブラウザウィンドウ風ヘッダー */}
         <div className="px-3 py-2 border-b border-slate-200/60 flex items-center gap-2 bg-slate-50/50 mb-4">
           <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
@@ -168,9 +179,9 @@ function HeroScreenshot() {
         </div>
         
         {/* コンテンツエリア：Spotlight表現 */}
-        <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-xl overflow-hidden">
-          {/* 背景：ダッシュボードUIを薄く表示（opacity 20-35% + blur 2-4px） */}
-          <div className="absolute inset-0 opacity-[0.25] blur-[3px]">
+        <div className={`relative w-full aspect-[4/3] bg-gradient-to-br from-slate-50 to-blue-50/30 ${DESIGN_TOKENS.radius.md} overflow-hidden`}>
+          {/* 背景：ダッシュボードUIをうっすら読める状態で表示（ぼかしを弱める、情報量が読める状態） */}
+          <div className="absolute inset-0 opacity-[0.35] blur-[1.5px]">
             <DashboardBackground />
           </div>
           
@@ -181,11 +192,11 @@ function HeroScreenshot() {
         </div>
       </div>
 
-      {/* LP注釈：UIに被せない配置（スクショカードの外側） */}
+      {/* LP注釈：機能説明に変更（数値はカード側に寄せる） */}
       <div className="hidden lg:block absolute -top-6 left-1/2 -translate-x-1/2 z-20">
         <LPAnnotation
           icon={<Timer className="h-4 w-4" />}
-          text="次回まで残り 1,234km"
+          text="次回メンテを自動計算"
           position="top"
         />
       </div>
@@ -193,10 +204,23 @@ function HeroScreenshot() {
   );
 }
 
-// 背景用：ダッシュボードUI（薄く表示）
+// 背景用：ダッシュボードUI（薄く表示、画像差し替え可能な構造）
 function DashboardBackground() {
   return (
     <div className="w-full h-full p-4">
+      {/* 実際の画像がある場合はこちらを使用（コメントアウトを外す） */}
+      {/* 
+      <Image
+        src="/lp-screenshots/hero-dashboard-background.png"
+        alt="GarageLog ダッシュボード（背景用）"
+        width={1200}
+        height={900}
+        className="w-full h-full object-cover"
+        style={{ opacity: 0.35, filter: 'blur(1.5px)' }}
+      />
+      */}
+      
+      {/* プレースホルダー：HTML構造でダッシュボードUIを再現 */}
       <div className="grid grid-cols-[140px_1fr] gap-4 h-full">
         {/* サイドバー */}
         <aside className="space-y-3">
@@ -291,38 +315,48 @@ function DashboardBackground() {
   );
 }
 
-// 前面強調：次回メンテ提案カード（shadow強め、border薄い、角丸は既存と合わせる）
+// 前面強調：次回メンテ提案カード（shadow強め、border薄い、角丸は既存と合わせる、数値を強調）
 function MaintenanceCard() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/30 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] p-6 max-w-sm mx-auto backdrop-blur-sm">
+    <div className={`bg-white ${DESIGN_TOKENS.radius.lg} border border-slate-200/30 ${DESIGN_TOKENS.shadow.xxl} p-5 lg:p-6 max-w-sm mx-auto backdrop-blur-sm`}>
       {/* 見出し */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center shadow-md">
-          <Timer className="h-6 w-6 text-blue-600" />
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`h-11 w-11 lg:h-12 lg:w-12 ${DESIGN_TOKENS.radius.md} bg-blue-100 flex items-center justify-center shadow-md`}>
+          <Timer className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">次回メンテ</h3>
+          <h3 className="text-base lg:text-lg font-semibold text-slate-900">次回メンテ</h3>
         </div>
       </div>
       
-      {/* 本文 */}
-      <div className="bg-slate-50 rounded-xl p-5">
-        <div className="text-sm text-slate-600 mb-3">次回まで残り</div>
-        <div className="text-2xl font-bold text-slate-900 mb-4">1,234km</div>
+      {/* 本文：数値を強調 */}
+      <div className={`bg-slate-50 ${DESIGN_TOKENS.radius.md} p-4 lg:p-5`}>
+        <div className="text-xs lg:text-sm text-slate-600 mb-2">次回まで残り</div>
+        <div className="text-2xl lg:text-3xl font-bold text-slate-900 mb-3">1,234km</div>
         
         {/* 進捗バー */}
-        <div className="mb-4">
+        <div className="mb-3">
           <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{ width: '75%' }}></div>
           </div>
         </div>
         
         {/* 推奨メンテナンス */}
-        <div className="pt-4 border-t border-slate-200">
+        <div className="pt-3 border-t border-slate-200">
           <div className="text-xs text-slate-500 mb-1">推奨メンテナンス</div>
-          <div className="text-base font-semibold text-slate-900">オイル交換</div>
+          <div className="text-sm lg:text-base font-semibold text-slate-900">オイル交換</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// 信頼要素のチップ（CTA直下、視認性が高いが主張しすぎない見た目）
+function TrustChip({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${DESIGN_TOKENS.radius.sm} bg-white/90 backdrop-blur-sm border border-slate-200/60 text-xs font-medium text-slate-700 ${DESIGN_TOKENS.shadow.sm} hover:shadow-md transition-shadow`}>
+      <div className="text-green-600 flex-shrink-0">{icon}</div>
+      <span className="whitespace-nowrap">{text}</span>
     </div>
   );
 }
