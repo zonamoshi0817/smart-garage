@@ -112,8 +112,6 @@ function Hero() {
             <HeroScreenshot />
           </div>
         </div>
-
-      </div>
       </div>
     </section>
   );
