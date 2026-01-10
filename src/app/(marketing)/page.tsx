@@ -1,264 +1,35 @@
-"use client";
+import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, Download, Star, Timer, Zap } from "lucide-react";
+import Header from "@/components/marketing/Header";
+import { CTAButtons, PricingCTAButtons } from "@/components/marketing/CTAButtons.client";
+import LandingPageAnalytics from "@/components/marketing/LandingPageAnalytics.client";
+import ScrollAnimations from "@/components/marketing/ScrollAnimations.client";
+import Link from "next/link";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, ArrowRight, Download, Star, Timer, Zap, LogIn, Menu, X, UserPlus } from "lucide-react";
-import { watchAuth } from "@/lib/firebase";
-import type { User } from "firebase/auth";
-import { lpEvents, trackPageView } from "@/lib/analytics";
+export const dynamic = 'force-static';
+export const revalidate = 86400;
 
 // Smart Garage LP — Modern, premium design with animations and gradients
 
 export default function LandingPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-
-  useEffect(() => {
-    let isMounted = true;
-    let unsubscribe: (() => void) | null = null;
-    
-    // タイムアウトを設定（500ms後に強制的にローディングを解除）
-    const timeoutId = setTimeout(() => {
-      if (isMounted) {
-        setIsLoading(false);
-      }
-    }, 500);
-    
-    try {
-      unsubscribe = watchAuth((u) => {
-        if (!isMounted) return;
-        
-        try {
-          setUser(u);
-          setIsLoading(false);
-          setError(null);
-        } catch (err) {
-          console.error('認証状態更新エラー:', err);
-          if (isMounted) {
-            setError('認証状態の取得に失敗しました');
-            setIsLoading(false);
-          }
-        }
-      });
-    } catch (err) {
-      console.error('認証初期化エラー:', err);
-      if (isMounted) {
-        setError('認証の初期化に失敗しました');
-        setIsLoading(false);
-      }
-    }
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-      if (unsubscribe) {
-        try {
-          unsubscribe();
-        } catch (err) {
-          console.error('認証監視の解除エラー:', err);
-        }
-      }
-    };
-  }, [router]);
-
-  // ページビューを追跡
-  useEffect(() => {
-    if (isLoading || typeof window === 'undefined') return;
-    trackPageView(window.location.pathname);
-  }, [isLoading]);
-
-  // スクロールアニメーションとセクション表示を初期化（ローディング完了後）
-  useEffect(() => {
-    if (isLoading || typeof window === 'undefined') return;
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            
-            // セクション表示を追跡
-            const sectionId = entry.target.id;
-            if (sectionId) {
-              lpEvents.sectionView(sectionId);
-            }
-            
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
-    );
-
-    // DOMが完全にレンダリングされるのを待つ
-    const timeoutId = setTimeout(() => {
-      const elements = document.querySelectorAll('.fade-in-on-scroll, .slide-in-left-on-scroll, .slide-in-right-on-scroll, .scale-in-on-scroll');
-      elements.forEach((el) => observer.observe(el));
-      
-      // セクション要素も監視
-      const sections = document.querySelectorAll('section[id]');
-      sections.forEach((section) => observer.observe(section));
-    }, 200);
-
-    // スクロール深度を追跡
-    let maxScrollDepth = 0;
-    const scrollDepthThresholds = [25, 50, 75, 100];
-    const trackedDepths = new Set<number>();
-
-    const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const scrollDepth = Math.round((scrollTop / documentHeight) * 100);
-
-      scrollDepthThresholds.forEach((threshold) => {
-        if (scrollDepth >= threshold && !trackedDepths.has(threshold) && maxScrollDepth < threshold) {
-          trackedDepths.add(threshold);
-          maxScrollDepth = threshold;
-          lpEvents.scrollDepth(threshold);
-        }
-      });
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      clearTimeout(timeoutId);
-      const elements = document.querySelectorAll('.fade-in-on-scroll, .slide-in-left-on-scroll, .slide-in-right-on-scroll, .scale-in-on-scroll');
-      elements.forEach((el) => observer.unobserve(el));
-      const sections = document.querySelectorAll('section[id]');
-      sections.forEach((section) => observer.unobserve(section));
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [isLoading]);
-
-  const handleLogin = () => {
-    lpEvents.loginClick('lp');
-    router.push('/login');
-  };
-
-  const handleSignUp = () => {
-    lpEvents.ctaClick('lp_signup');
-    router.push('/signup');
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-600">読み込み中...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-      <Header user={user} onLogin={handleLogin} onSignUp={handleSignUp} />
-      <Hero onLogin={handleLogin} onSignUp={handleSignUp} />
+      <LandingPageAnalytics />
+      <ScrollAnimations />
+      <Header />
+      <Hero />
       <TrustBar />
       <PainGain />
       <HowItWorks />
       <Features />
-      <Pricing onSignUp={handleSignUp} />
+      <Pricing />
       <FAQ />
-      <CTA onLogin={handleLogin} onSignUp={handleSignUp} />
+      <CTA />
       <Footer />
     </div>
   );
 }
 
-function Header({ user, onLogin, onSignUp }: { user: User | null; onLogin: () => void; onSignUp: () => void }) {
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    // 画像読み込みエラーを無視（デフォルト画像が表示されない場合）
-    const target = e.target as HTMLImageElement;
-    target.style.display = 'none';
-  };
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 border-b border-gray-200/50 shadow-sm animate-slideUp">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
-          <img 
-            src="/icon.png" 
-            alt="GarageLog" 
-            className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl shadow-md"
-            onError={handleImageError}
-          />
-          <div className="leading-tight">
-            <p className="font-bold text-gray-900 text-base sm:text-lg">GarageLog</p>
-            <p className="text-[10px] sm:text-[11px] text-gray-500 -mt-0.5 font-medium hidden sm:block">クルマと、ずっといい関係。</p>
-          </div>
-        </a>
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
-          <a href="#features" className="hover:text-blue-600 transition-colors">機能</a>
-          <a href="#how" className="hover:text-blue-600 transition-colors">使い方</a>
-          <a href="#pricing" className="hover:text-blue-600 transition-colors">料金</a>
-          <a href="#faq" className="hover:text-blue-600 transition-colors">FAQ</a>
-        </nav>
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* モバイルメニューボタン */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-200"
-            aria-label="メニュー"
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-          <>
-            <button
-              onClick={onSignUp}
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 hover:scale-105 transition-all duration-200"
-            >
-              <UserPlus className="h-4 w-4" />
-              新規登録
-            </button>
-            <button
-              onClick={onLogin}
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-gray-700 font-semibold border-2 border-gray-300 shadow-md hover:bg-gray-50 hover:scale-105 transition-all duration-200"
-            >
-              <LogIn className="h-4 w-4" />
-              ログイン
-            </button>
-            <button
-              onClick={onSignUp}
-              className="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-all duration-200"
-              aria-label="新規登録"
-            >
-              <UserPlus className="h-5 w-5" />
-            </button>
-          </>
-        </div>
-      </div>
-      {/* モバイルメニュー */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
-          <nav className="px-4 py-4 space-y-3">
-            <a href="#features" className="block text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>機能</a>
-            <a href="#how" className="block text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>使い方</a>
-            <a href="#pricing" className="block text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>料金</a>
-            <a href="#faq" className="block text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
-          </nav>
-        </div>
-      )}
-    </header>
-  );
-}
-
-function Hero({ onLogin, onSignUp }: { onLogin: () => void; onSignUp: () => void }) {
+function Hero() {
   return (
     <section className="relative overflow-hidden bg-blue-50">
       {/* アニメーション背景 */}
@@ -283,28 +54,7 @@ function Hero({ onLogin, onSignUp }: { onLogin: () => void; onSignUp: () => void
               メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。
             </p>
             
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              <button
-                onClick={onSignUp}
-                className="group inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-lg hover:bg-blue-700 hover:shadow-xl hover:scale-105 transition-all duration-200"
-              >
-                無料ではじめる
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={onLogin}
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold border-2 border-blue-200 hover:border-blue-300 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-              >
-                ログイン
-              </button>
-              <a 
-                href="#how" 
-                onClick={() => lpEvents.ctaClick('hero_how_it_works')}
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold border-2 border-gray-200 hover:border-gray-300 shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-              >
-                使い方を見る
-              </a>
-            </div>
+            <CTAButtons variant="hero" />
             
             <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 pt-4">
               <div className="flex items-center gap-2 group">
@@ -619,7 +369,7 @@ function Features() {
   );
 }
 
-function Pricing({ onSignUp }: { onSignUp: () => void }) {
+function Pricing() {
   return (
     <section id="pricing" className="bg-white py-12 sm:py-16 lg:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -657,12 +407,7 @@ function Pricing({ onSignUp }: { onSignUp: () => void }) {
                 <span className="text-gray-400">OCR / PDF</span>
               </li>
             </ul>
-            <button
-              onClick={onSignUp}
-              className="w-full rounded-xl border-2 border-blue-600 bg-white text-blue-600 py-2.5 sm:py-3 font-semibold hover:bg-blue-50 transition-colors text-sm sm:text-base"
-            >
-              無料で始める
-            </button>
+            <PricingCTAButtons planType="free" />
           </div>
 
           {/* Premium */}
@@ -693,12 +438,7 @@ function Pricing({ onSignUp }: { onSignUp: () => void }) {
                 <span>広告非表示・高度なリマインダー</span>
               </li>
             </ul>
-            <button
-              onClick={onSignUp}
-              className="w-full rounded-xl bg-blue-600 text-white py-2.5 sm:py-3 font-bold shadow-lg hover:shadow-xl hover:bg-blue-700 transition-colors text-sm sm:text-base"
-            >
-              プレミアムを始める
-            </button>
+            <PricingCTAButtons planType="premium" />
           </div>
         </div>
       </div>
@@ -736,7 +476,7 @@ function FAQ() {
   );
 }
 
-function CTA({ onLogin, onSignUp }: { onLogin: () => void; onSignUp: () => void }) {
+function CTA() {
   return (
     <section id="cta" className="relative overflow-hidden bg-blue-600 fade-in-on-scroll">
       {/* アニメーション背景 */}
@@ -751,21 +491,7 @@ function CTA({ onLogin, onSignUp }: { onLogin: () => void; onSignUp: () => void 
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-3 sm:mb-4 animate-pulse-slow">愛車の価値を、最大限に。</h2>
               <p className="text-base sm:text-lg text-blue-100 leading-relaxed">プロレベルの管理を、今すぐ無料で。</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-end">
-              <button
-                onClick={onSignUp}
-                className="group inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-white text-blue-600 font-bold px-6 sm:px-8 py-3 sm:py-4 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 text-base sm:text-lg"
-              >
-                新規登録
-                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button
-                onClick={onLogin}
-                className="inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-sm text-white font-semibold border-2 border-white/30 px-6 sm:px-8 py-3 sm:py-4 shadow-xl hover:bg-white/20 hover:scale-105 transition-all duration-200 text-base sm:text-lg"
-              >
-                ログイン
-              </button>
-            </div>
+            <CTAButtons variant="cta-section" />
           </div>
         </div>
       </div>
@@ -774,31 +500,33 @@ function CTA({ onLogin, onSignUp }: { onLogin: () => void; onSignUp: () => void 
 }
 
 function Footer() {
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    const target = e.target as HTMLImageElement;
-    target.style.display = 'none';
-  };
+  const currentYear = new Date().getFullYear();
 
   return (
     <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-xs sm:text-sm text-gray-600">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
           <div className="flex items-center gap-2 sm:gap-3">
-            <img 
-              src="/icon.png" 
-              alt="GarageLog" 
+            <img
+              src="/icon.png"
+              alt="GarageLog"
               className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl shadow-md"
-              onError={handleImageError}
             />
             <div>
               <p className="font-bold text-gray-900 text-base sm:text-lg">GarageLog</p>
-              <p className="text-[10px] sm:text-xs text-gray-500">© {new Date().getFullYear()} GarageLog</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">© {currentYear} GarageLog</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <a className="hover:text-blue-600 font-medium transition-colors text-xs sm:text-sm" href="/legal/privacy">プライバシーポリシー</a>
-            <a className="hover:text-blue-600 font-medium transition-colors text-xs sm:text-sm" href="/legal/terms">利用規約</a>
-            <a className="hover:text-blue-600 font-medium transition-colors text-xs sm:text-sm" href="/support">サポート</a>
+            <Link className="hover:text-blue-600 font-medium transition-colors text-xs sm:text-sm" href="/legal/privacy">
+              プライバシーポリシー
+            </Link>
+            <Link className="hover:text-blue-600 font-medium transition-colors text-xs sm:text-sm" href="/legal/terms">
+              利用規約
+            </Link>
+            <Link className="hover:text-blue-600 font-medium transition-colors text-xs sm:text-sm" href="/support">
+              サポート
+            </Link>
           </div>
         </div>
       </div>
