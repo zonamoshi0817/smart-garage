@@ -82,10 +82,10 @@ function Hero() {
               <span>クルマの記録を、もっとスマートに</span>
             </div>
             
-            {/* H1：一元管理のメッセージに集中 */}
+            {/* H1：改行を自然に、縦リズムを詰める */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight text-slate-900 leading-[1.05] mt-4">
-              クルマの記録を、<br className="hidden sm:block" />
-              <span className="text-blue-600">一元管理</span>。
+              クルマと、<br className="hidden sm:block" />
+              <span className="text-blue-600">ずっと</span>いい関係。
             </h1>
             
             {/* サブコピー：行幅を最適化 */}
