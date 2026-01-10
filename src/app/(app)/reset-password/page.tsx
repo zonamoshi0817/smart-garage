@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* ロゴ */}
       <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-4">
         <Logo size="md" />
@@ -59,10 +59,10 @@ export default function ResetPasswordPage() {
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 text-center">
+            <h1 className="text-3xl font-semibold text-slate-900 text-center">
               パスワードをリセット
             </h1>
-            <p className="mt-4 text-sm text-gray-600 text-center">
+            <p className="mt-4 text-sm text-slate-600 text-center">
               登録されているメールアドレスを入力してください。
               <br />
               パスワードリセット用のリンクを送信します。
@@ -70,13 +70,13 @@ export default function ResetPasswordPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+            <div className="bg-red-50 border border-red-200 p-4 rounded-2xl">
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
           {isSuccess ? (
-            <div className="bg-green-50 border-l-4 border-green-400 p-6 rounded-lg">
+            <div className="bg-green-50 border border-green-200 p-6 rounded-2xl">
               <div className="flex items-start">
                 <CheckCircle className="h-6 w-6 text-green-600 mr-3 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Link
                       href="/login"
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors text-sm"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors text-sm shadow-sm"
                     >
                       ログインページに戻る
                     </Link>
@@ -104,7 +104,7 @@ export default function ResetPasswordPage() {
                         setIsSuccess(false);
                         setError(null);
                       }}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white text-green-700 font-semibold border-2 border-green-300 hover:bg-green-50 transition-colors text-sm"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white text-blue-700 font-semibold border border-blue-300 hover:bg-blue-50 transition-colors text-sm shadow-sm"
                     >
                       別のメールアドレスで送信
                     </button>
@@ -115,12 +115,12 @@ export default function ResetPasswordPage() {
           ) : (
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
                   メールアドレス
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
+                    <Mail className="h-5 w-5 text-slate-400" />
                   </div>
                   <input
                     id="email"
@@ -130,7 +130,7 @@ export default function ResetPasswordPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    className="appearance-none relative block w-full pl-10 pr-3 py-3 border border-slate-200 placeholder-slate-400 text-slate-900 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                     placeholder="example@garagelog.com"
                   />
                 </div>
@@ -139,7 +139,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (
                   <>
@@ -167,7 +167,7 @@ export default function ResetPasswordPage() {
             <div>
               <Link
                 href="/signup"
-                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
                 新規登録はこちら
               </Link>
