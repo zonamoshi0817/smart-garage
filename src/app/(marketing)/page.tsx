@@ -5,6 +5,7 @@ import LandingPageAnalytics from "@/components/marketing/LandingPageAnalytics.cl
 import ScrollAnimations from "@/components/marketing/ScrollAnimations.client";
 import HeroCTAButtonsPrimary from "@/components/marketing/HeroCTAButtons.client";
 import Link from "next/link";
+import Image from "next/image";
 
 export const dynamic = 'force-static';
 export const revalidate = 0; // デプロイ直後に反映されるように一時的に0に設定（確認後、86400に戻す）
@@ -53,12 +54,12 @@ export default function LandingPage() {
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* 背景：グラデーション + ノイズ */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/30"></div>
+      {/* 背景：薄いブルー系グラデーション + ほんのりノイズ（最新LP感） */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/40 via-white to-indigo-50/30"></div>
       <div 
-        className="absolute inset-0 opacity-[0.015]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563eb' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       ></div>
       
@@ -116,14 +117,17 @@ function Hero() {
             </div>
           </div>
           
-          {/* 右側：プロダクトモック（注釈付き） */}
+          {/* 右側：プロダクトスクショ（注釈付き） */}
           <div className="relative slide-in-right-on-scroll lg:mt-0 mt-12">
-            <ProductMock />
+            <HeroScreenshot />
           </div>
         </div>
 
+        {/* 下部：機能別スクショ3枚 */}
+        <FeatureScreenshots />
+
         {/* 下部：機能カード3枚（成果ベース） */}
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid md:grid-cols-3 gap-6 lg:gap-8 mt-20">
           <BentoTile
             icon={<Camera className="h-6 w-6" />}
             title="入力が10秒"
@@ -149,211 +153,313 @@ function Hero() {
 }
 
 
-function ProductMock() {
+// ヒーロー用スクリーンショット（Spotlight表現：背景にダッシュボードUI、前面に次回メンテカードを強調）
+function HeroScreenshot() {
   return (
-    <div className="relative rounded-2xl border border-gray-200 shadow-xl overflow-hidden bg-white max-w-full">
-      {/* ブラウザウィンドウ風ヘッダー */}
-      <div className="px-4 sm:px-6 py-3 border-b border-gray-200 flex items-center gap-2 bg-gray-50">
-        <div className="h-3 w-3 rounded-full bg-red-400" />
-        <div className="h-3 w-3 rounded-full bg-yellow-400" />
-        <div className="h-3 w-3 rounded-full bg-green-400" />
-        <span className="text-sm text-gray-700 ml-2 font-medium">GarageLog</span>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-gray-300"></div>
-          <div className="h-2 w-2 rounded-full bg-gray-300"></div>
-          <div className="h-2 w-2 rounded-full bg-gray-300"></div>
+    <div className="relative">
+      {/* スクショカード：大きめの角丸、柔らかいシャドウ、外周余白 */}
+      <div className="relative rounded-3xl border border-slate-200/60 bg-white shadow-2xl overflow-hidden p-4 lg:p-6">
+        {/* ブラウザウィンドウ風ヘッダー */}
+        <div className="px-3 py-2 border-b border-slate-200/60 flex items-center gap-2 bg-slate-50/50 mb-4">
+          <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
+          <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+          <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
+          <span className="text-xs text-slate-600 ml-2 font-medium">GarageLog</span>
+        </div>
+        
+        {/* コンテンツエリア：Spotlight表現 */}
+        <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-xl overflow-hidden">
+          {/* 背景：ダッシュボードUIを薄く表示（opacity 20-35% + blur 2-4px） */}
+          <div className="absolute inset-0 opacity-[0.25] blur-[3px]">
+            <DashboardBackground />
+          </div>
+          
+          {/* 前面：次回メンテ提案カードを強調表示 */}
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <MaintenanceCard />
+          </div>
         </div>
       </div>
-      
-      {/* ダッシュボードコンテンツ - 実際のレイアウトに合わせる */}
-      <div className="bg-gray-50 p-3 sm:p-4">
-        <div className="grid grid-cols-[140px_1fr] gap-3 sm:gap-4">
-          {/* サイドバー */}
-          <aside className="space-y-2 sm:space-y-3 flex-shrink-0">
-            {/* ユーザー情報 */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-2 sm:p-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
-                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-xs sm:text-sm flex-shrink-0">
-                  K
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] sm:text-xs font-semibold text-gray-900 truncate">kenta kobayashi</div>
-                  <div className="text-[9px] sm:text-[10px] text-blue-600 font-medium">Premium プラン</div>
-                </div>
+
+      {/* LP注釈：UIに被せない配置（スクショカードの外側） */}
+      <div className="hidden lg:block absolute -top-6 left-1/2 -translate-x-1/2 z-20">
+        <LPAnnotation
+          icon={<Timer className="h-4 w-4" />}
+          text="次回まで残り 1,234km"
+          position="top"
+        />
+      </div>
+    </div>
+  );
+}
+
+// 背景用：ダッシュボードUI（薄く表示）
+function DashboardBackground() {
+  return (
+    <div className="w-full h-full p-4">
+      <div className="grid grid-cols-[140px_1fr] gap-4 h-full">
+        {/* サイドバー */}
+        <aside className="space-y-3">
+          <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-xs">
+                K
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-slate-700 truncate">Ken</div>
+                <div className="text-[10px] text-blue-600 font-medium">Premium プラン</div>
               </div>
             </div>
+          </div>
+          <nav className="bg-white/80 rounded-xl border border-slate-200/60 p-2 space-y-0.5">
+            <div className="px-2 py-1 rounded-lg bg-blue-50/50 text-blue-600 text-xs font-medium">ホーム</div>
+            <div className="px-2 py-1 rounded-lg text-xs text-slate-600">マイカー</div>
+            <div className="px-2 py-1 rounded-lg text-xs text-slate-600">ガソリン</div>
+            <div className="px-2 py-1 rounded-lg text-xs text-slate-600">メンテナンス</div>
+          </nav>
+        </aside>
 
-            {/* ナビゲーション */}
-            <nav className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-1.5 sm:p-2 space-y-0.5">
-              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] sm:text-xs font-medium">ホーム</div>
-              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50">マイカー</div>
-              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50">ガソリン</div>
-              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50">メンテナンス</div>
-              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50">カスタマイズ</div>
-            </nav>
-          </aside>
-
-          {/* メインコンテンツ */}
-          <div className="space-y-3 sm:space-y-4">
-            {/* ヘッダー */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm sm:text-base font-semibold text-gray-900">ホーム</h3>
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <Car className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600" />
-                  </div>
-                  <span className="text-[10px] sm:text-xs font-medium text-gray-700">シビック TYPER (FL5)</span>
+        {/* メインコンテンツ */}
+        <div className="space-y-4">
+          {/* ヘッダー */}
+          <div className="bg-white/80 rounded-xl border border-slate-200/60 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700">ホーム</h3>
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <Car className="h-3.5 w-3.5 text-blue-600" />
                 </div>
+                <span className="text-xs font-medium text-slate-600">シビック TYPER</span>
               </div>
             </div>
+          </div>
 
-            {/* 現在の車情報 */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 relative">
-              {/* 注釈1: 次回メンテ提案（車情報カードの上） */}
-              <div className="hidden lg:block absolute -top-16 left-1/2 -translate-x-1/2 z-10">
-                <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg">
-                  <div className="flex items-center gap-2">
-                    <Timer className="h-3.5 w-3.5 text-blue-600" />
-                    <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">次回メンテ：残 1,234km</p>
-                  </div>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-gray-200"></div>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-[-1px] w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-transparent border-t-white"></div>
-                </div>
-              </div>
-              
-              {/* 次回メンテ（カード内に表示） */}
-              <div className="mb-3">
-                <div className="text-xs text-gray-600 mb-1">次回メンテ: 残1,234km</div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '75%' }}></div>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                {/* 車画像 */}
-                <div className="w-24 h-16 rounded-xl border border-gray-200 bg-gray-100 overflow-hidden flex-shrink-0">
-                  <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600"></div>
-                </div>
-                {/* 車情報 */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 mb-2">シビック TYPER (FL5)</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                    <div>走行距離: <span className="font-medium">4,822 km</span></div>
-                    <div>車検期限: <span className="font-medium">2027/4/30</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 最近の活動カード */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              {/* 最近のメンテナンス */}
-              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 relative">
-                {/* 注釈3: OCR（メンテナンスカードの左側外） */}
-                <div className="hidden lg:block absolute -left-36 top-1/2 -translate-y-1/2 z-10">
-                  <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg">
-                    <div className="flex items-center gap-2">
-                      <Camera className="h-3.5 w-3.5 text-blue-600" />
-                      <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">OCR：撮って自動入力</p>
-                    </div>
-                    <div className="absolute top-1/2 -right-1 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-transparent border-l-gray-200"></div>
-                    <div className="absolute top-1/2 -right-[1px] -translate-y-1/2 w-0 h-0 border-t-[5px] border-b-[5px] border-l-[5px] border-transparent border-l-white"></div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900">最近のメンテナンス</h3>
-                  <span className="text-[10px] sm:text-xs text-blue-600 font-medium">すべて見る →</span>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                  <div className="text-[10px] sm:text-xs text-gray-500 mb-1">最新の整備</div>
-                  <div className="text-xs sm:text-sm font-medium text-gray-900 mb-1">オイル交換</div>
-                  <div className="text-[10px] sm:text-xs text-gray-500">2025/11/10 • 4,822km</div>
-                </div>
-              </div>
-
-              {/* 最近の給油 */}
-              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900">最近の給油</h3>
-                  <span className="text-[10px] sm:text-xs text-blue-600 font-medium">すべて見る →</span>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                  <div className="text-[10px] sm:text-xs text-gray-500 mb-1">最新の給油</div>
-                  <div className="text-xs sm:text-sm font-medium text-gray-900 mb-1">11/16 • 35.6L</div>
-                  <div className="text-xs sm:text-sm font-bold text-gray-900">¥6,111</div>
-                </div>
-              </div>
-
-              {/* 最近のカスタマイズ */}
-              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900">最近のカスタマイズ</h3>
-                  <span className="text-[10px] sm:text-xs text-blue-600 font-medium">すべて見る →</span>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                  <div className="text-[10px] sm:text-xs text-gray-500 mb-1">最新のカスタマイズ</div>
-                  <div className="text-xs sm:text-sm font-medium text-gray-900 mb-1">SPOON ダウンサス</div>
-                  <div className="text-xs sm:text-sm font-bold text-gray-900">¥30,000</div>
-                </div>
-              </div>
-            </div>
-
-            {/* 月別費用推移 */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 relative">
-              {/* 注釈2: PDF証明（グラフの右上外側） */}
-              <div className="hidden lg:block absolute -top-2 -right-32 z-10">
-                <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-3.5 w-3.5 text-blue-600" />
-                    <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">PDF証明：署名付き</p>
-                  </div>
-                  <div className="absolute top-1/2 -left-1.5 w-3 h-3 bg-white border-l border-b border-gray-200 transform rotate-45 -translate-y-1/2"></div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <LineChart className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-gray-900">月別費用推移</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <button className="px-2 py-1 text-[10px] bg-blue-50 text-blue-600 rounded font-medium">月次</button>
-                    <button className="px-2 py-1 text-[10px] text-gray-500 rounded">年次</button>
-                    <button className="px-2 py-1 text-[10px] text-gray-500 rounded">全期間</button>
-                  </div>
-                </div>
-              </div>
-              {/* グラフ */}
-              <div className="h-24 bg-gray-50 rounded-lg p-2 flex items-end justify-between gap-1">
-                {[
-                  { month: '8月', height: 15 },
-                  { month: '9月', height: 20 },
-                  { month: '10月', height: 85 },
-                  { month: '11月', height: 18 },
-                  { month: '12月', height: 10 },
-                  { month: '1月', height: 35 }
-                ].map((item, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                    <div 
-                      className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t min-h-[8px]" 
-                      style={{ height: `${item.height}%` }}
-                    />
-                    <span className="text-[9px] text-gray-500">{item.month}</span>
-                  </div>
-                ))}
-              </div>
-              {/* 今月のサマリー */}
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">今月の総費用</span>
-                  <span className="font-semibold text-gray-900">¥30,000</span>
+          {/* 車情報カード */}
+          <div className="bg-white/80 rounded-2xl border border-slate-200/60 p-4">
+            <div className="flex items-start gap-4">
+              <div className="w-24 h-16 rounded-xl border border-slate-200/60 bg-gradient-to-br from-blue-400/30 to-blue-600/30"></div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-slate-700 mb-2">シビック TYPER (FL5)</div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                  <div>走行距離: <span className="font-medium">4,822 km</span></div>
+                  <div>車検期限: <span className="font-medium">2027/4/30</span></div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* 活動カード */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
+              <div className="text-xs font-semibold text-slate-700 mb-2">最近のメンテナンス</div>
+              <div className="bg-slate-50/50 rounded-lg p-2">
+                <div className="text-xs font-medium text-slate-700">オイル交換</div>
+                <div className="text-[10px] text-slate-500">2025/11/10</div>
+              </div>
+            </div>
+            <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
+              <div className="text-xs font-semibold text-slate-700 mb-2">最近の給油</div>
+              <div className="bg-slate-50/50 rounded-lg p-2">
+                <div className="text-xs font-medium text-slate-700">11/16 • 35.6L</div>
+                <div className="text-xs font-bold text-slate-700">¥6,111</div>
+              </div>
+            </div>
+            <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
+              <div className="text-xs font-semibold text-slate-700 mb-2">最近のカスタマイズ</div>
+              <div className="bg-slate-50/50 rounded-lg p-2">
+                <div className="text-xs font-medium text-slate-700">SPOON ダウンサス</div>
+                <div className="text-xs font-bold text-slate-700">¥30,000</div>
+              </div>
+            </div>
+          </div>
+
+          {/* グラフ */}
+          <div className="bg-white/80 rounded-2xl border border-slate-200/60 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <LineChart className="h-4 w-4 text-blue-600/60" />
+              <span className="text-sm font-semibold text-slate-700">月別費用推移</span>
+            </div>
+            <div className="h-20 bg-slate-50/50 rounded-lg flex items-end justify-between gap-1 p-2">
+              {[15, 20, 85, 18, 10, 35].map((h, i) => (
+                <div key={i} className="flex-1 bg-blue-400/30 rounded-t" style={{ height: `${h}%` }}></div>
+              ))}
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// 前面強調：次回メンテ提案カード（shadow強め、border薄い、角丸は既存と合わせる）
+function MaintenanceCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/30 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] p-6 max-w-sm mx-auto backdrop-blur-sm">
+      {/* 見出し */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center shadow-md">
+          <Timer className="h-6 w-6 text-blue-600" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900">次回メンテ</h3>
+        </div>
+      </div>
+      
+      {/* 本文 */}
+      <div className="bg-slate-50 rounded-xl p-5">
+        <div className="text-sm text-slate-600 mb-3">次回まで残り</div>
+        <div className="text-2xl font-bold text-slate-900 mb-4">1,234km</div>
+        
+        {/* 進捗バー */}
+        <div className="mb-4">
+          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{ width: '75%' }}></div>
+          </div>
+        </div>
+        
+        {/* 推奨メンテナンス */}
+        <div className="pt-4 border-t border-slate-200">
+          <div className="text-xs text-slate-500 mb-1">推奨メンテナンス</div>
+          <div className="text-base font-semibold text-slate-900">オイル交換</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// LP用注釈コンポーネント（統一デザイン）
+function LPAnnotation({
+  icon,
+  text,
+  position = "top",
+}: {
+  icon: React.ReactNode;
+  text: string;
+  position?: "top" | "bottom" | "left" | "right";
+}) {
+  const arrowClasses = {
+    top: "top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-slate-200",
+    bottom: "bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-slate-200",
+    left: "top-1/2 -right-1 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-transparent border-l-slate-200",
+    right: "top-1/2 -left-1 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-slate-200",
+  };
+
+  const arrowInnerClasses = {
+    top: "top-full left-1/2 -translate-x-1/2 translate-y-[-1px] w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-transparent border-t-white",
+    bottom: "bottom-full left-1/2 -translate-x-1/2 translate-y-[1px] w-0 h-0 border-l-[5px] border-r-[5px] border-b-[5px] border-transparent border-b-white",
+    left: "top-1/2 -right-[1px] -translate-y-1/2 w-0 h-0 border-t-[5px] border-b-[5px] border-l-[5px] border-transparent border-l-white",
+    right: "top-1/2 -left-[1px] -translate-y-1/2 w-0 h-0 border-t-[5px] border-b-[5px] border-r-[5px] border-transparent border-r-white",
+  };
+
+  return (
+    <div className="relative bg-white border-2 border-slate-200 rounded-2xl px-4 py-2.5 shadow-xl">
+      <div className="flex items-center gap-2.5">
+        <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+          {icon}
+        </div>
+        <p className="text-sm font-semibold text-slate-900 whitespace-nowrap">{text}</p>
+      </div>
+      {/* 矢印（外側） */}
+      <div className={`absolute ${arrowClasses[position]}`}></div>
+      {/* 矢印（内側・白） */}
+      <div className={`absolute ${arrowInnerClasses[position]}`}></div>
+    </div>
+  );
+}
+
+// 機能別スクショ3枚
+function FeatureScreenshots() {
+  const features = [
+    {
+      icon: <Camera className="h-5 w-5" />,
+      title: "レシートOCR",
+      description: "撮るだけで自動入力",
+      imageSrc: "/lp-screenshots/feature-ocr.png",
+      imageAlt: "レシートOCR機能",
+      annotation: "OCR：撮って自動入力",
+    },
+    {
+      icon: <Timer className="h-5 w-5" />,
+      title: "次回メンテ提案",
+      description: "走行距離から自動算出",
+      imageSrc: "/lp-screenshots/feature-maintenance.png",
+      imageAlt: "次回メンテ提案機能",
+      annotation: "次回メンテ：残 1,234km",
+    },
+    {
+      icon: <FileText className="h-5 w-5" />,
+      title: "履歴証明PDF",
+      description: "署名付きで出力",
+      imageSrc: "/lp-screenshots/feature-pdf.png",
+      imageAlt: "履歴証明PDF機能",
+      annotation: "PDF証明：署名付き",
+    },
+  ];
+
+  return (
+    <div className="mt-24 mb-20">
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
+          <Sparkles className="h-4 w-4 text-blue-600" />
+          主要機能
+        </div>
+        <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">
+          1メッセージで価値が伝わる
+        </h2>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+        {features.map((feature, index) => (
+          <div key={index} className="relative group">
+            {/* スクショカード */}
+            <div className="relative rounded-2xl border border-slate-200/60 bg-white shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+              {/* ブラウザウィンドウ風ヘッダー */}
+              <div className="px-3 py-2 border-b border-slate-200/60 flex items-center gap-2 bg-slate-50/50">
+                <div className="h-2 w-2 rounded-full bg-red-400" />
+                <div className="h-2 w-2 rounded-full bg-yellow-400" />
+                <div className="h-2 w-2 rounded-full bg-green-400" />
+              </div>
+
+              {/* スクリーンショット画像 */}
+              <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-slate-50 to-blue-50/30">
+                {/* プレースホルダー：実際の画像に差し替え予定 */}
+                <div className="absolute inset-0 flex items-center justify-center p-6">
+                  <div className="text-center w-full">
+                    <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-3 text-blue-600">
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-900 mb-1">{feature.title}</h3>
+                    <p className="text-sm text-slate-600">{feature.description}</p>
+                  </div>
+                </div>
+
+                {/* 実際の画像：機能別スクショ */}
+                {/* 画像が用意されたらコメントアウトを外す */}
+                {/* 
+                <Image
+                  src={feature.imageSrc}
+                  alt={feature.imageAlt}
+                  width={800}
+                  height={600}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  placeholder="blur"
+                  blurDataURL="data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23f1f5f9'/%3E%3C/svg%3E"
+                />
+                */}
+              </div>
+            </div>
+
+            {/* 注釈ラベル（スクショの外側） */}
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-10 hidden lg:block">
+              <LPAnnotation
+                icon={feature.icon}
+                text={feature.annotation}
+                position="bottom"
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
