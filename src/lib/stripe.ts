@@ -91,9 +91,11 @@ export async function createCheckoutSession({
         quantity: 1,
       },
     ],
-    customer: customerId, // 既存の顧客がいる場合は再利用
-    customer_email: userEmail, // 顧客のメールアドレスを設定
-    customer_creation: customerId ? undefined : 'always', // 新規顧客の場合は作成
+    // subscription モードでは、customer または customer_email を指定する
+    // customer が指定されている場合: 既存の顧客を使用
+    // customer が指定されていない場合: customer_email から新しい顧客が自動作成される
+    // customer_creation パラメータは subscription モードでは使用不可（payment モードでのみ使用可能）
+    ...(customerId ? { customer: customerId } : { customer_email: userEmail }),
     client_reference_id: userUid, // Firebase UID を紐付け
     success_url: `${appUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/billing/cancel`,
