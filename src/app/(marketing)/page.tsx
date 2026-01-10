@@ -41,6 +41,7 @@ export default function LandingPage() {
       <ScrollAnimations />
       <Header />
       <Hero />
+      <FeatureScreenshotsSection />
       <BeforeAfter />
       <HowItWorks />
       <Features />
@@ -81,41 +82,19 @@ function Hero() {
               <span>クルマの記録を、もっとスマートに</span>
             </div>
             
-            {/* H1：改行を自然に、縦リズムを詰める */}
+            {/* H1：一元管理のメッセージに集中 */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight text-slate-900 leading-[1.05] mt-4">
-              クルマと、<br className="hidden sm:block" />
-              <span className="text-blue-600">ずっと</span>いい関係。
+              クルマの記録を、<br className="hidden sm:block" />
+              <span className="text-blue-600">一元管理</span>。
             </h1>
             
             {/* サブコピー：行幅を最適化 */}
-            <p className="text-base lg:text-lg text-slate-600 leading-relaxed max-w-lg mt-4">
+            <p className="text-base lg:text-lg text-slate-600 leading-relaxed max-w-lg mt-6">
               メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。
             </p>
-
-            {/* 3つのベネフィット（H1直下、縦リズムを詰める） */}
-            <div className="flex flex-col gap-2.5 mt-5">
-              <div className="flex items-center gap-3 text-sm lg:text-base text-slate-700">
-                <div className="h-9 w-9 lg:h-10 lg:w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Camera className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
-                </div>
-                <span className="font-medium">レシートOCRで最短10秒入力</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm lg:text-base text-slate-700">
-                <div className="h-9 w-9 lg:h-10 lg:w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Timer className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
-                </div>
-                <span className="font-medium">次回メンテ自動リマインド</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm lg:text-base text-slate-700">
-                <div className="h-9 w-9 lg:h-10 lg:w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600" />
-                </div>
-                <span className="font-medium">署名付きPDFで第三者に証明</span>
-              </div>
-            </div>
             
-            {/* CTA：Primary + Secondary（縦リズムを詰める） */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-6">
+            {/* CTA：Primary + Secondary */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-8">
               <HeroCTAButtonsPrimary variant="primary" />
               <HeroCTAButtonsPrimary variant="secondary" />
             </div>
@@ -134,30 +113,7 @@ function Hero() {
           </div>
         </div>
 
-        {/* 下部：機能別スクショ3枚 */}
-        <FeatureScreenshots />
-
-        {/* 下部：機能カード3枚（成果ベース） */}
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8 mt-20">
-          <BentoTile
-            icon={<Camera className="h-6 w-6" />}
-            title="入力が10秒"
-            description="レシートを撮るだけで自動入力。手入力の時間を大幅に削減します。"
-            delay="0s"
-          />
-          <BentoTile
-            icon={<FileText className="h-6 w-6" />}
-            title="売却で価値になる"
-            description="整備履歴をPDF証明書として出力。売却時に愛車の価値を明確に伝えられます。"
-            delay="0.1s"
-          />
-          <BentoTile
-            icon={<Wrench className="h-6 w-6" />}
-            title="忘れない・壊さない"
-            description="走行距離と期間から次回メンテを自動提案。タイミングを逃さず、長く走れます。"
-            delay="0.2s"
-          />
-        </div>
+      </div>
       </div>
     </section>
   );
@@ -168,8 +124,8 @@ function Hero() {
 function HeroScreenshot() {
   return (
     <div className="relative">
-      {/* スクショカード：大きめの角丸、柔らかいシャドウ（強調要素なのでxl使用）、外周余白 */}
-      <div className={`relative ${DESIGN_TOKENS.radius.lg} border border-slate-200/60 bg-white ${DESIGN_TOKENS.shadow.xl} overflow-hidden p-4 lg:p-6`}>
+      {/* スクショカード：大きめの角丸、控えめなシャドウ、外周余白 */}
+      <div className={`relative ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white ${DESIGN_TOKENS.shadow.lg} overflow-hidden p-4 lg:p-6`}>
         {/* ブラウザウィンドウ風ヘッダー */}
         <div className="px-3 py-2 border-b border-slate-200/60 flex items-center gap-2 bg-slate-50/50 mb-4">
           <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
@@ -180,8 +136,8 @@ function HeroScreenshot() {
         
         {/* コンテンツエリア：Spotlight表現 */}
         <div className={`relative w-full aspect-[4/3] bg-gradient-to-br from-slate-50 to-blue-50/30 ${DESIGN_TOKENS.radius.md} overflow-hidden`}>
-          {/* 背景：ダッシュボードUIをうっすら読める状態で表示（ぼかしを弱める、情報量が読める状態） */}
-          <div className="absolute inset-0 opacity-[0.35] blur-[1.5px]">
+          {/* 背景：ダッシュボードUIをうっすら読める状態で表示（情報量が読める状態） */}
+          <div className="absolute inset-0 opacity-60">
             <DashboardBackground />
           </div>
           
@@ -192,14 +148,6 @@ function HeroScreenshot() {
         </div>
       </div>
 
-      {/* LP注釈：機能説明に変更（数値はカード側に寄せる） */}
-      <div className="hidden lg:block absolute -top-6 left-1/2 -translate-x-1/2 z-20">
-        <LPAnnotation
-          icon={<Timer className="h-4 w-4" />}
-          text="次回メンテを自動計算"
-          position="top"
-        />
-      </div>
     </div>
   );
 }
@@ -318,7 +266,7 @@ function DashboardBackground() {
 // 前面強調：次回メンテ提案カード（shadow強め、border薄い、角丸は既存と合わせる、数値を強調）
 function MaintenanceCard() {
   return (
-    <div className={`bg-white ${DESIGN_TOKENS.radius.lg} border border-slate-200/30 ${DESIGN_TOKENS.shadow.xxl} p-5 lg:p-6 max-w-sm mx-auto backdrop-blur-sm`}>
+    <div className={`bg-white ${DESIGN_TOKENS.radius.lg} border border-slate-200 ${DESIGN_TOKENS.shadow.sm} p-5 lg:p-6 max-w-sm mx-auto backdrop-blur-sm`}>
       {/* 見出し */}
       <div className="flex items-center gap-3 mb-3">
         <div className={`h-11 w-11 lg:h-12 lg:w-12 ${DESIGN_TOKENS.radius.md} bg-blue-100 flex items-center justify-center shadow-md`}>
@@ -354,50 +302,22 @@ function MaintenanceCard() {
 // 信頼要素のチップ（CTA直下、視認性が高いが主張しすぎない見た目）
 function TrustChip({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${DESIGN_TOKENS.radius.sm} bg-white/90 backdrop-blur-sm border border-slate-200/60 text-xs font-medium text-slate-700 ${DESIGN_TOKENS.shadow.sm} hover:shadow-md transition-shadow`}>
+    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${DESIGN_TOKENS.radius.sm} bg-white/90 backdrop-blur-sm border border-slate-200/60 text-xs font-medium text-slate-700 ${DESIGN_TOKENS.shadow.sm} hover:shadow-sm transition-shadow`}>
       <div className="text-green-600 flex-shrink-0">{icon}</div>
       <span className="whitespace-nowrap">{text}</span>
     </div>
   );
 }
 
-// LP用注釈コンポーネント（統一デザイン）
-function LPAnnotation({
-  icon,
-  text,
-  position = "top",
-}: {
-  icon: React.ReactNode;
-  text: string;
-  position?: "top" | "bottom" | "left" | "right";
-}) {
-  const arrowClasses = {
-    top: "top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-slate-200",
-    bottom: "bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-slate-200",
-    left: "top-1/2 -right-1 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-transparent border-l-slate-200",
-    right: "top-1/2 -left-1 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-slate-200",
-  };
 
-  const arrowInnerClasses = {
-    top: "top-full left-1/2 -translate-x-1/2 translate-y-[-1px] w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-transparent border-t-white",
-    bottom: "bottom-full left-1/2 -translate-x-1/2 translate-y-[1px] w-0 h-0 border-l-[5px] border-r-[5px] border-b-[5px] border-transparent border-b-white",
-    left: "top-1/2 -right-[1px] -translate-y-1/2 w-0 h-0 border-t-[5px] border-b-[5px] border-l-[5px] border-transparent border-l-white",
-    right: "top-1/2 -left-[1px] -translate-y-1/2 w-0 h-0 border-t-[5px] border-b-[5px] border-r-[5px] border-transparent border-r-white",
-  };
-
+// 機能別スクショ3枚セクション
+function FeatureScreenshotsSection() {
   return (
-    <div className="relative bg-white border-2 border-slate-200 rounded-2xl px-4 py-2.5 shadow-xl">
-      <div className="flex items-center gap-2.5">
-        <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
-          {icon}
-        </div>
-        <p className="text-sm font-semibold text-slate-900 whitespace-nowrap">{text}</p>
+    <section className="bg-white py-20 lg:py-32">
+      <div className={`${DESIGN_TOKENS.container}`}>
+        <FeatureScreenshots />
       </div>
-      {/* 矢印（外側） */}
-      <div className={`absolute ${arrowClasses[position]}`}></div>
-      {/* 矢印（内側・白） */}
-      <div className={`absolute ${arrowInnerClasses[position]}`}></div>
-    </div>
+    </section>
   );
 }
 
@@ -406,91 +326,52 @@ function FeatureScreenshots() {
   const features = [
     {
       icon: <Camera className="h-5 w-5" />,
-      title: "レシートOCR",
-      description: "撮るだけで自動入力",
+      title: "撮って10秒で記録",
+      description: "レシートを撮るだけで自動入力。",
       imageSrc: "/lp-screenshots/feature-ocr.png",
       imageAlt: "レシートOCR機能",
-      annotation: "OCR：撮って自動入力",
     },
     {
       icon: <Timer className="h-5 w-5" />,
-      title: "次回メンテ提案",
-      description: "走行距離から自動算出",
+      title: "次のメンテを逃さない",
+      description: "走行距離から次回タイミングを自動算出。",
       imageSrc: "/lp-screenshots/feature-maintenance.png",
       imageAlt: "次回メンテ提案機能",
-      annotation: "次回メンテ：残 1,234km",
     },
     {
       icon: <FileText className="h-5 w-5" />,
-      title: "履歴証明PDF",
-      description: "署名付きで出力",
+      title: "履歴が証明書になる",
+      description: "署名付きPDFで第三者にそのまま提示。",
       imageSrc: "/lp-screenshots/feature-pdf.png",
       imageAlt: "履歴証明PDF機能",
-      annotation: "PDF証明：署名付き",
     },
   ];
 
   return (
-    <div className="mt-24 mb-20">
+    <div>
       <div className="text-center mb-12">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
           <Sparkles className="h-4 w-4 text-blue-600" />
           主要機能
         </div>
         <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">
-          1メッセージで価値が伝わる
+          ひと目でわかる、GarageLogの3つの価値
         </h2>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+      <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
         {features.map((feature, index) => (
           <div key={index} className="relative group">
-            {/* スクショカード */}
-            <div className="relative rounded-2xl border border-slate-200/60 bg-white shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-              {/* ブラウザウィンドウ風ヘッダー */}
-              <div className="px-3 py-2 border-b border-slate-200/60 flex items-center gap-2 bg-slate-50/50">
-                <div className="h-2 w-2 rounded-full bg-red-400" />
-                <div className="h-2 w-2 rounded-full bg-yellow-400" />
-                <div className="h-2 w-2 rounded-full bg-green-400" />
-              </div>
-
-              {/* スクリーンショット画像 */}
-              <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-slate-50 to-blue-50/30">
-                {/* プレースホルダー：実際の画像に差し替え予定 */}
-                <div className="absolute inset-0 flex items-center justify-center p-6">
-                  <div className="text-center w-full">
-                    <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-3 text-blue-600">
-                      {feature.icon}
-                    </div>
-                    <h3 className="text-base font-semibold text-slate-900 mb-1">{feature.title}</h3>
-                    <p className="text-sm text-slate-600">{feature.description}</p>
-                  </div>
+            {/* カード（ウィンドウ枠なし、ミニマル） */}
+            <div className="relative rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-sm hover:border-slate-300 transition-all duration-200 overflow-hidden">
+              {/* コンテンツエリア */}
+              <div className="p-6 lg:p-8">
+                <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4 text-blue-600">
+                  {feature.icon}
                 </div>
-
-                {/* 実際の画像：機能別スクショ */}
-                {/* 画像が用意されたらコメントアウトを外す */}
-                {/* 
-                <Image
-                  src={feature.imageSrc}
-                  alt={feature.imageAlt}
-                  width={800}
-                  height={600}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  placeholder="blur"
-                  blurDataURL="data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23f1f5f9'/%3E%3C/svg%3E"
-                />
-                */}
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">{feature.title}</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">{feature.description}</p>
               </div>
-            </div>
-
-            {/* 注釈ラベル（スクショの外側） */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-10 hidden lg:block">
-              <LPAnnotation
-                icon={feature.icon}
-                text={feature.annotation}
-                position="bottom"
-              />
             </div>
           </div>
         ))}
@@ -499,34 +380,9 @@ function FeatureScreenshots() {
   );
 }
 
-function BentoTile({ 
-  icon, 
-  title, 
-  description, 
-  delay 
-}: { 
-  icon: React.ReactNode; 
-  title: string; 
-  description: string; 
-  delay: string;
-}) {
-  return (
-    <div 
-      className={`group ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-blue-300/60 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 scale-in-on-scroll`}
-      style={{ animationDelay: delay }}
-    >
-      <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-        {icon}
-      </div>
-      <h3 className="text-xl font-semibold text-slate-900 mb-3">{title}</h3>
-      <p className="text-base text-slate-600 leading-relaxed">{description}</p>
-    </div>
-  );
-}
-
 function BeforeAfter() {
   return (
-    <section className="bg-gradient-to-b from-white to-slate-50/50 py-20 lg:py-32">
+    <section className="bg-slate-50 py-20 lg:py-32">
       <div className={`${DESIGN_TOKENS.container}`}>
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
@@ -541,12 +397,12 @@ function BeforeAfter() {
 
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Before */}
-          <div className={`${DESIGN_TOKENS.radius.lg} border-2 border-slate-200 bg-slate-50/80 p-8 lg:p-10`}>
+          <div className={`${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-slate-50/80 p-8 lg:p-10 shadow-sm`}>
             <div className="flex items-center gap-3 mb-8">
-              <div className="h-12 w-12 rounded-xl bg-slate-200 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-xl bg-slate-200 flex items-center justify-center shadow-sm">
                 <span className="text-xl font-bold text-slate-600">×</span>
               </div>
-              <h3 className="text-2xl font-semibold text-slate-900">Before</h3>
+              <h3 className="text-2xl font-semibold text-slate-900">これまで</h3>
             </div>
             <ul className="space-y-5">
               <li className="flex items-start gap-4">
@@ -569,12 +425,12 @@ function BeforeAfter() {
           </div>
 
           {/* After */}
-          <div className={`${DESIGN_TOKENS.radius.lg} border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 lg:p-10`}>
+          <div className={`${DESIGN_TOKENS.radius.lg} border border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 lg:p-10 shadow-sm`}>
             <div className="flex items-center gap-3 mb-8">
-              <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-md">
+              <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm">
                 <Check className="h-6 w-6 text-white" />
               </div>
-              <h3 className="text-2xl font-semibold text-slate-900">After</h3>
+              <h3 className="text-2xl font-semibold text-slate-900">GarageLogなら</h3>
             </div>
             <ul className="space-y-5">
               <li className="flex items-start gap-4">
@@ -631,10 +487,10 @@ function HowItWorks() {
           {steps.map((s, i) => (
             <div 
               key={i} 
-              className={`group relative ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 scale-in-on-scroll`}
+              className={`group relative ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-slate-300 hover:shadow-sm transition-all duration-200 scale-in-on-scroll`}
               style={{ animationDelay: `${i * 0.1}s` }}
             >
-              <div className="h-14 w-14 lg:h-16 lg:w-16 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
+              <div className="h-14 w-14 lg:h-16 lg:w-16 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-105 transition-transform duration-200 shadow-sm">
                 {s.icon}
               </div>
               <div className="absolute top-6 right-6 h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm group-hover:scale-110 transition-transform">
@@ -673,10 +529,10 @@ function Features() {
           {feats.map((f, i) => (
             <div 
               key={i} 
-              className={`group ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-blue-300/60 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 scale-in-on-scroll`}
+              className={`group ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-slate-300 hover:shadow-sm transition-all duration-200 scale-in-on-scroll`}
               style={{ animationDelay: `${i * 0.1}s` }}
             >
-              <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-md">
+              <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-105 transition-transform duration-200 shadow-sm">
                 {f.icon}
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-3">{f.title}</h3>
@@ -703,7 +559,7 @@ function Pricing() {
         </div>
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Free */}
-          <div className={`${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-8 hover:shadow-md transition-all duration-300`}>
+          <div className={`${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-8 hover:shadow-sm transition-all duration-200`}>
             <h3 className="text-2xl font-semibold text-slate-900 mb-2">無料プラン</h3>
             <p className="text-4xl font-semibold text-slate-900 mb-1">
               ¥0<span className="text-lg font-medium text-slate-500"> / 月</span>
@@ -731,8 +587,8 @@ function Pricing() {
           </div>
 
           {/* Premium */}
-          <div className={`relative ${DESIGN_TOKENS.radius.lg} border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 hover:shadow-lg transition-all duration-300`}>
-            <span className="absolute -top-3 right-6 rounded-full bg-blue-600 text-white text-xs font-bold px-4 py-1.5 shadow-md">
+          <div className={`relative ${DESIGN_TOKENS.radius.lg} border border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 hover:shadow-sm transition-all duration-200`}>
+            <span className="absolute -top-3 right-6 rounded-full bg-blue-600 text-white text-xs font-bold px-4 py-1.5 shadow-sm">
               おすすめ
             </span>
             <h3 className="text-2xl font-semibold text-slate-900 mb-2">プレミアム</h3>
@@ -840,7 +696,7 @@ function CTA() {
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
       }}></div>
       <div className={`${DESIGN_TOKENS.container} relative`}>
-        <div className={`${DESIGN_TOKENS.radius.lg} bg-white/10 backdrop-blur-xl border border-white/30 p-8 lg:p-12 text-white shadow-2xl`}>
+        <div className={`${DESIGN_TOKENS.radius.lg} bg-white/10 backdrop-blur-xl border border-white/30 p-8 lg:p-12 text-white shadow-lg`}>
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <h2 className="text-3xl lg:text-4xl xl:text-5xl font-semibold mb-4 leading-tight">愛車の価値を、最大限に。</h2>
