@@ -57,7 +57,7 @@ function Hero() {
           </div>
           
           {/* 右側：プロダクトモック（注釈付き） */}
-          <div className="relative slide-in-right-on-scroll">
+          <div className="relative slide-in-right-on-scroll lg:mt-0 mt-8">
             <ProductMock />
           </div>
         </div>
@@ -90,81 +90,81 @@ function Hero() {
 
 function ProductMock() {
   return (
-    <div className="relative rounded-2xl border border-slate-200 shadow-sm overflow-hidden bg-white">
+    <div className="relative rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white max-w-full">
       {/* ブラウザウィンドウ風ヘッダー */}
-      <div className="px-6 py-3 border-b border-slate-200 flex items-center gap-2 bg-slate-50">
+      <div className="px-4 sm:px-6 py-3 border-b border-gray-200 flex items-center gap-2 bg-gray-50">
         <div className="h-3 w-3 rounded-full bg-red-400" />
         <div className="h-3 w-3 rounded-full bg-yellow-400" />
         <div className="h-3 w-3 rounded-full bg-green-400" />
-        <span className="text-sm text-slate-600 ml-2 font-medium">GarageLog</span>
+        <span className="text-sm text-gray-700 ml-2 font-medium">GarageLog</span>
         <div className="ml-auto flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-slate-300"></div>
-          <div className="h-2 w-2 rounded-full bg-slate-300"></div>
-          <div className="h-2 w-2 rounded-full bg-slate-300"></div>
+          <div className="h-2 w-2 rounded-full bg-gray-300"></div>
+          <div className="h-2 w-2 rounded-full bg-gray-300"></div>
+          <div className="h-2 w-2 rounded-full bg-gray-300"></div>
         </div>
       </div>
       
       {/* ダッシュボードコンテンツ - 実際のレイアウトに合わせる */}
-      <div className="bg-slate-50 p-4">
-        <div className="grid grid-cols-[160px_1fr] gap-4">
+      <div className="bg-gray-50 p-3 sm:p-4">
+        <div className="grid grid-cols-[140px_1fr] gap-3 sm:gap-4">
           {/* サイドバー */}
-          <aside className="space-y-3">
+          <aside className="space-y-2 sm:space-y-3 flex-shrink-0">
             {/* ユーザー情報 */}
-            <div className="bg-white rounded-xl border border-slate-200 p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-2 sm:p-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-xs sm:text-sm flex-shrink-0">
                   K
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-900 truncate">kenta kobayashi</div>
-                  <div className="text-[10px] text-blue-600 font-medium">Premium プラン</div>
+                  <div className="text-[10px] sm:text-xs font-semibold text-gray-900 truncate">kenta kobayashi</div>
+                  <div className="text-[9px] sm:text-[10px] text-blue-600 font-medium">Premium プラン</div>
                 </div>
               </div>
             </div>
 
             {/* ナビゲーション */}
-            <nav className="bg-white rounded-xl border border-slate-200 p-2 space-y-0.5">
-              <div className="px-2 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium">ホーム</div>
-              <div className="px-2 py-1.5 rounded-lg text-xs text-slate-600 hover:bg-slate-50">マイカー</div>
-              <div className="px-2 py-1.5 rounded-lg text-xs text-slate-600 hover:bg-slate-50">ガソリン</div>
-              <div className="px-2 py-1.5 rounded-lg text-xs text-slate-600 hover:bg-slate-50">メンテナンス</div>
-              <div className="px-2 py-1.5 rounded-lg text-xs text-slate-600 hover:bg-slate-50">カスタマイズ</div>
+            <nav className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-1.5 sm:p-2 space-y-0.5">
+              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] sm:text-xs font-medium">ホーム</div>
+              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50">マイカー</div>
+              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50">ガソリン</div>
+              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50">メンテナンス</div>
+              <div className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50">カスタマイズ</div>
             </nav>
           </aside>
 
           {/* メインコンテンツ */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* ヘッダー */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold text-slate-900">ホーム</h3>
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900">ホーム</h3>
                 <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <Car className="h-3.5 w-3.5 text-blue-600" />
+                  <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <Car className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600" />
                   </div>
-                  <span className="text-xs font-medium text-slate-700">シビック TYPER (FL5)</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-gray-700">シビック TYPER (FL5)</span>
                 </div>
               </div>
             </div>
 
             {/* 現在の車情報 */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 relative">
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 relative">
               {/* 次回メンテ（カード内に表示） */}
               <div className="mb-3">
-                <div className="text-xs text-slate-600 mb-1">次回メンテ: 残1,234km</div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="text-xs text-gray-600 mb-1">次回メンテ: 残1,234km</div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 rounded-full" style={{ width: '75%' }}></div>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 {/* 車画像 */}
-                <div className="w-24 h-16 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0">
+                <div className="w-24 h-16 rounded-xl border border-gray-200 bg-gray-100 overflow-hidden flex-shrink-0">
                   <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600"></div>
                 </div>
                 {/* 車情報 */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-slate-900 mb-2">シビック TYPER (FL5)</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                  <div className="text-sm font-semibold text-gray-900 mb-2">シビック TYPER (FL5)</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                     <div>走行距離: <span className="font-medium">4,822 km</span></div>
                     <div>車検期限: <span className="font-medium">2027/4/30</span></div>
                   </div>
@@ -173,60 +173,69 @@ function ProductMock() {
             </div>
 
             {/* 最近の活動カード */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {/* 最近のメンテナンス */}
-              <div className="bg-white rounded-xl border border-slate-200 p-3">
-                <div className="text-xs font-semibold text-slate-900 mb-2">最近のメンテナンス</div>
-                <div className="space-y-1.5">
-                  <div className="text-[10px] text-slate-600">最新の整備</div>
-                  <div className="text-xs font-medium text-slate-900">オイル交換</div>
-                  <div className="text-[10px] text-slate-500">2025/11/10 • 4,822km</div>
+              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900">最近のメンテナンス</h3>
+                  <span className="text-[10px] sm:text-xs text-blue-600 font-medium">すべて見る →</span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                  <div className="text-[10px] sm:text-xs text-gray-500 mb-1">最新の整備</div>
+                  <div className="text-xs sm:text-sm font-medium text-gray-900 mb-1">オイル交換</div>
+                  <div className="text-[10px] sm:text-xs text-gray-500">2025/11/10 • 4,822km</div>
                 </div>
               </div>
 
               {/* 最近の給油 */}
-              <div className="bg-white rounded-xl border border-slate-200 p-3">
-                <div className="text-xs font-semibold text-slate-900 mb-2">最近の給油</div>
-                <div className="space-y-1.5">
-                  <div className="text-[10px] text-slate-600">最新の給油</div>
-                  <div className="text-xs font-medium text-slate-900">¥6,111</div>
-                  <div className="text-[10px] text-slate-500">11/16 • 35.6L</div>
+              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900">最近の給油</h3>
+                  <span className="text-[10px] sm:text-xs text-blue-600 font-medium">すべて見る →</span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                  <div className="text-[10px] sm:text-xs text-gray-500 mb-1">最新の給油</div>
+                  <div className="text-xs sm:text-sm font-medium text-gray-900 mb-1">11/16 • 35.6L</div>
+                  <div className="text-xs sm:text-sm font-bold text-gray-900">¥6,111</div>
                 </div>
               </div>
 
               {/* 最近のカスタマイズ */}
-              <div className="bg-white rounded-xl border border-slate-200 p-3">
-                <div className="text-xs font-semibold text-slate-900 mb-2">最近のカスタマイズ</div>
-                <div className="space-y-1.5">
-                  <div className="text-[10px] text-slate-600">最新のカスタマイズ</div>
-                  <div className="text-xs font-medium text-slate-900">SPOON ダウンサス</div>
-                  <div className="text-[10px] text-slate-500">¥30,000</div>
+              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-gray-900">最近のカスタマイズ</h3>
+                  <span className="text-[10px] sm:text-xs text-blue-600 font-medium">すべて見る →</span>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                  <div className="text-[10px] sm:text-xs text-gray-500 mb-1">最新のカスタマイズ</div>
+                  <div className="text-xs sm:text-sm font-medium text-gray-900 mb-1">SPOON ダウンサス</div>
+                  <div className="text-xs sm:text-sm font-bold text-gray-900">¥30,000</div>
                 </div>
               </div>
             </div>
 
             {/* 月別費用推移 */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 relative">
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 relative">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <LineChart className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-slate-900">月別費用推移</span>
+                  <span className="text-sm font-semibold text-gray-900">月別費用推移</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1">
                     <button className="px-2 py-1 text-[10px] bg-blue-50 text-blue-600 rounded font-medium">月次</button>
-                    <button className="px-2 py-1 text-[10px] text-slate-500 rounded">年次</button>
-                    <button className="px-2 py-1 text-[10px] text-slate-500 rounded">全期間</button>
+                    <button className="px-2 py-1 text-[10px] text-gray-500 rounded">年次</button>
+                    <button className="px-2 py-1 text-[10px] text-gray-500 rounded">全期間</button>
                   </div>
                   {/* PDF証明ボタン（グラフの右上） */}
-                  <button className="hidden lg:flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors">
-                    <FileText className="h-3 w-3 text-slate-600" />
-                    <span className="text-xs font-medium text-slate-700 whitespace-nowrap">PDF証明：署名付き</span>
+                  <button className="hidden lg:flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
+                    <FileText className="h-3 w-3 text-gray-600" />
+                    <span className="text-xs font-medium text-gray-700 whitespace-nowrap">PDF証明：署名付き</span>
                   </button>
                 </div>
               </div>
               {/* グラフ */}
-              <div className="h-24 bg-slate-50 rounded-lg p-2 flex items-end justify-between gap-1">
+              <div className="h-24 bg-gray-50 rounded-lg p-2 flex items-end justify-between gap-1">
                 {[
                   { month: '8月', height: 15 },
                   { month: '9月', height: 20 },
@@ -240,15 +249,15 @@ function ProductMock() {
                       className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t min-h-[8px]" 
                       style={{ height: `${item.height}%` }}
                     />
-                    <span className="text-[9px] text-slate-500">{item.month}</span>
+                    <span className="text-[9px] text-gray-500">{item.month}</span>
                   </div>
                 ))}
               </div>
               {/* 今月のサマリー */}
-              <div className="mt-3 pt-3 border-t border-slate-200">
+              <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-600">今月の総費用</span>
-                  <span className="font-semibold text-slate-900">¥30,000</span>
+                  <span className="text-gray-600">今月の総費用</span>
+                  <span className="font-semibold text-gray-900">¥30,000</span>
                 </div>
               </div>
             </div>
