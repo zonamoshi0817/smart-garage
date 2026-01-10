@@ -27,7 +27,12 @@ NEXT_PUBLIC_DEV_ALL_PREMIUM=true
 
 # 開発者メールアドレス（自動的にプレミアムプラン）
 NEXT_PUBLIC_DEVELOPER_EMAILS=your-email@example.com,another@example.com
+
+# Google Analytics 4 (GA4) 測定ID（LPのアクセス分析用）
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
+
+詳細は [ANALYTICS_SETUP.md](./ANALYTICS_SETUP.md) を参照してください。
 
 ### 開発サーバー起動
 
@@ -147,5 +152,21 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 環境変数をVercelで設定:
 - `NEXT_PUBLIC_DEVELOPER_EMAILS`
 - `NEXT_PUBLIC_SIGNATURE_SECRET`
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`（LPのアクセス分析用）
+
+### Vercel環境変数の確認
+
+```bash
+# 環境変数の確認（スクリプトを使用）
+npm run vercel:env:check
+
+# または、直接Vercel CLIを使用
+npm run vercel:env:ls
+
+# デプロイログを確認
+npm run vercel:logs
+```
+
+詳細は [ANALYTICS_SETUP.md](./ANALYTICS_SETUP.md) を参照してください。
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

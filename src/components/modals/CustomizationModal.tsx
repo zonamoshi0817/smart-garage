@@ -389,15 +389,15 @@ export default function CustomizationModal({
                 placeholder="https://..."
               />
             </div>
-            <div className="flex items-center">
-              <label className="flex items-center">
+            <div className="flex items-end">
+              <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.isPublic}
                   onChange={(e) => handleInputChange('isPublic', e.target.checked)}
-                  className="mr-2"
+                  className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-800">公開する</span>
+                <span className="text-sm text-gray-800">公開マイカーページに表示</span>
               </label>
             </div>
           </div>

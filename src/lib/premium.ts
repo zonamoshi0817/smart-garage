@@ -322,15 +322,15 @@ export const PREMIUM_FEATURE_DESCRIPTIONS = {
 
 export const PREMIUM_PRICING = {
   monthly: {
-    price: 480,
+    price: 350,
     currency: 'JPY',
     period: 'month',
-    description: '月額480円'
+    description: '月額350円'
   },
   yearly: {
-    price: 4800,
+    price: 3500,
     currency: 'JPY',
     period: 'year',
-    description: '年額4,800円（月額400円相当）'
+    description: '年額3,500円（月額約292円相当）'
   }
 } as const;

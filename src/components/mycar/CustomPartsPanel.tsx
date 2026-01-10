@@ -13,34 +13,45 @@ export default function CustomPartsPanel({
   onAddCustomization 
 }: CustomPartsPanelProps) {
   
-  // カスタマイズをカテゴリ別に集計
+  // カスタマイズをカテゴリ別に集計（順序: 重要なカテゴリを上位に固定）
   const customizationsByCategory = useMemo(() => {
-    const categories = {
-      engine: [] as Customization[],
-      exhaust: [] as Customization[],
-      intake: [] as Customization[],
-      suspension: [] as Customization[],
-      brake: [] as Customization[],
-      tire_wheel: [] as Customization[],
-      exterior: [] as Customization[],
-      interior: [] as Customization[],
-      electrical: [] as Customization[],
-      ecu: [] as Customization[],
-      drivetrain: [] as Customization[],
-      other: [] as Customization[]
-    };
+    // 優先順位: ホイール・タイヤ > 足回り（サスペンション） > ブレーキ > その他
+    const priorityOrder = [
+      'tire_wheel',
+      'suspension',
+      'brake',
+      'engine',
+      'exhaust',
+      'intake',
+      'exterior',
+      'interior',
+      'electrical',
+      'ecu',
+      'drivetrain',
+      'other'
+    ];
+    
+    const categories: Record<string, Customization[]> = {};
+    // 優先順位順に初期化
+    priorityOrder.forEach(cat => {
+      categories[cat] = [];
+    });
     
     customizations
       .filter(c => c.status === 'installed') // インストール済みのみ
       .forEach(custom => {
         custom.categories.forEach(cat => {
           if (cat in categories) {
-            categories[cat as keyof typeof categories].push(custom);
+            categories[cat].push(custom);
           }
         });
       });
     
-    return categories;
+    // 優先順位順に返す
+    return priorityOrder.reduce((acc, cat) => {
+      acc[cat] = categories[cat] || [];
+      return acc;
+    }, {} as Record<string, Customization[]>);
   }, [customizations]);
   
   // カテゴリ別の表示名
@@ -61,6 +72,8 @@ export default function CustomPartsPanel({
   
   // 開閉状態を管理
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  // フィルタ状態（カスタムありのみ表示）
+  const [showCustomOnly, setShowCustomOnly] = useState(true);
   
   const toggleCategory = (category: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -73,37 +86,94 @@ export default function CustomPartsPanel({
   };
 
   const installedCount = customizations.filter(c => c.status === 'installed').length;
+  
+  // カスタムありのカテゴリのみフィルタ
+  const filteredCategories = useMemo(() => {
+    if (!showCustomOnly) {
+      return Object.entries(customizationsByCategory);
+    }
+    return Object.entries(customizationsByCategory).filter(([_, items]) => items.length > 0);
+  }, [customizationsByCategory, showCustomOnly]);
+  
+  // 最終更新日を計算
+  const lastUpdatedDate = useMemo(() => {
+    if (customizations.length === 0) return null;
+    const dates = customizations
+      .filter(c => c.status === 'installed' && c.installedDate)
+      .map(c => {
+        const date = c.installedDate;
+        if (!date) return null;
+        if (date instanceof Date) return date;
+        if (typeof date === 'object' && 'toDate' in date && typeof date.toDate === 'function') {
+          try {
+            return date.toDate();
+          } catch {
+            return null;
+          }
+        }
+        const parsed = new Date(date);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      })
+      .filter((d): d is Date => d !== null);
+    
+    if (dates.length === 0) return null;
+    return new Date(Math.max(...dates.map(d => d.getTime())));
+  }, [customizations]);
 
   return (
     <div className="bg-white rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200">
       {/* ヘッダー */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
-        <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <span className="flex-shrink-0">🔧</span>
-          <span className="break-words">カスタムパーツ一覧</span>
+      <div className="flex flex-col gap-2 sm:gap-0 mb-3 sm:mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="flex-shrink-0">🔧</span>
+            <span className="break-words">カスタムパーツ一覧</span>
+            {installedCount > 0 && (
+              <span className="text-xs sm:text-sm font-normal text-gray-500 flex-shrink-0 hidden sm:inline">
+                ({installedCount}件のカスタマイズ)
+              </span>
+            )}
+          </h2>
           {installedCount > 0 && (
-            <span className="text-xs sm:text-sm font-normal text-gray-500 flex-shrink-0 hidden sm:inline">
-              ({installedCount}件のカスタマイズ)
-            </span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0">
+              <span className="text-xs text-gray-500 sm:hidden">
+                ({installedCount}件のカスタマイズ)
+              </span>
+              <button
+                onClick={() => {
+                  if (expandedCategories.size > 0) {
+                    setExpandedCategories(new Set());
+                  } else {
+                    setExpandedCategories(new Set(Object.keys(customizationsByCategory)));
+                  }
+                }}
+                className="text-xs sm:text-sm text-cyan-600 hover:text-cyan-800 font-semibold transition-colors whitespace-nowrap"
+              >
+                {expandedCategories.size > 0 ? '全て閉じる' : '全て開く'}
+              </button>
+            </div>
           )}
-        </h2>
+        </div>
+        {/* サマリーとフィルタ */}
         {installedCount > 0 && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0">
-            <span className="text-xs text-gray-500 sm:hidden">
-              ({installedCount}件のカスタマイズ)
-            </span>
-            <button
-              onClick={() => {
-                if (expandedCategories.size > 0) {
-                  setExpandedCategories(new Set());
-                } else {
-                  setExpandedCategories(new Set(Object.keys(customizationsByCategory)));
-                }
-              }}
-              className="text-xs sm:text-sm text-cyan-600 hover:text-cyan-800 font-semibold transition-colors whitespace-nowrap"
-            >
-              {expandedCategories.size > 0 ? '全て閉じる' : '全て開く'}
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-3">
+              <span>カスタム合計: <span className="font-semibold text-gray-900">{installedCount}件</span></span>
+              {lastUpdatedDate && (
+                <span>最終更新: <span className="font-semibold text-gray-900">
+                  {lastUpdatedDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </span></span>
+              )}
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showCustomOnly}
+                onChange={(e) => setShowCustomOnly(e.target.checked)}
+                className="w-4 h-4 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
+              />
+              <span className="text-xs">カスタムありのみ</span>
+            </label>
           </div>
         )}
       </div>
@@ -118,14 +188,22 @@ export default function CustomPartsPanel({
                 <p className="text-xs sm:text-sm font-semibold text-blue-700 mb-0.5 sm:mb-1 break-words">
                   カスタマイズを記録してみましょう！
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-600 break-words leading-relaxed">
+                <p className="text-[10px] sm:text-xs text-gray-600 break-words leading-relaxed mb-2">
                   パーツ交換や改造の履歴を記録すると、車両の詳細データとして一覧表示されます
                 </p>
+                {/* 入力の型を見せる例 */}
+                <div className="bg-white rounded-lg p-2.5 border border-blue-200">
+                  <p className="text-[10px] text-gray-500 mb-1.5 font-medium">入力例:</p>
+                  <div className="text-[10px] text-gray-700 space-y-1">
+                    <div><span className="font-semibold">ホイール（RAYS TE37）</span> / 取付日: 2024/01/15 / 価格: ¥150,000 / メモ: 18インチに交換</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
-        {Object.entries(customizationsByCategory).map(([category, items]) => {
+        {filteredCategories.map(([category, items]) => {
+          // 空のカテゴリも表示（純正パーツとして）
           const hasCustom = items.length > 0;
           const categoryInfo = categoryLabels[category as keyof typeof categoryLabels];
           const isExpanded = expandedCategories.has(category);
@@ -180,10 +258,10 @@ function PartAccordion({
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-2">
           {isStock ? (
-            <span className="text-xs sm:text-sm text-gray-500 italic whitespace-nowrap">純正</span>
+            <span className="text-xs sm:text-sm text-gray-400 italic whitespace-nowrap opacity-60">純正</span>
           ) : (
             <span className="text-[10px] sm:text-xs bg-cyan-600 text-white px-1.5 sm:px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
-              カスタム {parts.length}
+              カスタム {parts.length}件
             </span>
           )}
           <svg 

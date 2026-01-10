@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { parseQuery } from '@/lib/urlParams';
 import { Car, MaintenanceRecord, FuelLog, Customization } from '@/types';
 import { usePremiumGuard } from '@/hooks/usePremium';
@@ -12,6 +12,7 @@ import QuickActions from './QuickActions';
 // 広告はマイカーページから削除（意思決定面をクリーンに保つ）
 // 広告はダッシュボードのみに表示
 import CustomPartsPanel from './CustomPartsPanel';
+import VehicleHealthIndicator from './VehicleHealthIndicator';
 import PaywallModal from '../modals/PaywallModal';
 
 interface MyCarPageProps {
@@ -34,6 +35,7 @@ export default function MyCarPage({
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
   const isPremium = isPremiumPlan(userPlan);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const dayMs = 1000 * 60 * 60 * 24;
 
@@ -176,82 +178,8 @@ export default function MyCarPage({
   const inspectionDaysLeft = inspectionDate ? Math.ceil((inspectionDate.getTime() - Date.now()) / dayMs) : null;
 
   const latestMaintenanceDate = latestMaintenance ? toJsDate(latestMaintenance.date) : null;
-
-  const highlightCards = [
-    {
-      id: 'odo',
-      icon: '🛣️',
-      iconBg: 'bg-sky-100 text-sky-600',
-      label: '総走行距離',
-      value: car.odoKm ? `${formatNumber(car.odoKm)} km` : '---',
-      description: car.avgKmPerMonth
-        ? `月平均 ${formatNumber(car.avgKmPerMonth)} km`
-        : 'ODOメーターを更新すると精度が上がります',
-    },
-    {
-      id: 'fuel',
-      icon: '⛽',
-      iconBg: 'bg-amber-100 text-amber-600',
-      label: '最新給油',
-      value: latestFuelDate ? formatRelativeDate(latestFuelDate) : '記録なし',
-      description:
-        latestFuelLog && latestFuelAmount && latestFuelCost !== null
-          ? `${formatNumber(latestFuelAmount.value, latestFuelAmount.unit === 'L' ? 1 : 0)}${latestFuelAmount.unit} / ${formatCurrency(latestFuelCost)}`
-          : '給油を記録するとサマリーに表示されます',
-    },
-    {
-      id: 'inspection',
-      icon: '🗓️',
-      iconBg: 'bg-purple-100 text-purple-600',
-      label: '次回車検',
-      value: inspectionDate ? formatCountdown(inspectionDate) : '未登録',
-      description: inspectionDate
-        ? `${formatDateLabel(inspectionDate)}まで`
-        : '車検日を登録するとリマインドされます',
-    },
-    {
-      id: 'maintenance',
-      icon: '🔧',
-      iconBg: 'bg-emerald-100 text-emerald-600',
-      label: '直近メンテ',
-      value: latestMaintenanceDate ? formatRelativeDate(latestMaintenanceDate) : '未実施',
-      description:
-        latestMaintenance?.title ||
-        (maintenanceRecords.length ? '直近のメンテナンスにタイトルがありません' : 'メンテナンスを記録しましょう'),
-    },
-  ];
-
-  const insightItems = [
-    {
-      id: 'maintenance-count',
-      label: '登録済みメンテ',
-      value: `${maintenanceRecords.length}件`,
-      tone: maintenanceRecords.length ? 'text-gray-900' : 'text-gray-400',
-      helper: latestMaintenanceDate
-        ? `最終: ${formatDateLabel(latestMaintenanceDate)}`
-        : '重要な作業は記録を残しましょう',
-    },
-    {
-      id: 'customizations',
-      label: 'カスタムパーツ',
-      value: `${customizations.length}件`,
-      tone: customizations.length ? 'text-gray-900' : 'text-gray-400',
-      helper: customizations.length
-        ? `累計投資: ${formatCurrency(totalCustomizationCost)}`
-        : 'カスタムを追加して履歴を残しましょう',
-    },
-    {
-      id: 'odo-insight',
-      label: '現在ODO',
-      value: car.odoKm ? `${formatNumber(car.odoKm)} km` : '未入力',
-      tone: car.odoKm ? 'text-gray-900' : 'text-gray-400',
-      helper: car.avgKmPerMonth
-        ? `月平均 ${formatNumber(car.avgKmPerMonth)} km`
-        : 'ODOを更新すると推定走行距離を算出します',
-    },
-  ];
  
-  // クイックアクションの定義
+  // クイックアクションの定義（高頻度操作のみに絞る）
   const quickActions = [
     {
       id: 'fuel',
@@ -277,20 +205,10 @@ export default function MyCarPage({
       icon: '📸',
       isPremium: true,
       onClick: () => onOpenModal('ocr')
-    },
-    {
-      id: 'edit-car',
-      label: '車両情報編集',
-      icon: '📝',
-      onClick: () => onOpenModal('edit-car', { carId: car.id })
-    },
-    {
-      id: 'share',
-      label: 'PDF/共有',
-      icon: '📤',
-      isPremium: true,
-      onClick: () => onOpenModal('share', { carId: car.id })
     }
+    // 「PDF出力」と「車両情報編集」は削除
+    // - PDF出力: 共有ページから到達可能
+    // - 車両情報編集: サマリーカード右上の編集ボタンなどからアクセス
   ];
   
   // ペイウォール表示ハンドラー
@@ -306,6 +224,17 @@ export default function MyCarPage({
   // 車両画像変更
   const handleImageChange = () => {
     onOpenModal('change-car-image', { carId: car.id });
+  };
+
+  // ヘルスインジケータからのクイック追加
+  const handleQuickAdd = (type: 'oil' | 'brake' | 'tire' | 'battery') => {
+    const templateMap: Record<string, string> = {
+      'oil': 'オイル交換',
+      'brake': 'ブレーキパッド交換',
+      'tire': 'タイヤ交換',
+      'battery': 'バッテリー交換'
+    };
+    onOpenModal('maintenance', { template: templateMap[type] || type });
   };
 
   return (
@@ -367,9 +296,81 @@ export default function MyCarPage({
           onImageChange={handleImageChange}
         />
 
-        <div className="grid gap-4 sm:gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          {/* 左カラム: カスタムパーツ */}
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+          {/* クイック操作 + ヘルスインジケータ + カスタムパーツ */}
           <div className="space-y-4 sm:space-y-6 lg:space-y-8 min-w-0">
+            {/* クイック操作 */}
+            {readOnly ? (
+              <div className="rounded-xl sm:rounded-2xl border border-orange-200 bg-orange-50/90 p-4 sm:p-5 lg:p-6 text-orange-800 shadow-sm">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <div className="font-semibold text-base sm:text-lg">
+                      {car.status === 'sold' 
+                        ? '売却済み車両（閲覧専用）' 
+                        : car.status === 'scrapped' 
+                        ? '廃車済み車両（閲覧専用）'
+                        : car.status === 'downgraded_premium'
+                        ? '閲覧専用（プラン制限）'
+                        : '閲覧専用'}
+                    </div>
+                    {car.status === 'sold' && car.soldDate && (
+                      <p className="text-sm text-orange-700">
+                        売却日: {formatDateLabel(toJsDate(car.soldDate))}
+                        {car.soldPrice && ` / 売却価格: ${formatCurrency(car.soldPrice)}`}
+                        {car.soldTo && ` / 売却先: ${car.soldTo}`}
+                      </p>
+                    )}
+                    {car.status === 'downgraded_premium' && car.downgradedAt && (
+                      <p className="text-sm text-orange-700">
+                        💡 無料プランでは1台のみ編集可能です。この車両は閲覧専用になりました。
+                        <br />
+                        <span className="text-xs">
+                          （ダウングレード日: {formatDateLabel(toJsDate(car.downgradedAt))}）
+                        </span>
+                      </p>
+                    )}
+                    <p className="text-sm text-orange-700">
+                      💡 過去データの閲覧・PDF出力は可能ですが、新規登録や編集はできません。
+                      {car.status === 'downgraded_premium' && (
+                        <span className="block mt-1 font-semibold">
+                          🚀 プレミアムプランに再登録すると、すぐに編集可能になります。
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 lg:p-5 shadow-sm opacity-90">
+                <SectionHeader
+                  title="クイック操作"
+                  subtitle="よく使う操作に素早くアクセス"
+                  size="sm"
+                />
+                <div className="mt-3 sm:mt-4 -mx-1">
+                  <QuickActions
+                    actions={quickActions}
+                    isPremium={isPremium}
+                    onLockedClick={handleLockedAction}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 車両ヘルスインジケータ */}
+            {!readOnly && (
+              <div id="section-health" className="scroll-mt-24">
+                <VehicleHealthIndicator
+                  car={car}
+                  maintenanceRecords={maintenanceRecords}
+                  onQuickAdd={handleQuickAdd}
+                />
+              </div>
+            )}
+            
             <div id="section-custom" className="scroll-mt-24">
               <CustomPartsPanel
                 customizations={customizations}
@@ -378,118 +379,6 @@ export default function MyCarPage({
                 }}
               />
             </div>
-          </div>
-
-          {/* 右カラム: クイック操作 + サマリーカード + 状況サマリー */}
-          <div className="space-y-4 sm:space-y-6 min-w-0">
-            {readOnly ? (
-                <div className="rounded-xl sm:rounded-2xl border border-orange-200 bg-orange-50/90 p-4 sm:p-5 lg:p-6 text-orange-800 shadow-sm">
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <div className="font-semibold text-base sm:text-lg">
-                        {car.status === 'sold' 
-                          ? '売却済み車両（閲覧専用）' 
-                          : car.status === 'scrapped' 
-                          ? '廃車済み車両（閲覧専用）'
-                          : car.status === 'downgraded_premium'
-                          ? '閲覧専用（プラン制限）'
-                          : '閲覧専用'}
-                      </div>
-                      {car.status === 'sold' && car.soldDate && (
-                        <p className="text-sm text-orange-700">
-                          売却日: {formatDateLabel(toJsDate(car.soldDate))}
-                          {car.soldPrice && ` / 売却価格: ${formatCurrency(car.soldPrice)}`}
-                          {car.soldTo && ` / 売却先: ${car.soldTo}`}
-                        </p>
-                      )}
-                      {car.status === 'downgraded_premium' && car.downgradedAt && (
-                        <p className="text-sm text-orange-700">
-                          💡 無料プランでは1台のみ編集可能です。この車両は閲覧専用になりました。
-                          <br />
-                          <span className="text-xs">
-                            （ダウングレード日: {formatDateLabel(toJsDate(car.downgradedAt))}）
-                          </span>
-                        </p>
-                      )}
-                      <p className="text-sm text-orange-700">
-                        💡 過去データの閲覧・PDF出力は可能ですが、新規登録や編集はできません。
-                        {car.status === 'downgraded_premium' && (
-                          <span className="block mt-1 font-semibold">
-                            🚀 プレミアムプランに再登録すると、すぐに編集可能になります。
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50/30 p-3 sm:p-4 lg:p-5 shadow-sm">
-                  <SectionHeader
-                    title="クイック操作"
-                    subtitle="よく使う操作に素早くアクセス"
-                    right={<div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md"><span>⚡ ショートカット</span></div>}
-                  />
-                  <div className="mt-3 sm:mt-4 -mx-1">
-                    <QuickActions
-                      actions={quickActions}
-                      isPremium={isPremium}
-                      onLockedClick={handleLockedAction}
-                    />
-                  </div>
-                </div>
-              )}
-
-            {/* サマリーカード */}
-            <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 lg:p-5 shadow-sm">
-            <SectionHeader title="車両サマリー" size="md" />
-              <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
-                {highlightCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="group relative overflow-hidden rounded-lg sm:rounded-xl border border-gray-100 bg-gradient-to-br from-white to-gray-50/50 p-3.5 sm:p-4 transition-all duration-200 hover:bg-white hover:shadow-md hover:border-gray-200"
-                  >
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className={`flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-xl text-base sm:text-lg shadow-sm ${card.iconBg}`}>
-                        {card.icon}
-                      </div>
-                      <div className="min-w-0 flex-1 pt-0.5">
-                        <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">{card.label}</p>
-                        <p className="text-base sm:text-lg font-bold text-gray-900 mb-1.5 break-words">{card.value}</p>
-                        {card.description && (
-                          <p className="text-xs leading-relaxed text-gray-600">{card.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 状況サマリー */}
-            <div className="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 lg:p-6 shadow-sm">
-            <SectionHeader title="状況サマリー" size="md" />
-              <div className="mt-3 sm:mt-4 space-y-2.5 sm:space-y-3">
-                {insightItems.map((item) => (
-                  <div key={item.id} className="flex items-start justify-between gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-800 mb-0.5">{item.label}</p>
-                      {item.helper && (
-                        <p className="text-xs leading-relaxed text-gray-500">{item.helper}</p>
-                      )}
-                    </div>
-                    <span className={`text-sm sm:text-base font-bold flex-shrink-0 px-2 py-1 rounded-md ${item.tone === 'text-gray-900' ? 'bg-gray-100 text-gray-900' : 'text-gray-400'}`}>
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 広告削除: マイカーページ（意思決定面）は広告非表示
-                広告はダッシュボードの全車横断セクションのみに表示 */}
           </div>
         </div>
       </div>

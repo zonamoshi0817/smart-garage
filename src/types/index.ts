@@ -46,6 +46,19 @@ export interface Car extends BaseEntity {
   chassisNumber?: string; // 車台番号（QRコードから）
   registrationNumber?: string; // 登録番号（ナンバープレート）
   bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other'; // 車体形状
+  // 公開マイカーページ設定
+  isPublic?: boolean; // 公開設定
+  publicVanityUrl?: string; // カスタムURL（例：/c/fl5-ken）
+  publicTagline?: string; // 一言キャッチコピー
+  ownerPicks?: string[]; // OWNER'S PICKのカスタマイズID配列（最大3件）
+  ownerHandle?: string; // オーナーハンドルネーム
+  ownerRegion?: string; // 地域（都道府県）
+  ownerSocialLinks?: { instagram?: string; twitter?: string }; // SNSリンク
+  // 基本スペック（公開用）
+  driveType?: 'FF' | 'FR' | '4WD' | 'MR' | 'RR' | 'AWD'; // 駆動方式
+  transmission?: string; // ミッション（例：6MT、AT、CVT、DCT）
+  bodyColor?: string; // ボディカラー
+  ownedSince?: Timestamp; // 所有開始年月
 }
 
 export interface CarInput {
@@ -66,6 +79,26 @@ export interface CarInput {
   chassisNumber?: string; // 車台番号（QRコードから）
   registrationNumber?: string; // 登録番号（ナンバープレート）
   bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other'; // 車体形状
+  // 公開マイカーページ設定
+  isPublic?: boolean; // 公開設定
+  publicVanityUrl?: string; // カスタムURL（例：/c/fl5-ken）
+  publicTagline?: string; // 一言キャッチコピー
+  ownerPicks?: string[]; // OWNER'S PICKのカスタマイズID配列（最大3件）
+  ownerHandle?: string; // オーナーハンドルネーム
+  ownerRegion?: string; // 地域（都道府県）
+  ownerSocialLinks?: { instagram?: string; twitter?: string }; // SNSリンク
+  // 基本スペック（公開用）
+  driveType?: 'FF' | 'FR' | '4WD' | 'MR' | 'RR' | 'AWD'; // 駆動方式
+  transmission?: string; // ミッション（例：6MT、AT、CVT、DCT）
+  bodyColor?: string; // ボディカラー
+  ownedSince?: Timestamp; // 所有開始年月
+  // 共有プロフィール（用途別リンク対応）
+  activeSaleProfileId?: string; // アクティブな売却プロフィールID（後方互換、非推奨）
+  activeShareProfileIds?: {     // 用途別のアクティブShareProfile ID（新規）
+    normal?: string;              // 通常共有リンク
+    sale?: string;                // 売却用リンク
+    appraisal?: string;           // 査定用リンク
+  };
 }
 
 // メンテナンス関連の型
@@ -94,6 +127,10 @@ export interface MaintenanceRecord extends BaseEntity {
   location?: string;
   items?: MaintenanceItem[];        // 明細行（将来対応）
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
+  // Sell Boost用フィールド
+  category?: string;      // カテゴリ（例: 'oil', 'tire', 'brake', 'battery', 'coolant', 'other'）
+  isPreventive?: boolean; // 予防整備かどうか
+  typeTag?: 'receipt_backed' | 'owner_log' | 'other'; // 記録の種類（証跡が紐づいたらreceipt_backed）
 }
 
 export interface MaintenanceInput {
@@ -106,6 +143,10 @@ export interface MaintenanceInput {
   location?: string;
   items?: MaintenanceItem[];        // 明細行（将来対応）
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
+  // Sell Boost用フィールド
+  category?: string;      // カテゴリ（必須推奨、既存データは'other'でバックフィル）
+  isPreventive?: boolean; // 予防整備かどうか
+  typeTag?: 'receipt_backed' | 'owner_log' | 'other'; // 記録の種類
 }
 
 /**
@@ -525,3 +566,114 @@ export interface UserDocument {
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
+
+// ========================================
+// 売却用公開ページ関連の型
+// ========================================
+
+/**
+ * 共有プロフィール（売却用プロフィールを拡張）
+ * コレクション: shareProfiles/{shareProfileId}（saleProfilesから段階的に移行）
+ * 
+ * 用途別に複数のShareProfileを持てる（通常/売却/査定）
+ * URLは用途を切り替えても変わらない（誤送信防止）
+ */
+export interface ShareProfile extends BaseEntity {
+  vehicleId: string;                       // 車両ID（users/{userId}/cars/{carId}のcarId）
+  ownerUid: string;                        // オーナーUID
+  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';  // 用途種別（新規追加）
+  status: 'active' | 'disabled';           // ステータス（visibilityの代替、新規追加）
+  slug: string;                            // URLスラッグ（例: "abc123"）
+  
+  // 後方互換性のため、既存フィールドも維持
+  visibility?: 'unlisted' | 'public' | 'disabled'; // 公開設定（非推奨、statusで代替）
+  includeEvidence: boolean;                // 証跡を含めるか
+  includeAmounts: boolean;                 // 金額を含めるか
+  highlightTopN: number;                   // 重要イベント上位N件（デフォルト: 10）
+  analyticsEnabled: boolean;               // アナリティクス有効化
+  
+  // 新規追加フィールド
+  title?: string;                          // 公開ページの見出し（任意）
+  maskPolicy?: 'auto' | 'strict' | 'custom'; // マスク強度
+  sections?: string[];                     // 公開ページの構成セクション（将来用）
+  viewCount?: number;                      // 閲覧回数（オーナー側のみ表示）
+  lastPublishedAt?: Timestamp;             // 最終公開日時
+  
+  // SNS共有（通常リンク）用フィールド（type="normal"のみ利用）
+  sns?: {
+    settings?: {
+      showPricesInDetails?: boolean;        // Detailsセクション内に価格を表示するか（デフォルト: false）
+    };
+    conceptTitle?: string;                 // 短い肩書き（例：街乗り仕様）
+    conceptBody?: string;                 // 紹介文 30〜200字
+    highlightParts?: Array<{              // 主要カスタム最大6件
+      label: string;
+      value: string;
+    }>;
+    gallery?: Array<{                     // 画像3〜12枚
+      id: string;
+      path: string;                       // Storageパス
+      caption?: string;
+    }>;
+    socialLinks?: {                       // SNSリンク
+      youtube?: string;
+      instagram?: string;
+      x?: string;
+      web?: string;
+    };
+    build?: {
+      featured?: Array<{                  // 主要パーツ（最大30件）
+        label: string;
+        value: string;
+        priceAmount?: number;              // 具体的な価格（JPY）
+        priceCurrency?: 'JPY';             // 通貨（デフォルト: JPY）
+        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET'; // 価格の種類（パーツ代のみ/工賃込み/相場）
+        priceAsOf?: string;                // 価格の時点（YYYY-MM形式推奨）
+        priceRounding?: 0 | 100 | 1000 | 10000; // 表示時の丸め（オプション）
+        priceVisibility?: 'HIDE' | 'SHOW'; // 個別の表示設定（オプション）
+      }>;
+      categories?: Array<{                // カテゴリごとのビルド情報
+        name: string;
+        items: Array<{
+          name: string;
+          note?: string;
+        }>;
+      }>;
+    };
+  };
+}
+
+/**
+ * 売却用プロフィール（後方互換性のためのエイリアス）
+ * @deprecated ShareProfileを使用してください
+ */
+export type SaleProfile = ShareProfile;
+
+/**
+ * 証跡（メンテナンス記録の添付ファイルなど）
+ * コレクション: evidences/{evidenceId}
+ */
+export interface Evidence extends BaseEntity {
+  vehicleId: string;                       // 車両ID
+  saleProfileId?: string;                  // 売却プロフィールID（公開用パス生成に必要）
+  recordId?: string;                       // 関連するメンテナンス記録ID（オプション）
+  storagePath: string;                     // Storageパス（元画像、private/users/...）
+  maskedStoragePath?: string;              // マスク済み画像のStorageパス（public/sales/...）
+  maskStatus: 'none' | 'pending' | 'masked' | 'failed'; // マスク状態
+  maskPolicyVersion: string;               // マスクポリシーバージョン（将来の互換性用）
+}
+
+/**
+ * 売却ページ閲覧イベント
+ * コレクション: salePageViews（サブコレクションなし、直接コレクション）
+ */
+export interface SalePageView {
+  id?: string;                             // ドキュメントID（自動生成）
+  saleProfileId: string;                   // 売却プロフィールID
+  timestamp: Timestamp;                    // イベント発生時刻
+  hashIpUa?: string;                       // IP+UAのハッシュ（プライバシー保護）
+  referrer?: string;                       // リファラー
+  event: 'page_view' | 'pdf_download_assess' | 'pdf_download_handover' | 'copy_template'; // イベント種類
+}
+
+// MaintenanceRecordExtendedは削除（MaintenanceRecordに統合済み）

@@ -4,11 +4,12 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
-import type { Car, MaintenanceRecord } from '@/types';
+import type { Car, MaintenanceRecord, Customization } from '@/types';
 import { generateCombinedProof, ProofData } from './proof';
 import { logPdfExported } from './analytics';
 import { generatePdfExportToken } from './cloudFunctions';
 import { shortenSignature } from './signatureToken';
+import { timestampToDate } from './converters';
 
 // 日本語フォントの設定
 declare module 'jspdf' {
@@ -25,6 +26,13 @@ export interface PDFExportOptions {
     start: Date;
     end: Date;
   };
+}
+
+export interface BuildSheetPDFOptions {
+  car: Car;
+  customizations: Customization[];
+  maintenanceRecords: MaintenanceRecord[];
+  publicUrl?: string;
 }
 
 // 日付を安全にフォーマットする
@@ -424,6 +432,465 @@ export async function downloadMaintenancePDF(options: PDFExportOptions): Promise
   } catch (error) {
     console.error('PDF生成エラー:', error);
     throw new Error('PDFの生成に失敗しました');
+  }
+}
+
+/**
+ * ビルドシートPDFを生成（カスタマイズ重視のレイアウト）
+ */
+export async function generateBuildSheetPDF(options: BuildSheetPDFOptions): Promise<Blob> {
+  const { car, customizations, maintenanceRecords, publicUrl } = options;
+  
+  // OWNER'S PICKを取得（最大3件）
+  const ownerPicks = car.ownerPicks
+    ? customizations.filter(c => car.ownerPicks?.includes(c.id || '')).slice(0, 3)
+    : customizations.slice(0, 3);
+  
+  // カテゴリ別にカスタマイズを分類
+  const customizationsByCategory: Record<string, Customization[]> = {};
+  customizations.forEach(custom => {
+    custom.categories.forEach(category => {
+      if (!customizationsByCategory[category]) {
+        customizationsByCategory[category] = [];
+      }
+      customizationsByCategory[category].push(custom);
+    });
+  });
+  
+  // 主要メンテナンス履歴（直近10件）
+  const recentMaintenance = [...maintenanceRecords]
+    .sort((a, b) => {
+      const aDate = timestampToDate(a.date)?.getTime() || 0;
+      const bDate = timestampToDate(b.date)?.getTime() || 0;
+      return bDate - aDate;
+    })
+    .slice(0, 10);
+  
+  // HTMLコンテンツを生成
+  const htmlContent = generateBuildSheetHTML(car, ownerPicks, customizationsByCategory, recentMaintenance, publicUrl);
+  
+  // 一時的なDOM要素を作成
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = htmlContent;
+  tempDiv.style.position = 'absolute';
+  tempDiv.style.left = '-9999px';
+  tempDiv.style.top = '-9999px';
+  tempDiv.style.width = '210mm'; // A4 width
+  tempDiv.style.fontFamily = 'Arial, sans-serif';
+  document.body.appendChild(tempDiv);
+
+  try {
+    // html2canvasでキャプチャ
+    const canvas = await html2canvas(tempDiv, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    });
+
+    // jsPDFでPDFを生成
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgData = canvas.toDataURL('image/png');
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 295; // A4 height in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    return pdf.output('blob');
+  } finally {
+    // 一時的なDOM要素を削除
+    document.body.removeChild(tempDiv);
+  }
+}
+
+function generateBuildSheetHTML(
+  car: Car,
+  ownerPicks: Customization[],
+  customizationsByCategory: Record<string, Customization[]>,
+  recentMaintenance: MaintenanceRecord[],
+  publicUrl?: string
+): string {
+  const formatCurrency = (value?: number | null) => {
+    if (value === undefined || value === null || Number.isNaN(value)) return '-';
+    return `¥${value.toLocaleString('ja-JP')}`;
+  };
+
+  const formatCustomizationDate = (date: any) => {
+    const d = timestampToDate(date);
+    if (!d) return '-';
+    return `${d.getFullYear()}年${d.getMonth() + 1}月`;
+  };
+
+  const formatMaintenanceDate = (date: any) => {
+    return formatDate(date);
+  };
+
+  // 基本スペック
+  const specs = [];
+  if (car.driveType) specs.push({ label: '駆動方式', value: car.driveType });
+  if (car.transmission) specs.push({ label: 'ミッション', value: car.transmission });
+  if (car.bodyColor) specs.push({ label: 'ボディカラー', value: car.bodyColor });
+  if (car.odoKm !== undefined) specs.push({ label: '現在の走行距離', value: `${car.odoKm.toLocaleString()} km` });
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+          margin: 0;
+          padding: 20px;
+          background: white;
+          color: #333;
+          line-height: 1.6;
+        }
+        .page {
+          page-break-after: always;
+        }
+        .page:last-child {
+          page-break-after: auto;
+        }
+        .header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 3px solid #4285f4;
+        }
+        .header-left {
+          flex: 1;
+        }
+        .header h1 {
+          font-size: 28px;
+          margin: 0 0 5px 0;
+          color: #4285f4;
+          font-weight: bold;
+        }
+        .header .subtitle {
+          font-size: 14px;
+          color: #666;
+        }
+        .header-logo {
+          font-size: 18px;
+          font-weight: bold;
+          color: #4285f4;
+        }
+        .hero-section {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 30px;
+        }
+        .car-image {
+          width: 100%;
+          height: 200px;
+          object-fit: cover;
+          border-radius: 8px;
+          background: #f0f0f0;
+        }
+        .car-info {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        .car-name {
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 10px;
+          color: #333;
+        }
+        .car-details {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+        .car-badge {
+          padding: 4px 12px;
+          background: #e3f2fd;
+          color: #1976d2;
+          border-radius: 12px;
+          font-size: 12px;
+        }
+        .specs-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+          margin-top: 20px;
+        }
+        .spec-item {
+          padding: 10px;
+          background: #f8f9fa;
+          border-radius: 6px;
+        }
+        .spec-label {
+          font-size: 11px;
+          color: #666;
+          margin-bottom: 4px;
+        }
+        .spec-value {
+          font-size: 14px;
+          font-weight: bold;
+          color: #333;
+        }
+        .highlights {
+          background: #fff3e0;
+          padding: 20px;
+          border-radius: 8px;
+          margin-top: 20px;
+        }
+        .highlights h3 {
+          font-size: 16px;
+          margin: 0 0 15px 0;
+          color: #e65100;
+        }
+        .highlight-item {
+          margin-bottom: 12px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid #ffe0b2;
+        }
+        .highlight-item:last-child {
+          border-bottom: none;
+        }
+        .highlight-category {
+          font-size: 11px;
+          color: #666;
+          margin-bottom: 4px;
+        }
+        .highlight-name {
+          font-size: 14px;
+          font-weight: bold;
+          color: #333;
+        }
+        .custom-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 30px;
+          font-size: 11px;
+        }
+        .custom-table th,
+        .custom-table td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: left;
+        }
+        .custom-table th {
+          background-color: #4285f4;
+          color: white;
+          font-weight: bold;
+        }
+        .custom-table tr:nth-child(even) {
+          background-color: #f8f9fa;
+        }
+        .maintenance-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+        }
+        .maintenance-table th,
+        .maintenance-table td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: left;
+        }
+        .maintenance-table th {
+          background-color: #4285f4;
+          color: white;
+          font-weight: bold;
+        }
+        .maintenance-table tr:nth-child(even) {
+          background-color: #f8f9fa;
+        }
+        .footer {
+          margin-top: 30px;
+          padding-top: 15px;
+          border-top: 1px solid #ddd;
+          text-align: center;
+          font-size: 10px;
+          color: #666;
+        }
+        .qr-placeholder {
+          width: 80px;
+          height: 80px;
+          background: #f0f0f0;
+          border: 1px solid #ddd;
+          display: inline-block;
+          margin-top: 10px;
+        }
+      </style>
+    </head>
+    <body>
+      <!-- 1ページ目 -->
+      <div class="page">
+        <div class="header">
+          <div class="header-left">
+            <h1>ビルドシート</h1>
+            <div class="subtitle">Build Sheet</div>
+          </div>
+          <div class="header-logo">GarageLog</div>
+        </div>
+
+        <div class="hero-section">
+          <div>
+            ${car.imagePath ? `
+              <img src="${car.imagePath}" alt="${car.name}" class="car-image" />
+            ` : `
+              <div class="car-image" style="display: flex; align-items: center; justify-content: center; color: #999;">
+                車両画像
+              </div>
+            `}
+          </div>
+          <div class="car-info">
+            <div class="car-name">${car.name}</div>
+            <div class="car-details">
+              ${car.modelCode ? `<span class="car-badge">${car.modelCode}</span>` : ''}
+              ${car.year ? `<span class="car-badge">${car.year}年式</span>` : ''}
+            </div>
+            ${car.publicTagline ? `<div style="margin-top: 10px; font-size: 14px; color: #666;">${car.publicTagline}</div>` : ''}
+          </div>
+        </div>
+
+        <div class="specs-grid">
+          ${specs.map(spec => `
+            <div class="spec-item">
+              <div class="spec-label">${spec.label}</div>
+              <div class="spec-value">${spec.value}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        ${ownerPicks.length > 0 ? `
+          <div class="highlights">
+            <h3>OWNER'S PICK</h3>
+            ${ownerPicks.map(pick => {
+              const pickDate = timestampToDate(pick.date);
+              return `
+                <div class="highlight-item">
+                  <div class="highlight-category">${pick.categories.join(' / ')}</div>
+                  <div class="highlight-name">${pick.brand ? `${pick.brand} ` : ''}${pick.title}</div>
+                  ${pickDate ? `<div style="font-size: 11px; color: #666; margin-top: 4px;">装着：${pickDate.getFullYear()}年${pickDate.getMonth() + 1}月${pick.odoKm ? `（ODO ${pick.odoKm.toLocaleString()}km）` : ''}</div>` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : ''}
+
+        ${publicUrl ? `
+          <div class="footer">
+            <div>この車両の最新情報・詳細は下記URLへ</div>
+            <div style="margin: 10px 0; font-size: 12px; color: #4285f4; word-break: break-all;">${publicUrl}</div>
+            <div class="qr-placeholder">QRコード</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- 2ページ目 -->
+      <div class="page">
+        <h2 style="font-size: 18px; margin-bottom: 20px; color: #333;">カスタム一覧</h2>
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>カテゴリ</th>
+              <th>品名</th>
+              <th>ブランド</th>
+              <th>施工日</th>
+              <th>ODO</th>
+              <th>費用</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(customizationsByCategory).flatMap(([category, items]) =>
+              items.map(item => {
+                const itemDate = timestampToDate(item.date);
+                const totalCost = (item.partsCostJpy || 0) + (item.laborCostJpy || 0) + (item.otherCostJpy || 0);
+                return `
+                  <tr>
+                    <td>${category}</td>
+                    <td>${item.title}</td>
+                    <td>${item.brand || '-'}</td>
+                    <td>${formatCustomizationDate(item.date)}</td>
+                    <td>${item.odoKm ? `${item.odoKm.toLocaleString()} km` : '-'}</td>
+                    <td>${totalCost > 0 ? formatCurrency(totalCost) : '-'}</td>
+                  </tr>
+                `;
+              })
+            ).join('')}
+            ${Object.keys(customizationsByCategory).length === 0 ? `
+              <tr>
+                <td colspan="6" style="text-align: center; color: #666; padding: 20px;">カスタマイズ記録がありません</td>
+              </tr>
+            ` : ''}
+          </tbody>
+        </table>
+
+        <h2 style="font-size: 18px; margin: 30px 0 20px 0; color: #333;">主要メンテナンス履歴</h2>
+        <table class="maintenance-table">
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>内容</th>
+              <th>費用</th>
+              <th>走行距離</th>
+              <th>作業場所</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${recentMaintenance.map(record => `
+              <tr>
+                <td>${formatMaintenanceDate(record.date)}</td>
+                <td>${record.title}</td>
+                <td>${record.cost ? formatCurrency(record.cost) : '-'}</td>
+                <td>${record.mileage ? `${record.mileage.toLocaleString()} km` : '-'}</td>
+                <td>${record.location || '-'}</td>
+              </tr>
+            `).join('')}
+            ${recentMaintenance.length === 0 ? `
+              <tr>
+                <td colspan="5" style="text-align: center; color: #666; padding: 20px;">メンテナンス記録がありません</td>
+              </tr>
+            ` : ''}
+          </tbody>
+        </table>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+export async function downloadBuildSheetPDF(options: BuildSheetPDFOptions): Promise<void> {
+  try {
+    const blob = await generateBuildSheetPDF(options);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ビルドシート_${options.car.name}_${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    // アナリティクスイベントを記録
+    if (options.car.id) {
+      logPdfExported(options.car.id, options.customizations.length);
+    }
+  } catch (error) {
+    console.error('ビルドシートPDF生成エラー:', error);
+    throw new Error('ビルドシートPDFの生成に失敗しました');
   }
 }
 

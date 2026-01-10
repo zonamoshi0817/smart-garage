@@ -8,8 +8,16 @@ import { useEffect, useState } from "react";
  */
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    
+    // クライアントサイドでのみ実行
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return;
+    }
+
     // 初期状態を設定
     setIsOnline(navigator.onLine);
 
@@ -32,6 +40,11 @@ export function useOnlineStatus() {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  // マウント前は常にtrueを返す（サーバーサイドでは常にオンラインとみなす）
+  if (!isMounted) {
+    return true;
+  }
 
   return isOnline;
 }
