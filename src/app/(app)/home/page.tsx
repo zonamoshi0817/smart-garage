@@ -1343,7 +1343,7 @@ function DashboardContent({
                   {cars.length === 0 && (
                     <button
                       onClick={() => setShowAddCarModal(true)}
-                      className="mt-4 rounded-xl bg-blue-600 text-white px-6 py-3 text-sm font-medium hover:bg-blue-500"
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                     >
                       車を追加する
                     </button>
@@ -1464,7 +1464,7 @@ function DashboardContent({
                   <div className="flex items-center justify-center">
                     <button
                       onClick={() => activeCarId ? setShowMaintenanceModal(true) : router.push('/mycar')}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
                     >
                       整備を追加
                     </button>
@@ -1493,13 +1493,15 @@ function DashboardContent({
                       </svg>
                     </div>
                     <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                    <p className="text-gray-500 mb-4">まず車を追加してください</p>
-                    <button
-                      onClick={() => setShowAddCarModal(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    >
-                      車を追加する
-                    </button>
+                    <p className="text-gray-500 mb-4 text-sm">まず車を追加してください</p>
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => setShowAddCarModal(true)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+                      >
+                        車を追加する
+                      </button>
+                    </div>
                   </div>
                 ) : car && fuelLogs.length > 0 ? (
                     <div className="space-y-3">
@@ -1761,7 +1763,7 @@ function DashboardContent({
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => (activeCarId && auth.currentUser) ? setShowCustomizationModal(true) : router.push('/mycar')}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
                       >
                         カスタマイズを追加
                       </button>

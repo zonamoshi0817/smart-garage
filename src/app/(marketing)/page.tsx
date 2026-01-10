@@ -1,14 +1,35 @@
-import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, Download, Star, Timer, Zap, ArrowRight } from "lucide-react";
+import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, Download, Star, Timer, Zap, ArrowRight, Clock, Play } from "lucide-react";
 import Header from "@/components/marketing/Header";
 import { CTAButtons, PricingCTAButtons } from "@/components/marketing/CTAButtons.client";
 import LandingPageAnalytics from "@/components/marketing/LandingPageAnalytics.client";
 import ScrollAnimations from "@/components/marketing/ScrollAnimations.client";
+import HeroCTAButtonsPrimary from "@/components/marketing/HeroCTAButtons.client";
 import Link from "next/link";
 
 export const dynamic = 'force-static';
 export const revalidate = 0; // デプロイ直後に反映されるように一時的に0に設定（確認後、86400に戻す）
 
-// GarageLog LP — Modern SaaS design with Bento layout
+// ===== デザイントークン定数 =====
+const DESIGN_TOKENS = {
+  container: "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+  radius: {
+    sm: "rounded-lg",
+    md: "rounded-xl",
+    lg: "rounded-2xl",
+  },
+  shadow: {
+    sm: "shadow-sm",
+    md: "shadow-md",
+    lg: "shadow-lg",
+  },
+  accent: {
+    blue: "blue-600",
+    blueLight: "blue-50",
+    blueDark: "blue-700",
+  },
+} as const;
+
+// GarageLog LP — 2026 Modern SaaS Design
 
 export default function LandingPage() {
   return (
@@ -18,10 +39,10 @@ export default function LandingPage() {
       <Header />
       <Hero />
       <BeforeAfter />
-      <PainGain />
       <HowItWorks />
       <Features />
       <Pricing />
+      <Trust />
       <FAQ />
       <CTA />
       <Footer />
@@ -31,55 +52,94 @@ export default function LandingPage() {
 
 function Hero() {
   return (
-    <section className="relative bg-slate-50 border-b border-slate-200">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+    <section className="relative overflow-hidden">
+      {/* 背景：グラデーション + ノイズ */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-blue-50/30"></div>
+      <div 
+        className="absolute inset-0 opacity-[0.015]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      ></div>
+      
+      <div className={`${DESIGN_TOKENS.container} relative py-20 lg:py-32`}>
         {/* メイングリッド：左（コンテンツ）+ 右（モック） */}
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-16">
-          {/* 左側：H1 + サブコピー + CTA */}
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center mb-20">
+          {/* 左側：H1 + ベネフィット + CTA */}
           <div className="space-y-8 slide-in-left-on-scroll">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 shadow-sm">
+            {/* バッジ */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200/60 text-sm font-medium text-slate-700 shadow-sm">
               <Sparkles className="h-4 w-4 text-blue-600" />
               <span>クルマの記録を、もっとスマートに</span>
             </div>
             
-            <h1 className="text-5xl lg:text-6xl font-semibold tracking-tight text-slate-900 leading-[1.05]">
-              クルマと、<span className="text-blue-600">ずっと</span>いい関係。
+            {/* H1：改行を自然に */}
+            <h1 className="text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight text-slate-900 leading-[1.05]">
+              クルマと、<br className="hidden sm:block" />
+              <span className="text-blue-600">ずっと</span>いい関係。
             </h1>
             
-            <p className="text-lg text-slate-600 leading-relaxed max-w-xl">
+            {/* サブコピー */}
+            <p className="text-lg lg:text-xl text-slate-600 leading-relaxed max-w-xl">
               メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。
             </p>
+
+            {/* 3つのベネフィット（H1直下） */}
+            <div className="flex flex-col gap-3 pt-2">
+              <div className="flex items-center gap-3 text-base text-slate-700">
+                <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Camera className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="font-medium">レシートOCRで最短10秒入力</span>
+              </div>
+              <div className="flex items-center gap-3 text-base text-slate-700">
+                <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Timer className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="font-medium">次回メンテ自動リマインド</span>
+              </div>
+              <div className="flex items-center gap-3 text-base text-slate-700">
+                <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="font-medium">署名付きPDFで第三者に証明</span>
+              </div>
+            </div>
             
-            {/* CTA（2つに整理） */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              <CTAButtons variant="hero" />
+            {/* CTA：Primary + Secondary */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4">
+              <div className="flex flex-col gap-2">
+                <HeroCTAButtonsPrimary variant="primary" />
+                <p className="text-xs text-slate-500 pl-1">30秒で開始・クレカ不要</p>
+              </div>
+              <HeroCTAButtonsPrimary variant="secondary" />
             </div>
           </div>
           
           {/* 右側：プロダクトモック（注釈付き） */}
-          <div className="relative slide-in-right-on-scroll lg:mt-0 mt-8">
+          <div className="relative slide-in-right-on-scroll lg:mt-0 mt-12">
             <ProductMock />
           </div>
         </div>
 
-        {/* 下部：Bentoタイル3枚 */}
-        <div className="grid md:grid-cols-3 gap-6">
+        {/* 下部：機能カード3枚（成果ベース） */}
+        <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
           <BentoTile
             icon={<Camera className="h-6 w-6" />}
-            title="レシートOCR"
-            description="給油レシートや保険証券を撮るだけで自動入力。記録時間を大幅に短縮します。"
+            title="入力が10秒"
+            description="レシートを撮るだけで自動入力。手入力の時間を大幅に削減します。"
             delay="0s"
           />
           <BentoTile
             icon={<FileText className="h-6 w-6" />}
-            title="履歴証明PDF"
-            description="整備履歴を証明書としてPDF出力。売却時や引き継ぎ時に安心です。"
+            title="売却で価値になる"
+            description="整備履歴をPDF証明書として出力。売却時に愛車の価値を明確に伝えられます。"
             delay="0.1s"
           />
           <BentoTile
             icon={<Wrench className="h-6 w-6" />}
-            title="次回メンテ提案"
-            description="走行距離と期間から、次に必要なメンテナンスを自動で提案します。"
+            title="忘れない・壊さない"
+            description="走行距離と期間から次回メンテを自動提案。タイミングを逃さず、長く走れます。"
             delay="0.2s"
           />
         </div>
@@ -88,9 +148,10 @@ function Hero() {
   );
 }
 
+
 function ProductMock() {
   return (
-    <div className="relative rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white max-w-full">
+    <div className="relative rounded-2xl border border-gray-200 shadow-xl overflow-hidden bg-white max-w-full">
       {/* ブラウザウィンドウ風ヘッダー */}
       <div className="px-4 sm:px-6 py-3 border-b border-gray-200 flex items-center gap-2 bg-gray-50">
         <div className="h-3 w-3 rounded-full bg-red-400" />
@@ -149,6 +210,18 @@ function ProductMock() {
 
             {/* 現在の車情報 */}
             <div className="bg-white rounded-2xl border border-gray-200 p-4 relative">
+              {/* 注釈1: 次回メンテ提案（車情報カードの上） */}
+              <div className="hidden lg:block absolute -top-16 left-1/2 -translate-x-1/2 z-10">
+                <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <Timer className="h-3.5 w-3.5 text-blue-600" />
+                    <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">次回メンテ：残 1,234km</p>
+                  </div>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-gray-200"></div>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-[-1px] w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-transparent border-t-white"></div>
+                </div>
+              </div>
+              
               {/* 次回メンテ（カード内に表示） */}
               <div className="mb-3">
                 <div className="text-xs text-gray-600 mb-1">次回メンテ: 残1,234km</div>
@@ -175,7 +248,19 @@ function ProductMock() {
             {/* 最近の活動カード */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {/* 最近のメンテナンス */}
-              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4">
+              <div className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 p-3 sm:p-4 relative">
+                {/* 注釈3: OCR（メンテナンスカードの左側外） */}
+                <div className="hidden lg:block absolute -left-36 top-1/2 -translate-y-1/2 z-10">
+                  <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg">
+                    <div className="flex items-center gap-2">
+                      <Camera className="h-3.5 w-3.5 text-blue-600" />
+                      <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">OCR：撮って自動入力</p>
+                    </div>
+                    <div className="absolute top-1/2 -right-1 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[6px] border-transparent border-l-gray-200"></div>
+                    <div className="absolute top-1/2 -right-[1px] -translate-y-1/2 w-0 h-0 border-t-[5px] border-b-[5px] border-l-[5px] border-transparent border-l-white"></div>
+                  </div>
+                </div>
+                
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xs sm:text-sm font-semibold text-gray-900">最近のメンテナンス</h3>
                   <span className="text-[10px] sm:text-xs text-blue-600 font-medium">すべて見る →</span>
@@ -216,6 +301,17 @@ function ProductMock() {
 
             {/* 月別費用推移 */}
             <div className="bg-white rounded-2xl border border-gray-200 p-4 relative">
+              {/* 注釈2: PDF証明（グラフの右上外側） */}
+              <div className="hidden lg:block absolute -top-2 -right-32 z-10">
+                <div className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-3.5 w-3.5 text-blue-600" />
+                    <p className="text-xs font-semibold text-gray-900 whitespace-nowrap">PDF証明：署名付き</p>
+                  </div>
+                  <div className="absolute top-1/2 -left-1.5 w-3 h-3 bg-white border-l border-b border-gray-200 transform rotate-45 -translate-y-1/2"></div>
+                </div>
+              </div>
+              
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <LineChart className="h-4 w-4 text-blue-600" />
@@ -227,11 +323,6 @@ function ProductMock() {
                     <button className="px-2 py-1 text-[10px] text-gray-500 rounded">年次</button>
                     <button className="px-2 py-1 text-[10px] text-gray-500 rounded">全期間</button>
                   </div>
-                  {/* PDF証明ボタン（グラフの右上） */}
-                  <button className="hidden lg:flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
-                    <FileText className="h-3 w-3 text-gray-600" />
-                    <span className="text-xs font-medium text-gray-700 whitespace-nowrap">PDF証明：署名付き</span>
-                  </button>
                 </div>
               </div>
               {/* グラフ */}
@@ -281,155 +372,94 @@ function BentoTile({
 }) {
   return (
     <div 
-      className="rounded-2xl border border-slate-200 bg-white p-6 hover:border-blue-300 hover:shadow-md transition-all duration-300 scale-in-on-scroll"
+      className={`group ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-blue-300/60 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 scale-in-on-scroll`}
       style={{ animationDelay: delay }}
     >
-      <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4">
+      <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 mb-2">{title}</h3>
-      <p className="text-sm text-slate-600 leading-relaxed">{description}</p>
+      <h3 className="text-xl font-semibold text-slate-900 mb-3">{title}</h3>
+      <p className="text-base text-slate-600 leading-relaxed">{description}</p>
     </div>
   );
 }
 
 function BeforeAfter() {
   return (
-    <section className="bg-white py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 mb-4">
+    <section className="bg-gradient-to-b from-white to-slate-50/50 py-20 lg:py-32">
+      <div className={`${DESIGN_TOKENS.container}`}>
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
             <Zap className="h-4 w-4 text-blue-600" />
             変革の瞬間
           </div>
-          <h2 className="text-3xl font-semibold text-slate-900 leading-tight mb-4">Before & After</h2>
-          <p className="text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">紙やメモで散らばる → 車ごとに一元管理</h2>
+          <p className="text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
             従来の管理方法から、GarageLogでの管理へ。あなたの愛車管理が劇的に変わります。
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Before */}
-          <div className="rounded-2xl border-2 border-slate-200 bg-slate-50 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-slate-300 flex items-center justify-center">
-                <span className="text-lg font-bold text-slate-600">×</span>
+          <div className={`${DESIGN_TOKENS.radius.lg} border-2 border-slate-200 bg-slate-50/80 p-8 lg:p-10`}>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-12 w-12 rounded-xl bg-slate-200 flex items-center justify-center">
+                <span className="text-xl font-bold text-slate-600">×</span>
               </div>
-              <h3 className="text-xl font-semibold text-slate-900">Before</h3>
+              <h3 className="text-2xl font-semibold text-slate-900">Before</h3>
             </div>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <span className="mt-1 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="text-base text-slate-700">整備や給油の記録が紙やメモに散らばっている</span>
+            <ul className="space-y-5">
+              <li className="flex items-start gap-4">
+                <span className="mt-2 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
+                <span className="text-base text-slate-700 leading-relaxed">整備や給油の記録が紙やメモに散らばっている</span>
               </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="text-base text-slate-700">いくらかかっているか、今月のコストが分からない</span>
+              <li className="flex items-start gap-4">
+                <span className="mt-2 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
+                <span className="text-base text-slate-700 leading-relaxed">いくらかかっているか、今月のコストが分からない</span>
               </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="text-base text-slate-700">次に何をやればいいか（オイル/車検など）が曖昧</span>
+              <li className="flex items-start gap-4">
+                <span className="mt-2 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
+                <span className="text-base text-slate-700 leading-relaxed">次に何をやればいいか（オイル/車検など）が曖昧</span>
               </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="text-base text-slate-700">売却時に整備履歴をうまく伝えられない</span>
+              <li className="flex items-start gap-4">
+                <span className="mt-2 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
+                <span className="text-base text-slate-700 leading-relaxed">売却時に整備履歴をうまく伝えられない</span>
               </li>
             </ul>
           </div>
 
           {/* After */}
-          <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Check className="h-5 w-5 text-white" />
+          <div className={`${DESIGN_TOKENS.radius.lg} border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 lg:p-10`}>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-md">
+                <Check className="h-6 w-6 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-900">After</h3>
+              <h3 className="text-2xl font-semibold text-slate-900">After</h3>
             </div>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <Check className="mt-1 h-5 w-5 text-blue-600 flex-shrink-0" />
-                <span className="text-base font-medium text-slate-900">すべてを1か所で一元管理（車ごとに整理）</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="mt-1 h-5 w-5 text-blue-600 flex-shrink-0" />
-                <span className="text-base font-medium text-slate-900">自動グラフ化で「見るだけで価値」</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="mt-1 h-5 w-5 text-blue-600 flex-shrink-0" />
-                <span className="text-base font-medium text-slate-900">走行距離/期間から次回メンテを自動提案</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Check className="mt-1 h-5 w-5 text-blue-600 flex-shrink-0" />
-                <span className="text-base font-medium text-slate-900">PDFで第三者にも「証明」できる</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function PainGain() {
-  return (
-    <section className="bg-slate-50 py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
-          <div className="space-y-6 slide-in-left-on-scroll">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700">
-              <span className="h-2 w-2 rounded-full bg-slate-400" />
-              よくある悩み
-            </div>
-            <h2 className="text-3xl font-semibold text-slate-900 leading-tight">こんな経験、ありませんか？</h2>
-            <ul className="space-y-4 text-slate-700">
-              <li className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-slate-200 hover:shadow-sm transition-all">
-                <span className="mt-1.5 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="font-medium text-base leading-relaxed">整備や給油の記録が紙やメモに散らばっている</span>
-              </li>
-              <li className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-slate-200 hover:shadow-sm transition-all">
-                <span className="mt-1.5 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="font-medium text-base leading-relaxed">いくらかかっているか、今月のコストが分からない</span>
-              </li>
-              <li className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-slate-200 hover:shadow-sm transition-all">
-                <span className="mt-1.5 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="font-medium text-base leading-relaxed">次に何をやればいいか（オイル/車検など）が曖昧</span>
-              </li>
-              <li className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-slate-200 hover:shadow-sm transition-all">
-                <span className="mt-1.5 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="font-medium text-base leading-relaxed">売却時に整備履歴をうまく伝えられない</span>
-              </li>
-            </ul>
-          </div>
-          <div className="space-y-6 slide-in-right-on-scroll">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-sm font-medium text-blue-700">
-              <Zap className="h-4 w-4" />
-              GarageLog なら
-            </div>
-            <h3 className="text-3xl font-semibold text-slate-900 leading-tight">すべて解決できます</h3>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-blue-200 hover:shadow-sm transition-all">
-                <div className="mt-1.5 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+            <ul className="space-y-5">
+              <li className="flex items-start gap-4">
+                <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                   <Check className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-semibold text-base text-slate-900 leading-relaxed">すべてを1か所で一元管理（車ごとに整理）</span>
+                <span className="text-base font-semibold text-slate-900 leading-relaxed">すべてを1か所で一元管理（車ごとに整理）</span>
               </li>
-              <li className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-blue-200 hover:shadow-sm transition-all">
-                <div className="mt-1.5 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <li className="flex items-start gap-4">
+                <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                   <Check className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-semibold text-base text-slate-900 leading-relaxed">自動グラフ化で「見るだけで価値」</span>
+                <span className="text-base font-semibold text-slate-900 leading-relaxed">自動グラフ化で「見るだけで価値」</span>
               </li>
-              <li className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-blue-200 hover:shadow-sm transition-all">
-                <div className="mt-1.5 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <li className="flex items-start gap-4">
+                <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                   <Check className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-semibold text-base text-slate-900 leading-relaxed">走行距離/期間から次回メンテを自動提案</span>
+                <span className="text-base font-semibold text-slate-900 leading-relaxed">走行距離/期間から次回メンテを自動提案</span>
               </li>
-              <li className="flex items-start gap-4 p-6 rounded-2xl bg-white border border-blue-200 hover:shadow-sm transition-all">
-                <div className="mt-1.5 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <li className="flex items-start gap-4">
+                <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                   <Check className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-semibold text-base text-slate-900 leading-relaxed">PDFで第三者にも「証明」できる</span>
+                <span className="text-base font-semibold text-slate-900 leading-relaxed">PDFで第三者にも「証明」できる</span>
               </li>
             </ul>
           </div>
@@ -448,29 +478,29 @@ function HowItWorks() {
   ];
   
   return (
-    <section id="how" className="bg-white py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 mb-4">
+    <section id="how" className="bg-white py-20 lg:py-32">
+      <div className={`${DESIGN_TOKENS.container}`}>
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
             <Zap className="h-4 w-4 text-blue-600" />
             使い方はシンプル
           </div>
-          <h2 className="text-3xl font-semibold text-slate-900 leading-tight mb-4">4ステップで始められます</h2>
+          <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">4ステップで始められます</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {steps.map((s, i) => (
             <div 
               key={i} 
-              className="group relative rounded-2xl border border-slate-200 bg-white p-6 hover:border-blue-300 hover:shadow-md transition-all duration-300 scale-in-on-scroll min-h-[200px]" 
+              className={`group relative ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 scale-in-on-scroll`}
               style={{ animationDelay: `${i * 0.1}s` }}
             >
-              <div className="h-14 w-14 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4">
+              <div className="h-14 w-14 lg:h-16 lg:w-16 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform duration-300 shadow-md">
                 {s.icon}
               </div>
-              <div className="absolute top-6 right-6 h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
+              <div className="absolute top-6 right-6 h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm group-hover:scale-110 transition-transform">
                 {i + 1}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2 pr-8">{s.title}</h3>
+              <h3 className="text-xl font-semibold text-slate-900 mb-3 pr-10">{s.title}</h3>
               <p className="text-base text-slate-600 leading-relaxed">{s.desc}</p>
             </div>
           ))}
@@ -482,35 +512,35 @@ function HowItWorks() {
 
 function Features() {
   const feats = [
-    { icon: <Gauge className="h-5 w-5" />, title: "ホーム", desc: "今月のコスト・燃費・やることを一目で。" },
-    { icon: <Wrench className="h-5 w-5" />, title: "メンテ記録", desc: "テンプレで素早く、走行距離も自動更新。" },
-    { icon: <FileText className="h-5 w-5" />, title: "履歴証明PDF", desc: "売却や引き継ぎに使える書式で出力。" },
-    { icon: <Camera className="h-5 w-5" />, title: "レシートOCR", desc: "給油や保険証券の自動読み取り。" },
-    { icon: <Lock className="h-5 w-5" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・OCRが使い放題。" },
+    { icon: <Gauge className="h-6 w-6" />, title: "ホーム", desc: "今月のコスト・燃費・やることを一目で確認。" },
+    { icon: <Wrench className="h-6 w-6" />, title: "メンテ記録", desc: "テンプレで素早く、走行距離も自動更新。" },
+    { icon: <FileText className="h-6 w-6" />, title: "履歴証明PDF", desc: "売却や引き継ぎに使える書式で出力、信頼性向上。" },
+    { icon: <Camera className="h-6 w-6" />, title: "レシートOCR", desc: "給油や保険証券を自動読み取り、入力の手間を削減。" },
+    { icon: <Lock className="h-6 w-6" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・OCRが使い放題、本格的な資産管理。" },
   ];
   
   return (
-    <section id="features" className="bg-slate-50 py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4">
+    <section id="features" className="bg-slate-50 py-20 lg:py-32">
+      <div className={`${DESIGN_TOKENS.container}`}>
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
             <Sparkles className="h-4 w-4 text-blue-600" />
             主な機能
           </div>
-          <h2 className="text-3xl font-semibold text-slate-900 leading-tight">あなたの愛車管理をサポート</h2>
+          <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight">あなたの愛車管理をサポート</h2>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {feats.map((f, i) => (
             <div 
               key={i} 
-              className="rounded-2xl border border-slate-200 bg-white p-6 hover:border-blue-300 hover:shadow-md transition-all duration-300 scale-in-on-scroll" 
+              className={`group ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-blue-300/60 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 scale-in-on-scroll`}
               style={{ animationDelay: `${i * 0.1}s` }}
             >
-              <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4">
+              <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-md">
                 {f.icon}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">{f.title}</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{f.desc}</p>
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">{f.title}</h3>
+              <p className="text-base text-slate-600 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -521,25 +551,25 @@ function Features() {
 
 function Pricing() {
   return (
-    <section id="pricing" className="bg-white py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 mb-4">
+    <section id="pricing" className="bg-slate-50 py-20 lg:py-28">
+      <div className={`${DESIGN_TOKENS.container}`}>
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
             <Sparkles className="h-4 w-4 text-blue-600" />
             料金プラン
           </div>
-          <h2 className="text-3xl font-semibold text-slate-900 leading-tight mb-4">シンプルでわかりやすい料金</h2>
-          <p className="text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">まずは無料で1台から。プレミアムで「資産化」が加速します。</p>
+          <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">シンプルでわかりやすい料金</h2>
+          <p className="text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">まずは無料で1台から。プレミアムで「資産化」が加速します。</p>
         </div>
-        <div className="mt-12 grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Free */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 hover:shadow-md transition-shadow">
+          <div className={`${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-8 hover:shadow-md transition-all duration-300`}>
             <h3 className="text-2xl font-semibold text-slate-900 mb-2">無料プラン</h3>
             <p className="text-4xl font-semibold text-slate-900 mb-1">
               ¥0<span className="text-lg font-medium text-slate-500"> / 月</span>
             </p>
-            <p className="text-sm text-slate-500 mb-6">個人利用に最適</p>
-            <ul className="space-y-3 text-sm text-slate-700 mb-8">
+            <p className="text-sm text-slate-500 mb-8">個人利用に最適</p>
+            <ul className="space-y-4 text-base text-slate-700 mb-8">
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <span>車両登録 1台</span>
@@ -561,34 +591,66 @@ function Pricing() {
           </div>
 
           {/* Premium */}
-          <div className="relative rounded-2xl border-2 border-blue-200 bg-blue-50 p-8 hover:shadow-md transition-shadow">
-            <span className="absolute -top-4 right-6 rounded-full bg-blue-600 text-white text-xs font-semibold px-4 py-1.5 shadow-sm">
+          <div className={`relative ${DESIGN_TOKENS.radius.lg} border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 hover:shadow-lg transition-all duration-300`}>
+            <span className="absolute -top-3 right-6 rounded-full bg-blue-600 text-white text-xs font-bold px-4 py-1.5 shadow-md">
               おすすめ
             </span>
             <h3 className="text-2xl font-semibold text-slate-900 mb-2">プレミアム</h3>
             <p className="text-4xl font-semibold text-slate-900 mb-1">
               ¥350<span className="text-lg font-medium text-slate-500"> / 月</span>
             </p>
-            <p className="text-sm text-slate-600 mb-6">本格的な資産管理に</p>
-            <ul className="space-y-3 text-sm text-slate-700 mb-8">
+            <p className="text-sm text-blue-700 font-medium mb-8">本格的な資産管理に</p>
+            <ul className="space-y-4 text-base text-slate-700 mb-8">
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span>複数台登録 無制限</span>
+                <span className="font-medium">複数台登録 無制限</span>
               </li>
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span>レシートOCR（給油/保険）</span>
+                <span className="font-medium">レシートOCR（給油/保険）</span>
               </li>
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span>履歴証明PDF出力</span>
+                <span className="font-medium">履歴証明PDF出力</span>
               </li>
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span>広告非表示・高度なリマインダー</span>
+                <span className="font-medium">広告非表示・高度なリマインダー</span>
               </li>
             </ul>
             <PricingCTAButtons planType="premium" />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Trust() {
+  return (
+    <section className="bg-white py-16 lg:py-20">
+      <div className={`${DESIGN_TOKENS.container}`}>
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="text-center">
+            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
+              <Shield className="h-6 w-6 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">データはあなたのもの</h3>
+            <p className="text-sm text-slate-600 leading-relaxed">すべてのデータはあなたのもので、いつでもエクスポートできます。</p>
+          </div>
+          <div className="text-center">
+            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
+              <Download className="h-6 w-6 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">エクスポート可</h3>
+            <p className="text-sm text-slate-600 leading-relaxed">記録データをCSVやPDFで出力し、他のサービスでも利用できます。</p>
+          </div>
+          <div className="text-center">
+            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
+              <Lock className="h-6 w-6 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">セキュリティ重視</h3>
+            <p className="text-sm text-slate-600 leading-relaxed">Firebase AuthenticationとFirestoreで安全にデータを管理します。</p>
           </div>
         </div>
       </div>
@@ -632,17 +694,17 @@ function FAQ() {
 
 function CTA() {
   return (
-    <section id="cta" className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 py-20 lg:py-28">
+    <section id="cta" className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 py-20 lg:py-32">
       {/* 控えめなノイズ/テクスチャ風のオーバーレイ */}
-      <div className="absolute inset-0 opacity-10" style={{
+      <div className="absolute inset-0 opacity-[0.08]" style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
       }}></div>
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 p-8 lg:p-12 text-white">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
+      <div className={`${DESIGN_TOKENS.container} relative`}>
+        <div className={`${DESIGN_TOKENS.radius.lg} bg-white/10 backdrop-blur-xl border border-white/30 p-8 lg:p-12 text-white shadow-2xl`}>
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <h2 className="text-3xl lg:text-4xl font-semibold mb-4">愛車の価値を、最大限に。</h2>
-              <p className="text-base lg:text-lg text-blue-100 leading-relaxed">プロレベルの管理を、今すぐ無料で。</p>
+              <h2 className="text-3xl lg:text-4xl xl:text-5xl font-semibold mb-4 leading-tight">愛車の価値を、最大限に。</h2>
+              <p className="text-lg lg:text-xl text-blue-50 leading-relaxed">プロレベルの管理を、今すぐ無料で。</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 sm:justify-end">
               <CTAButtons variant="cta-section" />

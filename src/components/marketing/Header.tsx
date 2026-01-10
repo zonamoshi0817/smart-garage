@@ -4,7 +4,7 @@ import { CTAButtons } from "./CTAButtons.client";
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 border-b border-gray-200/50 shadow-sm animate-slideUp">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 border-b border-gray-200/60 shadow-sm animate-slideUp">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
         <Link href="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
           <img
