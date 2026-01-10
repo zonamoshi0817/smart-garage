@@ -6,7 +6,7 @@ import ScrollAnimations from "@/components/marketing/ScrollAnimations.client";
 import Link from "next/link";
 
 export const dynamic = 'force-static';
-export const revalidate = 86400;
+export const revalidate = 0; // デプロイ直後に反映されるように一時的に0に設定（確認後、86400に戻す）
 
 // GarageLog LP — Modern SaaS design with Bento layout
 
