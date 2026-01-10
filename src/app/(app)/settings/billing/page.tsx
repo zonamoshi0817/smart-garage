@@ -233,7 +233,7 @@ export default function BillingPage() {
                     ¥{PREMIUM_PRICING.yearly.price.toLocaleString()}
                     <span className="text-lg font-normal text-gray-500">/年</span>
                   </div>
-                  <div className="text-sm text-gray-600 mb-4">月額換算 ¥400</div>
+                  <div className="text-sm text-gray-600 mb-4">月額換算 ¥{Math.round(PREMIUM_PRICING.yearly.price / 12).toLocaleString()}</div>
                   <button
                     onClick={() => setShowPaywall(true)}
                     className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 font-bold hover:shadow-lg transition"
