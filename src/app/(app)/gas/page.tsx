@@ -829,12 +829,15 @@ function GasPageRouteContent() {
   useEffect(() => {
     if (!auth.currentUser) {
       setCars([]);
+      setLoading(false);
       return;
     }
     
+    setLoading(true);
     try {
       const off = watchCars((list) => {
         setCars(list);
+        setLoading(false);
         // 車両リスト変更時の処理は、別のuseEffectで処理する
       });
       return () => {
@@ -843,6 +846,7 @@ function GasPageRouteContent() {
     } catch (error) {
       console.error("Error watching cars:", error);
       setCars([]);
+      setLoading(false);
     }
   }, [auth.currentUser, authTrigger]);
 
@@ -888,9 +892,9 @@ function GasPageRouteContent() {
     return cars.find((c) => c.id === effectiveCarId);
   }, [cars, effectiveCarId]);
 
-  // effectiveCarIdが設定されるまでloadingをtrueのままにする
-  // carsが空の場合は、まだデータを取得中なのでloadingを継続
-  const isReady = !loading && auth.currentUser && cars.length > 0 && effectiveCarId !== undefined;
+  // 読み込みが完了し、認証されている場合にページを表示
+  // 車両が0台の場合でもページを表示できるようにする（車両追加モーダル表示のため）
+  const isReady = !loading && auth.currentUser;
 
   if (!isReady) {
     return (
