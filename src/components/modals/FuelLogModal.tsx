@@ -40,6 +40,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<string | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isEditing = !!editingFuelLog;
@@ -435,11 +436,11 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
   return (
     <>
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        className={`fixed inset-0 flex items-center justify-center z-50 p-4 ${isCameraOpen ? 'bg-transparent' : 'bg-black bg-opacity-50'}`}
         onClick={onClose}
       >
         <div 
-          className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+          className={`bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto ${isCameraOpen ? 'hidden' : ''}`}
           onClick={(e) => e.stopPropagation()}
         >
         <div className="p-6">
@@ -481,6 +482,11 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                         console.log('[FuelLog] OCR button clicked, opening file picker');
                         console.log('[FuelLog] isMobileDevice:', isMobileDevice);
                         
+                        // モバイルデバイスの場合、カメラ起動時にモーダルを一時的に非表示
+                        if (isMobileDevice) {
+                          setIsCameraOpen(true);
+                        }
+                        
                         // ファイル入力の値をリセット（同じファイルを再度選択できるように）
                         if (fileInputRef.current) {
                           fileInputRef.current.value = '';
@@ -516,6 +522,11 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
+                        // カメラが閉じられたことを検知（ファイル選択が完了またはキャンセル）
+                        if (isMobileDevice) {
+                          setIsCameraOpen(false);
+                        }
+                        
                         if (file) {
                           console.log('[FuelLog] File selected:', file.name, file.type, file.size);
                           handleReceiptScan(file);
