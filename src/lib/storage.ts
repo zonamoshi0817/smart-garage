@@ -33,8 +33,9 @@ export async function uploadCarImage(file: File, carId?: string): Promise<string
     const storageRef = ref(storage, storagePath);
     console.log("Uploading to Firebase Storage...");
     
-    // メタデータにownerUidを追加（Storage Rulesで検証）
+    // メタデータにownerUidとcontentTypeを追加（Storage Rulesで検証）
     const metadata = {
+      contentType: file.type || 'image/png',
       customMetadata: {
         ownerUid: user.uid,
         uploadedAt: new Date().toISOString()
@@ -89,8 +90,9 @@ export async function uploadCarImageWithProgress(
     const storageRef = ref(storage, storagePath);
     console.log("Starting resumable upload...");
     
-    // メタデータにownerUidを追加（Storage Rulesで検証）
+    // メタデータにownerUidとcontentTypeを追加（Storage Rulesで検証）
     const metadata = {
+      contentType: file.type || 'image/png',
       customMetadata: {
         ownerUid: user.uid,
         uploadedAt: new Date().toISOString()
