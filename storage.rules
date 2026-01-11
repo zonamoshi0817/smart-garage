@@ -20,7 +20,8 @@ service firebase.storage {
     }
     
     function isImageFile() {
-      return request.resource.contentType.matches('image/.*');
+      return request.resource.contentType != null 
+        && request.resource.contentType.matches('image/.*');
     }
     
     function isValidImageSize() {
@@ -30,7 +31,8 @@ service firebase.storage {
     
     function isAllowedImageType() {
       // 許可される画像タイプ
-      return request.resource.contentType.matches('image/(jpeg|jpg|png|webp|heic)');
+      return request.resource.contentType != null 
+        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|heic)');
     }
     
     // Private evidences: オーナーのみアクセス可能
