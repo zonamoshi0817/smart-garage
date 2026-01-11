@@ -48,8 +48,11 @@ service firebase.storage {
       
       // 書き込み: パス内のuserIdが自分 かつ メタデータのownerUidも一致
       // かつ 画像ファイルで、サイズ制限とタイプ制限を満たす
-      // デバッグ: 一時的にすべてのチェックを緩和（isOwnerのみチェック）
-      allow write: if isOwner(userId);
+      // 段階的に条件を追加: まずは基本的な画像チェックから
+      allow write: if isOwner(userId) 
+                   && isImageFile()
+                   && isValidImageSize()
+                   && isAllowedImageType();
       
       // 削除: パス内のuserIdが自分
       allow delete: if isOwner(userId);
