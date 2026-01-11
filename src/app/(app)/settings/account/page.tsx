@@ -217,17 +217,9 @@ export default function AccountPage() {
         
         {/* ヘッダー */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">アカウント設定</h1>
-              <p className="text-gray-600">アカウント情報の確認と管理</p>
-            </div>
-            <a
-              href="/settings/billing"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              請求管理 →
-            </a>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">アカウント設定</h1>
+            <p className="text-gray-600">アカウント情報の確認と管理</p>
           </div>
         </div>
 
