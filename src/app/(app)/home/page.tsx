@@ -1231,19 +1231,23 @@ function DashboardContent({
                 <>
                   {/* 上：サマリー */}
                   <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 mb-4">
-                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-                    <img
-                      src={car.imagePath || "/car.jpg"}
-                      alt={car.name || "My Car"}
-                      className="w-full h-44 md:h-full object-cover rounded-xl"
-                      onLoad={() => {
-                        // 画像読み込み完了時の処理
-                      }}
-                      onError={() => {
-                        // 画像読み込みエラー時の処理
-                      }}
-                    />
-                  </div>
+                  {car.imagePath ? (
+                    <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                      <img
+                        src={car.imagePath}
+                        alt={car.name || "My Car"}
+                        className="w-full h-44 md:h-full object-cover rounded-xl"
+                        onLoad={() => {
+                          // 画像読み込み完了時の処理
+                        }}
+                        onError={() => {
+                          // 画像読み込みエラー時の処理
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-gray-200 bg-gray-100" />
+                  )}
                     <div>
                       <h2 className="text-xl font-bold mb-3">
                         {car.name}

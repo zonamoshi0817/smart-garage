@@ -891,13 +891,17 @@ function CarCard({
           onSelect();
         }}
       >
-        <div className="aspect-video rounded-xl overflow-hidden bg-gray-100 mb-4">
-          <img
-            src={car.imagePath || "/car.jpg"}
-            alt={car.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {car.imagePath ? (
+          <div className="aspect-video rounded-xl overflow-hidden bg-gray-100 mb-4">
+            <img
+              src={car.imagePath}
+              alt={car.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="aspect-video rounded-xl bg-gray-100 mb-4" />
+        )}
         
         <div className="space-y-2">
           <h3 className="font-semibold text-lg">

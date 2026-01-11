@@ -181,8 +181,8 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
   };
 
   // 画像アップロード処理
-  const handleImageUpload = async (): Promise<string> => {
-    if (!selectedFile) return "/car.jpg"; // デフォルト画像
+  const handleImageUpload = async (): Promise<string | undefined> => {
+    if (!selectedFile) return undefined; // 画像が選択されていない場合はundefined
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -204,7 +204,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
     } catch (error) {
       console.error("Image upload failed:", error);
       alert("画像のアップロードに失敗しました。");
-      return "/car.jpg"; // デフォルト画像
+      return undefined; // アップロード失敗時もundefined
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -247,7 +247,7 @@ export default function AddCarModal({ onClose, onAdded }: AddCarModalProps) {
       // undefinedの値を除外してオブジェクトを作成
       const carData: CarInput = {
         name,
-        imagePath: uploadedImagePath,
+        ...(uploadedImagePath && { imagePath: uploadedImagePath }),
       };
       
       if (modelCode && modelCode.trim()) {
