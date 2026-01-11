@@ -42,6 +42,9 @@ export async function uploadCarImage(file: File, carId?: string): Promise<string
       }
     };
     
+    console.log("Upload metadata:", JSON.stringify(metadata, null, 2));
+    console.log("File type:", file.type);
+    
     const snapshot = await uploadBytes(storageRef, file, metadata);
     console.log("Upload successful:", snapshot.metadata.fullPath);
     
