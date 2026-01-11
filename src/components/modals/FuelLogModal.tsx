@@ -40,6 +40,7 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
   const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<string | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [isIOSChrome, setIsIOSChrome] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,11 +49,17 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
   // モバイルデバイスかどうかを判定（クライアントサイドのみ）
   useEffect(() => {
     if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
-      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      const userAgent = navigator.userAgent;
+      const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+      // iPhoneのChromeを検出（User-AgentにCriOSが含まれる）
+      const isIOSChromeBrowser = isIOS && /CriOS/i.test(userAgent);
+      
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent) ||
         (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) ||
         window.matchMedia('(pointer: coarse)').matches;
       setIsMobileDevice(mobile);
-      console.log('[FuelLog] Mobile device detected:', mobile);
+      setIsIOSChrome(isIOSChromeBrowser);
+      console.log('[FuelLog] Mobile device detected:', mobile, 'iOS Chrome:', isIOSChromeBrowser);
     }
   }, []);
 
@@ -518,7 +525,8 @@ export default function FuelLogModal({ isOpen, onClose, car, editingFuelLog, onS
                       id="receipt-file-input"
                       type="file"
                       accept="image/*"
-                      capture={isMobileDevice ? "environment" : undefined}
+                      // iPhoneのChromeではcapture属性が正しく動作しないため、Safariのみに適用
+                      capture={isMobileDevice && !isIOSChrome ? "environment" : undefined}
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
