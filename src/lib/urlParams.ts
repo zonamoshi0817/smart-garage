@@ -16,8 +16,12 @@ export const QuerySchema = z.object({
 export type ParsedQuery = z.infer<typeof QuerySchema>;
 
 export function parseQuery(params: URLSearchParams): ParsedQuery {
+  // 'customs' を 'custom' にマッピング（後方互換性のため）
+  const tabParam = params.get('tab');
+  const normalizedTab = tabParam === 'customs' ? 'custom' : tabParam;
+  
   return QuerySchema.parse({
-    tab: params.get('tab') || undefined,
+    tab: normalizedTab || undefined,
     action: params.get('action') || undefined,
     draft: params.get('draft') || undefined,
     template: params.get('template') || undefined,

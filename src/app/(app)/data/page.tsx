@@ -13,6 +13,8 @@ import { usePremiumGuard } from "@/hooks/usePremium";
 import { useSelectedCar } from "@/contexts/SelectedCarContext";
 import { downloadMaintenancePDF, type PDFExportOptions } from "@/lib/pdfExport";
 import type { Car, MaintenanceRecord, Customization, User } from "@/types";
+import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
+import { SidebarLayout } from "@/components/common/SidebarLayout";
 
 // ヘッダー用車両ドロップダウン
 function CarHeaderDropdown({
@@ -854,71 +856,14 @@ function DataPageRouteContent() {
         </header>
 
         {/* レイアウト */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6">
+        <SidebarLayout>
           {/* サイドバー */}
-          <aside className="lg:sticky lg:top-20 h-fit">
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3">
-              {currentUser?.photoURL ? (
-                <img 
-                  src={currentUser.photoURL} 
-                  alt={currentUser.displayName || currentUser.email || 'User'} 
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className={`h-8 w-8 rounded-full grid place-items-center font-semibold text-sm ${
-                  isPremiumPlan(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-blue-100 text-blue-600'
-                }`}>
-                  {currentUser?.displayName?.[0] || currentUser?.email?.[0]?.toUpperCase() || 'U'}
-                </div>
-              )}
-              <div className="text-sm">
-                <div className="font-semibold">
-                  {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ユーザー'}
-                </div>
-                <div className={`text-xs ${isPremiumPlan(userPlan) ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
-                  {isPremiumPlan(userPlan) ? '✨ Premium プラン' : 'Free プラン'}
-                </div>
-              </div>
-            </div>
-            <nav className="mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px]">
-              <NavItem label="ホーム" href="/home" active={pathname === '/home'} />
-              <MyCarNavLink />
-              <GasNavLink />
-              <MaintenanceNavLink />
-              <CustomizationsNavLink />
-              <ShareNavLink />
-              <CarManagementNavLink />
-              <DataNavLink />
-            </nav>
-
-            {/* 設定リンク */}
-            <div className="mt-4 bg-white rounded-2xl border border-gray-200 p-2">
-              <a
-                href="/settings/account"
-                className="flex items-center gap-2 px-3 py-2 text-[15px] text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                アカウント設定
-              </a>
-            </div>
-
-            {/* プレミアムアップグレード（無料ユーザーのみ表示） */}
-            {!isPremiumPlan(userPlan) && (
-              <div className="mt-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl border border-yellow-300 p-4 text-white">
-                <div className="text-sm font-semibold mb-1">✨ Premium プラン</div>
-                <div className="text-xs opacity-90 mb-3">より多くの機能を利用できます</div>
-                <Link
-                  href="/settings/account"
-                  className="block w-full text-center px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                >
-                  アップグレード
-                </Link>
-              </div>
-            )}
-          </aside>
+          <CollapsibleSidebar
+            activeCarId={activeCarId}
+            currentUser={currentUser}
+            userPlan={userPlan}
+            isPremiumPlan={isPremiumPlan}
+          />
 
           {/* メインコンテンツ */}
           <main>
@@ -929,7 +874,7 @@ function DataPageRouteContent() {
               activeCarId={effectiveCarId}
             />
           </main>
-        </div>
+        </SidebarLayout>
       </div>
     </AuthGate>
   );
