@@ -554,7 +554,7 @@ export default function SNSSharePublicPage({
           <h2 className="text-2xl font-bold text-gray-900 mb-6">履歴の信頼性</h2>
           
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {maintenanceCount > 0 && (
                 <div>
                   <div className="text-xs text-gray-500 mb-1">総整備回数</div>
@@ -573,15 +573,6 @@ export default function SNSSharePublicPage({
                   <div className="text-lg font-bold text-gray-900">{lastUpdated}</div>
                 </div>
               )}
-              <div className="relative group">
-                <div className="text-xs text-gray-500 mb-1">
-                  改ざん防止
-                  <span className="ml-1 text-gray-400 cursor-help" title="すべての記録はブロックチェーン技術により改ざんが防止されています">
-                    ℹ️
-                  </span>
-                </div>
-                <div className="text-lg font-bold text-gray-900">有効</div>
-              </div>
             </div>
           </div>
 
