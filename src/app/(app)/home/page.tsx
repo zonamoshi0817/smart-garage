@@ -16,7 +16,7 @@ import type { MaintenanceRecord } from "@/types";
 import { downloadMaintenancePDF, downloadBuildSheetPDF, type PDFExportOptions } from "@/lib/pdfExport";
 import { uploadCarImageWithProgress, isImageFile } from "@/lib/storage";
 import { storage } from "@/lib/firebase";
-import { ref, uploadBytes, getBlob, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes } from "firebase/storage";
 import { compressImage, getCompressionInfo } from "@/lib/imageCompression";
 import { addCustomization, getCustomizations, updateCustomization, deleteCustomization, CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/customizations";
 import type { Customization } from "@/types";
@@ -815,66 +815,10 @@ function DashboardContent({
   // 期間選択の状態管理
   const [expensePeriod, setExpensePeriod] = useState<'monthly' | 'yearly' | 'all'>('monthly');
   
-  // 画像エラー状態管理
-  const [imageError, setImageError] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  
   // 共有状態（saleProfile）を取得
   const [shareStatus, setShareStatus] = useState<'none' | 'active' | 'stopped' | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   
-  // URLからStorageパスを抽出する関数
-  const extractStoragePathFromUrl = (url: string): string | null => {
-    try {
-      // Firebase Storage URL形式: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encodedPath}?alt=media&token={token}
-      const match = url.match(/\/o\/([^?]+)/);
-      if (match) {
-        const encodedPath = match[1];
-        const decodedPath = decodeURIComponent(encodedPath);
-        console.log('Extracted storage path:', decodedPath);
-        return decodedPath;
-      }
-      console.warn('Could not extract storage path from URL:', url);
-      return null;
-    } catch (error) {
-      console.error('Failed to extract storage path from URL:', error);
-      return null;
-    }
-  };
-  
-  // 画像を認証付きで読み込む
-  useEffect(() => {
-    if (!car?.imagePath) {
-      setImageUrl(null);
-      return;
-    }
-    
-    let cancelled = false;
-    
-    const loadImage = async () => {
-      // まず元のURLを試す（Firebase StorageのダウンロードURLは通常Storageルールをバイパスする）
-      if (!cancelled) {
-        console.log('Using original download URL');
-        setImageUrl(car.imagePath);
-      }
-      
-      // 元のURLでエラーが発生した場合にのみ、新しいURLを取得する
-      // これは画像のonErrorハンドラーで処理される
-    };
-    
-    loadImage();
-    
-    // クリーンアップ
-    return () => {
-      cancelled = true;
-    };
-  }, [car?.imagePath, car?.id, auth.currentUser?.uid]);
-  
-  // 車両が変更されたときに画像エラー状態をリセット
-  useEffect(() => {
-    setImageError(false);
-    setImageUrl(null);
-  }, [car?.id]);
   
   useEffect(() => {
     if (!activeCarId || !auth.currentUser || !car) return;
@@ -1220,49 +1164,12 @@ function DashboardContent({
                 <>
                   {/* 上：サマリー */}
                   <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 mb-4">
-                  {imageUrl && !imageError ? (
+                  {car.imagePath ? (
                     <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
                       <img
-                        src={imageUrl}
+                        src={car.imagePath}
                         alt={car.name || "My Car"}
                         className="w-full h-44 md:h-full object-cover rounded-xl"
-                        onLoad={() => {
-                          setImageError(false);
-                        }}
-                        onError={async (e) => {
-                          console.error('画像の読み込みに失敗しました:', imageUrl);
-                          
-                          // エラーが発生した場合、新しいダウンロードURLを取得して再試行
-                          const storagePath = extractStoragePathFromUrl(car.imagePath);
-                          if (storagePath && auth.currentUser && !imageError) {
-                            try {
-                              console.log('Retrying with fresh download URL, path:', storagePath);
-                              const storageRef = ref(storage, storagePath);
-                              
-                              // CORSエラーを回避するため、getDownloadURLの代わりに
-                              // 直接Storageパスから新しいURLを構築する方法を試す
-                              // ただし、これはFirebase SDKの内部実装に依存するため、
-                              // まずはgetDownloadURLを試す
-                              try {
-                                const freshDownloadURL = await getDownloadURL(storageRef);
-                                console.log('Got fresh download URL, retrying image load');
-                                setImageUrl(freshDownloadURL);
-                                setImageError(false);
-                                return; // 新しいURLを設定したので、エラー状態をリセット
-                              } catch (getUrlError: any) {
-                                // getDownloadURLがCORSエラーで失敗した場合、
-                                // 元のURLをそのまま使用（トークンが有効であれば動作する可能性がある）
-                                console.warn('getDownloadURL failed, using original URL:', getUrlError);
-                                setImageError(true);
-                              }
-                            } catch (error: any) {
-                              console.error('Failed to get fresh download URL on retry:', error);
-                              setImageError(true);
-                            }
-                          } else {
-                            setImageError(true);
-                          }
-                        }}
                       />
                     </div>
                   ) : (
