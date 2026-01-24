@@ -321,43 +321,6 @@ export default function SupportPage() {
             </div>
           </div>
 
-          {/* 既知の不具合 */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              ⚠️ 既知の不具合
-            </h2>
-
-            <div className="space-y-4">
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  [修正予定] Safariでの画像アップロード
-                </h4>
-                <p className="text-sm text-gray-700 mb-2">
-                  iOS SafariでHEIC形式の画像をアップロードすると、プレビューが表示されない場合があります。
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>回避策:</strong> 画像をJPEGまたはPNG形式で保存してからアップロードしてください。
-                </p>
-              </div>
-
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  [進行中] オフライン時のデータ同期
-                </h4>
-                <p className="text-sm text-gray-700 mb-2">
-                  オフライン時に入力したデータが、オンライン復帰時に自動同期されない場合があります。
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>回避策:</strong> 重要なデータは、ネットワーク接続が安定している状態で入力してください。
-                </p>
-              </div>
-
-              <p className="text-sm text-gray-500 mt-4">
-                最終更新: 2025年11月3日
-              </p>
-            </div>
-          </div>
-
           {/* リンク */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">
