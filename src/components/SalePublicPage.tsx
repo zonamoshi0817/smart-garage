@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import type { SalePublicViewModel } from '@/lib/saleProfile';
 import ConsumablesTable from './ConsumablesTable';
 import EvidenceGallery from './EvidenceGallery';
+import EvidenceReliabilityBadge from './EvidenceReliabilityBadge';
 
 interface SalePublicPageProps {
   viewModel: SalePublicViewModel;
@@ -363,6 +364,9 @@ export default function SalePublicPage({
                             予防整備
                           </span>
                         )}
+                        {item.hasEvidence !== undefined && (
+                          <EvidenceReliabilityBadge hasEvidence={item.hasEvidence} />
+                        )}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
                         {formatDate(item.date)} / {formatMileage(item.mileageKm)}
@@ -410,6 +414,9 @@ export default function SalePublicPage({
                               <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
                                 {item.category}
                               </span>
+                            )}
+                            {item.hasEvidence !== undefined && (
+                              <EvidenceReliabilityBadge hasEvidence={item.hasEvidence} />
                             )}
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
@@ -463,6 +470,9 @@ export default function SalePublicPage({
                             ({customization.brand}
                             {customization.modelCode && ` ${customization.modelCode}`})
                           </span>
+                        )}
+                        {customization.hasEvidence !== undefined && (
+                          <EvidenceReliabilityBadge hasEvidence={customization.hasEvidence} />
                         )}
                       </div>
                       {customization.categories && customization.categories.length > 0 && (

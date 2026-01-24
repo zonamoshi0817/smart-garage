@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ModalProps } from '@/types';
 import { Customization, CustomizationInput, CustomStatus, CustomCategory } from '@/types';
-import { CATEGORY_LABELS, STATUS_LABELS } from '@/lib/customizations';
+import { CATEGORY_LABELS } from '@/lib/customizations';
 import { addCustomization, updateCustomization } from '@/lib/customizations';
 import { auth, db, storage } from '@/lib/firebase';
 import { toTimestamp, toDate } from '@/lib/dateUtils';
@@ -27,7 +27,7 @@ export default function CustomizationModal({
     brand: '',
     modelCode: '',
     categories: [],
-    status: 'planned',
+    status: 'installed',
     date: toTimestamp(new Date())!,
     odoKm: undefined,
     vendorType: undefined,
@@ -78,7 +78,7 @@ export default function CustomizationModal({
         brand: '',
         modelCode: '',
         categories: [],
-        status: 'planned',
+        status: 'installed',
         date: toTimestamp(new Date())!,
         odoKm: undefined,
         vendorType: undefined,
@@ -396,6 +396,12 @@ export default function CustomizationModal({
         throw new Error('ユーザーが認証されていません');
       }
       
+      // ステータスは常に'installed'として保存
+      const dataToSave = {
+        ...formData,
+        status: 'installed' as CustomStatus,
+      };
+      
       let customizationId: string;
       if (editingCustomization) {
         console.log('Updating existing customization:', editingCustomization.id);
@@ -403,7 +409,7 @@ export default function CustomizationModal({
           carId.split('/')[0], // userId
           carId.split('/')[2], // carId
           editingCustomization.id!,
-          formData
+          dataToSave
         );
         customizationId = editingCustomization.id!;
       } else {
@@ -411,7 +417,7 @@ export default function CustomizationModal({
         customizationId = await addCustomization(
           carId.split('/')[0], // userId
           carId.split('/')[2], // carId
-          formData
+          dataToSave
         );
       }
 
@@ -448,7 +454,6 @@ export default function CustomizationModal({
     }
   };
 
-  const statusOptions: CustomStatus[] = ['planned', 'ordered', 'installed', 'removed_temp', 'removed'];
   const categoryOptions: CustomCategory[] = [
     'exterior', 'interior', 'intake', 'exhaust', 'ecu', 'suspension',
     'brake', 'reinforcement', 'drivetrain', 'tire_wheel', 'electrical',
@@ -545,35 +550,17 @@ export default function CustomizationModal({
             </div>
           </div>
 
-          {/* ステータス・実施日 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-2">
-                ステータス
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value as CustomStatus)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-800 mb-2">
-                実施日
-              </label>
-              <input
-                type="date"
-                value={toDate(formData.date)?.toISOString().split('T')[0] || ''}
-                onChange={(e) => handleInputChange('date', toTimestamp(new Date(e.target.value))!)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-              />
-            </div>
+          {/* 実施日 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              実施日
+            </label>
+            <input
+              type="date"
+              value={toDate(formData.date)?.toISOString().split('T')[0] || ''}
+              onChange={(e) => handleInputChange('date', toTimestamp(new Date(e.target.value))!)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
+            />
           </div>
 
           {/* 走行距離・実施場所 */}

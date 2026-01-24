@@ -24,6 +24,8 @@ export interface SalePublicViewModel {
     mileageKm?: number;
     amountYen?: number;
     isPreventive?: boolean;
+    recordId?: string; // メンテナンス記録ID（証跡紐づけ判定用）
+    hasEvidence?: boolean; // 証跡の有無
   }[];
   consumables: {
     type: 'oil' | 'tire' | 'brake' | 'battery' | 'coolant';
@@ -76,6 +78,7 @@ export interface SalePublicViewModel {
     otherCostJpy?: number;
     link?: string;
     memo?: string;
+    hasEvidence?: boolean; // 証跡の有無
   }[];
 }
 
@@ -168,7 +171,7 @@ export async function getMaintenanceRecords(
 }
 
 /**
- * 証跡を取得（maskedのみ）
+ * 証跡を取得（maskedのみ、公開ページ表示用）
  */
 export async function getEvidences(vehicleId: string): Promise<Evidence[]> {
   const db = getAdminFirestore();
@@ -176,6 +179,29 @@ export async function getEvidences(vehicleId: string): Promise<Evidence[]> {
     .collection('evidences')
     .where('vehicleId', '==', vehicleId)
     .where('maskStatus', '==', 'masked')
+    .where('deletedAt', '==', null)
+    .get();
+
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      deletedAt: data.deletedAt || null,
+      createdAt: data.createdAt as Timestamp,
+      updatedAt: data.updatedAt as Timestamp,
+    } as Evidence;
+  });
+}
+
+/**
+ * 証跡を取得（recordId確認用、maskStatusに関係なく取得）
+ */
+async function getAllEvidencesForRecordIdCheck(vehicleId: string): Promise<Evidence[]> {
+  const db = getAdminFirestore();
+  const snapshot = await db
+    .collection('evidences')
+    .where('vehicleId', '==', vehicleId)
     .where('deletedAt', '==', null)
     .get();
 
@@ -311,6 +337,7 @@ function generateRecent12MonthsSummary(
     mileageKm: item.record.mileage,
     amountYen: includeAmounts ? item.record.cost : undefined,
     isPreventive: item.record.isPreventive,
+    recordId: item.record.id, // メンテナンス記録ID（証跡紐づけ判定用）
   }));
 }
 
@@ -430,14 +457,34 @@ export async function generateSalePublicViewModel(
     return isRecent && isUnclassified;
   }).length;
 
+  // PR2: 記録件数をカウント（全期間）
+  const fuelLogs = await getFuelLogsForPublic(saleProfile.ownerUid, saleProfile.vehicleId);
+  const customizations = await getCustomizationsForPublic(saleProfile.ownerUid, saleProfile.vehicleId);
+
+  // 証跡を取得（recordIdの確認のため、includeEvidenceがfalseでも取得）
+  // recordId確認用には全証跡を取得（maskStatusに関係なく）
+  const allEvidenceList = await getAllEvidencesForRecordIdCheck(saleProfile.vehicleId);
+  // 証跡のrecordIdをマップ（カスタマイズID/メンテナンス記録ID -> 証跡有無）
+  const evidenceRecordIds = new Set<string>();
+  allEvidenceList.forEach(e => {
+    if (e.recordId) {
+      evidenceRecordIds.add(e.recordId);
+    }
+  });
+
   // 直近12ヶ月サマリー
   // 未分類（categoryがない）レコードは除外
   const classifiedRecords = allRecords.filter(record => record.category);
-  const recent12MonthsSummary = generateRecent12MonthsSummary(
+  const recent12MonthsSummaryBase = generateRecent12MonthsSummary(
     classifiedRecords,
     saleProfile.includeAmounts,
     saleProfile.highlightTopN
   );
+  // 証跡の有無を判定して追加
+  const recent12MonthsSummary = recent12MonthsSummaryBase.map(item => ({
+    ...item,
+    hasEvidence: item.recordId ? evidenceRecordIds.has(item.recordId) : false,
+  }));
 
   // 消耗品交換一覧（分類済みレコードのみ）
   const consumables = generateConsumablesTable(classifiedRecords);
@@ -445,7 +492,7 @@ export async function generateSalePublicViewModel(
   // 予防整備一覧（分類済みレコードのみ）
   const preventiveMaintenance = generatePreventiveMaintenance(classifiedRecords);
 
-  // 証跡（includeEvidenceがtrueの場合のみ）
+  // 証跡（includeEvidenceがtrueの場合のみ表示用データを生成）
   let evidences: SalePublicViewModel['evidences'] = [];
   if (saleProfile.includeEvidence) {
     const evidenceList = await getEvidences(saleProfile.vehicleId);
@@ -459,9 +506,6 @@ export async function generateSalePublicViewModel(
   }
 
   // PR2: 記録件数をカウント（全期間）
-  const fuelLogs = await getFuelLogsForPublic(saleProfile.ownerUid, saleProfile.vehicleId);
-  const customizations = await getCustomizationsForPublic(saleProfile.ownerUid, saleProfile.vehicleId);
-  
   const recordCounts = {
     maintenance: allRecords.length, // 全期間の整備件数
     fuel: fuelLogs.length, // 全期間の給油件数
@@ -491,6 +535,7 @@ export async function generateSalePublicViewModel(
         otherCostJpy: c.otherCostJpy,
         link: c.link,
         memo: c.memo,
+        hasEvidence: c.id ? evidenceRecordIds.has(c.id) : false, // 証跡の有無を判定
       };
     })
     .sort((a, b) => {
