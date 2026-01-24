@@ -20,19 +20,26 @@ service firebase.storage {
     }
     
     function isImageFile() {
-      return request.resource.contentType != null 
+      // request.resourceが存在し、contentTypeが設定されていることを確認
+      return request.resource != null
+        && request.resource.contentType != null 
         && request.resource.contentType.matches('image/.*');
     }
     
     function isValidImageSize() {
       // 画像サイズ制限: 10MB
-      return request.resource.size < 10 * 1024 * 1024;
+      // request.resourceが存在し、sizeが設定されていることを確認
+      return request.resource != null
+        && request.resource.size != null
+        && request.resource.size < 10 * 1024 * 1024;
     }
     
     function isAllowedImageType() {
-      // 許可される画像タイプ
-      return request.resource.contentType != null 
-        && request.resource.contentType.matches('image/(jpeg|jpg|png|webp|heic)');
+      // 許可される画像タイプ（標準的なMIMEタイプのみ）
+      // request.resourceが存在し、contentTypeが設定されていることを確認
+      return request.resource != null
+        && request.resource.contentType != null 
+        && request.resource.contentType.matches('image/(jpeg|png|webp|heic)');
     }
     
     // Private evidences: オーナーのみアクセス可能
@@ -46,13 +53,15 @@ service firebase.storage {
       // 読み取り: パス内のuserIdが自分
       allow read: if isOwner(userId);
       
-      // 書き込み: パス内のuserIdが自分 かつ メタデータのownerUidも一致
-      // かつ 画像ファイルで、サイズ制限とタイプ制限を満たす
-      // 段階的に条件を追加: まずは基本的な画像チェックから
+      // 書き込み: パス内のuserIdが自分 かつ 画像ファイルで、サイズ制限とタイプ制限を満たす
+      // デバッグのため、条件を段階的に追加（まずは基本的なチェックから）
       allow write: if isOwner(userId) 
-                   && isImageFile()
-                   && isValidImageSize()
-                   && isAllowedImageType();
+                   && request.resource != null
+                   && request.resource.contentType != null
+                   && request.resource.contentType.matches('image/.*')
+                   && request.resource.size != null
+                   && request.resource.size < 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp|heic)');
       
       // 削除: パス内のuserIdが自分
       allow delete: if isOwner(userId);

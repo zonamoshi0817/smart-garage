@@ -56,7 +56,25 @@ function EvidenceUploadContent() {
       const storagePath = `users/${auth.currentUser.uid}/vehicles/${vehicleId}/evidence/${fileName}`;
       
       const storageRef = ref(storage, storagePath);
+      
+      // ファイルタイプを判定（file.typeを優先、なければ拡張子から判定）
+      let contentType = file.type || 'image/jpeg'; // デフォルト
+      if (!contentType || contentType === 'application/octet-stream') {
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        if (fileExtension === 'png') contentType = 'image/png';
+        else if (fileExtension === 'webp') contentType = 'image/webp';
+        else if (fileExtension === 'heic' || fileExtension === 'heif') contentType = 'image/heic';
+        else if (fileExtension === 'jpg' || fileExtension === 'jpeg') contentType = 'image/jpeg';
+        else contentType = 'image/jpeg'; // デフォルト
+      }
+      
+      // Storageルールの要件を満たすため、contentTypeを正規化
+      if (contentType === 'image/jpg') {
+        contentType = 'image/jpeg'; // jpgをjpegに正規化
+      }
+      
       const metadata = {
+        contentType: contentType,
         customMetadata: {
           ownerUid: auth.currentUser.uid,
           uploadedAt: new Date().toISOString(),

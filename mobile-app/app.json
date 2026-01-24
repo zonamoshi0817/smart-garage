@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "GarageLog",
+    "slug": "garagelog-mobile",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "jp.garagelog.app",
+      "infoPlist": {
+        "NSUserNotificationsUsageDescription": "次回メンテナンスのリマインド通知を受け取るために通知権限が必要です。"
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "jp.garagelog.app",
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#2563eb"
+        }
+      ]
+    ],
+    "scheme": "garagelog"
+  }
+}

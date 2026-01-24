@@ -326,7 +326,13 @@ function SaleModeContent() {
               </div>
             )}
 
-            <div>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push(`/vehicles/${vehicleId}/evidence`)}
+                className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                証跡を管理
+              </button>
               <button
                 onClick={() => router.push(`/vehicles/${vehicleId}/evidence/upload`)}
                 className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

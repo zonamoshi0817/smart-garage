@@ -734,7 +734,7 @@ function ShareLinkCard({
         '車両概要（年式/走行距離/車検）',
         '整備履歴（一覧）',
         '消耗品交換一覧',
-        '証跡（個人情報は自動マスク）',
+        '証跡（個人情報はマスク済み）',
         '検証ID（改ざん防止）'
       ];
     } else if (type === 'sale') {
@@ -1616,6 +1616,17 @@ function SaleLinkCard({
                     <button
                       onClick={() => {
                         setShowMenu(false);
+                        if (activeCarId) {
+                          router.push(`/vehicles/${activeCarId}/sale-mode`);
+                        }
+                      }}
+                      className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                    >
+                      売却モード管理
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
                         setShowVisibilitySettings(true);
                       }}
                       className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
@@ -1846,7 +1857,7 @@ function SaleLinkCard({
             '車両概要（年式/走行距離/車検）',
             '整備履歴（一覧）',
             '消耗品交換一覧',
-            '証跡（個人情報は自動マスク）',
+            '証跡（個人情報はマスク済み）',
             '検証ID（改ざん防止）'
           ],
           showMenu,

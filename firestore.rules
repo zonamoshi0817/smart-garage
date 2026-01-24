@@ -70,6 +70,11 @@ service cloud.firestore {
         match /customizations/{customizationId} {
           allow read, write: if isOwner(userId);
         }
+        
+        // Customization meta subcollection
+        match /customizations_meta/{metaId} {
+          allow read, write: if isOwner(userId);
+        }
       }
       
       // Maintenance records subcollection

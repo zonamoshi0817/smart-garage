@@ -27,8 +27,10 @@ export interface SalePublicViewModel {
   }[];
   consumables: {
     type: 'oil' | 'tire' | 'brake' | 'battery' | 'coolant';
-    lastReplacedDate?: string; // ISO string形式（JSONシリアライズ可能）
-    lastReplacedMileageKm?: number;
+    history: {
+      date: string; // ISO string形式（JSONシリアライズ可能）
+      mileageKm?: number;
+    }[];
   }[];
   preventiveMaintenance: {
     date: string; // ISO string形式（JSONシリアライズ可能）
@@ -57,6 +59,24 @@ export interface SalePublicViewModel {
     fuel: number; // 給油件数
     customization: number; // カスタム件数
   };
+  // カスタマイズパーツ情報
+  customizations: {
+    id: string;
+    title: string;
+    brand?: string;
+    modelCode?: string;
+    categories: string[];
+    status: 'installed' | 'removed' | 'planned';
+    date: string; // ISO string形式（JSONシリアライズ可能）
+    odoKm?: number;
+    vendorType?: 'self' | 'shop' | 'dealer';
+    vendorName?: string;
+    partsCostJpy?: number;
+    laborCostJpy?: number;
+    otherCostJpy?: number;
+    link?: string;
+    memo?: string;
+  }[];
 }
 
 /**
@@ -295,17 +315,17 @@ function generateRecent12MonthsSummary(
 }
 
 /**
- * 消耗品交換一覧を生成
+ * 消耗品交換一覧を生成（履歴を含む）
  */
 function generateConsumablesTable(
   records: MaintenanceRecord[]
 ): SalePublicViewModel['consumables'] {
-  const consumables: { [key: string]: { date?: Date; mileage?: number } } = {};
+  const consumablesHistory: { [key: string]: { date: Date; mileage?: number }[] } = {};
   const categories = ['oil', 'tire', 'brake', 'battery', 'coolant'] as const;
 
   // 初期化
   categories.forEach(cat => {
-    consumables[cat] = {};
+    consumablesHistory[cat] = [];
   });
 
   // 記録を日付降順でソート（categoryがあるもののみ）
@@ -321,33 +341,39 @@ function generateConsumablesTable(
       return dateB.getTime() - dateA.getTime();
     });
 
-  // 各カテゴリの最新記録を抽出
+  // 各カテゴリのすべての交換記録を抽出
   sortedRecords.forEach(record => {
     const category = record.category as typeof categories[number];
     if (category && categories.includes(category)) {
-      if (!consumables[category].date) {
-        const recordDate = record.date?.toDate?.() || (record.date as any) instanceof Date 
-          ? (record.date as any) 
-          : new Date(record.date as any);
-        consumables[category] = {
-          date: recordDate,
-          mileage: record.mileage,
-        };
-      }
+      const recordDate = record.date?.toDate?.() || (record.date as any) instanceof Date 
+        ? (record.date as any) 
+        : new Date(record.date as any);
+      consumablesHistory[category].push({
+        date: recordDate,
+        mileage: record.mileage,
+      });
     }
   });
 
-  return categories.map(type => {
-    const date = consumables[type].date;
-    // Dateオブジェクトかどうかを確認してからISO文字列に変換
-    const isoDate = date instanceof Date ? date.toISOString() : undefined;
-    // 最終交換日が存在しない場合は、交換時走行距離もundefinedにする（整合性を保つ）
-    return {
-      type,
-      lastReplacedDate: isoDate,
-      lastReplacedMileageKm: isoDate ? consumables[type].mileage : undefined,
-    };
-  });
+  // 結果を配列に変換（日付降順でソート）
+  return categories.map(type => ({
+    type,
+    history: consumablesHistory[type]
+      .sort((a, b) => {
+        const timeA = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime();
+        const timeB = b.date instanceof Date ? b.date.getTime() : new Date(b.date).getTime();
+        return timeB - timeA; // 日付降順
+      })
+      .map(item => {
+        const date = item.date instanceof Date 
+          ? item.date 
+          : (typeof item.date === 'string' ? new Date(item.date) : new Date());
+        return {
+          date: date.toISOString(),
+          mileageKm: item.mileage,
+        };
+      }),
+  }));
 }
 
 /**
@@ -442,6 +468,38 @@ export async function generateSalePublicViewModel(
     customization: customizations.filter(c => c.status === 'installed').length, // インストール済みカスタム件数
   };
 
+  // カスタマイズ情報をシリアライズ
+  const serializedCustomizations = customizations
+    .filter(c => c.status === 'installed') // インストール済みのみ表示
+    .map(c => {
+      const dateStr = c.date?.toDate?.()?.toISOString() || 
+                     (c.date instanceof Date ? c.date.toISOString() : 
+                     (typeof c.date === 'string' ? c.date : undefined));
+      return {
+        id: c.id!,
+        title: c.title,
+        brand: c.brand,
+        modelCode: c.modelCode,
+        categories: c.categories || [],
+        status: c.status,
+        date: dateStr || '',
+        odoKm: c.odoKm,
+        vendorType: c.vendorType,
+        vendorName: c.vendorName,
+        partsCostJpy: c.partsCostJpy,
+        laborCostJpy: c.laborCostJpy,
+        otherCostJpy: c.otherCostJpy,
+        link: c.link,
+        memo: c.memo,
+      };
+    })
+    .sort((a, b) => {
+      // 日付でソート（新しい順）
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
+
   // PR5: 発行日時と検証IDを生成
   let issuedAt: string | undefined;
   if (saleProfile.createdAt) {
@@ -496,6 +554,7 @@ export async function generateSalePublicViewModel(
     },
     unclassifiedCount, // 未分類レコード数（直近12ヶ月）
     recordCounts, // PR2: 記録件数
+    customizations: serializedCustomizations, // カスタマイズパーツ情報
   };
 }
 
