@@ -28,6 +28,13 @@ export default function Logo({ className = '', size = 'md' }: LogoProps) {
       return;
     }
 
+    // 保護されたページ（未ログインでアクセスするとAuthGateが表示される）の場合はトップページに
+    const protectedPages = ['/mycar', '/gas', '/maintenance', '/customizations', '/share', '/cars', '/data'];
+    if (protectedPages.some(page => pathname.startsWith(page))) {
+      router.push('/');
+      return;
+    }
+
     // その他のページ（設定ページなど）は /home に遷移
     router.push('/home');
   };
