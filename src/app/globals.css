@@ -37,6 +37,19 @@ body {
   animation: fadeIn 0.2s ease-in;
 }
 
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);
