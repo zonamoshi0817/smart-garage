@@ -46,21 +46,17 @@ function SidebarLink({ href, icon, label, isCollapsed, isActive, onClick }: Side
     </div>
   );
 
-  if (onClick) {
-    return (
-      <button onClick={onClick} className="block w-full text-left">
-        {content}
-      </button>
-    );
-  }
-
-  const handleLinkClick = onClick;
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      onClick();
+    }
+  };
   
   return (
     <Link 
       href={href} 
       className="block w-full text-left"
-      onClick={handleLinkClick}
+      onClick={handleClick}
     >
       {content}
     </Link>
