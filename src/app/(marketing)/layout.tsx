@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       "メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/og-image.jpg?v=2",
         width: 1200,
         height: 630,
         alt: "GarageLog - クルマと、ずっといい関係。",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     title: "GarageLog - クルマと、ずっといい関係。",
     description:
       "メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。",
-    images: ["/og-image.jpg"],
+    images: ["/og-image.jpg?v=2"],
   },
   alternates: {
     canonical: "https://garagelog.jp/",
