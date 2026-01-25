@@ -32,6 +32,8 @@ export interface SalePublicViewModel {
     history: {
       date: string; // ISO string形式（JSONシリアライズ可能）
       mileageKm?: number;
+      recordId?: string; // メンテナンス記録ID（証跡紐づけ判定用）
+      hasEvidence?: boolean; // 証跡の有無
     }[];
   }[];
   preventiveMaintenance: {
@@ -346,9 +348,10 @@ function generateRecent12MonthsSummary(
  * 消耗品交換一覧を生成（履歴を含む）
  */
 function generateConsumablesTable(
-  records: MaintenanceRecord[]
+  records: MaintenanceRecord[],
+  evidenceRecordIds: Set<string>
 ): SalePublicViewModel['consumables'] {
-  const consumablesHistory: { [key: string]: { date: Date; mileage?: number }[] } = {};
+  const consumablesHistory: { [key: string]: { date: Date; mileage?: number; recordId?: string }[] } = {};
   const categories = ['oil', 'tire', 'brake', 'battery', 'coolant'] as const;
 
   // 初期化
@@ -414,6 +417,7 @@ function generateConsumablesTable(
       consumablesHistory[category].push({
         date: recordDate,
         mileage: record.mileage,
+        recordId: record.id,
       });
     }
   });
@@ -451,6 +455,8 @@ function generateConsumablesTable(
         return {
           date: date.toISOString(),
           mileageKm: item.mileage,
+          recordId: item.recordId,
+          hasEvidence: item.recordId ? evidenceRecordIds.has(item.recordId) : false,
         };
       }),
   }));
@@ -549,7 +555,7 @@ export async function generateSalePublicViewModel(
   }));
 
   // 消耗品交換一覧（分類済みレコードのみ）
-  const consumables = generateConsumablesTable(classifiedRecords);
+  const consumables = generateConsumablesTable(classifiedRecords, evidenceRecordIds);
 
   // 予防整備一覧（分類済みレコードのみ）
   const preventiveMaintenance = generatePreventiveMaintenance(classifiedRecords);

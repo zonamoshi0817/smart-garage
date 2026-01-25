@@ -4,9 +4,13 @@
 
 'use client';
 
+import EvidenceReliabilityBadge from './EvidenceReliabilityBadge';
+
 interface ConsumableHistory {
   date: string; // ISO string形式
   mileageKm?: number;
+  recordId?: string; // メンテナンス記録ID（証跡紐づけ判定用）
+  hasEvidence?: boolean; // 証跡の有無
 }
 
 interface Consumable {
@@ -50,6 +54,7 @@ export default function ConsumablesTable({ consumables }: ConsumablesTableProps)
             <th className="text-left py-3 px-4 font-medium text-gray-700">項目</th>
             <th className="text-left py-3 px-4 font-medium text-gray-700">交換日</th>
             <th className="text-left py-3 px-4 font-medium text-gray-700">交換時走行距離</th>
+            <th className="text-left py-3 px-4 font-medium text-gray-700">証跡</th>
           </tr>
         </thead>
         <tbody>
@@ -66,6 +71,7 @@ export default function ConsumablesTable({ consumables }: ConsumablesTableProps)
                   <td className="py-3 px-4 font-medium text-gray-900">
                     {typeLabels[item.type]}
                   </td>
+                  <td className="py-3 px-4 text-gray-700">---</td>
                   <td className="py-3 px-4 text-gray-700">---</td>
                   <td className="py-3 px-4 text-gray-700">---</td>
                 </tr>
@@ -87,6 +93,13 @@ export default function ConsumablesTable({ consumables }: ConsumablesTableProps)
                 </td>
                 <td className="py-3 px-4 text-gray-700">
                   {formatMileage(historyItem.mileageKm)}
+                </td>
+                <td className="py-3 px-4 text-gray-700">
+                  {historyItem.hasEvidence !== undefined ? (
+                    <EvidenceReliabilityBadge hasEvidence={historyItem.hasEvidence} />
+                  ) : (
+                    '---'
+                  )}
                 </td>
               </tr>
             ));
