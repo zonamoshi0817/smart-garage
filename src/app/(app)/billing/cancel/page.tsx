@@ -64,7 +64,7 @@ export default function BillingCancelPage() {
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-blue-600">✓</span>
-              <span>証憑アップロード（月5枚まで）</span>
+              <span>証憑アップロード（月1枚まで）</span>
             </div>
           </div>
         </div>

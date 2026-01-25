@@ -27,7 +27,7 @@
 ```typescript
 export const PREMIUM_LIMITS = {
   FREE: {
-    max_evidence_uploads_per_month: 5,
+    max_evidence_uploads_per_month: 1,
     max_evidence_uploads_per_record: 1,
     max_evidence_total_bytes: 100 * 1024 * 1024 // 100MB
   },
@@ -194,12 +194,12 @@ match /users/{userId}/usage/{monthId} {
 ### 無料ユーザーの動作確認
 
 1. **制限内でのアップロード**
-   - 月5枚未満: アップロード成功
+   - 月1枚未満: アップロード成功
    - 利用量が正しくカウントされる
 
 2. **制限超過時の動作**
-   - 月5枚目: アップロード成功
-   - 月6枚目: `EvidenceLimitExceededError`発生 → PaywallModal表示
+   - 月1枚目: アップロード成功
+   - 月2枚目: `EvidenceLimitExceededError`発生 → PaywallModal表示
    - アナリティクスイベント`evidence_upload_blocked`が記録される
 
 3. **月の切り替え**

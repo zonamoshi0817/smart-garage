@@ -181,7 +181,7 @@ export default function BillingPage() {
                   { icon: '🚗', title: '車両登録', desc: '1台まで' },
                   { icon: '📝', title: '記録管理', desc: '給油・メンテ・カスタムの記録' },
                   { icon: '📊', title: 'グラフ・ホーム', desc: 'データの可視化' },
-                  { icon: '📎', title: '証憑アップロード', desc: '月5枚まで' },
+                  { icon: '📎', title: '証憑アップロード', desc: '月1枚まで' },
                   { icon: '🔔', title: 'リマインダー', desc: '5件まで' },
                 ].map((feature, index) => (
                   <div
@@ -288,7 +288,7 @@ export default function BillingPage() {
                     <ul className="list-disc list-inside space-y-1 text-yellow-700">
                       <li>車両登録は1台まで</li>
                       <li>PDF出力とOCR機能は利用できません</li>
-                      <li>証憑アップロードは月5枚まで</li>
+                      <li>証憑アップロードは月1枚まで</li>
                     </ul>
                   </div>
                 </div>

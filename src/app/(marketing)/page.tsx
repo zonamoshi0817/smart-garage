@@ -578,7 +578,7 @@ function Pricing() {
               </li>
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span>証憑アップロード（月5枚まで）</span>
+                <span>証憑アップロード（月1枚まで）</span>
               </li>
               <li className="flex gap-3 items-start">
                 <Lock className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />

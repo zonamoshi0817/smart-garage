@@ -18,7 +18,7 @@ export type PremiumFeature =
   | 'filter_display'         // フィルター同時表示（無料: なし、プレミアム: あり）
   | 'data_analytics'         // データ分析（無料: 基本、プレミアム: 詳細）
   | 'priority_support'       // 優先サポート（無料: なし、プレミアム: あり）
-  | 'evidence_upload'        // 証憑アップロード（無料: 月5枚まで、プレミアム: 無制限）
+  | 'evidence_upload'        // 証憑アップロード（無料: 月1枚まで、プレミアム: 無制限）
 
 // ===== プレミアム機能の制限値 =====
 
@@ -38,7 +38,7 @@ export const PREMIUM_LIMITS = {
     data_analytics: false,
     priority_support: false,
     ad_free: false,
-    max_evidence_uploads_per_month: 5,
+    max_evidence_uploads_per_month: 1,
     max_evidence_uploads_per_record: 1,
     max_evidence_total_bytes: 100 * 1024 * 1024 // 100MB
   },
@@ -326,7 +326,7 @@ export const PREMIUM_FEATURE_DESCRIPTIONS = {
   evidence_upload: {
     title: '証憑アップロード無制限',
     description: 'メンテナンス/カスタマイズ記録の領収書等を無制限でアップロードできます',
-    freeLimit: '月5枚まで',
+    freeLimit: '月1枚まで',
     premiumBenefit: '無制限'
   }
 } as const;
