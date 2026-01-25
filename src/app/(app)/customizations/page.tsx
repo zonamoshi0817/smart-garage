@@ -7,6 +7,7 @@ import AuthGate from "@/components/AuthGate";
 import { watchCars, addCar } from "@/lib/cars";
 import { getCustomizations, CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS, deleteCustomization } from "@/lib/customizations";
 import { auth, watchAuth } from "@/lib/firebase";
+import { backfillEvidenceForExistingRecords } from "@/lib/evidence";
 import { toMillis } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 import { usePremiumGuard } from "@/hooks/usePremium";
@@ -708,6 +709,8 @@ function CustomizationsPageRouteContent() {
   const [showAddCarModal, setShowAddCarModal] = useState(false);
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [editingCustomization, setEditingCustomization] = useState<Customization | null>(null);
+  const [backfillExecuted, setBackfillExecuted] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
 
   // activeCarIdを決定（優先順位: URLクエリ > グローバルコンテキスト > ローカル状態）
   const effectiveCarId = useMemo(() => {
@@ -807,6 +810,40 @@ function CustomizationsPageRouteContent() {
       setLoading(false);
     }
   }, [auth.currentUser, authTrigger]);
+
+  // バックフィル処理（既存の記録にEvidenceを自動登録）
+  useEffect(() => {
+    if (!auth.currentUser || backfillExecuted) {
+      return;
+    }
+
+    const runBackfill = async () => {
+      try {
+        setBackfilling(true);
+        console.log('Running evidence backfill for existing records...');
+        const result = await backfillEvidenceForExistingRecords();
+        console.log('Backfill completed:', result);
+        setBackfillExecuted(true);
+        
+        // カスタマイズ一覧を再取得して反映
+        if (effectiveCarId) {
+          const updatedCustomizations = await getCustomizations(auth.currentUser.uid, effectiveCarId);
+          setCustomizations(updatedCustomizations);
+        }
+      } catch (error) {
+        console.error('Backfill failed:', error);
+      } finally {
+        setBackfilling(false);
+      }
+    };
+
+    // 少し遅延させて実行（ページ読み込みを妨げないように）
+    const timeoutId = setTimeout(() => {
+      runBackfill();
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [auth.currentUser, backfillExecuted, effectiveCarId]);
 
   // カスタマイズデータの取得
   useEffect(() => {

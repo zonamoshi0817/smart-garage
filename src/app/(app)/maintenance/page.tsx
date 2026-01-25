@@ -9,6 +9,7 @@ import { watchCars, addCar } from "@/lib/cars";
 import { watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords, addMaintenanceRecord } from "@/lib/maintenance";
 import { generateMaintenanceSuggestions } from "@/lib/maintenanceSuggestions";
 import { auth, watchAuth } from "@/lib/firebase";
+import { backfillEvidenceForExistingRecords } from "@/lib/evidence";
 import { uploadMaintenanceImage, isImageFile } from "@/lib/storage";
 import { toDate, toMillis } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
@@ -1448,6 +1449,7 @@ function MaintenancePageRouteContent() {
   const [showEditMaintenanceModal, setShowEditMaintenanceModal] = useState(false);
   const [editingMaintenanceRecord, setEditingMaintenanceRecord] = useState<MaintenanceRecord | null>(null);
   const [authTrigger, setAuthTrigger] = useState(0);
+  const [backfillExecuted, setBackfillExecuted] = useState(false);
 
   // プレミアムガード
   const { userPlan } = usePremiumGuard();
@@ -1540,6 +1542,31 @@ function MaintenancePageRouteContent() {
       setCars([]);
     }
   }, [auth.currentUser, authTrigger]);
+
+  // バックフィル処理（既存の記録にEvidenceを自動登録）
+  useEffect(() => {
+    if (!auth.currentUser || backfillExecuted) {
+      return;
+    }
+
+    const runBackfill = async () => {
+      try {
+        console.log('Running evidence backfill for existing records...');
+        const result = await backfillEvidenceForExistingRecords();
+        console.log('Backfill completed:', result);
+        setBackfillExecuted(true);
+      } catch (error) {
+        console.error('Backfill failed:', error);
+      }
+    };
+
+    // 少し遅延させて実行（ページ読み込みを妨げないように）
+    const timeoutId = setTimeout(() => {
+      runBackfill();
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [auth.currentUser, backfillExecuted]);
 
   // 全メンテナンス記録を取得
   useEffect(() => {

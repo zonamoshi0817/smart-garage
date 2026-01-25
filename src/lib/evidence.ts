@@ -143,3 +143,116 @@ export async function deleteEvidenceForRecord(recordId: string): Promise<void> {
     // エラーが発生しても元の記録の更新は成功とする
   }
 }
+
+/**
+ * 既存のメンテナンス記録とカスタマイズ記録をスキャンして、画像があるのにEvidenceが登録されていないものを登録
+ */
+export async function backfillEvidenceForExistingRecords(): Promise<{
+  maintenanceCreated: number;
+  customizationCreated: number;
+  errors: number;
+}> {
+  const u = auth.currentUser;
+  if (!u) {
+    throw new Error('ユーザーがログインしていません');
+  }
+
+  let maintenanceCreated = 0;
+  let customizationCreated = 0;
+  let errors = 0;
+
+  try {
+    // 既存のEvidenceレコードのrecordIdを取得（重複チェック用）
+    const allEvidencesQuery = query(
+      collection(db, 'evidences'),
+      where('deletedAt', '==', null)
+    );
+    const allEvidencesSnapshot = await getDocs(allEvidencesQuery);
+    const existingRecordIds = new Set<string>();
+    allEvidencesSnapshot.forEach(doc => {
+      const recordId = doc.data().recordId;
+      if (recordId) {
+        existingRecordIds.add(recordId);
+      }
+    });
+
+    // メンテナンス記録をスキャン
+    try {
+      const maintenanceQuery = query(
+        collection(db, 'users', u.uid, 'maintenance'),
+        where('deletedAt', '==', null)
+      );
+      const maintenanceSnapshot = await getDocs(maintenanceQuery);
+      
+      for (const doc of maintenanceSnapshot.docs) {
+        const data = doc.data();
+        const recordId = doc.id;
+        const imageUrl = data.imageUrl;
+        const carId = data.carId;
+
+        if (imageUrl && carId && !existingRecordIds.has(recordId)) {
+          try {
+            await createEvidenceFromImage(u.uid, carId, recordId, imageUrl);
+            maintenanceCreated++;
+            existingRecordIds.add(recordId); // 重複チェック用に追加
+          } catch (error) {
+            console.error(`Failed to create evidence for maintenance record ${recordId}:`, error);
+            errors++;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to scan maintenance records:', error);
+      errors++;
+    }
+
+    // カスタマイズ記録をスキャン（全車両）
+    try {
+      const carsQuery = query(
+        collection(db, 'users', u.uid, 'cars'),
+        where('deletedAt', '==', null)
+      );
+      const carsSnapshot = await getDocs(carsQuery);
+      
+      for (const carDoc of carsSnapshot.docs) {
+        const carId = carDoc.id;
+        try {
+          const customizationsQuery = query(
+            collection(db, 'users', u.uid, 'cars', carId, 'customizations'),
+            where('deletedAt', '==', null)
+          );
+          const customizationsSnapshot = await getDocs(customizationsQuery);
+          
+          for (const doc of customizationsSnapshot.docs) {
+            const data = doc.data();
+            const recordId = doc.id;
+            const imageUrl = data.imageUrl;
+
+            if (imageUrl && !existingRecordIds.has(recordId)) {
+              try {
+                await createEvidenceFromImage(u.uid, carId, recordId, imageUrl);
+                customizationCreated++;
+                existingRecordIds.add(recordId); // 重複チェック用に追加
+              } catch (error) {
+                console.error(`Failed to create evidence for customization ${recordId}:`, error);
+                errors++;
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to scan customizations for car ${carId}:`, error);
+          errors++;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to scan customization records:', error);
+      errors++;
+    }
+
+    console.log(`Backfill completed: ${maintenanceCreated} maintenance, ${customizationCreated} customizations, ${errors} errors`);
+    return { maintenanceCreated, customizationCreated, errors };
+  } catch (error) {
+    console.error('Backfill failed:', error);
+    throw error;
+  }
+}
