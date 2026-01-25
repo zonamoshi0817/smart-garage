@@ -180,10 +180,9 @@ export default function BillingPage() {
                 { icon: '🚗', title: '無制限の車両登録', desc: '何台でも登録可能' },
                 { icon: '📄', title: 'PDF出力', desc: 'メンテナンス履歴をPDF化' },
                 { icon: '📸', title: 'OCRスキャン', desc: 'レシートを自動読み取り' },
-                { icon: '🔔', title: '高度なリマインダー', desc: '無制限のリマインダー' },
                 { icon: '📊', title: 'データ分析', desc: '詳細な統計レポート' },
-                { icon: '🎯', title: '広告非表示', desc: 'すっきりした画面' },
                 { icon: '⭐', title: '優先サポート', desc: '専任サポート対応' },
+                { icon: '📎', title: '証憑アップロード無制限', desc: '領収書等を無制限でアップロード' },
               ].map((feature, index) => (
                 <div
                   key={index}
@@ -262,7 +261,7 @@ export default function BillingPage() {
                     <ul className="list-disc list-inside space-y-1 text-yellow-700">
                       <li>車両登録は1台まで</li>
                       <li>PDF出力とOCR機能は利用できません</li>
-                      <li>高度なリマインダー機能は制限されます</li>
+                      <li>証憑アップロードは月5枚まで</li>
                     </ul>
                   </div>
                 </div>

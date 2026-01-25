@@ -6,6 +6,10 @@ import { addCustomization, updateCustomization } from '@/lib/customizations';
 import { auth } from '@/lib/firebase';
 import { toTimestamp, toDate } from '@/lib/dateUtils';
 import { uploadCustomizationImage, isImageFile } from '@/lib/storage';
+import { usePremium } from '@/hooks/usePremium';
+import PaywallModal from './PaywallModal';
+import { EvidenceLimitExceededError } from '@/lib/errors';
+import { logEvidenceUploadBlocked, logEvidenceUploadSuccess, logUpgradeFromEvidence } from '@/lib/analytics';
 
 interface CustomizationModalProps extends ModalProps {
   carId: string;
@@ -46,6 +50,8 @@ export default function CustomizationModal({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { isPremium } = usePremium();
 
   useEffect(() => {
     if (editingCustomization) {
@@ -206,8 +212,25 @@ export default function CustomizationModal({
             (progress) => setUploadProgress(progress)
           );
           finalImageUrl = uploadedUrl;
+          
+          // アップロード成功イベント
+          logEvidenceUploadSuccess('customization', selectedImageFile.size, selectedImageFile.type);
         } catch (uploadError) {
           console.error("Image upload failed:", uploadError);
+          
+          // 制限超過エラーの場合
+          if (uploadError instanceof EvidenceLimitExceededError) {
+            logEvidenceUploadBlocked(
+              uploadError.reason,
+              uploadError.limitType,
+              'customization'
+            );
+            setShowPaywall(true);
+            setIsUploadingImage(false);
+            setIsSubmitting(false);
+            return;
+          }
+          
           alert(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`);
           setIsUploadingImage(false);
           setIsSubmitting(false);
@@ -267,6 +290,7 @@ export default function CustomizationModal({
   ];
 
   return (
+    <>
     <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${isOpen ? 'block' : 'hidden'}`}>
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
@@ -555,5 +579,17 @@ export default function CustomizationModal({
         </form>
       </div>
     </div>
+    
+    {showPaywall && (
+      <PaywallModal
+        onClose={() => {
+          setShowPaywall(false);
+          logUpgradeFromEvidence('minimal', 'customization');
+        }}
+        feature="evidence_upload"
+        variant="minimal"
+      />
+    )}
+    </>
   );
 }

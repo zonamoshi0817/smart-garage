@@ -1,7 +1,11 @@
 // src/lib/storage.ts
 "use client";
-import { storage, auth } from "@/lib/firebase";
+import { storage, auth, db } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject, uploadBytesResumable } from "firebase/storage";
+import { doc, getDoc } from "firebase/firestore";
+import { checkEvidenceUploadLimit, incrementEvidenceUsage } from "@/lib/evidenceUsage";
+import { EvidenceLimitExceededError } from "@/lib/errors";
+import type { UserPlan } from "@/lib/premium";
 
 /**
  * 画像ファイルをFirebase Storageにアップロードし、ダウンロードURLを取得
@@ -177,6 +181,22 @@ export async function deleteCarImage(imageUrl: string): Promise<void> {
 }
 
 /**
+ * ユーザープランを取得（Firestoreから）
+ */
+async function getUserPlan(userId: string): Promise<UserPlan> {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (userDoc.exists()) {
+      return (userDoc.data().plan as UserPlan) || 'free';
+    }
+    return 'free';
+  } catch (error) {
+    console.error('Failed to get user plan:', error);
+    return 'free'; // エラー時は安全のため無料プランとみなす
+  }
+}
+
+/**
  * ファイルが画像かどうかをチェック
  */
 export function isImageFile(file: File): boolean {
@@ -236,6 +256,17 @@ export async function uploadMaintenanceImage(
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ユーザーがログインしていません");
+  }
+
+  // 制限チェック（アップロード前に実行）
+  const userPlan = await getUserPlan(userId);
+  const limitCheck = await checkEvidenceUploadLimit(userId, userPlan, file.size, recordId);
+  if (!limitCheck.allowed) {
+    throw new EvidenceLimitExceededError(
+      limitCheck.limitType || 'monthly',
+      limitCheck.reason || '証憑アップロードの上限に達しています',
+      limitCheck.reason
+    );
   }
 
   try {
@@ -311,6 +342,17 @@ export async function uploadCustomizationImage(
     throw new Error("ユーザーがログインしていません");
   }
 
+  // 制限チェック（アップロード前に実行）
+  const userPlan = await getUserPlan(userId);
+  const limitCheck = await checkEvidenceUploadLimit(userId, userPlan, file.size, customizationId);
+  if (!limitCheck.allowed) {
+    throw new EvidenceLimitExceededError(
+      limitCheck.limitType || 'monthly',
+      limitCheck.reason || '証憑アップロードの上限に達しています',
+      limitCheck.reason
+    );
+  }
+
   try {
     const timestamp = Date.now();
     const fileName = `${timestamp}_${file.name}`;
@@ -355,7 +397,17 @@ export async function uploadCustomizationImage(
       onProgress(100);
     }
     
-    return await getDownloadURL(snapshot.ref);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    // アップロード成功後に利用量を増分
+    try {
+      await incrementEvidenceUsage(userId, file.size);
+    } catch (usageError) {
+      console.error('Failed to increment evidence usage:', usageError);
+      // 利用量の更新に失敗してもアップロードは成功とする（既にアップロード済みのため）
+    }
+    
+    return downloadURL;
   } catch (error) {
     console.error("Customization image upload failed:", error);
     console.error("Error details:", {

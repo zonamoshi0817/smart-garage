@@ -199,3 +199,29 @@ export function logPdfExported(carId: string, recordCount: number) {
     record_count: recordCount,
   });
 }
+
+/**
+ * 証憑アップロード関連のイベント追跡
+ */
+export function logEvidenceUploadBlocked(reason: string, limitType: string, feature: string) {
+  trackEvent("evidence_upload_blocked", {
+    reason,
+    limit_type: limitType,
+    feature,
+  });
+}
+
+export function logEvidenceUploadSuccess(feature: string, fileSize: number, fileType: string) {
+  trackEvent("evidence_upload_success", {
+    feature,
+    file_size: fileSize,
+    file_type: fileType,
+  });
+}
+
+export function logUpgradeFromEvidence(paywallVariant: string, feature: string) {
+  trackEvent("upgrade_from_evidence", {
+    paywall_variant: paywallVariant,
+    feature,
+  });
+}

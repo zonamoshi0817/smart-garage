@@ -4,6 +4,10 @@ import { MaintenanceRecord, MaintenanceInput, Car } from '@/types';
 import { toTimestamp, toDate } from '@/lib/dateUtils';
 import { uploadMaintenanceImage, isImageFile } from '@/lib/storage';
 import { auth } from '@/lib/firebase';
+import { usePremium } from '@/hooks/usePremium';
+import PaywallModal from './PaywallModal';
+import { EvidenceLimitExceededError } from '@/lib/errors';
+import { logEvidenceUploadBlocked, logEvidenceUploadSuccess, logUpgradeFromEvidence } from '@/lib/analytics';
 
 interface MaintenanceModalProps {
   isOpen: boolean;
@@ -39,6 +43,8 @@ export default function MaintenanceModal({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const { isPremium } = usePremium();
 
   useEffect(() => {
     if (editingRecord) {
@@ -148,8 +154,25 @@ export default function MaintenanceModal({
             (progress) => setUploadProgress(progress)
           );
           finalImageUrl = uploadedUrl;
+          
+          // アップロード成功イベント
+          logEvidenceUploadSuccess('maintenance', selectedImageFile.size, selectedImageFile.type);
         } catch (uploadError) {
           console.error("Image upload failed:", uploadError);
+          
+          // 制限超過エラーの場合
+          if (uploadError instanceof EvidenceLimitExceededError) {
+            logEvidenceUploadBlocked(
+              uploadError.reason,
+              uploadError.limitType,
+              'maintenance'
+            );
+            setShowPaywall(true);
+            setIsUploadingImage(false);
+            setLoading(false);
+            return;
+          }
+          
           setError(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`);
           setIsUploadingImage(false);
           setLoading(false);
@@ -172,7 +195,8 @@ export default function MaintenanceModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg">
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg">
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -363,5 +387,17 @@ export default function MaintenanceModal({
         </div>
       </form>
     </Modal>
+    
+    {showPaywall && (
+      <PaywallModal
+        onClose={() => {
+          setShowPaywall(false);
+          logUpgradeFromEvidence('minimal', 'maintenance');
+        }}
+        feature="evidence_upload"
+        variant="minimal"
+      />
+    )}
+    </>
   );
 }

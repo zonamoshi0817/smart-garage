@@ -896,7 +896,13 @@ function MaintenanceHistoryContent({
         <h1 className="text-2xl font-bold">メンテナンス</h1>
         <div className="flex gap-3">
           <button
-            onClick={() => setShowMaintenanceModal(true)}
+            onClick={() => {
+              if (cars.length === 0) {
+                alert('メンテナンスを記録するには、まず車両を登録してください。');
+                return;
+              }
+              setShowMaintenanceModal(true);
+            }}
             className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
           >
             ＋ メンテナンスを記録
@@ -1069,7 +1075,13 @@ function MaintenanceHistoryContent({
             </p>
             {maintenanceRecords.length === 0 && (
               <button
-                onClick={() => setShowMaintenanceModal(true)}
+                onClick={() => {
+                  if (cars.length === 0) {
+                    alert('メンテナンスを記録するには、まず車両を登録してください。');
+                    return;
+                  }
+                  setShowMaintenanceModal(true);
+                }}
                 className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
               >
                 メンテナンスを記録
@@ -1774,23 +1786,34 @@ function MaintenancePageRouteContent() {
         />
       )}
 
-      {showMaintenanceModal && effectiveCarId && car && (
-        <MaintenanceModal
-          carId={effectiveCarId}
-          carName={car.name}
-          currentMileage={car.odoKm}
-          initialTitle={maintenanceTemplate || undefined}
-          onClose={() => {
-            setShowMaintenanceModal(false);
-            setMaintenanceTemplate(null);
-          }}
-          onAdded={() => {
-            setShowMaintenanceModal(false);
-            setMaintenanceTemplate(null);
-            setAuthTrigger(prev => prev + 1);
-          }}
-        />
-      )}
+      {showMaintenanceModal && (() => {
+        // 車両が選択されていない場合は、最初の車両を使用
+        const targetCarId = effectiveCarId || activeCars[0]?.id;
+        const targetCar = car || activeCars[0];
+        
+        if (!targetCarId || !targetCar) {
+          // 車両が登録されていない場合はアラートを表示
+          return null;
+        }
+        
+        return (
+          <MaintenanceModal
+            carId={targetCarId}
+            carName={targetCar.name}
+            currentMileage={targetCar.odoKm}
+            initialTitle={maintenanceTemplate || undefined}
+            onClose={() => {
+              setShowMaintenanceModal(false);
+              setMaintenanceTemplate(null);
+            }}
+            onAdded={() => {
+              setShowMaintenanceModal(false);
+              setMaintenanceTemplate(null);
+              setAuthTrigger(prev => prev + 1);
+            }}
+          />
+        );
+      })()}
 
       {showEditMaintenanceModal && editingMaintenanceRecord && (
         <EditMaintenanceModal

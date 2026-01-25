@@ -10,6 +10,7 @@
 - **`IMPLEMENTATION_SUMMARY.md`**: v2.2.0実装詳細と使用方法
 - **`MAINTENANCE_SUGGESTIONS_IMPLEMENTATION.md`**: メンテナンス提案機能の実装詳細
 - **`PRODUCT_NAME_CHANGE_IMPACT.md`**: 製品名変更の影響範囲レポート
+- **`docs/EVIDENCE_UPLOAD_LIMITS.md`**: 証憑アップロード制限機能の仕様詳細
 
 ### 運用・デプロイ
 - **`DEPLOYMENT_CHECKLIST.md`**: デプロイ前チェックリストと環境変数設定
@@ -1293,6 +1294,7 @@ interface AuditLog {
 - **リマインダー**: 車両あたり5件まで
 - **スヌーズ**: 3回まで
 - **広告**: 表示あり
+- **証憑アップロード**: 月5枚まで（メンテナンス/カスタマイズ記録の領収書等）
 
 ### プレミアム機能（主要4機能）
 1. **複数車両登録**: 無制限の車両を登録・管理
@@ -1310,6 +1312,7 @@ interface AuditLog {
 - **詳細データ分析**: 高度な統計レポート
 - **優先サポート**: 優先的なカスタマーサポート
 - **広告非表示**: アプリ内広告の非表示
+- **証憑アップロード無制限**: メンテナンス/カスタマイズ記録の領収書等を無制限でアップロード可能
 
 ### ペイウォールUI
 - **3つのvariant**: 
@@ -1328,6 +1331,9 @@ interface AuditLog {
 - subscribe_started: 購読開始
 - subscribe_success: 購読成功
 - subscribe_failed: 購読失敗
+- evidence_upload_blocked: 証憑アップロード制限超過
+- evidence_upload_success: 証憑アップロード成功
+- upgrade_from_evidence: 証憑制限からのアップグレード
 ```
 
 ## 実装済み機能

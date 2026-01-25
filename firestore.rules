@@ -130,6 +130,14 @@ service cloud.firestore {
                       && hasRequiredFields(['entityType', 'entityId', 'action', 'actorUid'])
                       && request.resource.data.actorUid == userId;
       }
+      
+      // Usage tracking subcollection (月次利用量管理)
+      match /usage/{monthId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
     }
     
     // Audit logs collection (admin only, or user can read their own)
