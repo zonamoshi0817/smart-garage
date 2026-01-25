@@ -54,6 +54,11 @@ export default function ConsumablesTable({ consumables }: ConsumablesTableProps)
         </thead>
         <tbody>
           {consumables.map((item) => {
+            // デバッグログ: 各項目の履歴数を確認
+            if (item.type === 'oil') {
+              console.log(`Engine oil history count: ${item.history.length}`, item.history);
+            }
+            
             if (item.history.length === 0) {
               // 履歴がない場合
               return (
@@ -66,7 +71,7 @@ export default function ConsumablesTable({ consumables }: ConsumablesTableProps)
                 </tr>
               );
             }
-            // 履歴がある場合、各行を表示
+            // 履歴がある場合、各行を表示（全履歴を表示）
             return item.history.map((historyItem, index) => (
               <tr key={`${item.type}-${index}`} className="border-b border-gray-100">
                 {index === 0 && (

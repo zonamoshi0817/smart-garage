@@ -356,9 +356,39 @@ function generateConsumablesTable(
     consumablesHistory[cat] = [];
   });
 
-  // 記録を日付降順でソート（categoryがあるもののみ）
+  // タイトルからカテゴリを推測する関数
+  const inferCategoryFromTitle = (title: string): typeof categories[number] | null => {
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('オイル') || lowerTitle.includes('エンジンオイル') || lowerTitle.includes('オイル交換')) {
+      return 'oil';
+    }
+    if (lowerTitle.includes('タイヤ') || lowerTitle.includes('ホイール')) {
+      return 'tire';
+    }
+    if (lowerTitle.includes('ブレーキ') || lowerTitle.includes('ブレーキパッド') || lowerTitle.includes('ブレーキフルード')) {
+      return 'brake';
+    }
+    if (lowerTitle.includes('バッテリー') || lowerTitle.includes('バッテリ')) {
+      return 'battery';
+    }
+    if (lowerTitle.includes('クーラント') || lowerTitle.includes('冷却水')) {
+      return 'coolant';
+    }
+    return null;
+  };
+
+  // 記録を日付降順でソート
+  // categoryが設定されているもの、またはタイトルから推測できるもの
   const sortedRecords = records
-    .filter(record => record.category && categories.includes(record.category as typeof categories[number]))
+    .filter(record => {
+      // categoryが設定されている場合
+      if (record.category && categories.includes(record.category as typeof categories[number])) {
+        return true;
+      }
+      // categoryが設定されていない場合、タイトルから推測
+      const inferredCategory = inferCategoryFromTitle(record.title);
+      return inferredCategory !== null;
+    })
     .sort((a, b) => {
       const dateA = a.date?.toDate?.() || (a.date as any) instanceof Date 
         ? (a.date as any) 
@@ -371,7 +401,12 @@ function generateConsumablesTable(
 
   // 各カテゴリのすべての交換記録を抽出
   sortedRecords.forEach(record => {
-    const category = record.category as typeof categories[number];
+    // categoryが設定されている場合はそれを使用、なければタイトルから推測
+    let category = record.category as typeof categories[number] | null;
+    if (!category || !categories.includes(category)) {
+      category = inferCategoryFromTitle(record.title);
+    }
+    
     if (category && categories.includes(category)) {
       const recordDate = record.date?.toDate?.() || (record.date as any) instanceof Date 
         ? (record.date as any) 
@@ -382,6 +417,23 @@ function generateConsumablesTable(
       });
     }
   });
+
+  // デバッグログ: 各カテゴリの履歴数を確認
+  console.log('Consumables history counts:', 
+    Object.keys(consumablesHistory).map(cat => ({
+      category: cat,
+      count: consumablesHistory[cat].length,
+      history: consumablesHistory[cat]
+    }))
+  );
+  console.log('Total records processed:', sortedRecords.length);
+  console.log('Records by category:', 
+    sortedRecords.reduce((acc, record) => {
+      const cat = record.category || 'unknown';
+      acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  );
 
   // 結果を配列に変換（日付降順でソート）
   return categories.map(type => ({
@@ -442,6 +494,15 @@ export async function generateSalePublicViewModel(
 
   // メンテナンス記録を取得（全期間で消耗品抽出）
   const allRecords = await getMaintenanceRecords(saleProfile.ownerUid, saleProfile.vehicleId, true);
+  console.log(`[generateSalePublicViewModel] Total maintenance records: ${allRecords.length}`);
+  console.log(`[generateSalePublicViewModel] Records with category 'oil':`, 
+    allRecords.filter(r => r.category === 'oil').map(r => ({
+      id: r.id,
+      title: r.title,
+      date: r.date?.toDate?.()?.toISOString() || r.date,
+      category: r.category
+    }))
+  );
   
   // 実データを使用（推測ロジックを削除）
   // category, isPreventive, typeTagはMaintenanceRecordに統合済み
