@@ -53,7 +53,6 @@ export default function MaintenanceModal({
         imageUrl: editingRecord.imageUrl || undefined,
       });
       setImagePreview(editingRecord.imageUrl || null);
-      setImageUrl(editingRecord.imageUrl || null);
     } else {
       setFormData({
         carId: '',
@@ -66,7 +65,6 @@ export default function MaintenanceModal({
         imageUrl: undefined,
       });
       setImagePreview(null);
-      setImageUrl(null);
     }
     setSelectedImageFile(null);
     setError(null);
@@ -115,8 +113,10 @@ export default function MaintenanceModal({
     if (imagePreview) {
       URL.revokeObjectURL(imagePreview);
     }
+    if (imagePreview && imagePreview !== editingRecord?.imageUrl) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setImagePreview(null);
-    setImageUrl(null);
     setFormData(prev => ({
       ...prev,
       imageUrl: undefined

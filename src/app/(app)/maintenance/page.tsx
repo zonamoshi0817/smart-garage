@@ -359,10 +359,51 @@ function EditMaintenanceModal({
   const [location, setLocation] = useState(record.location || '');
   const [carId, setCarId] = useState(record.carId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(record.imageUrl || null);
+  const [imageUrl, setImageUrl] = useState<string | null>(record.imageUrl || null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // 選択された車両の現在の走行距離を取得
   const selectedCar = cars.find(car => car.id === carId);
   const currentMileage = selectedCar?.odoKm;
+
+  // 画像ファイル選択ハンドラー
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isImageFile(file)) {
+      alert("画像ファイルを選択してください。");
+      return;
+    }
+
+    // ファイルサイズチェック（10MB制限）
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
+      return;
+    }
+
+    setSelectedImageFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  };
+
+  // 画像削除ハンドラー
+  const handleImageDelete = () => {
+    setSelectedImageFile(null);
+    if (imagePreview && imagePreview !== record.imageUrl) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
+    setImageUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,6 +420,32 @@ function EditMaintenanceModal({
 
     setIsSubmitting(true);
     try {
+      let finalImageUrl = imageUrl;
+
+      // 新規画像が選択されている場合、アップロード
+      if (selectedImageFile && auth.currentUser) {
+        setIsUploadingImage(true);
+        setUploadProgress(0);
+        try {
+          // 一時パスにアップロード（recordIdは後で更新）
+          const tempRecordId = record.id || `temp_${Date.now()}`;
+          const uploadedUrl = await uploadMaintenanceImage(
+            selectedImageFile,
+            auth.currentUser.uid,
+            tempRecordId,
+            (progress) => setUploadProgress(progress)
+          );
+          finalImageUrl = uploadedUrl;
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          alert(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`);
+          setIsUploadingImage(false);
+          setIsSubmitting(false);
+          return;
+        }
+        setIsUploadingImage(false);
+      }
+
       const updateData = {
         carId,
         title,
@@ -387,6 +454,7 @@ function EditMaintenanceModal({
         mileage: mileage ? Number(mileage) : undefined,
         date: Timestamp.fromDate(new Date(date)),
         location: location || undefined,
+        imageUrl: finalImageUrl || undefined,
       };
 
       await updateMaintenanceRecord(record.id, updateData);
@@ -400,6 +468,7 @@ function EditMaintenanceModal({
       }
     } finally {
       setIsSubmitting(false);
+      setIsUploadingImage(false);
     }
   };
 
@@ -542,6 +611,56 @@ function EditMaintenanceModal({
             </div>
           </div>
 
+          {/* 画像アップロード */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              画像（領収書など）
+            </label>
+            {imagePreview || imageUrl ? (
+              <div className="mb-3">
+                <div className="relative inline-block">
+                  <img
+                    src={imagePreview || imageUrl || ''}
+                    alt="プレビュー"
+                    className="max-w-full h-32 object-contain border border-gray-300 rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleImageDelete}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  disabled={isUploadingImage || isSubmitting}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  領収書や作業写真の画像をアップロードできます（10MB以下）
+                </p>
+              </div>
+            )}
+            {isUploadingImage && (
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-1">アップロード中... {Math.round(uploadProgress)}%</p>
+              </div>
+            )}
+          </div>
+
           {/* ボタン */}
           <div className="flex gap-3 pt-4">
             <button
@@ -553,10 +672,10 @@ function EditMaintenanceModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingImage}
               className="flex-1 rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition disabled:opacity-50"
             >
-              {isSubmitting ? "更新中..." : "更新"}
+              {isSubmitting || isUploadingImage ? (isUploadingImage ? '画像アップロード中...' : '更新中...') : '更新'}
             </button>
           </div>
         </form>
