@@ -78,6 +78,8 @@ export default function SalePublicPage({
   const recent12MonthsSummary = viewModel.recent12MonthsSummary || [];
   const consumables = viewModel.consumables || [];
   const evidences = viewModel.evidences || [];
+  // 全証跡数（maskStatusに関係なく）を使用
+  const evidenceCount = viewModel.totalEvidenceCount || 0;
   
   const latestMaintenance = recent12MonthsSummary.length > 0 
     ? recent12MonthsSummary[0]
@@ -92,8 +94,6 @@ export default function SalePublicPage({
     })
     .slice(0, 3); // 最新3件
 
-  const evidenceCount = evidences.length;
-
   // 用途別のサマリーセクション（最上段）
   const renderSummarySection = () => {
     if (isNormal) {
@@ -103,8 +103,10 @@ export default function SalePublicPage({
       // 買い手向け: 直近整備/消耗品交換/総費用/管理指標（見栄えと安心中心）
       const totalCost = recent12MonthsSummary.reduce((sum, item) => sum + (item?.amountYen || 0), 0);
       const maintenanceCount = recent12MonthsSummary.length;
+      // 証憑率: メンテナンス記録のうち、証跡がある記録の割合
+      const recordsWithEvidence = recent12MonthsSummary.filter(item => item.hasEvidence).length;
       const evidenceRate = maintenanceCount > 0 
-        ? Math.round((evidenceCount / maintenanceCount) * 100) 
+        ? Math.round((recordsWithEvidence / maintenanceCount) * 100) 
         : 0;
       
       // 継続記録期間を計算（最初の記録から最後の記録まで）

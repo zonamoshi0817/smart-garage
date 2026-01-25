@@ -9,7 +9,7 @@ import { watchCars, addCar } from "@/lib/cars";
 import { watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords, addMaintenanceRecord } from "@/lib/maintenance";
 import { generateMaintenanceSuggestions } from "@/lib/maintenanceSuggestions";
 import { auth, watchAuth } from "@/lib/firebase";
-import { backfillEvidenceForExistingRecords } from "@/lib/evidence";
+import { backfillEvidenceForExistingRecords, getEvidenceRecordIds } from "@/lib/evidence";
 import { uploadMaintenanceImage, isImageFile } from "@/lib/storage";
 import { toDate, toMillis } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
@@ -20,6 +20,7 @@ import type { User } from "firebase/auth";
 import AddCarModal from "@/components/modals/AddCarModal";
 import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
 import { SidebarLayout } from "@/components/common/SidebarLayout";
+import EvidenceReliabilityBadge from "@/components/EvidenceReliabilityBadge";
 
 // ヘッダー用車両ドロップダウン（mycar/page.tsxと同じ）
 function CarHeaderDropdown({
@@ -709,6 +710,29 @@ function MaintenanceHistoryContent({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // 証跡のrecordIdセット
+  const [evidenceRecordIds, setEvidenceRecordIds] = useState<Set<string>>(new Set());
+  
+  // 証跡のrecordIdセットを取得
+  useEffect(() => {
+    if (!auth.currentUser) {
+      setEvidenceRecordIds(new Set());
+      return;
+    }
+    
+    const loadEvidenceRecordIds = async () => {
+      try {
+        const recordIds = await getEvidenceRecordIds();
+        setEvidenceRecordIds(recordIds);
+      } catch (error) {
+        console.error('Failed to load evidence record IDs:', error);
+      }
+    };
+    
+    loadEvidenceRecordIds();
+    // メンテナンス記録が更新されたときにも証跡を再取得
+  }, [auth.currentUser, maintenanceRecords]);
 
   // ヘッダーで選択された車両を使用
   const selectedCar = activeCarId ? cars.find(c => c.id === activeCarId) : null;
@@ -1076,9 +1100,16 @@ function MaintenanceHistoryContent({
                         {getCarName(record.carId)}
                       </span>
               </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {record.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {record.title}
+                      </h3>
+                      {record.id && (
+                        <EvidenceReliabilityBadge 
+                          hasEvidence={evidenceRecordIds.has(record.id)} 
+                        />
+                      )}
+                    </div>
                     {record.description && (
                       <p className="text-gray-600 mb-2">{record.description}</p>
                     )}

@@ -7,7 +7,7 @@ import AuthGate from "@/components/AuthGate";
 import { watchCars, addCar } from "@/lib/cars";
 import { getCustomizations, CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS, deleteCustomization } from "@/lib/customizations";
 import { auth, watchAuth } from "@/lib/firebase";
-import { backfillEvidenceForExistingRecords } from "@/lib/evidence";
+import { backfillEvidenceForExistingRecords, getEvidenceRecordIds } from "@/lib/evidence";
 import { toMillis } from "@/lib/dateUtils";
 import { isPremiumPlan } from "@/lib/plan";
 import { usePremiumGuard } from "@/hooks/usePremium";
@@ -18,6 +18,7 @@ import AddCarModal from "@/components/modals/AddCarModal";
 import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
 import { SidebarLayout } from "@/components/common/SidebarLayout";
 import CustomizationModal from "@/components/modals/CustomizationModal";
+import EvidenceReliabilityBadge from "@/components/EvidenceReliabilityBadge";
 
 // ヘッダー用車両ドロップダウン（mycar/page.tsxと同じ）
 function CarHeaderDropdown({
@@ -304,7 +305,8 @@ function CustomizationsContent({
   customizations, 
   setShowCustomizationModal, 
   setEditingCustomization,
-  setCustomizations
+  setCustomizations,
+  backfillCompleted
 }: {
   cars: Car[];
   activeCarId: string | undefined;
@@ -312,6 +314,7 @@ function CustomizationsContent({
   setShowCustomizationModal: (show: boolean) => void;
   setEditingCustomization: (customization: Customization | null) => void;
   setCustomizations: (customizations: Customization[]) => void;
+  backfillCompleted?: boolean;
 }) {
   const activeCar = cars.find(car => car.id === activeCarId);
   
@@ -321,6 +324,42 @@ function CustomizationsContent({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'title' | 'cost'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // 証跡のrecordIdセット
+  const [evidenceRecordIds, setEvidenceRecordIds] = useState<Set<string>>(new Set());
+  
+  // 証跡のrecordIdセットを取得
+  useEffect(() => {
+    if (!auth.currentUser) {
+      setEvidenceRecordIds(new Set());
+      return;
+    }
+    
+    const loadEvidenceRecordIds = async () => {
+      try {
+        // バックフィル処理が完了した場合は少し遅延してから証跡を取得
+        if (backfillCompleted) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        const recordIds = await getEvidenceRecordIds();
+        console.log('Loaded evidence record IDs:', Array.from(recordIds));
+        console.log('Customization IDs:', customizations.map(c => c.id).filter(Boolean));
+        // マッチング確認
+        customizations.forEach(c => {
+          if (c.id) {
+            console.log(`Customization ${c.id} (${c.title}): hasEvidence=${recordIds.has(c.id)}`);
+          }
+        });
+        setEvidenceRecordIds(recordIds);
+      } catch (error) {
+        console.error('Failed to load evidence record IDs:', error);
+      }
+    };
+    
+    loadEvidenceRecordIds();
+    // カスタマイズ一覧が更新されたときにも証跡を再取得
+    // バックフィル処理が完了したときにも証跡を再取得
+  }, [auth.currentUser, customizations, backfillCompleted]);
 
   // フィルタリングとソートのロジック
   const filteredCustomizations = useMemo(() => {
@@ -621,6 +660,11 @@ function CustomizationsContent({
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[customization.status]}`}>
                         {STATUS_LABELS[customization.status]}
                       </span>
+                      {customization.id && (
+                        <EvidenceReliabilityBadge 
+                          hasEvidence={evidenceRecordIds.has(customization.id)} 
+                        />
+                      )}
                     </div>
                     
                     <div className="flex flex-wrap gap-1 mb-3">
@@ -814,12 +858,22 @@ function CustomizationsPageRouteContent() {
 
   // バックフィル処理（既存の記録にEvidenceを自動登録）
   useEffect(() => {
-    if (!auth.currentUser || backfillExecuted) {
+    if (!auth.currentUser) {
+      console.log('Backfill skipped: no auth.currentUser');
       return;
     }
 
+    if (!effectiveCarId) {
+      console.log('Backfill skipped: no effectiveCarId');
+      return;
+    }
+
+    console.log('Setting up backfill with effectiveCarId:', effectiveCarId);
+
+    // バックフィル処理を常に実行（証跡が不足している可能性があるため）
     const runBackfill = async () => {
       try {
+        console.log('Starting backfill process...');
         setBackfilling(true);
         console.log('Running evidence backfill for existing records...');
         const result = await backfillEvidenceForExistingRecords();
@@ -828,8 +882,11 @@ function CustomizationsPageRouteContent() {
         
         // カスタマイズ一覧を再取得して反映
         if (effectiveCarId) {
+          console.log('Reloading customizations after backfill...');
           const updatedCustomizations = await getCustomizations(auth.currentUser.uid, effectiveCarId);
+          console.log('Reloaded customizations:', updatedCustomizations.length);
           setCustomizations(updatedCustomizations);
+          // 証跡も再取得される（CustomizationsContent内のuseEffectで）
         }
       } catch (error) {
         console.error('Backfill failed:', error);
@@ -840,11 +897,15 @@ function CustomizationsPageRouteContent() {
 
     // 少し遅延させて実行（ページ読み込みを妨げないように）
     const timeoutId = setTimeout(() => {
+      console.log('Executing backfill after timeout...');
       runBackfill();
     }, 2000);
 
-    return () => clearTimeout(timeoutId);
-  }, [auth.currentUser, backfillExecuted, effectiveCarId]);
+    return () => {
+      console.log('Cleaning up backfill timeout');
+      clearTimeout(timeoutId);
+    };
+  }, [auth.currentUser, effectiveCarId]); // backfillExecutedを依存から削除して常に実行
 
   // カスタマイズデータの取得
   useEffect(() => {
@@ -969,6 +1030,7 @@ function CustomizationsPageRouteContent() {
               setShowCustomizationModal={setShowCustomizationModal}
               setEditingCustomization={setEditingCustomization}
               setCustomizations={setCustomizations}
+              backfillCompleted={backfillExecuted}
             />
           </main>
         </SidebarLayout>

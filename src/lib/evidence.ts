@@ -169,6 +169,43 @@ export async function deleteEvidenceForRecord(recordId: string): Promise<void> {
 }
 
 /**
+ * 現在のユーザーの証跡のrecordIdセットを取得（クライアント側用）
+ */
+export async function getEvidenceRecordIds(): Promise<Set<string>> {
+  const u = auth.currentUser;
+  if (!u) {
+    return new Set();
+  }
+
+  try {
+    const evidencesQuery = query(
+      collection(db, 'evidences'),
+      where('ownerUid', '==', u.uid),
+      where('deletedAt', '==', null)
+    );
+    const snapshot = await getDocs(evidencesQuery);
+    const recordIds = new Set<string>();
+    console.log(`Found ${snapshot.docs.length} evidence documents`);
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const recordId = data.recordId;
+      const vehicleId = data.vehicleId;
+      if (recordId) {
+        recordIds.add(recordId);
+        console.log(`Evidence ${doc.id}: recordId=${recordId}, vehicleId=${vehicleId}`);
+      } else {
+        console.warn(`Evidence ${doc.id} has no recordId:`, data);
+      }
+    });
+    console.log(`Total evidence record IDs: ${recordIds.size}`);
+    return recordIds;
+  } catch (error) {
+    console.error('Failed to get evidence record IDs:', error);
+    return new Set();
+  }
+}
+
+/**
  * 既存のメンテナンス記録とカスタマイズ記録をスキャンして、画像があるのにEvidenceが登録されていないものを登録
  */
 export async function backfillEvidenceForExistingRecords(): Promise<{
@@ -242,26 +279,34 @@ export async function backfillEvidenceForExistingRecords(): Promise<{
     }
 
     // カスタマイズ記録をスキャン（全車両）
+    // 注意: 車両のdeletedAtをチェックせず、すべての車両をスキャンする
+    // （カスタマイズ自体のdeletedAtはチェックする）
     try {
+      console.log('Starting to scan customizations...');
       const carsQuery = query(
-        collection(db, 'users', u.uid, 'cars'),
-        where('deletedAt', '==', null)
+        collection(db, 'users', u.uid, 'cars')
       );
       const carsSnapshot = await getDocs(carsQuery);
+      console.log(`Found ${carsSnapshot.docs.length} cars to scan for customizations`);
       
       for (const carDoc of carsSnapshot.docs) {
         const carId = carDoc.id;
+        const carData = carDoc.data();
+        console.log(`Scanning customizations for car ${carId} (deletedAt: ${carData.deletedAt || 'null'})...`);
         try {
           const customizationsQuery = query(
             collection(db, 'users', u.uid, 'cars', carId, 'customizations'),
             where('deletedAt', '==', null)
           );
           const customizationsSnapshot = await getDocs(customizationsQuery);
+          console.log(`Found ${customizationsSnapshot.docs.length} customizations for car ${carId}`);
           
           for (const doc of customizationsSnapshot.docs) {
             const data = doc.data();
             const recordId = doc.id;
             const imageUrl = data.imageUrl;
+
+            console.log(`Checking customization: recordId=${recordId}, carId=${carId}, imageUrl=${imageUrl ? 'exists' : 'none'}, alreadyHasEvidence=${existingRecordIds.has(recordId)}`);
 
             if (imageUrl && !existingRecordIds.has(recordId)) {
               console.log(`Processing customization ${recordId} (carId: ${carId}) with imageUrl: ${imageUrl}`);
@@ -287,6 +332,7 @@ export async function backfillEvidenceForExistingRecords(): Promise<{
           errors++;
         }
       }
+      console.log(`Finished scanning customizations. Created: ${customizationCreated}, Errors: ${errors}`);
     } catch (error) {
       console.error('Failed to scan customization records:', error);
       errors++;

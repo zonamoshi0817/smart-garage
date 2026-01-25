@@ -45,6 +45,7 @@ export interface SalePublicViewModel {
     storagePath: string;
     maskedStoragePath: string;
   }[];
+  totalEvidenceCount: number; // 全証跡数（maskStatusに関係なく）
   saleProfile: {
     slug: string;
     includeAmounts: boolean;
@@ -493,6 +494,10 @@ export async function generateSalePublicViewModel(
   const preventiveMaintenance = generatePreventiveMaintenance(classifiedRecords);
 
   // 証跡（includeEvidenceがtrueの場合のみ表示用データを生成）
+  // 証跡カウント用には全証跡を取得（maskStatusに関係なく）
+  const allEvidenceListForCount = await getAllEvidencesForRecordIdCheck(saleProfile.vehicleId);
+  const totalEvidenceCount = allEvidenceListForCount.length;
+  
   let evidences: SalePublicViewModel['evidences'] = [];
   if (saleProfile.includeEvidence) {
     const evidenceList = await getEvidences(saleProfile.vehicleId);
@@ -589,6 +594,7 @@ export async function generateSalePublicViewModel(
     consumables,
     preventiveMaintenance,
     evidences,
+    totalEvidenceCount, // 全証跡数（maskStatusに関係なく）
     saleProfile: {
       slug: saleProfile.slug,
       includeAmounts: saleProfile.includeAmounts,
