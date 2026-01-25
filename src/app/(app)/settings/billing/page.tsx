@@ -172,6 +172,33 @@ export default function BillingPage() {
             </div>
           </div>
 
+          {/* 無料プランでできること */}
+          {!isPremium && (
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">無料プランでできること</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { icon: '🚗', title: '車両登録', desc: '1台まで' },
+                  { icon: '📝', title: '記録管理', desc: '給油・メンテ・カスタムの記録' },
+                  { icon: '📊', title: 'グラフ・ホーム', desc: 'データの可視化' },
+                  { icon: '📎', title: '証憑アップロード', desc: '月5枚まで' },
+                  { icon: '🔔', title: 'リマインダー', desc: '5件まで' },
+                ].map((feature, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start space-x-3 p-4 rounded-xl bg-gray-50"
+                  >
+                    <div className="text-2xl">{feature.icon}</div>
+                    <div>
+                      <div className="font-bold text-gray-900">{feature.title}</div>
+                      <div className="text-sm text-gray-600">{feature.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* プレミアム機能一覧 */}
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">プレミアム機能</h2>

@@ -62,6 +62,10 @@ export default function BillingCancelPage() {
               <span className="text-blue-600">✓</span>
               <span>基本的なリマインダー（5件まで）</span>
             </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-blue-600">✓</span>
+              <span>証憑アップロード（月5枚まで）</span>
+            </div>
           </div>
         </div>
 
