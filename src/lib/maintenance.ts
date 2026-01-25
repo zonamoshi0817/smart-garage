@@ -14,6 +14,8 @@ import { fetchPaginatedData, PaginationState } from "./pagination";
 import type { MaintenanceRecord, MaintenanceInput } from "@/types";
 // 統一変換ヘルパーをインポート（唯一の経路）
 import { toTimestamp, timestampToDate, normalizeDeletedAt } from "./converters";
+// Evidence作成ヘルパーをインポート
+import { createEvidenceFromImage, deleteEvidenceForRecord } from "./evidence";
 
 // 車両の現在走行距離を取得
 async function getCurrentCarMileage(carId: string): Promise<number> {
@@ -140,6 +142,21 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
     console.log("Maintenance record added successfully with ID:", docRef.id);
     console.log("Document path:", docRef.path);
     
+    // imageUrlが存在する場合、Evidenceコレクションにも登録
+    if (data.imageUrl) {
+      try {
+        await createEvidenceFromImage(
+          u.uid,
+          data.carId,
+          docRef.id,
+          data.imageUrl
+        );
+      } catch (error) {
+        console.error('Failed to create evidence:', error);
+        // エラーが発生してもメンテナンス記録の保存は成功とする
+      }
+    }
+    
     // 監査ログを記録
     await logAudit({
       entityType: 'maintenance',
@@ -244,6 +261,26 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
   if (!u) throw new Error("not signed in");
   
   try {
+    // 既存のメンテナンス記録を取得（imageUrlの変更を検出するため）
+    let existingImageUrl: string | null | undefined = undefined;
+    let carIdForEvidence: string | undefined = undefined;
+    
+    if (data.imageUrl !== undefined) {
+      try {
+        const existingDoc = await getDoc(doc(db, "users", u.uid, "maintenance", recordId));
+        if (existingDoc.exists()) {
+          const existingData = existingDoc.data();
+          existingImageUrl = existingData.imageUrl || null;
+          carIdForEvidence = existingData.carId || data.carId;
+        } else {
+          carIdForEvidence = data.carId;
+        }
+      } catch (error) {
+        console.warn('Failed to fetch existing maintenance record:', error);
+        carIdForEvidence = data.carId;
+      }
+    }
+    
     // 統一変換ヘルパーを使用（唯一の経路）
     const cleanData: any = {};
     
@@ -269,6 +306,29 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
     console.log("Updating maintenance record with data:", updateData);
     await updateDoc(doc(db, "users", u.uid, "maintenance", recordId), updateData);
     console.log("Maintenance record updated successfully");
+    
+    // imageUrlが変更された場合、Evidenceコレクションを更新
+    if (data.imageUrl !== undefined && carIdForEvidence) {
+      try {
+        const newImageUrl = data.imageUrl || null;
+        
+        if (newImageUrl && newImageUrl !== existingImageUrl) {
+          // 新規追加または変更: Evidenceを作成または更新
+          await createEvidenceFromImage(
+            u.uid,
+            carIdForEvidence,
+            recordId,
+            newImageUrl
+          );
+        } else if (!newImageUrl && existingImageUrl) {
+          // 削除: 対応するEvidenceを論理削除
+          await deleteEvidenceForRecord(recordId);
+        }
+      } catch (error) {
+        console.error('Failed to update evidence:', error);
+        // エラーが発生してもメンテナンス記録の更新は成功とする
+      }
+    }
     
     // 監査ログを記録
     await logAudit({

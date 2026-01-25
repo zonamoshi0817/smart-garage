@@ -26,6 +26,8 @@ import { logAudit } from './auditLog';
 import { logCustomizationCreated } from './analytics';
 // 統一変換ヘルパーをインポート（唯一の経路）
 import { toTimestamp, normalizeDeletedAt } from './converters';
+// Evidence作成ヘルパーをインポート
+import { createEvidenceFromImage, deleteEvidenceForRecord } from './evidence';
 
 const CUSTOMIZATIONS_COLLECTION = 'customizations';
 const CUSTOMIZATION_MEDIA_COLLECTION = 'customization_media';
@@ -85,6 +87,21 @@ export async function addCustomization(
     
     console.log('Customization added successfully with ID:', docRef.id);
     
+    // imageUrlが存在する場合、Evidenceコレクションにも登録
+    if (customization.imageUrl) {
+      try {
+        await createEvidenceFromImage(
+          userId,
+          carId,
+          docRef.id,
+          customization.imageUrl
+        );
+      } catch (error) {
+        console.error('Failed to create evidence:', error);
+        // エラーが発生してもカスタマイズ記録の保存は成功とする
+      }
+    }
+    
     // 監査ログを記録
     await logAudit({
       entityType: 'customization',
@@ -123,6 +140,21 @@ export async function updateCustomization(
   updates: Partial<CustomizationInput>
 ): Promise<void> {
   try {
+    // 既存のカスタマイズ記録を取得（imageUrlの変更を検出するため）
+    let existingImageUrl: string | null | undefined = undefined;
+    
+    if (updates.imageUrl !== undefined) {
+      try {
+        const existingDoc = await getDoc(doc(db, 'users', userId, 'cars', carId, CUSTOMIZATIONS_COLLECTION, customizationId));
+        if (existingDoc.exists()) {
+          const existingData = existingDoc.data();
+          existingImageUrl = existingData.imageUrl || null;
+        }
+      } catch (error) {
+        console.warn('Failed to fetch existing customization:', error);
+      }
+    }
+    
     // 統一変換ヘルパーを使用（唯一の経路）
     const cleanData: any = {
       ...updates,
@@ -149,6 +181,29 @@ export async function updateCustomization(
 
     const docRef = doc(db, 'users', userId, 'cars', carId, CUSTOMIZATIONS_COLLECTION, customizationId);
     await updateDoc(docRef, cleanUpdates);
+    
+    // imageUrlが変更された場合、Evidenceコレクションを更新
+    if (updates.imageUrl !== undefined) {
+      try {
+        const newImageUrl = updates.imageUrl || null;
+        
+        if (newImageUrl && newImageUrl !== existingImageUrl) {
+          // 新規追加または変更: Evidenceを作成または更新
+          await createEvidenceFromImage(
+            userId,
+            carId,
+            customizationId,
+            newImageUrl
+          );
+        } else if (!newImageUrl && existingImageUrl) {
+          // 削除: 対応するEvidenceを論理削除
+          await deleteEvidenceForRecord(customizationId);
+        }
+      } catch (error) {
+        console.error('Failed to update evidence:', error);
+        // エラーが発生してもカスタマイズ記録の更新は成功とする
+      }
+    }
     
     // 監査ログを記録
     await logAudit({
