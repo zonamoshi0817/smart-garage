@@ -46,6 +46,17 @@ export async function checkEvidenceUploadLimit(
     return { allowed: true };
   }
 
+  // 認証チェック
+  const u = auth.currentUser;
+  if (!u || u.uid !== userId) {
+    console.error('User authentication check failed:', { userId, currentUserId: u?.uid });
+    return {
+      allowed: false,
+      reason: '認証エラーが発生しました。再度ログインしてください。',
+      limitType: 'monthly'
+    };
+  }
+
   const limits = PREMIUM_LIMITS.FREE;
   const monthId = getCurrentMonthId();
   const usageRef = doc(db, 'users', userId, 'usage', monthId);
@@ -90,6 +101,12 @@ export async function checkEvidenceUploadLimit(
     return result;
   } catch (error) {
     console.error('Failed to check evidence upload limit:', error);
+    console.error('Error details:', {
+      code: (error as any)?.code,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+      monthId: getCurrentMonthId()
+    });
     // エラー時は安全のため許可しない
     return {
       allowed: false,
@@ -108,6 +125,13 @@ export async function incrementEvidenceUsage(
   userId: string,
   fileSize: number
 ): Promise<void> {
+  // 認証チェック
+  const u = auth.currentUser;
+  if (!u || u.uid !== userId) {
+    console.error('User authentication check failed:', { userId, currentUserId: u?.uid });
+    throw new Error('認証エラーが発生しました。再度ログインしてください。');
+  }
+
   const monthId = getCurrentMonthId();
   const usageRef = doc(db, 'users', userId, 'usage', monthId);
 
@@ -137,7 +161,14 @@ export async function incrementEvidenceUsage(
     });
   } catch (error) {
     console.error('Failed to increment evidence usage:', error);
+    console.error('Error details:', {
+      code: (error as any)?.code,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+      monthId: getCurrentMonthId(),
+      fileSize
+    });
     // エラーを再スロー（呼び出し元で処理）
-    throw new Error('利用量の更新に失敗しました');
+    throw new Error(`利用量の更新に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
   }
 }
