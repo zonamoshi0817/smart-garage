@@ -369,10 +369,12 @@ function MyCarPageRouteContent() {
     } else if (activeCarId && activeCarsList.some(car => car.id === activeCarId)) {
       targetCarId = activeCarId;
     } else {
+      // effectiveCarIdがundefinedの場合、即座に最初の車を選択
       targetCarId = activeCarsList[0].id;
     }
     
-    if (targetCarId && targetCarId !== activeCarId) {
+    // targetCarIdが設定されている場合、activeCarIdがundefinedまたは異なる場合に更新
+    if (targetCarId && (!activeCarId || targetCarId !== activeCarId)) {
       setActiveCarId(targetCarId);
       if (!selectedCarId) {
         setSelectedCarId(targetCarId);
@@ -627,16 +629,17 @@ function MyCarPageRouteContent() {
                   車両を追加
                 </button>
               </div>
-            ) : (
+            ) : effectiveCarId && !car ? (
+              // 自動選択が進行中（effectiveCarIdは設定されているが、carオブジェクトがまだ読み込まれていない）
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
-                <p className="text-gray-500 mb-4">車両を選択してください</p>
-                <p className="text-xs text-gray-400 mb-4">右上のドロップダウンから車両を選択できます</p>
-                <button
-                  onClick={() => setShowAddCarModal(true)}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  車両を追加
-                </button>
+                <div className="animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 w-8 h-8 mx-auto mb-4"></div>
+                <p className="text-gray-500">車両情報を読み込んでいます...</p>
+              </div>
+            ) : (
+              // 車両が存在するが選択されていない場合（自動選択ロジックが実行されるまで待つ）
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+                <div className="animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 w-8 h-8 mx-auto mb-4"></div>
+                <p className="text-gray-500">車両を読み込んでいます...</p>
               </div>
             )}
           </main>

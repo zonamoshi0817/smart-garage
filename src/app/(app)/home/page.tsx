@@ -171,11 +171,12 @@ function HomeContent() {
       // 現在のactiveCarIdが有効な場合
       targetCarId = activeCarId;
     } else {
-      // 最初の車を選択
+      // effectiveCarIdがundefinedの場合、即座に最初の車を選択
       targetCarId = activeCarsList[0].id;
     }
     
-    if (targetCarId && targetCarId !== activeCarId) {
+    // targetCarIdが設定されている場合、activeCarIdがundefinedまたは異なる場合に更新
+    if (targetCarId && (!activeCarId || targetCarId !== activeCarId)) {
       console.log("Setting activeCarId from context/fallback:", targetCarId);
       setActiveCarId(targetCarId);
       // グローバルコンテキストも更新（まだ設定されていない場合）
@@ -1266,22 +1267,32 @@ function DashboardContent({
                       </button>
                     </div>
                 </>
-              ) : (
+              ) : cars.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                   <div className="text-gray-400 mb-4">
                     <CarIcon className="h-16 w-16 mx-auto" />
                   </div>
                   <p className="text-lg font-medium text-gray-700 mb-2">
-                    {cars.length === 0 ? "まず車を追加してください" : "車を選択してください"}
+                    まず車を追加してください
                   </p>
-                  {cars.length === 0 && (
-                    <button
-                      onClick={() => setShowAddCarModal(true)}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                    >
-                      車を追加する
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setShowAddCarModal(true)}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    車を追加する
+                  </button>
+                </div>
+              ) : activeCarId && !car ? (
+                // 自動選択が進行中（activeCarIdは設定されているが、carオブジェクトがまだ読み込まれていない）
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <div className="animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 w-8 h-8 mb-4"></div>
+                  <p className="text-lg font-medium text-gray-700 mb-2">車両情報を読み込んでいます...</p>
+                </div>
+              ) : (
+                // 車両が存在するが選択されていない場合（自動選択ロジックが実行されるまで待つ）
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <div className="animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 w-8 h-8 mb-4"></div>
+                  <p className="text-lg font-medium text-gray-700 mb-2">車両を読み込んでいます...</p>
                 </div>
               )}
             </section>
