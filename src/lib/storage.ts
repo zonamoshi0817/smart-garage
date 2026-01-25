@@ -315,6 +315,11 @@ export async function uploadMaintenanceImage(
     
     return await getDownloadURL(snapshot.ref);
   } catch (error) {
+    // EvidenceLimitExceededErrorの場合はそのまま再スロー（PaywallModal表示のため）
+    if (error instanceof EvidenceLimitExceededError) {
+      throw error;
+    }
+    
     console.error("Maintenance image upload failed:", error);
     console.error("Error details:", {
       code: (error as any)?.code,
@@ -409,6 +414,11 @@ export async function uploadCustomizationImage(
     
     return downloadURL;
   } catch (error) {
+    // EvidenceLimitExceededErrorの場合はそのまま再スロー（PaywallModal表示のため）
+    if (error instanceof EvidenceLimitExceededError) {
+      throw error;
+    }
+    
     console.error("Customization image upload failed:", error);
     console.error("Error details:", {
       code: (error as any)?.code,

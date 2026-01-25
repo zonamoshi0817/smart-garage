@@ -296,9 +296,15 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
               ×
             </button>
             <div className="relative text-center">
-              <h2 id="paywall-title" className="text-2xl font-extrabold mb-2">プレミアム機能</h2>
+              <h2 id="paywall-title" className="text-2xl font-extrabold mb-2">
+                {feature === 'evidence_upload' ? '証憑アップロード無制限' : 'プレミアム機能'}
+              </h2>
               {featureDesc && (
-                <p className="text-white/95 text-sm">{featureDesc.description}</p>
+                <p className="text-white/95 text-sm">
+                  {feature === 'evidence_upload' 
+                    ? 'プレミアムプランにアップグレードすると、証憑を無制限でアップロードできます'
+                    : featureDesc.description}
+                </p>
               )}
             </div>
           </div>

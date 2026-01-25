@@ -73,7 +73,7 @@ export async function checkEvidenceUploadLimit(
         if (currentCount >= limits.max_evidence_uploads_per_month) {
           return {
             allowed: false,
-            reason: `今月の証憑アップロード上限（${limits.max_evidence_uploads_per_month}枚）に達しています`,
+            reason: `今月の証憑アップロード上限（${limits.max_evidence_uploads_per_month}枚）に達しています。プレミアムプランにアップグレードすると無制限でアップロードできます。`,
             limitType: 'monthly' as const
           };
         }
