@@ -192,7 +192,7 @@ export default function SupportPage() {
                 <div className="space-y-3 text-sm">
                   <details className="border-b border-gray-200 pb-3">
                     <summary className="font-medium text-gray-900 cursor-pointer">
-                      クレジットカードの明細に「スマートガレージ」と表示されています
+                      クレジットカードの明細に「garage log」と表示されています
                     </summary>
                     <p className="mt-2 text-gray-600">
                       これは garage log プレミアムプランの月額または年額料金です。
@@ -226,8 +226,10 @@ export default function SupportPage() {
                       </p>
                       <ul className="list-disc list-inside space-y-1 ml-4">
                         <li>過去のメンテナンス履歴・給油記録の閲覧</li>
-                        <li>PDF出力（プレミアム機能として利用可能）</li>
                       </ul>
+                      <p className="mt-2 text-gray-600">
+                        <strong className="text-gray-900">注意：</strong>PDF出力はプレミアム機能のため、無料プランでは利用できません。
+                      </p>
                       <p className="font-semibold text-blue-600 mt-3">
                         💡 プレミアムプランに再登録すると、すべての車両がすぐに編集可能になります。
                       </p>
