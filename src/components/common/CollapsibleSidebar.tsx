@@ -18,6 +18,7 @@ import {
   Menu,
   X
 } from "lucide-react";
+import PaywallModal from "@/components/modals/PaywallModal";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar_collapsed";
 
@@ -86,6 +87,7 @@ export function CollapsibleSidebar({
 }: CollapsibleSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -242,13 +244,12 @@ export function CollapsibleSidebar({
         <div className="mt-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl border border-yellow-300 p-4 text-white">
           <div className="text-sm font-semibold mb-1">✨ Premium プラン</div>
           <div className="text-xs opacity-90 mb-3">より多くの機能を利用できます</div>
-          <Link
-            href="/settings/account"
+          <button
+            onClick={() => setShowPaywall(true)}
             className="block w-full text-center px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-            onClick={() => setIsMobileMenuOpen(false)}
           >
             アップグレード
-          </Link>
+          </button>
         </div>
       )}
     </>
@@ -402,13 +403,15 @@ export function CollapsibleSidebar({
                 <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl border border-yellow-300 p-4 text-white">
                   <div className="text-sm font-semibold mb-1">✨ Premium プラン</div>
                   <div className="text-xs opacity-90 mb-3">より多くの機能を利用できます</div>
-                  <Link
-                    href="/settings/account"
+                  <button
+                    onClick={() => {
+                      setShowPaywall(true);
+                      setIsMobileMenuOpen(false);
+                    }}
                     className="block w-full text-center px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     アップグレード
-                  </Link>
+                  </button>
                 </div>
               )}
             </div>
@@ -420,6 +423,14 @@ export function CollapsibleSidebar({
       <aside className="hidden lg:block lg:sticky lg:top-20 h-fit transition-all duration-300">
         {sidebarContent}
       </aside>
+
+      {/* PaywallModal */}
+      {showPaywall && (
+        <PaywallModal
+          onClose={() => setShowPaywall(false)}
+          variant="hero"
+        />
+      )}
     </>
   );
 }
