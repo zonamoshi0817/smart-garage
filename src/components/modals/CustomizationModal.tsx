@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ModalProps } from '@/types';
 import { Customization, CustomizationInput, CustomStatus, CustomCategory } from '@/types';
 import { CATEGORY_LABELS } from '@/lib/customizations';
 import { addCustomization, updateCustomization } from '@/lib/customizations';
 import { auth } from '@/lib/firebase';
 import { toTimestamp, toDate } from '@/lib/dateUtils';
+import { uploadCustomizationImage, isImageFile } from '@/lib/storage';
 
 interface CustomizationModalProps extends ModalProps {
   carId: string;
@@ -36,9 +37,15 @@ export default function CustomizationModal({
     link: '',
     memo: '',
     isPublic: false,
+    imageUrl: undefined,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingCustomization) {
@@ -59,7 +66,9 @@ export default function CustomizationModal({
         link: editingCustomization.link || '',
         memo: editingCustomization.memo || '',
         isPublic: editingCustomization.isPublic,
+        imageUrl: editingCustomization.imageUrl || undefined,
       });
+      setImagePreview(editingCustomization.imageUrl || null);
     } else {
       // 新規作成時はフォームをリセット
       setFormData({
@@ -79,8 +88,11 @@ export default function CustomizationModal({
         link: '',
         memo: '',
         isPublic: false,
+        imageUrl: undefined,
       });
+      setImagePreview(null);
     }
+    setSelectedImageFile(null);
   }, [editingCustomization, isOpen]);
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
@@ -110,6 +122,43 @@ export default function CustomizationModal({
     }));
   };
 
+  // 画像ファイル選択ハンドラー
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isImageFile(file)) {
+      alert("画像ファイルを選択してください。");
+      return;
+    }
+
+    // ファイルサイズチェック（10MB制限）
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
+      return;
+    }
+
+    setSelectedImageFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  };
+
+  // 画像削除ハンドラー
+  const handleImageDelete = () => {
+    setSelectedImageFile(null);
+    if (imagePreview && imagePreview !== editingCustomization?.imageUrl) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: undefined
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,19 +186,49 @@ export default function CustomizationModal({
       if (!auth.currentUser) {
         throw new Error('ユーザーが認証されていません');
       }
+
+      const userId = carId.split('/')[0];
+      const vehicleId = carId.split('/')[2];
+      let finalImageUrl = formData.imageUrl;
+
+      // 新規画像が選択されている場合、先にアップロード
+      if (selectedImageFile && auth.currentUser) {
+        setIsUploadingImage(true);
+        setUploadProgress(0);
+        try {
+          // 一時パスにアップロード（customizationIdは後で更新）
+          const tempCustomizationId = editingCustomization?.id || `temp_${Date.now()}`;
+          const uploadedUrl = await uploadCustomizationImage(
+            selectedImageFile,
+            userId,
+            vehicleId,
+            tempCustomizationId,
+            (progress) => setUploadProgress(progress)
+          );
+          finalImageUrl = uploadedUrl;
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          alert(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`);
+          setIsUploadingImage(false);
+          setIsSubmitting(false);
+          return;
+        }
+        setIsUploadingImage(false);
+      }
       
       // ステータスは常に'installed'として保存
       const dataToSave = {
         ...formData,
         status: 'installed' as CustomStatus,
+        imageUrl: finalImageUrl,
       };
       
       let customizationId: string;
       if (editingCustomization) {
         console.log('Updating existing customization:', editingCustomization.id);
         await updateCustomization(
-          carId.split('/')[0], // userId
-          carId.split('/')[2], // carId
+          userId,
+          vehicleId,
           editingCustomization.id!,
           dataToSave
         );
@@ -157,8 +236,8 @@ export default function CustomizationModal({
       } else {
         console.log('Adding new customization');
         customizationId = await addCustomization(
-          carId.split('/')[0], // userId
-          carId.split('/')[2], // carId
+          userId,
+          vehicleId,
           dataToSave
         );
       }
@@ -406,6 +485,56 @@ export default function CustomizationModal({
             />
           </div>
 
+          {/* 画像アップロード */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              画像（領収書など）
+            </label>
+            {imagePreview || formData.imageUrl ? (
+              <div className="mb-3">
+                <div className="relative inline-block">
+                  <img
+                    src={imagePreview || formData.imageUrl || ''}
+                    alt="プレビュー"
+                    className="max-w-full h-32 object-contain border border-gray-300 rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleImageDelete}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  disabled={isUploadingImage || isSubmitting}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  領収書や作業写真の画像をアップロードできます（10MB以下）
+                </p>
+              </div>
+            )}
+            {isUploadingImage && (
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-1">アップロード中... {Math.round(uploadProgress)}%</p>
+              </div>
+            )}
+          </div>
+
           {/* ボタン */}
           <div className="flex justify-end gap-3 pt-4">
             <button
@@ -417,10 +546,10 @@ export default function CustomizationModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingImage}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
-              {isSubmitting ? '保存中...' : (editingCustomization ? '更新' : '追加')}
+              {isSubmitting || isUploadingImage ? (isUploadingImage ? '画像アップロード中...' : '保存中...') : (editingCustomization ? '更新' : '追加')}
             </button>
           </div>
         </form>

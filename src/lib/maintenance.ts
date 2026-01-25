@@ -106,6 +106,7 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
       mileage: data.mileage,
       date: toTimestamp(data.date),  // Date/Timestamp統一
       location: data.location,
+      imageUrl: data.imageUrl,
     };
     
     // undefinedをnullに変換
@@ -170,6 +171,7 @@ export async function addMaintenanceRecord(data: MaintenanceInput) {
       mileage: data.mileage,
       date: data.date,
       location: data.location,
+      imageUrl: data.imageUrl,
     };
   } catch (error) {
     console.error("Error adding maintenance record:", error);
@@ -255,6 +257,7 @@ export async function updateMaintenanceRecord(recordId: string, data: Partial<Ma
       cleanData.date = toTimestamp(data.date);  // Date/Timestamp統一
     }
     if (data.location !== undefined) cleanData.location = data.location || null;
+    if (data.imageUrl !== undefined) cleanData.imageUrl = data.imageUrl || null;
     
     const updateData = {
       ...cleanData,

@@ -225,6 +225,151 @@ export async function uploadCarImageWithThumbnail(
 }
 
 /**
+ * メンテナンス記録用の画像をアップロード
+ */
+export async function uploadMaintenanceImage(
+  file: File,
+  userId: string,
+  recordId: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ユーザーがログインしていません");
+  }
+
+  try {
+    const timestamp = Date.now();
+    const fileName = `${timestamp}_${file.name}`;
+    const storagePath = `users/${userId}/maintenance/${recordId}/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    // ファイルタイプを判定（file.typeを優先、なければ拡張子から判定）
+    let contentType = file.type || 'image/jpeg'; // デフォルト
+    if (!contentType || contentType === 'application/octet-stream') {
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      if (fileExtension === 'png') contentType = 'image/png';
+      else if (fileExtension === 'webp') contentType = 'image/webp';
+      else if (fileExtension === 'heic' || fileExtension === 'heif') contentType = 'image/heic';
+      else if (fileExtension === 'jpg' || fileExtension === 'jpeg') contentType = 'image/jpeg';
+      else contentType = 'image/jpeg'; // デフォルト
+    }
+    
+    // Storageルールの要件を満たすため、contentTypeを正規化
+    if (contentType === 'image/jpg') {
+      contentType = 'image/jpeg'; // jpgをjpegに正規化
+    }
+
+    const metadata = {
+      contentType: contentType,
+      customMetadata: {
+        ownerUid: user.uid,
+        uploadedAt: new Date().toISOString()
+      }
+    };
+
+    // uploadBytesResumableはpreflightリクエストでCORSエラーが発生する可能性があるため、
+    // 車両画像と同様にuploadBytesを使用（進捗表示なし）
+    // 進捗表示が必要な場合は、Storageルールをデプロイ後にuploadBytesResumableを使用可能
+    if (onProgress) {
+      // 進捗表示の代わりに、アップロード開始時に0%、完了時に100%を通知
+      onProgress(0);
+    }
+    
+    const snapshot = await uploadBytes(storageRef, file, metadata);
+    
+    if (onProgress) {
+      onProgress(100);
+    }
+    
+    return await getDownloadURL(snapshot.ref);
+  } catch (error) {
+    console.error("Maintenance image upload failed:", error);
+    console.error("Error details:", {
+      code: (error as any)?.code,
+      message: error instanceof Error ? error.message : '不明なエラー',
+      serverResponse: (error as any)?.serverResponse
+    });
+    const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+    const errorCode = (error as any)?.code || 'unknown';
+    throw new Error(`画像のアップロードに失敗しました: ${errorMessage} (コード: ${errorCode})`);
+  }
+}
+
+/**
+ * カスタマイズ記録用の画像をアップロード
+ */
+export async function uploadCustomizationImage(
+  file: File,
+  userId: string,
+  carId: string,
+  customizationId: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ユーザーがログインしていません");
+  }
+
+  try {
+    const timestamp = Date.now();
+    const fileName = `${timestamp}_${file.name}`;
+    const storagePath = `users/${userId}/cars/${carId}/customizations/${customizationId}/${fileName}`;
+    const storageRef = ref(storage, storagePath);
+
+    // ファイルタイプを判定（file.typeを優先、なければ拡張子から判定）
+    let contentType = file.type || 'image/jpeg'; // デフォルト
+    if (!contentType || contentType === 'application/octet-stream') {
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      if (fileExtension === 'png') contentType = 'image/png';
+      else if (fileExtension === 'webp') contentType = 'image/webp';
+      else if (fileExtension === 'heic' || fileExtension === 'heif') contentType = 'image/heic';
+      else if (fileExtension === 'jpg' || fileExtension === 'jpeg') contentType = 'image/jpeg';
+      else contentType = 'image/jpeg'; // デフォルト
+    }
+    
+    // Storageルールの要件を満たすため、contentTypeを正規化
+    if (contentType === 'image/jpg') {
+      contentType = 'image/jpeg'; // jpgをjpegに正規化
+    }
+
+    const metadata = {
+      contentType: contentType,
+      customMetadata: {
+        ownerUid: user.uid,
+        uploadedAt: new Date().toISOString()
+      }
+    };
+
+    // uploadBytesResumableはpreflightリクエストでCORSエラーが発生する可能性があるため、
+    // 車両画像と同様にuploadBytesを使用（進捗表示なし）
+    // 進捗表示が必要な場合は、Storageルールをデプロイ後にuploadBytesResumableを使用可能
+    if (onProgress) {
+      // 進捗表示の代わりに、アップロード開始時に0%、完了時に100%を通知
+      onProgress(0);
+    }
+    
+    const snapshot = await uploadBytes(storageRef, file, metadata);
+    
+    if (onProgress) {
+      onProgress(100);
+    }
+    
+    return await getDownloadURL(snapshot.ref);
+  } catch (error) {
+    console.error("Customization image upload failed:", error);
+    console.error("Error details:", {
+      code: (error as any)?.code,
+      message: error instanceof Error ? error.message : '不明なエラー',
+      serverResponse: (error as any)?.serverResponse
+    });
+    const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+    const errorCode = (error as any)?.code || 'unknown';
+    throw new Error(`画像のアップロードに失敗しました: ${errorMessage} (コード: ${errorCode})`);
+  }
+}
+
+/**
  * ストレージパス生成のヘルパー関数
  */
 export function generateStoragePath(

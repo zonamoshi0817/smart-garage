@@ -14,7 +14,7 @@ import type { User } from "firebase/auth";
 import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords } from "@/lib/maintenance";
 import type { MaintenanceRecord } from "@/types";
 import { downloadMaintenancePDF, downloadBuildSheetPDF, type PDFExportOptions } from "@/lib/pdfExport";
-import { uploadCarImageWithProgress, isImageFile } from "@/lib/storage";
+import { uploadCarImageWithProgress, isImageFile, uploadMaintenanceImage } from "@/lib/storage";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytes } from "firebase/storage";
 import { compressImage, getCompressionInfo } from "@/lib/imageCompression";
@@ -1359,21 +1359,30 @@ function DashboardContent({
                     .slice(0, 3)
                     .map((record) => (
                       <div key={record.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
-                        <div className="flex items-center justify-between text-sm">
-                        <div className="flex-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          {record.imageUrl && (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={record.imageUrl}
+                                alt={record.title}
+                                className="w-12 h-12 object-cover rounded border border-gray-200"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1">
                             <div className="font-medium text-gray-900">{record.title}</div>
                             <div className="text-xs text-gray-600 mt-0.5">
                               {(record.date?.toDate ? record.date.toDate() : toDate(record.date) || new Date()).toLocaleDateString('ja-JP')} • {record.mileage?.toLocaleString()}km
-                </div>
+                            </div>
                           </div>
-                            {record.cost && (
+                          {record.cost && (
                             <div className="text-sm font-medium text-gray-900">
-                                ¥{record.cost.toLocaleString()}
-              </div>
+                              ¥{record.cost.toLocaleString()}
+                            </div>
                           )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                   </div>
                   {maintenanceRecords.length > 3 && (
                     <div className="pt-2 text-center border-t border-gray-200">
@@ -1649,25 +1658,34 @@ function DashboardContent({
                           const totalCost = (customization.partsCostJpy || 0) + (customization.laborCostJpy || 0) + (customization.otherCostJpy || 0);
                           return (
                             <div key={customization.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
-                              <div className="flex items-center justify-between text-sm">
-                          <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm">
+                                {customization.imageUrl && (
+                                  <div className="flex-shrink-0">
+                                    <img
+                                      src={customization.imageUrl}
+                                      alt={customization.title}
+                                      className="w-12 h-12 object-cover rounded border border-gray-200"
+                                    />
+                                  </div>
+                                )}
+                                <div className="flex-1">
                                   <div className="font-medium text-gray-900">{customization.title}</div>
                                   <div className="text-xs text-gray-600 mt-0.5">
                                     {(customization.date?.toDate ? customization.date.toDate() : toDate(customization.date) || new Date()).toLocaleDateString('ja-JP')}
                                     {customization.categories.length > 0 && (
                                       <span className="ml-2">
                                         {CATEGORY_LABELS[customization.categories[0]]}
-                                </span>
-                              )}
-                            </div>
-                            </div>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                                 {totalCost > 0 && (
                                   <div className="text-sm font-medium text-gray-900">
                                     ¥{totalCost.toLocaleString()}
-                          </div>
+                                  </div>
                                 )}
-                        </div>
-                      </div>
+                              </div>
+                            </div>
                           );
                         })}
                     </div>
@@ -2642,6 +2660,15 @@ function MaintenanceHistoryContent({
               <div key={record.id} className="p-6 hover:bg-gray-50 transition">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
+                    {record.imageUrl && (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={record.imageUrl}
+                          alt={record.title}
+                          className="w-20 h-20 object-cover rounded-md border border-gray-200"
+                        />
+                      </div>
+                    )}
                     {/* チェックボックスを一時的に無効化 */}
                     {/* <input
                       type="checkbox"
@@ -3238,10 +3265,47 @@ function EditMaintenanceModal({
   const [location, setLocation] = useState(record.location || '');
   const [carId, setCarId] = useState(record.carId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(record.imageUrl || null);
+  const [imageUrl, setImageUrl] = useState<string | null>(record.imageUrl || null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // 選択された車両の現在の走行距離を取得
   const selectedCar = cars.find(car => car.id === carId);
   const currentMileage = selectedCar?.odoKm;
+
+  // 画像ファイル選択ハンドラー
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isImageFile(file)) {
+      alert("画像ファイルを選択してください。");
+      return;
+    }
+
+    // ファイルサイズチェック（10MB制限）
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
+      return;
+    }
+
+    setSelectedImageFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  };
+
+  // 画像削除ハンドラー
+  const handleImageDelete = () => {
+    setSelectedImageFile(null);
+    if (imagePreview && imagePreview !== record.imageUrl) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
+    setImageUrl(null);
+  };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -3258,6 +3322,30 @@ function EditMaintenanceModal({
 
     setIsSubmitting(true);
     try {
+      let finalImageUrl = imageUrl;
+
+      // 新規画像が選択されている場合、アップロード
+      if (selectedImageFile && auth.currentUser && record.id) {
+        setIsUploadingImage(true);
+        setUploadProgress(0);
+        try {
+          const uploadedUrl = await uploadMaintenanceImage(
+            selectedImageFile,
+            auth.currentUser.uid,
+            record.id,
+            (progress) => setUploadProgress(progress)
+          );
+          finalImageUrl = uploadedUrl;
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          alert(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`);
+          setIsUploadingImage(false);
+          setIsSubmitting(false);
+          return;
+        }
+        setIsUploadingImage(false);
+      }
+
       const updateData = {
         carId,
         title,
@@ -3266,6 +3354,7 @@ function EditMaintenanceModal({
         mileage: mileage ? Number(mileage) : undefined,
         date: Timestamp.fromDate(new Date(date)),
         location: location || undefined,
+        imageUrl: finalImageUrl || undefined,
       };
 
       await updateMaintenanceRecord(record.id, updateData);
@@ -3422,6 +3511,55 @@ function EditMaintenanceModal({
                 placeholder="例: ガソリンスタンド"
               />
             </div>
+          </div>
+
+          {/* 画像アップロード */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              画像（領収書など）
+            </label>
+            {imagePreview || imageUrl ? (
+              <div className="mb-3">
+                <div className="relative inline-block">
+                  <img
+                    src={imagePreview || imageUrl || ''}
+                    alt="プレビュー"
+                    className="max-w-full h-32 object-contain border border-gray-300 rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleImageDelete}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  disabled={isUploadingImage || isSubmitting}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  領収書や作業写真の画像をアップロードできます（10MB以下）
+                </p>
+              </div>
+            )}
+            {isUploadingImage && (
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-1">アップロード中... {Math.round(uploadProgress)}%</p>
+              </div>
+            )}
           </div>
 
           {/* ボタン */}
@@ -3610,6 +3748,11 @@ function MaintenanceModal({
   const [mileage, setMileage] = useState<string>(currentMileage ? currentMileage.toString() : "");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState("");
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // initialTitleが変更されたときにtitleを更新
   useEffect(() => {
@@ -3617,6 +3760,38 @@ function MaintenanceModal({
       setTitle(initialTitle);
     }
   }, [initialTitle]);
+
+  // 画像ファイル選択ハンドラー
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isImageFile(file)) {
+      alert("画像ファイルを選択してください。");
+      return;
+    }
+
+    // ファイルサイズチェック（10MB制限）
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
+      return;
+    }
+
+    setSelectedImageFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  };
+
+  // 画像削除ハンドラー
+  const handleImageDelete = () => {
+    setSelectedImageFile(null);
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(null);
+    setImageUrl(null);
+  };
 
   async function handleAdd() {
     if (!title) return alert("タイトルを入力してください");
@@ -3630,6 +3805,31 @@ function MaintenanceModal({
     }
     
     try {
+      let finalImageUrl = imageUrl;
+
+      // 画像が選択されている場合、先にアップロード（一時パスに保存）
+      if (selectedImageFile && auth.currentUser) {
+        setIsUploadingImage(true);
+        setUploadProgress(0);
+        try {
+          // 一時パスにアップロード（recordIdは後で更新）
+          const tempRecordId = `temp_${Date.now()}`;
+          const uploadedUrl = await uploadMaintenanceImage(
+            selectedImageFile,
+            auth.currentUser.uid,
+            tempRecordId,
+            (progress) => setUploadProgress(progress)
+          );
+          finalImageUrl = uploadedUrl;
+        } catch (uploadError) {
+          console.error("Image upload failed:", uploadError);
+          alert(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`);
+          setIsUploadingImage(false);
+          return;
+        }
+        setIsUploadingImage(false);
+      }
+
       console.log("Adding maintenance record with data:", {
         carId,
         title,
@@ -3637,7 +3837,8 @@ function MaintenanceModal({
         cost,
         mileage,
         date,
-        location
+        location,
+        imageUrl: finalImageUrl
       });
       
       const newRecord = await addMaintenanceRecord({
@@ -3648,8 +3849,11 @@ function MaintenanceModal({
         mileage: Number(mileage), // 必須項目なので必ず数値
         date: Timestamp.fromDate(new Date(date)),
         location: location || undefined,
+        imageUrl: finalImageUrl || undefined,
       });
       
+      // 画像がアップロード済みでrecordIdが取得できた場合、正しいパスに移動（オプション）
+      // 現在は一時パスのURLをそのまま使用
       
       // フォームをリセット
       setTitle("");
@@ -3657,6 +3861,7 @@ function MaintenanceModal({
       setCost("");
       setMileage("");
       setLocation("");
+      handleImageDelete();
       onAdded?.();
     } catch (error) {
       console.error("Error adding maintenance record:", error);
@@ -3777,6 +3982,55 @@ function MaintenanceModal({
                 onChange={(e) => setLocation(e.target.value)}
               />
             </div>
+          </div>
+
+          {/* 画像アップロード */}
+          <div className="border-t border-gray-200 pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              画像（領収書など）
+            </label>
+            {imagePreview || imageUrl ? (
+              <div className="mb-3">
+                <div className="relative inline-block">
+                  <img
+                    src={imagePreview || imageUrl || ''}
+                    alt="プレビュー"
+                    className="max-w-full h-32 object-contain border border-gray-300 rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleImageDelete}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  disabled={isUploadingImage}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  領収書や作業写真の画像をアップロードできます（10MB以下）
+                </p>
+              </div>
+            )}
+            {isUploadingImage && (
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-1">アップロード中... {Math.round(uploadProgress)}%</p>
+              </div>
+            )}
           </div>
         </div>
         

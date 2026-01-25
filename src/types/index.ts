@@ -127,6 +127,7 @@ export interface MaintenanceRecord extends BaseEntity {
   location?: string;
   items?: MaintenanceItem[];        // 明細行（将来対応）
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
+  imageUrl?: string;     // 画像URL（Firebase Storage）
   // Sell Boost用フィールド
   category?: string;      // カテゴリ（例: 'oil', 'tire', 'brake', 'battery', 'coolant', 'other'）
   isPreventive?: boolean; // 予防整備かどうか
@@ -143,6 +144,7 @@ export interface MaintenanceInput {
   location?: string;
   items?: MaintenanceItem[];        // 明細行（将来対応）
   attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
+  imageUrl?: string;     // 画像URL（Firebase Storage）
   // Sell Boost用フィールド
   category?: string;      // カテゴリ（必須推奨、既存データは'other'でバックフィル）
   isPreventive?: boolean; // 予防整備かどうか
@@ -482,6 +484,7 @@ export interface Customization extends BaseEntity {
   link?: string;
   memo?: string;
   isPublic: boolean;
+  imageUrl?: string;     // 画像URL（Firebase Storage）
 }
 
 export interface CustomizationInput {
@@ -502,6 +505,7 @@ export interface CustomizationInput {
   link?: string;
   memo?: string;
   isPublic: boolean;
+  imageUrl?: string;     // 画像URL（Firebase Storage）
 }
 
 export interface CustomizationMedia extends BaseEntity {

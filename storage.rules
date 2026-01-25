@@ -54,14 +54,16 @@ service firebase.storage {
       allow read: if isOwner(userId);
       
       // 書き込み: パス内のuserIdが自分 かつ 画像ファイルで、サイズ制限とタイプ制限を満たす
-      // デバッグのため、条件を段階的に追加（まずは基本的なチェックから）
+      // request.resourceが存在する場合のみ詳細チェック（preflightリクエストを許可するため）
+      // Firebase Storageのルールでは、request.resourceが存在しない場合、条件を短絡評価で処理
       allow write: if isOwner(userId) 
-                   && request.resource != null
-                   && request.resource.contentType != null
-                   && request.resource.contentType.matches('image/.*')
-                   && request.resource.size != null
-                   && request.resource.size < 10 * 1024 * 1024
-                   && request.resource.contentType.matches('image/(jpeg|png|webp|heic)');
+                   && (request.resource == null || (
+                       request.resource.contentType != null
+                       && request.resource.contentType.matches('image/.*')
+                       && request.resource.size != null
+                       && request.resource.size < 10 * 1024 * 1024
+                       && request.resource.contentType.matches('image/(jpeg|png|webp|heic)')
+                   ));
       
       // 削除: パス内のuserIdが自分
       allow delete: if isOwner(userId);

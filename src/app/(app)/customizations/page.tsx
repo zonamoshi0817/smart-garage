@@ -603,23 +603,33 @@ function CustomizationsContent({
               {filteredCustomizations.map((customization) => (
             <div key={customization.id} className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold">{customization.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[customization.status]}`}>
-                      {STATUS_LABELS[customization.status]}
-                    </span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {customization.categories.map((category) => (
-                      <span key={category} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                        {CATEGORY_LABELS[category]}
+                <div className="flex items-start gap-3 flex-1">
+                  {customization.imageUrl && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={customization.imageUrl}
+                        alt={customization.title}
+                        className="w-20 h-20 object-cover rounded-md border border-gray-200"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold">{customization.title}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[customization.status]}`}>
+                        {STATUS_LABELS[customization.status]}
                       </span>
-                    ))}
-                  </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {customization.categories.map((category) => (
+                        <span key={category} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                          {CATEGORY_LABELS[category]}
+                        </span>
+                      ))}
+                      </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
                     <div>
                       <span className="font-medium">実施日:</span>
                       <div>{(customization.date?.toDate ? customization.date.toDate() : new Date()).toLocaleDateString('ja-JP')}</div>
@@ -652,6 +662,7 @@ function CustomizationsContent({
                       <p className="text-sm text-gray-600 mt-1">{customization.memo}</p>
                     </div>
                   )}
+                  </div>
                 </div>
 
                 <div className="flex gap-2 ml-4">
