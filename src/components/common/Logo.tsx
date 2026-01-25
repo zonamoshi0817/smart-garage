@@ -17,14 +17,14 @@ export default function Logo({ className = '', size = 'md' }: LogoProps) {
   const pathname = usePathname();
 
   const handleClick = () => {
-    // 現在のページがホームページの場合は何もしない
-    if (pathname === '/home' || pathname === '/') {
-      return;
-    }
-
     // ログインページやサインアップページの場合はトップページに
     if (pathname === '/login' || pathname === '/signup' || pathname === '/reset-password') {
       router.push('/');
+      return;
+    }
+
+    // 現在のページがホームページの場合は何もしない
+    if (pathname === '/home' || pathname === '/') {
       return;
     }
 
@@ -54,8 +54,9 @@ export default function Logo({ className = '', size = 'md' }: LogoProps) {
   return (
     <button
       onClick={handleClick}
-      className={`flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-80 transition-opacity ${className}`}
+      className={`flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-80 transition-opacity cursor-pointer ${className}`}
       aria-label="garage log ホームに戻る"
+      type="button"
     >
       <img 
         src="/icon.png" 
