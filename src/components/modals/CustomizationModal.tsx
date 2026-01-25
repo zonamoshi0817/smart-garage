@@ -225,14 +225,10 @@ export default function CustomizationModal({
               uploadError.limitType,
               'customization'
             );
-            // エラーメッセージを表示してからPaywallModalを表示
-            alert(uploadError.reason);
+            // 直接PaywallModalを表示
             setIsUploadingImage(false);
             setIsSubmitting(false);
-            // 少し遅延してからPaywallModalを表示（エラーメッセージを確認してもらうため）
-            setTimeout(() => {
-              setShowPaywall(true);
-            }, 500);
+            setShowPaywall(true);
             return;
           }
           

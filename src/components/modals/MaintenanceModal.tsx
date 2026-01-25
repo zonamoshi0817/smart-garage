@@ -167,14 +167,10 @@ export default function MaintenanceModal({
               uploadError.limitType,
               'maintenance'
             );
-            // エラーメッセージを表示してからPaywallModalを表示
-            setError(uploadError.reason);
+            // 直接PaywallModalを表示
             setIsUploadingImage(false);
             setLoading(false);
-            // 少し遅延してからPaywallModalを表示（エラーメッセージを確認してもらうため）
-            setTimeout(() => {
-              setShowPaywall(true);
-            }, 500);
+            setShowPaywall(true);
             return;
           }
           

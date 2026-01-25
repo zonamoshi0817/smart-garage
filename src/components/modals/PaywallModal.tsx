@@ -310,6 +310,13 @@ export default function PaywallModal({ onClose, feature, variant = 'default' }: 
           </div>
 
           <div className="p-6 space-y-6">
+            {feature === 'evidence_upload' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-2">
+                <p className="text-sm text-yellow-800 text-center">
+                  <span className="font-medium">今月の証憑アップロード上限に達しました</span>
+                </p>
+              </div>
+            )}
             {featureDesc && (
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="flex justify-between items-center text-sm">
