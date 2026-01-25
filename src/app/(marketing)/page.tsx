@@ -1,4 +1,4 @@
-import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, Download, Star, Timer, Zap, ArrowRight, Clock, Play } from "lucide-react";
+import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, Download, Star, Timer, Zap, ArrowRight, Clock, Play, Paperclip } from "lucide-react";
 import Header from "@/components/marketing/Header";
 import { CTAButtons, PricingCTAButtons } from "@/components/marketing/CTAButtons.client";
 import LandingPageAnalytics from "@/components/marketing/LandingPageAnalytics.client";
@@ -224,7 +224,7 @@ function DashboardBackground() {
               <div className="text-xs font-semibold text-slate-700 mb-2">最近のメンテナンス</div>
               <div className="bg-slate-50/50 rounded-lg p-2">
                 <div className="text-xs font-medium text-slate-700">オイル交換</div>
-                <div className="text-[10px] text-slate-500">2025/11/10</div>
+                <div className="text-[10px] text-slate-500">2026/01/15</div>
               </div>
             </div>
             <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
@@ -508,9 +508,10 @@ function Features() {
   const feats = [
     { icon: <Gauge className="h-6 w-6" />, title: "ホーム", desc: "今月のコスト・燃費・やることを一目で確認。" },
     { icon: <Wrench className="h-6 w-6" />, title: "メンテ記録", desc: "テンプレで素早く、走行距離も自動更新。" },
+    { icon: <Paperclip className="h-6 w-6" />, title: "証憑アップロード", desc: "領収書などを記録に添付、売却時の信頼性向上。" },
     { icon: <FileText className="h-6 w-6" />, title: "履歴証明PDF", desc: "売却や引き継ぎに使える書式で出力、信頼性向上。" },
     { icon: <Camera className="h-6 w-6" />, title: "レシートOCR", desc: "給油や保険証券を自動読み取り、入力の手間を削減。" },
-    { icon: <Lock className="h-6 w-6" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・OCRが使い放題、本格的な資産管理。" },
+    { icon: <Lock className="h-6 w-6" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・OCR・証憑が使い放題、本格的な資産管理。" },
   ];
   
   return (
@@ -581,6 +582,10 @@ function Pricing() {
                 <span>証憑アップロード（月1枚まで）</span>
               </li>
               <li className="flex gap-3 items-start">
+                <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <span>リマインダー（5件まで）</span>
+              </li>
+              <li className="flex gap-3 items-start">
                 <Lock className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
                 <span className="text-slate-400">OCR / PDF</span>
               </li>
@@ -613,7 +618,11 @@ function Pricing() {
               </li>
               <li className="flex gap-3 items-start">
                 <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">広告非表示・高度なリマインダー</span>
+                <span className="font-medium">証憑アップロード無制限</span>
+              </li>
+              <li className="flex gap-3 items-start">
+                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <span className="font-medium">高度なリマインダー・広告非表示</span>
               </li>
             </ul>
             <PricingCTAButtons planType="premium" />
@@ -662,6 +671,7 @@ function FAQ() {
     { q: "レシートOCRはどのくらい正確ですか？", a: "給油レシートや保険証券などの主要な書類を高精度で読み取り、自動入力します。手動での修正も可能なので、確実に記録を残せます。" },
     { q: "複数台の車を管理できますか？", a: "無料プランでは1台まで、プレミアムプランでは無制限に登録可能です。車ごとに記録を分けて管理できるため、家族で複数台お持ちの方にも最適です。" },
     { q: "売却時に履歴を証明できますか？", a: "PDF出力機能で、整備履歴を証明書として出力できます。署名が埋め込まれるため、第三者への提示にも安心です。売却時の価値向上にもつながります。" },
+    { q: "領収書などの証憑をアップロードできますか？", a: "無料プランでは月1枚まで、プレミアムプランでは無制限で証憑（領収書など）をアップロードできます。メンテナンスやカスタマイズの記録に添付することで、売却時の信頼性が向上します。" },
   ];
   return (
     <section id="faq" className="bg-slate-50 py-20 lg:py-28">
@@ -715,7 +725,7 @@ function CTA() {
 }
 
 function Footer() {
-  const currentYear = 2024;
+  const currentYear = new Date().getFullYear();
 
   return (
     <footer className="border-t border-slate-200 bg-white">
