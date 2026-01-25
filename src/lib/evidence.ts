@@ -20,24 +20,42 @@ import {
  */
 export function extractStoragePathFromUrl(downloadUrl: string): string | null {
   try {
+    console.log('Extracting storage path from URL:', downloadUrl);
+    
     // Firebase StorageのURL形式: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encodedPath}?alt=media&token={token}
     const url = new URL(downloadUrl);
+    
     if (url.hostname !== 'firebasestorage.googleapis.com') {
+      console.warn('URL is not from Firebase Storage:', url.hostname);
       return null;
     }
     
-    const pathMatch = url.pathname.match(/\/o\/(.+)\?/);
+    // パス名からエンコードされたパスを抽出
+    // パターン1: /v0/b/{bucket}/o/{encodedPath}?alt=media&token={token}
+    // パターン2: /v0/b/{bucket}/o/{encodedPath}?alt=media
+    const pathMatch = url.pathname.match(/\/o\/(.+?)(?:\?|$)/);
     if (!pathMatch) {
+      console.warn('Could not match path pattern in URL:', url.pathname);
       return null;
     }
     
-    // URLデコード
-    const encodedPath = pathMatch[1];
-    const decodedPath = decodeURIComponent(encodedPath);
+    // URLデコード（複数回デコードが必要な場合がある）
+    let decodedPath = pathMatch[1];
+    try {
+      decodedPath = decodeURIComponent(decodedPath);
+      // 二重エンコードされている場合があるので、もう一度デコードを試みる
+      if (decodedPath.includes('%')) {
+        decodedPath = decodeURIComponent(decodedPath);
+      }
+    } catch (e) {
+      // デコードに失敗した場合は元のパスを使用
+      console.warn('Failed to decode path, using original:', e);
+    }
     
+    console.log('Extracted storage path:', decodedPath);
     return decodedPath;
   } catch (error) {
-    console.error('Failed to extract storage path from URL:', error);
+    console.error('Failed to extract storage path from URL:', error, downloadUrl);
     return null;
   }
 }
@@ -58,17 +76,22 @@ export async function createEvidenceFromImage(
   }
 
   try {
+    console.log(`Creating evidence for record ${recordId}, carId: ${carId}, imageUrl: ${imageUrl}`);
+    
     // ストレージパスを抽出
     const storagePath = extractStoragePathFromUrl(imageUrl);
     if (!storagePath) {
-      console.warn('Failed to extract storage path from imageUrl:', imageUrl);
+      console.error('Failed to extract storage path from imageUrl:', imageUrl);
       // ストレージパスが抽出できない場合はスキップ
       return;
     }
+    
+    console.log(`Extracted storage path: ${storagePath}`);
 
     // 既存のEvidenceレコードをチェック（同じrecordIdで既に存在するか）
     const existingEvidencesQuery = query(
       collection(db, 'evidences'),
+      where('ownerUid', '==', u.uid),
       where('recordId', '==', recordId),
       where('deletedAt', '==', null)
     );
@@ -122,6 +145,7 @@ export async function deleteEvidenceForRecord(recordId: string): Promise<void> {
   try {
     const existingEvidencesQuery = query(
       collection(db, 'evidences'),
+      where('ownerUid', '==', u.uid),
       where('recordId', '==', recordId),
       where('deletedAt', '==', null)
     );
@@ -165,6 +189,7 @@ export async function backfillEvidenceForExistingRecords(): Promise<{
     // 既存のEvidenceレコードのrecordIdを取得（重複チェック用）
     const allEvidencesQuery = query(
       collection(db, 'evidences'),
+      where('ownerUid', '==', u.uid),
       where('deletedAt', '==', null)
     );
     const allEvidencesSnapshot = await getDocs(allEvidencesQuery);
@@ -191,13 +216,23 @@ export async function backfillEvidenceForExistingRecords(): Promise<{
         const carId = data.carId;
 
         if (imageUrl && carId && !existingRecordIds.has(recordId)) {
+          console.log(`Processing maintenance record ${recordId} with imageUrl: ${imageUrl}`);
           try {
             await createEvidenceFromImage(u.uid, carId, recordId, imageUrl);
             maintenanceCreated++;
             existingRecordIds.add(recordId); // 重複チェック用に追加
+            console.log(`Successfully created evidence for maintenance record ${recordId}`);
           } catch (error) {
             console.error(`Failed to create evidence for maintenance record ${recordId}:`, error);
             errors++;
+          }
+        } else {
+          if (!imageUrl) {
+            console.log(`Skipping maintenance record ${recordId}: no imageUrl`);
+          } else if (!carId) {
+            console.log(`Skipping maintenance record ${recordId}: no carId`);
+          } else if (existingRecordIds.has(recordId)) {
+            console.log(`Skipping maintenance record ${recordId}: evidence already exists`);
           }
         }
       }
@@ -229,13 +264,21 @@ export async function backfillEvidenceForExistingRecords(): Promise<{
             const imageUrl = data.imageUrl;
 
             if (imageUrl && !existingRecordIds.has(recordId)) {
+              console.log(`Processing customization ${recordId} (carId: ${carId}) with imageUrl: ${imageUrl}`);
               try {
                 await createEvidenceFromImage(u.uid, carId, recordId, imageUrl);
                 customizationCreated++;
                 existingRecordIds.add(recordId); // 重複チェック用に追加
+                console.log(`Successfully created evidence for customization ${recordId}`);
               } catch (error) {
                 console.error(`Failed to create evidence for customization ${recordId}:`, error);
                 errors++;
+              }
+            } else {
+              if (!imageUrl) {
+                console.log(`Skipping customization ${recordId}: no imageUrl`);
+              } else if (existingRecordIds.has(recordId)) {
+                console.log(`Skipping customization ${recordId}: evidence already exists`);
               }
             }
           }

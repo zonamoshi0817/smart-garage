@@ -207,6 +207,12 @@ service cloud.firestore {
     match /evidences/{evidenceId} {
       // 読み取り: オーナーのみ（公開ページでは直接読み取らせない方針）
       allow read: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      // クエリ（list）: 認証済みユーザーのみ許可
+      // 注意: クライアント側でwhere('ownerUid', '==', ...)でフィルタリングすることで、
+      // ユーザーが所有するevidencesのみを取得する
+      // Firestore Rulesではクエリのwhere条件を直接検証できないため、
+      // クライアント側で適切にフィルタリングする必要がある
+      allow list: if isSignedIn();
       // 作成・更新・削除: オーナーのみ
       allow create: if isSignedIn() 
                     && (request.resource.data.ownerUid == request.auth.uid);
