@@ -23,6 +23,9 @@
     "env:setup": "./scripts/setup-env.sh"
   },
   "dependencies": {
+    "@capacitor/core": "^7.4.5",
+    "@capacitor/ios": "^7.4.5",
+    "@capacitor/share": "^7.0.3",
     "@fontsource/noto-sans-jp": "^5.2.8",
     "@next/third-parties": "^16.0.4",
     "@sentry/nextjs": "^10.22.0",
@@ -43,6 +46,7 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.5",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",

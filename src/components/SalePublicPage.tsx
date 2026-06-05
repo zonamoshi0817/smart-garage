@@ -9,6 +9,7 @@ import type { SalePublicViewModel } from '@/lib/saleProfile';
 import ConsumablesTable from './ConsumablesTable';
 import EvidenceGallery from './EvidenceGallery';
 import EvidenceReliabilityBadge from './EvidenceReliabilityBadge';
+import ShareButton from '@/components/common/ShareButton.client';
 
 interface SalePublicPageProps {
   viewModel: SalePublicViewModel;
@@ -108,9 +109,16 @@ export default function SalePublicPage({
 
         {/* 車両サマリー */}
         <section className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            {viewModel.vehicle.name}
-          </h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {viewModel.vehicle.name}
+            </h1>
+            <ShareButton
+              url={typeof window !== 'undefined' ? window.location.href : ''}
+              title={`${viewModel.vehicle.name} | GarageLog`}
+              text={`${viewModel.vehicle.name}の車両情報を共有`}
+            />
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             {viewModel.vehicle.year && (
               <div>

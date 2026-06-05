@@ -10,6 +10,7 @@ import { storage } from '@/lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
 import type { ShareProfile, Car, Customization } from '@/types';
 import { CATEGORY_LABELS } from '@/lib/customizations';
+import ShareButton from '@/components/common/ShareButton.client';
 
 type SectionId = 'gallery' | 'build' | 'maintenance' | 'trust';
 
@@ -178,10 +179,18 @@ export default function SNSSharePublicPage({
           </div>
         )}
         <div className="relative max-w-4xl mx-auto px-4 py-16 sm:py-24">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-            {vehicle.name}
-            {vehicle.modelCode && <span className="text-2xl sm:text-3xl text-gray-300 ml-2">({vehicle.modelCode})</span>}
-          </h1>
+          <div className="flex items-start justify-between mb-4 gap-4">
+            <h1 className="text-4xl sm:text-5xl font-bold">
+              {vehicle.name}
+              {vehicle.modelCode && <span className="text-2xl sm:text-3xl text-gray-300 ml-2">({vehicle.modelCode})</span>}
+            </h1>
+            <ShareButton
+              url={typeof window !== 'undefined' ? window.location.href : ''}
+              title={`${vehicle.name}${vehicle.modelCode ? ` (${vehicle.modelCode})` : ''} | GarageLog`}
+              text={sns.conceptBody || `${vehicle.name}のビルドとメンテナンス履歴`}
+              className="flex-shrink-0"
+            />
+          </div>
           
           {/* 一言キャプション（conceptBody）- より目立つ位置に */}
           {sns.conceptBody && (

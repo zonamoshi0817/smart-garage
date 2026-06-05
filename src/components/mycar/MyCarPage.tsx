@@ -14,6 +14,8 @@ import QuickActions from './QuickActions';
 import CustomPartsPanel from './CustomPartsPanel';
 import VehicleHealthIndicator from './VehicleHealthIndicator';
 import PaywallModal from '../modals/PaywallModal';
+import { share } from '@/lib/share';
+import { getBestShareUrlForCar } from '@/lib/shareUrl';
 
 interface MyCarPageProps {
   car: Car;
@@ -178,7 +180,52 @@ export default function MyCarPage({
   const inspectionDaysLeft = inspectionDate ? Math.ceil((inspectionDate.getTime() - Date.now()) / dayMs) : null;
 
   const latestMaintenanceDate = latestMaintenance ? toJsDate(latestMaintenance.date) : null;
- 
+  
+  // 共有中の状態管理
+  const [isSharing, setIsSharing] = useState(false);
+
+  // 共有ハンドラー
+  const handleShare = async () => {
+    if (isSharing) return;
+    
+    setIsSharing(true);
+    try {
+      // 最適な共有URLを取得（優先順位: /s/{slug} > /c/{carId} > window.location.href）
+      const shareUrl = await getBestShareUrlForCar(car);
+      
+      const result = await share({
+        title: 'GarageLog',
+        text: `${car.name}の情報を共有`,
+        url: shareUrl,
+      });
+      
+      if (result.ok) {
+        if (result.method === 'copy') {
+          alert('URLをクリップボードにコピーしました');
+        }
+      } else if (result.error && result.error !== 'User cancelled') {
+        alert(`共有に失敗しました: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to get share URL:', error);
+      // エラー時は現在のURLをフォールバック
+      const fallbackUrl = typeof window !== 'undefined' ? window.location.href : '';
+      const result = await share({
+        title: 'GarageLog',
+        text: `${car.name}の情報を共有`,
+        url: fallbackUrl,
+      });
+      
+      if (result.ok && result.method === 'copy') {
+        alert('URLをクリップボードにコピーしました');
+      } else if (result.error && result.error !== 'User cancelled') {
+        alert(`共有に失敗しました: ${result.error}`);
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   // クイックアクションの定義（高頻度操作のみに絞る）
   const quickActions = [
     {
@@ -198,6 +245,12 @@ export default function MyCarPage({
       label: 'カスタム追加',
       icon: '✨',
       onClick: () => onOpenModal('customization')
+    },
+    {
+      id: 'share',
+      label: '共有',
+      icon: '📤',
+      onClick: handleShare
     },
     {
       id: 'ocr',
