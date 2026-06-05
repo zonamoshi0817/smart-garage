@@ -1,2836 +1,625 @@
-# garage log 仕様書
+# GarageLog 仕様書
 
-## 📚 関連ドキュメント
+最終更新: 2025年1月25日
 
-### 仕様・設計
-- **`SPECIFICATION.md`**（本ファイル）: 現在のgarage logの仕様
-- **`CHANGELOG.md`**: バージョンごとの変更履歴
+## 目次
 
-### 実装詳細
-- **`IMPLEMENTATION_SUMMARY.md`**: v2.2.0実装詳細と使用方法
-- **`MAINTENANCE_SUGGESTIONS_IMPLEMENTATION.md`**: メンテナンス提案機能の実装詳細
-- **`PRODUCT_NAME_CHANGE_IMPACT.md`**: 製品名変更の影響範囲レポート
-- **`docs/EVIDENCE_UPLOAD_LIMITS.md`**: 証憑アップロード制限機能の仕様詳細
-
-### 運用・デプロイ
-- **`DEPLOYMENT_CHECKLIST.md`**: デプロイ前チェックリストと環境変数設定
-- **`DEVELOPMENT_GUIDE.md`**: 開発ガイド
-- **`QUICK_START.md`**: クイックスタートガイド
-
-### 技術詳細
-- **`docs/SENTRY_SETUP.md`**: Sentry詳細セットアップガイド
-- **`STRIPE_IMPLEMENTATION.md`**: Stripe統合詳細
-
-### テスト・品質
-- **`BUG_FIXES.md`**: バグ修正サマリー
-- **`TEST_ANALYSIS.md`**: E2Eテスト結果分析
+1. [概要](#1-概要)
+2. [ルート設計（Current Spec）](#2-ルート設計current-spec)
+3. [データモデル（Current Spec）](#3-データモデルcurrent-spec)
+4. [機能仕様（Current Spec）](#4-機能仕様current-spec)
+5. [セキュリティ・権限（Current Spec）](#5-セキュリティ権限current-spec)
+6. [Implementation Notes](#6-implementation-notes)
+7. [Future / Design Memo](#7-future--design-memo)
 
 ---
 
-## 概要
-garage logは、車両のメンテナンス管理と整備計画機能を提供するWebアプリケーションです。ユーザーは車両情報の管理、メンテナンス履歴の記録、整備計画の設定・管理を行うことができます。
+## 1. 概要
 
-## 📖 用語表
+### 1.1 プロダクトの目的
 
-### プロダクト名・ブランド
-- **garage log**（ガレージログ）: 本サービスの正式名称
-- 旧名称「Smart Garage」は使用していません
+GarageLog（ガレージログ）は、車両のメンテナンス管理と整備計画機能を提供するWebアプリケーションです。複数の車両を一元管理し、給油記録、メンテナンス履歴、カスタマイズ記録をデジタル化して「見える化」します。
 
-### 画面名・ルート
-| 画面名 | ルート | 説明 |
-|--------|--------|------|
-| ダッシュボード | `/home` | 全車横断のメイン画面（編集なし、ハブ機能） |
-| マイカー | `/cars/[carId]` | 車両詳細ページ（編集・分析・エクスポート） |
-| 給油記録 | `/cars/[carId]/fuel` | 給油ログの詳細ページ |
-| メンテナンス | `/cars/[carId]/maintenance` | メンテナンス記録の詳細ページ |
-| カスタマイズ | `/home`（カスタマイズタブ） | カスタマイズ履歴一覧 |
-| 車両管理 | `/cars` | 車両の追加・編集・削除 |
-| 保険管理 | `/home`（保険タブ） | 自動車保険の管理 |
-| データ管理 | `/home`（データタブ） | データエクスポート |
+### 1.2 アーキテクチャ概要
 
-### エンティティ名（データモデル）
-- **Car**: 車両情報
-- **FuelLog**: 給油記録
-- **MaintenanceRecord**: メンテナンス記録
-- **Customization**: カスタマイズ記録
-- **InsurancePolicy**: 保険契約情報
-- **ShareProfile**: 共有プロフィール（SNS紹介・売却用）
-
-### ユーザー関連フィールド
-- **userId**: 必須フィールド。Firestoreセキュリティルールで使用。`request.auth.uid`と一致する必要がある
-- **ownerUid**: 所有者UID（マルチテナンシー対応）。現時点では`userId`と同じ値を入れる。将来「共有ガレージ」「ファミリー共有」などを実装する際に活用
-- **createdBy**: 作成者UID（監査ログ用）
-- **updatedBy**: 更新者UID（監査ログ用）
-
-### 日付型の方針
-- **Firestore**: すべて`Timestamp`型を使用
-- **TypeScript型**: 基本は`Timestamp`型。UI層に渡す時だけ`Date`に変換
-- **変換ヘルパー**（`src/lib/dateUtils.ts`）:
-  - `toTs(input) -> Timestamp`: 任意の型からTimestampに変換
-  - `toDate(ts) -> Date`: TimestampからDateに変換
-  - `toMillis(ts) -> number`: Timestampからミリ秒に変換
-
-### FuelLogの物理量・価格フィールド
-- **物理量**: `quantity`（数値）+ `unit: 'ml' | 'wh'`（単位）
-- **価格**: `totalCostJpy`（総額・円）+ `pricePerUnit`（単価・円/L or 円/kWh）
-- **旧フィールド**（後方互換用、新規実装では使用しない）:
-  - `fuelAmount` → `quantity`を使用
-  - `cost` → `totalCostJpy`を使用
-  - `pricePerLiter` → `pricePerUnit`を使用
-
-## 技術スタック
-- **フロントエンド**: Next.js 15.5.3, React 19.1.0, TypeScript
-- **バックエンド**: Firebase 12.3.0 (Firestore, Authentication, Storage)
-- **決済**: Stripe 19.2.0（サブスクリプション管理）
-- **スタイリング**: Tailwind CSS 4
-- **バリデーション**: Zod 4.1.11
-- **OCR**: Tesseract.js（日本語・英語対応）
-- **画像処理**: クライアントサイド圧縮、Firebase Storage
-- **グラフ**: Recharts 3.2.1
-- **PDF生成**: jsPDF 3.0.3, jsPDF-AutoTable 5.0.2
-- **エラー監視**: Sentry 10.22.0（クライアント/サーバー/Edge）
-- **E2Eテスト**: Playwright 1.56.1
+- **フロントエンド**: Next.js 15 (App Router)
+- **バックエンド**: Firebase (Firestore, Storage, Functions)
+- **認証**: Firebase Authentication
+- **決済**: Stripe
 - **デプロイ**: Vercel
 
-## 機能仕様
-
-### 1. 認証・ユーザー管理
-- Firebase Authenticationを使用
-- ユーザー情報表示（名前、プラン）
-- ユーザー名の最初の文字をアイコンとして表示
-
-### 2. ナビゲーション
-#### メニュー構成
-1. **ダッシュボード** - メイン画面
-2. **マイカー** - 車両詳細データページ（v2.0） 🆕
-3. **ガソリン** - 給油記録画面
-4. **メンテナンス** - 整備記録画面（v2.4: タブ切り替え式に刷新）🆕
-5. **カスタマイズ** - カスタマイズ履歴画面
-6. **車両管理** - 車両管理画面
-7. **自動車保険** - 保険管理画面
-8. **データ** - データ管理画面
-
-#### 車両選択ドロップダウン（ヘッダー右上）
-- **表示対象**: 現在保有中の車両のみ（status が undefined または 'active'）
-- **非表示**: 売却済み・廃車済み車両は選択肢に表示されない
-- **動作**: クリックで車両を切り替え
-- **追加ボタン**: ドロップダウン内に「+ 車を追加」ボタン
-
-#### プレミアムアップグレード表示（サイドバー下部）
-- **表示条件**: 無料ユーザー（userPlan === 'free'）のみ
-- **非表示**: プレミアムユーザーには表示されない
-- **内容**: 「プレミアムにアップグレード」カード、詳細ボタンでペイウォール表示
-
-#### ヘッダーブランド（アイコン）
-- 左上ロゴは `/public/icon.png` を使用し、サービス名「garage log」を隣接表示
-- クリック時はダッシュボードへ遷移（将来拡張を考慮）
-
-### 3. マイカーページ v3.0 🆕
-
-**役割**: 1台に関する設定・記録・分析・エクスポートを集約した画面。編集系の操作はすべてここで実行する。
-
-アクション中心の車両詳細ページ。選択中の車両の重要情報と次にやるべきことを一目で確認できます。
-
-#### 3.1. 車両ヘッダー（全幅表示）
-**表示内容:**
-- 車名、年式、型式、現在ODO、直近メンテ日
-- 車両画像（Firebase Storage対応、ホバーで「📷 画像を変更」CTA）
-- Next.js Image最適化（sizesプロパティ対応）
-- バッジ表示（状態に応じて色変更）:
-  - 🔧 車検期限バッジ（良好: 緑、警告: 黄、要注意: 赤）
-  - 🛡️ 保険期限バッジ（同上）
-
-#### 3.2. クイックアクション（横スクロールボタン）
-**アクション:**
-- ⛽ 給油を記録
-- 🔧 メンテを追加
-- ✨ カスタム追加
-- 📸 レシートOCR 🔒 プレミアム
-- 🛡️ 保険を追加
-- 📝 車両情報編集
-- 📤 PDF/共有 🔒 プレミアム（PDF出力は実装済み✅）
-
-**機能:**
-- 横スクロール対応（左右スクロールボタン）
-- プレミアム機能は🔒付きでペイウォール連携
-- すべてのボタンが正常に動作（モーダル表示）
-
-#### 3.3. 2カラムレイアウト（左右バランス型）
-
-**左カラム（メインコンテンツ）:**
-1. **次回メンテナンス提案**（重要情報を目立つ位置に）
-   - ベースラインスケジュール実装✅
-   - 履歴なしでも提案表示
-   - 走行距離・時間ベース両対応
-   - ODO未登録でも機能する
-   - 車種依存の不正確な情報は非表示
-2. **カスタムパーツパネル**
-
-**右カラム（サイドバー）:**
-1. **クイック操作**（または売却済み警告）
-2. **車両サマリー**（4つのコンパクトカード）
-   - 🛣️ 総走行距離
-   - ⛽ 最新給油
-   - 🗓️ 次回車検
-   - 🔧 直近メンテ
-3. **状況サマリー**
-   - 保険満了、登録済みメンテ、カスタムパーツ、現在ODO
-4. **広告**（コンテキスト広告）
-
-#### 3.4. 次回メンテナンス提案（スマート提案システム）
-
-**ベースラインスケジュール実装✅:**
-- 履歴がなくても車の年式/登録日から自動提案
-- 走行距離ベースと時間ベースの両方に対応
-- ODO未登録でも時間ベースで機能
-
-**提案ロジック（3つのモード）:**
-1. **履歴あり + ODOあり**: 前回からの走行距離で判断（最も正確）
-2. **履歴あり + ODOなし**: 前回からの経過時間で判断
-3. **履歴なし**: 車の年式またはcreatedAtから計算
-
-**メンテナンススケジュール:**
-- オイル交換: 5,000km または 6ヶ月
-- オイルフィルター: 10,000km または 12ヶ月
-- エアフィルター: 30,000km または 24ヶ月
-- タイヤローテーション: 10,000km または 12ヶ月
-- ブレーキフルード: 24ヶ月
-- ワイパーゴム: 12ヶ月
-
-**表示情報:**
-- メンテナンス項目名とアイコン
-- 残り距離 or 残り期間
-- 「※部品・費用は車種により異なります」注意書き
-- ODO未登録時の警告メッセージ
-
-#### 3.6. モーダル機能
-**実装済みモーダル:**
-- ✅ 給油記録モーダル（FuelLogModal）
-- ✅ メンテナンス記録モーダル（MaintenanceModal）
-- ✅ カスタマイズモーダル（CustomizationModal）
-- ✅ 保険追加モーダル（InsuranceModal）
-- ✅ 車両情報編集モーダル（EditCarModal）
-- ✅ PDF/共有モーダル（ShareAndPDFModal）
-  - PDF出力機能実装済み✅
-  - 共有URL機能は開発中🚧
-- ✅ OCRモーダル（OCRModal）- 開発中🚧
-
-#### 3.8. 共通UIの統一
-- `SectionHeader` コンポーネントでセクション見出しを統一（タイトル/サブタイトル/右側ボタン/サイズ）
-- 空状態の行動誘導（CTA）を追加（+追加/記録、またはマイカー遷移）
-- 成功フィードバック: 給油/メンテ記録の完了時に右下トーストを1.8秒表示
-#### 3.7. カスタムパーツ一覧
-**12カテゴリのアコーディオン表示:**
-1. エンジン（ピストン、カムシャフト、ターボ、インタークーラー）
-2. 排気系（マフラー、エキマニ、触媒）
-3. 吸気系（エアクリーナー、インテークパイプ、スロットル）
-4. サスペンション（ショック、スプリング、アーム、スタビライザー）
-5. ブレーキ（パッド、ローター、キャリパー、ブレーキライン）
-6. ホイール・タイヤ
-7. エクステリア（エアロ、ウィング、ボンネット、ライト）
-8. インテリア（シート、ハンドル、シフトノブ、メーター）
-9. 電装系（バッテリー、オルタネーター、イグニッション）
-10. ECU（ECU、サブコン、ハーネス）
-11. 駆動系（クラッチ、LSD、デフ、ドライブシャフト）
-12. その他
-
-**表示内容:**
-- **カスタム品**: ブランド、型番、装着時ODO、施工場所、費用（部品代+工賃）、メモ
-- **純正品**: 「純正」と表示、サブカテゴリ例を表示、「+ カスタマイズを登録」ボタン
-
-**UI機能:**
-- 折りたたみ式（デフォルトは閉じた状態）
-- 「全て開く/全て閉じる」ボタン
-- カスタム件数のバッジ表示
-- 0件でも全カテゴリを表示（登録を促進）
-- 各カテゴリから直接カスタマイズモーダルを開ける
-
-#### 3.5. 燃費・単価チャート（タブ切替）
-**タブ1: 燃費(km/L)の時系列**
-- 満タン給油時のみプロット
-- 目標ライン（自己ベストの80%）を補助線表示
-
-**タブ2: ガソリン単価(円/L)の時系列**
-- 全給油記録をプロット
-- 平均単価を補助線表示
-
-**技術:**
-- Recharts LineChart
-- ReferenceLine for 目標値
-
-#### 3.6. 次回メンテナンス提案（マイカー上での要約表示）
-**役割**: マイカーページでは「その車の次回メンテナンスのまとめビュー」として表示。要約情報とテンプレート起動リンクを提供。
-
-**詳細な計画・編集機能は「7. メンテナンス記録・提案」のメンテナンスページで提供**
-
-**表示内容:**
-- 次回メンテナンス項目の要約（6種類）
-- 残り距離/期間の表示
-- 「📝 テンプレから作成」ボタン（メンテナンスページのテンプレート機能へ遷移）
-
-#### 3.7. コンテキスト広告（無料ユーザーのみ）
-**表示内容:**
-- 車種・オイル粘度・タイヤサイズ連動の関連商品カード
-- 事前高さ固定 + "広告"ラベル
-- プレミアムユーザーには非表示
-
-**技術:**
-- アフィリエイトリンク連携
-- 車両スペックに基づく商品レコメンド
-
-### 4. ダッシュボード v2.0 🆕
-
-#### 4.1. 基本構成
-**ページタイトル:**
-- 「ダッシュボード」（「ガレージ」から統一✅）
-
-**車両選択:**
-- ヘッダー右上のドロップダウンで車両切り替え
-- 現在保有中の車両のみ選択可能
-
-#### 4.2. 主要セクション
-
-**1. 車両情報カード**
-- 選択中の車両の画像と基本情報
-- グレード、年式、走行距離、車検期限
-- 「📊 マイカーを見る」ボタン（マイカーページへ）
-
-**2. 最近のメンテナンス**
-- データなし: 「+ メンテナンスを追加」ボタン（モーダル表示）✅
-- データあり: 最新3件表示 + 「すべて見る →」（メンテナンスページへ）
-
-**3. 給油情報**
-- データなし: 「+ 給油を記録」ボタン（モーダル表示）✅
-- データあり: 最新給油と統計 + 「詳細を見る →」（ガソリンページへ）
-- 表示統一: 量と金額の表示は `getDisplayAmount()` と `getDisplayCost()` を使用（単位/桁区切り統一）
-
-**4. 最近のカスタマイズ**
-- データなし: 「+ カスタムを追加」ボタン（モーダル表示）✅
-- データあり: 最新3件表示 + 「すべて見る →」（カスタマイズページへ）
-
-#### 4.3. 初回ユーザー体験の最適化 ✨
-
-**コンセプト:**
-データの有無でボタンの動作を最適化し、初回ユーザーの摩擦を削減
-
-**実装:**
-- データなし → その場でモーダルを開いて記録追加（ページ遷移不要）
-- データあり → 専門ページで詳細確認（一覧・分析機能活用）
-
-**改善効果:**
-- ✅ 初回ユーザーの摩擦を大幅に削減
-- ✅ 「マイカーを見る」ボタンの重複を解消（4回→1回）
-- ✅ コンテキストに応じた適切なアクション
-- ✅ より直感的でわかりやすいUI
-
-#### 4.4. オンボーディング（はじめてガイド）
-- ステップ: 「車登録」「給油記録」「メンテ記録」の3項目
-- 完了条件: 各データ1件以上の存在
-- 完了時挙動: 3/3達成で自動非表示、右下に「再表示」チップを表示
-- 「閉じる」押下で `localStorage` に `onboardingHidden:v1:{uid}` を保存（以後非表示）
-- 新規車追加やデータ削除などで未達になった場合は自動で再表示
-
-#### 4.5. 軽量アラート（車検期限）
-- 車検期限が過期: 赤バナーで表示（上部）
-- 60日以内: 黄バナーで表示
-- CTA押下で関連セクション（メンテナンス）へ遷移
-
-### 5. 車両管理
-#### 車両情報
-- 車両名
-- メーカー・モデル・年式
-- 走行距離（odoKm）
-- 車検期限
-- エンジンコード
-- オイル仕様（粘度、API規格、容量）
-- **車両ステータス** 🆕:
-  - `active`: 現在保有中（デフォルト）
-  - `sold`: 売却済み
-  - `scrapped`: 廃車済み
-  - `other`: その他
-- **売却情報** 🆕（売却済み車両のみ）:
-  - 売却日
-  - 売却価格
-  - 売却先
-  - 売却メモ
-
-#### 車両追加機能
-- TypeaheadCarSelectorによる車種選択
-- 車両データベースからの自動補完（国内外100車種以上）
-- 画像アップロード機能（Firebase Storage）
-- クライアントサイド画像圧縮
-- 進捗監視付きアップロード
-- デフォルト画像選択機能（6種類のデフォルト画像）
-- 「+ 車を追加」ボタン（統一されたUI）
-
-#### 車両ステータス管理 🆕
-**3つのセクションで表示:**
-
-1. **🚗 現在保有中**
-   - アクティブな車両のみ表示
-   - 選択可能（クリックで詳細表示）
-   - 通常表示（フルカラー）
-
-2. **📦 売却済み**
-   - 売却済みの車両を別セクションで表示
-   - 売却情報を表示（日付、価格、売却先、メモ）
-   - グレーアウト表示（opacity-75）
-   - カードクリックでマイカーに遷移し**閲覧専用（ReadOnly）**で表示（編集不可）
-   - PDF/共有は実行可（共通機能）
-
-3. **🏭 廃車済み**
-   - 廃車済みの車両を表示
-   - グレーアウト表示
-   - カードクリックで**閲覧専用（ReadOnly）**で表示（編集不可）
-
-**売却処理モーダル:**
-- 売却日（必須、未来日不可）
-- 売却価格（任意、¥マーク付き、リアルタイムフォーマット）
-- 売却先（任意、例: 中古車センター、個人売買、下取り）
-- メモ（任意、500文字まで、文字数カウンター表示）
-- 注意事項の表示:
-  - 車両は「売却済み」セクションに移動
-  - 過去の記録（給油・メンテ）は保持
-  - いつでも編集メニューから元に戻せる
-
-**設定メニュー（車両カード右上）:**
-- **編集**（SVGアイコン） - 全車両で表示
-- **売却済みにする**（SVGアイコン） - 現在保有中の車両のみ表示
-- **現在保有中に戻す** 🆕（SVGアイコン） - 売却済み・廃車済み車両のみ表示
-  - 確認ダイアログ表示
-  - 売却情報を自動的にクリア
-  - 緑色のテキストとアイコン
-- **削除**（SVGアイコン） - 全車両で表示
-- モダンなドロップダウンデザイン:
-  - 3点ドットアイコン（SVG）
-  - 角丸四角ボタン（rounded-xl）
-  - 影付き（shadow-md → hover時 shadow-lg）
-  - 広めのメニュー幅（w-48）
-  - 区切り線でセクション分け
-  - ホバー時の色変更（青/橙/緑/赤）
-
-### 6. 給油記録（Fuel Logs）
-#### 記録項目
-- **走行距離**: ODOメーター or トリップメーター（km）
-- **給油量**: リットル（小数点第1位まで）
-- **金額**: 円
-- **L価格**: 円/L（オプション）
-- **燃料種別**: レギュラー・ハイオク・軽油・EV充電
-- **スタンド名**: 給油場所（オプション）
-- **満タンフラグ**: チェックボックス
-- **給油日時**: 日時選択
-- **メモ**: 自由記述（オプション）
-
-#### サマリカード（統計表示）🆕
-給油ログページの上部に4つの統計カードを表示：
-1. **総給油回数**: 保存済みの記録数
-2. **累計給油量**: レギュラー/ハイオクを含む合計給油量（L）
-3. **累計ガソリン代**: 税込み合計金額
-4. **平均単価**: 全期間の平均単価（円/L）
-
-#### フィルター機能🆕
-メンテナンス・カスタマイズページと同じスタイルのフィルター機能：
-- **検索**: 日付、給油量、金額、走行距離で検索
-- **年フィルター**: すべての年 / 特定の年
-- **月フィルター**: すべての月 / 特定の月（年選択後に有効）
-- **給油タイプフィルター**: すべて / 満タンのみ / 部分給油のみ
-- **ソート機能**: 
-  - 並び順: 実施日 / 給油量 / 金額 / 走行距離
-  - 昇順/降順: ボタンで切り替え
-  - 件数表示: フィルター適用後の件数を表示
-
-#### UI改善🆕
-- 給油記録カードの給油量と金額のフォントサイズを大きく、余白を調整
-- 給油量: `text-sm sm:text-base`、`font-bold`
-- 金額: `text-xs sm:text-sm`、`font-semibold`
-- パディング: `py-3 sm:py-4 px-3`
-
-#### OCR機能（レシート自動読み取り）🔒 プレミアム機能
-- **対応画像**: カメラ撮影・ファイル選択
-- **読み取り項目**: 
-  - 給油量（L、リットル、ℓ）
-  - 金額（円、¥、合計）
-  - L価格（単価）
-- **技術**: Tesseract.js（日本語特化）
-- **自動計算**: 金額と給油量からL価格を算出
-- **バリデーション**: 
-  - 給油量は小数点第1位で四捨五入
-  - 前回給油時より走行距離が少ない場合は警告
-- **UX**: 
-  - 読み取り進捗表示（スピナー）
-  - 成功時の通知
-  - 自動入力後の手動修正可能
-- **制限**: 無料プランでは利用不可、プレミアムプランで無制限利用
-  - 🆕 初回1枚のみ無料体験: 自動でドラフト保存（編集不可）まで実行。2回目以降はペイウォールでオートフィル提供。
-
-#### 自動機能
-- 給油記録追加時に車両の走行距離を自動更新
-- 走行距離の整合性チェック（前回給油時との比較）
-- トリップメーター選択時の自動計算
-- 燃費の自動計算と表示
-
-### 7. メンテナンス記録・提案 v2.0 🆕
-
-#### 6.1. ページ構成（タブ切り替え方式）
-
-**タブナビゲーション:**
-- **次回メンテ**: やるべきメンテナンスをカンバン風に表示
-- **履歴**: 過去のメンテナンス記録を一覧表示
-
-#### 6.2. 次回メンテタブ 🆕
-
-**メンテナンス提案システム:**
-- **2軸判定**: 距離（km）と時間（月）の両方で期限を計算
-- **早い方を採用**: 距離と時間のうち近い方の期限を提案
-- **データ完全性による自動モード切替**:
-  - High（★★★）: 履歴 + ODO → 最高精度
-  - Medium（★★☆）: 履歴のみ → 時間ベース
-  - Low（★☆☆）: 履歴なし → 車の登録日から推定
-
-**カンバン風3カラムレイアウト:**
-1. **緊急** - 期限超過 or 残り≤500km/30日（赤）
-2. **近日** - スコア≥70%（黄）
-3. **余裕あり** - それ以外（緑）
-
-**提案アイテム（6種類）:**
-| 項目 | 距離 | 時間 |
-|------|------|------|
-| エンジンオイル交換 | 5,000km | 6ヶ月 |
-| オイルフィルター交換 | 10,000km | 12ヶ月 |
-| タイヤローテーション | 10,000km | 12ヶ月 |
-| ブレーキフルード交換 | - | 24ヶ月 |
-| エアフィルター交換 | 30,000km | 24ヶ月 |
-| ワイパーゴム交換 | - | 12ヶ月 |
-
-**コンパクトカード表示:**
-- タイトル + 信頼度（★マーク）
-- 残り距離/日数
-- 進捗バー（0-100%）
-- 「作成」ボタン（テンプレート作成機能）
-
-**スコア計算:**
+### 1.3 役割分担
+
+- **マイカー（/mycar）**: 編集/分析の作戦室
+- **ダッシュボード（/home）**: 横断ハブ
+- **プレミアムの価値**: OCR/PDF/共有を主導線に配置
+
+---
+
+## 2. ルート設計（Current Spec）
+
+### 2.1 正規ルート一覧
+
+#### 認証必須ルート（(app)グループ）
+
+| ルート | 説明 | 用途 |
+|--------|------|------|
+| `/home` | ホーム/ダッシュボード | 横断ハブ、全車両の概要表示 |
+| `/mycar` | マイカーページ | 選択中車両の詳細・編集・分析 |
+| `/cars` | 車両管理ページ | 車両一覧・追加・編集 |
+| `/cars/[carId]` | 車両詳細ページ | 特定車両の詳細表示 |
+| `/cars/[carId]/fuel` | 給油記録ページ | 特定車両の給油記録 |
+| `/cars/[carId]/maintenance` | メンテナンス記録ページ | 特定車両のメンテナンス記録 |
+| `/maintenance` | メンテナンス記録一覧 | 全車両のメンテナンス記録 |
+| `/customizations` | カスタマイズ記録 | 全車両のカスタマイズ記録 |
+| `/gas` | 給油記録一覧 | 全車両の給油記録 |
+| `/share` | 共有設定 | 車両の共有リンク管理 |
+| `/data` | データエクスポート | CSV/PDFエクスポート |
+| `/settings/account` | アカウント設定 | ユーザー情報管理 |
+| `/settings/billing` | 課金設定 | プレミアムプラン管理 |
+| `/vehicles/[vehicleId]/sale-mode` | 売却モード管理ページ | 売却用リンクの作成・管理 |
+| `/vehicles/[vehicleId]/evidence` | 証跡一覧ページ | 証跡の一覧・管理 |
+| `/vehicles/[vehicleId]/evidence/upload` | 証跡アップロードページ | 証跡のアップロード |
+
+#### リダイレクトルート
+
+| ルート | 説明 | 遷移先 |
+|--------|------|--------|
+| `/dashboard` | ダッシュボード（旧） | `/home`に自動リダイレクト |
+
+#### システムルート
+
+| ルート | 説明 | 用途 |
+|--------|------|------|
+| `/maintenance-mode` | メンテナンスモードページ | システムメンテナンス時の表示 |
+
+#### 公開ルート
+
+| ルート | 説明 | 用途 |
+|--------|------|------|
+| `/s/[slug]` | 公開共有ページ | 外部共有用（slug方式） |
+| `/c/[carId]` | 公開車両ページ | 公開設定された車両の表示 |
+
+#### 認証関連ルート
+
+| ルート | 説明 |
+|--------|------|
+| `/login` | ログインページ |
+| `/signup` | サインアップページ |
+| `/reset-password` | パスワードリセット |
+
+#### 決済関連ルート
+
+| ルート | 説明 |
+|--------|------|
+| `/billing/success` | 決済成功ページ |
+| `/billing/cancel` | 決済キャンセルページ |
+
+### 2.2 深リンク契約
+
+#### クエリパラメータ仕様
+
+**車両選択**
+- `?car={carId}` - 特定の車両を選択して表示
+
+**タブ・アクション指定**
+- `/cars/[carId]?tab=fuel&action=add` - 給油記録追加モーダルを開く
+- `/cars/[carId]?tab=maintenance&action=add` - メンテナンス記録追加モーダルを開く
+- `/home?tab=dashboard` - ダッシュボードタブを表示
+- `/home?tab=customizations` - カスタマイズタブを表示
+
+### 2.3 非推奨ルート
+
+以下のルートは仕様外です（採用する場合は全面改定が必要）:
+- `/vehicle/{carId}` - 未実装
+- `/share/[token]` - 未実装（署名トークンは別用途）
+
+**注意**: `/vehicles/[vehicleId]/*` ルートは実装されていますが、将来的に `/cars/[carId]/*` への統一を検討中です。
+
+---
+
+## 3. データモデル（Current Spec）
+
+### 3.1 BaseEntity（すべてのエンティティの基底型）
+
+**重要**: すべてのエンティティは `BaseEntity` を継承します。例外はありません。
+
+**Firestoreセキュリティルール**: `userId`フィールドは必須です。すべてのCRUD操作で`userId: user.uid`を設定してください。
+
 ```typescript
-kmRatio = clamp(1 - remainKm / cycle.km, 0, 1)
-timeRatio = clamp(1 - remainDays / (cycle.months*30), 0, 1)
-progress = max(kmRatio, timeRatio)
-overPenalty = isOverdue ? 0.25 : 0
-score = round((progress + overPenalty) * 100)
-```
-
-**表示条件:**
-- 履歴がある項目 → 常に表示（スコア0%でも）
-- 履歴がない項目 → 車登録からサイクルの50%以上経過で表示
-
-**警告バナー:**
-- ODO未登録時: 時間ベース提案中を通知
-- 平均走行距離未登録時: 精度向上の案内
-
-#### 6.3. 履歴タブ
-
-**サマリカード（統計表示）🆕**
-メンテナンスページの上部に4つの統計カードを表示：
-1. **総メンテナンス回数**: 保存済みの記録数
-2. **累計費用**: 税込み合計金額
-3. **平均費用**: 1回あたりの平均費用
-4. **直近メンテナンス**: 最新の実施日
-
-**記録項目:**
-- **タイトル**: 選択式（オイル交換、ブレーキフルード交換、タイヤローテーション、エアフィルター交換など）
-- **説明**: 自由記述
-- **費用**: 数値入力
-- **走行距離**: 必須項目（現在の車両走行距離以上）
-- **日付**: 日付選択
-- **場所**: 自由記述
-
-**フィルター機能:**
-- 車両選択: ヘッダー右上で統一（重複解消）✅
-- 検索（タイトル・説明・場所）
-- カテゴリフィルター（エンジン、タイヤ、ブレーキ、排気、ボディ、内装）
-- ステータスフィルター
-- 並び替え（日付、費用、走行距離、タイトル）
-
-**一覧表示:**
-- シンプルなカード形式
-- 日付、費用、走行距離、場所を表示（絵文字なし）
-- 編集・削除ボタン
-
-#### 6.4. 自動機能
-- メンテナンス記録追加時に車両の走行距離を自動更新
-- 走行距離の整合性チェック
-- 次回メンテナンス期限の自動計算
-- 優先度スコアの自動算出
-
-### 8. カスタマイズ記録
-#### 記録項目
-- **タイトル**: カスタマイズ名
-- **ブランド**: 製品ブランド
-- **型番**: 製品型番
-- **カテゴリ**: 複数選択可（外装、内装、吸気、排気、ECU、サスペンション等）
-- **ステータス**: 計画中、注文済み、取付済み、一時取外し、取外し
-- **実施日**: 日付
-- **走行距離**: km（オプション）
-- **実施場所**: 自分で実施、整備工場、ディーラー
-- **費用**: 部品代、工賃、その他
-- **商品リンク**: URL
-- **メモ**: 詳細説明
-- **公開設定**: チェックボックス
-
-#### サマリカード（統計表示）🆕
-カスタマイズページの上部に4つの統計カードを表示：
-1. **総カスタマイズ数**: 保存済みの記録数
-2. **累計費用**: 税込み合計金額（部品代+工賃+その他）
-3. **平均費用**: 1件あたりの平均費用
-4. **最新カスタマイズ**: 最新の登録日
-
-#### フィルター・検索機能
-- 車両別フィルター: ヘッダー右上で統一（重複解消）✅
-- 検索（タイトル、ブランド、メモ）
-- カテゴリフィルター
-- ステータスフィルター
-- 並び替え（実施日、費用、タイトル）
-
-### 9. 保険管理
-
-#### 保険契約情報
-- **基本情報**: 保険会社、証券番号、商品名
-- **契約期間**: 開始日、満期日、契約日
-- **契約者情報**: 氏名、住所、記名被保険者
-- **車両情報**: ナンバー、車台番号、所有者、用途車種
-- **保険料**: 年間合計、初回、2回目以降、分割回数
-- **等級・割引**: ノンフリート等級、事故係数、適用割引
-- **補償内容**: 対人・対物・人身傷害・車両保険・特約
-- **運転者条件**: 運転者限定、年齢条件、家族限定
-- **使用条件**: 使用目的、年間走行距離、距離区分
-
-#### OCR機能（保険証券自動読み取り）🔒 プレミアム機能
-- **対応形式**: 画像（JPG, PNG等）
-- **読み取り項目**:
-  - 保険会社名（12社対応）
-  - 証券番号
-  - 契約期間（開始日・満期日）
-  - 保険料（年額・分割払い対応）
-  - 商品名、契約者氏名
-  - ナンバー、車台番号
-  - ノンフリート等級
-  - 割引情報（8種類自動検出）
-- **画像前処理**:
-  - 3倍アップスケール（小さい文字対策）
-  - シャープネスフィルタ（文字鮮明化）
-  - 適応的ヒストグラム平坦化
-- **自動入力**: 基本情報→フォーム、詳細情報→メモ欄
-- **制限**: 無料プランでは利用不可、プレミアムプランで無制限利用
-
-#### その他機能
-- 事故記録の管理
-- 保険通知設定
-- 期限リマインダー
-
-### 10. データ管理・エクスポート
-#### エクスポート機能（統合）
-- **基本エクスポート**:
-  - 車両データ（CSV）
-  - メンテナンス履歴（CSV）
-  - カスタマイズ履歴（CSV）
-  - 全データ（JSON）
-- **履歴証明書・共有**（プレミアム機能）:
-  - 全車両履歴書（PDF）: Cloud Functionsで署名トークン生成
-  - 車両別履歴書（PDF）: Cloud Functionsで署名トークン生成
-  - 履歴共有URL生成: Cloud Functionsで署名トークン生成（30日有効）
-
-### 12. 共有機能（Share Profile）🆕
-
-#### 12.1. 概要
-車両のメンテナンス履歴やカスタマイズ情報を第三者と共有する機能です。用途別に3種類の共有リンクを作成できます。
-
-**用途別リンク:**
-- **通常（SNS紹介）**: SNSで車を紹介するためのページ
-- **売却（買い手向け）**: 買い手向けの履歴共有ページ
-- **売却（査定会社向け）**: 査定会社向けの履歴共有ページ（証跡マスク＋検証ID）
-
-#### 12.2. データモデル
-
-**ShareProfile（saleProfilesコレクション）:**
-```typescript
-interface ShareProfile extends BaseEntity {
-  vehicleId: string;                       // 車両ID
-  ownerUid: string;                        // オーナーUID
-  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';  // 用途種別
-  status: 'active' | 'disabled';           // ステータス
-  slug: string;                            // URLスラッグ（例: "abc123"）
-  visibility?: 'unlisted' | 'public' | 'disabled'; // 公開設定（後方互換）
-  includeEvidence: boolean;                // 証跡を含めるか
-  includeAmounts: boolean;                 // 金額を含めるか
-  highlightTopN: number;                   // 重要イベント上位N件（デフォルト: 10）
-  analyticsEnabled: boolean;               // アナリティクス有効化
-  maskPolicy?: 'auto' | 'strict' | 'custom'; // マスク強度
-  viewCount?: number;                      // 閲覧回数
-  lastPublishedAt?: Timestamp;             // 最終公開日時
-  issuedAt?: Timestamp;                    // 発行日時（PR5）
-  lastUpdatedAt?: Timestamp;               // 最終更新日時（PR5）
-  verificationId?: string;                  // 検証ID（PR5）
-  
-  // SNS共有（通常リンク）用フィールド（type="normal"のみ）
-  sns?: {
-    settings?: {
-      showPricesInDetails?: boolean;        // Detailsセクション内に価格を表示するか
-    };
-    conceptTitle?: string;                 // 短い肩書き
-    conceptBody?: string;                 // 紹介文（30〜200字）
-    highlightParts?: Array<{              // 主要カスタム最大6件
-      label: string;
-      value: string;
-    }>;
-    gallery?: Array<{                     // 画像3〜12枚
-      id: string;
-      path: string;
-      caption?: string;
-    }>;
-    socialLinks?: {                       // SNSリンク
-      youtube?: string;
-      instagram?: string;
-      x?: string;
-      web?: string;
-    };
-    build?: {
-      featured?: Array<{                  // 主要パーツ（最大30件）
-        label: string;
-        value: string;
-        priceAmount?: number;              // 具体的な価格（JPY）
-        priceCurrency?: 'JPY';
-        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET';
-        priceAsOf?: string;               // 価格の時点（YYYY-MM形式）
-        priceVisibility?: 'HIDE' | 'SHOW';
-      }>;
-      categories?: Array<{                // カテゴリごとのビルド情報
-        name: string;
-        items: Array<{
-          name: string;
-          note?: string;
-        }>;
-      }>;
-    };
-  };
+export interface BaseEntity {
+  id?: string;                    // ドキュメントID
+  userId?: string;                 // ユーザーID（Firestoreセキュリティルールで必須）
+  ownerUid?: string;              // 所有者UID（マルチテナンシー対応）
+  createdBy?: string;             // 作成者UID（監査ログ用）
+  updatedBy?: string;             // 更新者UID（監査ログ用）
+  deletedAt: Timestamp | null;    // 論理削除（null=未削除、Timestamp=削除済み）
+  createdAt: Timestamp;           // 作成日時（serverTimestamp）
+  updatedAt: Timestamp;           // 更新日時（serverTimestamp）
 }
 ```
 
-**車両のactiveShareProfileIds:**
+**注意**: `userId`と`ownerUid`は通常同じ値ですが、Firestoreセキュリティルールでは`userId`が必須です。
+
+### 3.2 Timestamp統一規約
+
+**重要**: 日時フィールドはFirestore Timestampに完全統一されています。
+
+- **Firestoreに保存**: `Timestamp`（`serverTimestamp()`使用）
+- **クライアント表示**: `Timestamp.toDate()` でDateに変換
+- **Date | string 型は廃止**（バグの温床）
+- **deletedAtは null（未削除）で統一**（クエリ最適化）
+
+**変換規約**:
+- Firestore書き込み前: `toTimestamp()` を必ず通す（`src/lib/converters.ts`）
+- UI層へ渡す直前: `timestampToDate()` を使用（表示用途のみ）
+
+### 3.3 車両（Car）
+
 ```typescript
-interface Car {
-  // ... 他のフィールド
-  activeShareProfileIds?: {
-    normal?: string;        // 通常リンクのShareProfile ID
-    sale_buyer?: string;    // 買い手向けリンクのShareProfile ID
-    sale_appraiser?: string; // 査定会社向けリンクのShareProfile ID
-  };
-  // 後方互換性のため
-  activeSaleProfileId?: string;
-}
-```
-
-#### 12.3. UI仕様
-
-**共有ページ（/share）:**
-- **タブ構成**: 
-  - 「SNS（紹介）」タブ: SNSで車を紹介するページ
-  - 「売却」タブ: 買い手・査定会社向けの履歴共有
-
-**SNS（紹介）タブ:**
-- タイトル: "SNS紹介リンク"
-- 説明: "SNSで車を紹介するページ"
-- リンク作成ボタン: "SNS紹介リンクを作成"
-- リンクカード:
-  - 状態表示（未作成/公開中/停止中）
-  - URL表示とコピーボタン（主CTA）
-  - 公開ページを見るボタン（サブCTA）
-  - 設定メニュー（"..."ボタン）:
-    - リンク設定
-    - 共有内容を編集
-    - リンクを再生成
-    - リンクを停止（確認ダイアログ付き）
-  - 追加情報: 対象車両名、最終更新日、閲覧回数
-
-**売却タブ:**
-- **送付先セグメント**: 「買い手向け」/「査定会社向け」を切り替え
-- **リンク作成**: 「共有リンクを作成」ボタン1つで、買い手向けと査定会社向けの2リンクを同時に作成
-- **リンクカード（統合表示）**:
-  - 送付先セグメントで表示するリンクを切り替え
-  - 共有される内容（要点バッジ＋詳細アコーディオン）:
-    - 車両概要（年式/走行距離/車検）
-    - 整備履歴（一覧）
-    - 消耗品交換一覧
-    - 証跡（個人情報は自動マスク）
-    - 検証ID（改ざん防止）
-  - 状態表示、URL表示、コピーボタン、公開ページを見るボタン
-  - 設定メニュー（"..."ボタン）
-
-**デフォルト設定:**
-- 売却用リンク: `visibility: 'unlisted'`（限定公開）
-- 証跡: 含める（`includeEvidence: true`）
-- 金額: 含めない（`includeAmounts: false`）
-- マスク強度: `'strict'`（厳格）
-
-#### 12.4. 公開ページ仕様
-
-**URL形式:**
-- `/s/[slug]` - 用途別に同じURL形式を使用（誤送信防止）
-
-**用途別表示内容:**
-
-**通常（SNS紹介）ページ:**
-- ヒーロー画像（ギャラリーの最初の画像、または車両画像）
-- 車両概要（車名、年式、型式、走行距離、車検）
-- 紹介文（conceptBody）
-- 主要パーツ（highlightParts）
-- ギャラリー（3〜12枚）
-- ビルド詳細（カテゴリごと、Detailsセクション内に価格表示）
-- 整備履歴サマリー
-- SNSリンク
-
-**買い手向けページ:**
-- 査定の要点（4カード）:
-  - 直近整備（日付＋走行距離）
-  - 消耗品交換（最新3件）
-  - 管理指標（記録期間、証憑率、総費用、車検残日数）
-  - 証跡点数
-- 車両サマリー
-- 信頼性説明（証跡ベースの説明）
-- 消耗品交換一覧
-- 整備履歴（直近12ヶ月）
-- 証跡ギャラリー（マスク済み）
-
-**査定会社向けページ:**
-- 査定の要点（4カード）:
-  - A. 直近整備: 最終整備日（YYYY/MM/DD）＋整備時走行距離（km）、未登録時は「未登録（入力なし）」
-  - B. 記録件数: 整備◯件 / 給油◯件 / カスタム◯件
-  - C. 証跡（マスク済）: 証跡◯件（マスク済）＋内訳（領収書/明細等）
-  - D. 消耗品: 登録済◯ / 未登録◯（固定5項目）
-- 車両サマリー
-- 信頼性説明（PR3）:
-  - "本ページはオーナーの入力および証跡（領収書等）に基づき作成されています。証跡の有無により情報の信頼度が異なります。"
-  - "記載内容の正確性については、オーナーの入力データに依存するため、完全な保証はできかねます。"
-- 消耗品交換一覧（PR1対応: 最終交換日が---の場合は交換時走行距離も---）
-- 整備履歴（詳細）
-- 証跡ギャラリー（マスク済み）
-- PDF生成ボタン:
-  - 査定用PDF: "マスク＋検証ID＋消耗品一覧"
-  - 譲渡用PDF: "整備履歴（詳細）＋（必要に応じて）証跡一覧"
-  - 含まれる内容の詳細説明（アコーディオン）
-- 改ざん防止情報（PR5）:
-  - 発行日時、最終更新、検証ID（コピー可能）
-  - "改ざん防止について"説明リンク
-
-**データ一貫性（PR1）:**
-- 消耗品交換一覧: `lastReplacedDate`が存在しない場合、`lastReplacedMileageKm`も表示しない（---）
-- 最終交換日が---の場合、交換時走行距離も必ず---
-
-**null安全性:**
-- `viewModel.recent12MonthsSummary`、`viewModel.consumables`、`viewModel.evidences`に安全なデフォルト値（空配列）を設定
-- 配列要素へのアクセス時にnull/undefinedチェックを実施
-
-#### 12.5. PDF生成機能
-
-**査定用PDF:**
-- 車両概要
-- 売りポイント
-- 直近12ヶ月サマリー
-- 消耗品交換一覧
-- 日本語フォント対応（Noto Sans JP）
-
-**譲渡用PDF:**
-- 車両概要
-- 次回推奨メンテナンス
-- 重要整備履歴
-- 消耗品交換一覧
-
-**技術仕様:**
-- ライブラリ: jsPDF 3.0.3, jsPDF-AutoTable 5.0.2
-- 日本語フォント: Noto Sans JP（Base64エンコード）
-- フォント設定スクリプト: `scripts/setup-japanese-font.sh`
-- タイムスタンプ変換: Firestore Timestamp → ISO string（PR5対応）
-
-#### 12.6. リンク管理機能
-
-**リンク作成:**
-- 通常リンク: 1リンク作成
-- 売却用リンク: 買い手向けと査定会社向けの2リンクを同時に作成（`handleCreateSaleLinks`）
-
-**リンク操作:**
-- リンクをコピー（主CTA）
-- 公開ページを見る（サブCTA）
-- リンク設定（公開範囲: unlisted/public）
-- リンクを再生成（slug変更、確認ダイアログ）
-- リンクを停止（無効化、確認ダイアログ）
-- リンクを再開（停止されたリンクを有効化）
-
-**状態管理:**
-- `status: 'active' | 'disabled'` - リンクの有効/無効
-- `visibility: 'unlisted' | 'public' | 'disabled'` - 公開範囲（後方互換）
-- `disabled`状態のリンクは404を返す
-
-#### 12.7. セキュリティ・プライバシー
-
-**アクセス制御:**
-- オーナーのみがリンクを作成・編集・削除可能
-- 公開ページは`slug`による認証（トークンベースではない）
-- `activeShareProfileIds`と一致する場合のみ表示
-
-**個人情報保護:**
-- 証跡画像は自動マスク処理（`maskPolicy: 'strict'`）
-- 金額情報はデフォルトで非表示（`includeAmounts: false`）
-- 検証IDによる改ざん防止
-
-**SEO設定:**
-- `unlisted`の場合は`robots: { index: false, follow: false }`
-- `public`の場合は`robots: { index: true, follow: true }`
-
-#### 12.8. アナリティクス
-
-**ページビュー追跡:**
-- `analyticsEnabled: true`の場合、ページビューイベントを記録
-- `/api/s/[slug]/event`エンドポイントにPOSTリクエスト
-- オーナー側で閲覧回数（`viewCount`）を表示
-
-### 11. 通知設定
-- テスト通知機能
-- Service Worker統合（Push通知対応）
-
-## データモデル
-
-### 共通フィールド（BaseEntity）
-```typescript
-import { Timestamp } from 'firebase/firestore';
-
-interface BaseEntity {
-  id?: string;
-  userId: string;               // 必須：ユーザーID（Firestoreセキュリティルールで必須）⚠️
-  ownerUid?: string;            // 所有者UID（マルチテナンシー対応）
-  createdBy?: string;           // 作成者UID
-  updatedBy?: string;           // 更新者UID
-  deletedAt: Timestamp | null;  // 論理削除（null=未削除）
-  createdAt: Timestamp;         // 作成日時
-  updatedAt: Timestamp;         // 更新日時
-}
-```
-
-**⚠️ 重要な注意事項:**
-- **`userId`フィールドは必須**: すべてのcreate/update操作で明示的に含める必要があります
-- **Firestoreセキュリティルールで検証**: `request.resource.data.userId == request.auth.uid`
-- **対象コレクション**: `cars`, `maintenance`, `fuelLogs`, `customizations`, `insurancePolicies`, `insuranceClaims`
-- **実装場所**: すべてのFirestore書き込み操作（`addDoc`, `updateDoc`, `setDoc`）
-
-### 車両（cars）
-```typescript
-interface Car extends BaseEntity {
+export interface Car extends BaseEntity {
   name: string;
   modelCode?: string;
   year?: number;
   odoKm?: number;
   imagePath?: string;
-  inspectionExpiry?: Timestamp;    // Firestore Timestampに統一
+  inspectionExpiry?: Timestamp;   // 車検期限（Timestamp統一）
   firstRegYm?: string;
-  avgKmPerMonth?: number;     // 平均月間走行距離（リマインダー用）
-  engineCode?: string;
-  oilSpec?: {
-    viscosity: string;
-    api: string;
-    volumeL: number;
-  };
-  status?: 'active' | 'sold' | 'scrapped' | 'other';
-  soldDate?: Timestamp;
+  avgKmPerMonth?: number;
+  vehicleClass?: VehicleClass;
+  status?: CarStatus;              // 'active' | 'sold' | 'scrapped' | 'downgraded_premium' | 'other'
+  soldDate?: Timestamp;            // 売却日（Timestamp統一）
   soldPrice?: number;
   soldTo?: string;
   soldNotes?: string;
+  downgradedAt?: Timestamp;        // ダウングレード日時（Timestamp統一）
+  chassisNumber?: string;
+  registrationNumber?: string;
+  bodyType?: 'sedan' | 'hatchback' | 'suv' | 'wagon' | 'coupe' | 'convertible' | 'pickup' | 'minivan' | 'sports' | 'other';
+  // 公開マイカーページ設定
+  isPublic?: boolean;
+  publicVanityUrl?: string;
+  publicTagline?: string;
+  ownerPicks?: string[];
+  ownerHandle?: string;
+  ownerRegion?: string;
+  ownerSocialLinks?: { instagram?: string; twitter?: string };
+  // 基本スペック（公開用）
+  driveType?: 'FF' | 'FR' | '4WD' | 'MR' | 'RR' | 'AWD';
+  transmission?: string;
+  bodyColor?: string;
+  ownedSince?: Timestamp;          // 所有開始年月（Timestamp統一）
+  // 共有プロフィール
+  activeShareProfileIds?: {
+    normal?: string;
+    sale?: string;
+    appraisal?: string;
+  };
 }
 ```
 
-### 給油記録（fuelLogs）
-```typescript
-type FuelType = 'regular' | 'premium' | 'diesel' | 'ev';
-type EnergyUnit = 'ml' | 'wh';  // ガソリン=ml, EV=Wh
+**Firestoreコレクション**: `users/{userId}/cars/{carId}`
 
-interface FuelLog extends BaseEntity {
+### 3.4 給油記録（FuelLog）
+
+```typescript
+export interface FuelLog extends BaseEntity {
   carId: string;
-  odoKm: number;             // 走行距離（km）
-  // 物理量（採用している最終形）
-  quantity: number;          // 量（ml or Wh）
-  unit: EnergyUnit;          // 単位
-  // 価格（採用している最終形）
-  totalCostJpy: number;      // 総額（円）
-  pricePerUnit?: number;     // 単価（円/L or 円/kWh、表示用）
+  odoKm: number;
+  
+  // 【物理量統一】EVとガソリンを共通化
+  quantity: number;                // 物理量（ml or Wh の整数）
+  unit: EnergyUnit;                // 単位（'ml' | 'wh'）
+  totalCostJpy: number;            // 総額（円）
+  pricePerUnit?: number;            // 単価（¥/L or ¥/kWh、表示用）
+  
   // メタデータ
-  isFullTank: boolean;       // 満タンフラグ（EVは100%充電）
-  fuelType: FuelType;        // 燃料種別
-  stationName?: string;      // スタンド名
+  isFullTank: boolean;              // 満タンかどうか（EVの場合は100%充電）
+  fuelType: FuelType;               // 'regular' | 'premium' | 'diesel' | 'ev'
+  stationName?: string;
   memo?: string;
-  date: Timestamp;           // 給油日時
-  // 後方互換（互換用として存在するが、新規実装では使わない）
-  fuelAmount?: number;       // @deprecated - quantityを使用
-  cost?: number;             // @deprecated - totalCostJpyを使用
-  pricePerLiter?: number;    // @deprecated - pricePerUnitを使用
+  date: Timestamp;                  // 給油/充電日時（Timestamp統一）
+  
+  // 【後方互換性】旧フィールド（非推奨、将来削除）
+  fuelAmount?: number;              // @deprecated quantity/unitを使用
+  cost?: number;                    // @deprecated totalCostJpyを使用
+  pricePerLiter?: number;           // @deprecated pricePerUnitを使用
 }
 ```
 
-### メンテナンス記録（maintenance）
+**Firestoreコレクション**: `users/{userId}/fuelLogs/{fuelLogId}`
+
+#### FuelLogの単位規約
+
+**UI入力単位**:
+- ガソリン: L（小数1位まで）
+- EV: kWh（小数2位まで可）
+
+**Firestore保存単位**:
+- `quantity`: 整数（ml or Wh）
+- `unit`: 'ml' | 'wh'
+
+**変換規約**:
+- L -> ml: `round(L * 1000)`
+- kWh -> Wh: `round(kWh * 1000)`
+
+**表示規約**:
+- 表示は `getDisplayFuelAmount()` を必ず経由（`src/lib/converters.ts`）
+- 旧フィールド（`fuelAmount`）は表示フォールバックのみ
+
+**燃費計算**:
+- ガソリンのみ（現仕様通り）
+
+### 3.5 メンテナンス記録（MaintenanceRecord）
+
 ```typescript
-interface MaintenanceItem {
-  type: 'part' | 'labor' | 'other';
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-}
-
-interface MaintenanceAttachment {
-  type: 'photo' | 'pdf' | 'receipt';
-  url: string;
-  fileName: string;
-  uploadedAt: Date;
-}
-
-interface MaintenanceRecord extends BaseEntity {
+export interface MaintenanceRecord extends BaseEntity {
   carId: string;
   title: string;
   description?: string;
   cost?: number;
-  mileage?: number;       // 必須項目（現在の車両走行距離以上）
-  date: Date;
+  mileage?: number;
+  date: Timestamp;                  // メンテナンス実施日（Timestamp統一）
   location?: string;
-  items?: MaintenanceItem[];        // 明細行（将来対応）
-  attachments?: MaintenanceAttachment[]; // 添付ファイル（将来対応）
+  items?: MaintenanceItem[];
+  attachments?: MaintenanceAttachment[];
+  imageUrl?: string;
+  category?: string;
+  isPreventive?: boolean;
+  typeTag?: 'receipt_backed' | 'owner_log' | 'other';
+}
+
+export interface MaintenanceAttachment {
+  type: 'photo' | 'pdf' | 'receipt';
+  url: string;
+  fileName: string;
+  uploadedAt: Timestamp;           // アップロード日時（Timestamp統一）
 }
 ```
 
-### カスタマイズ記録（customizations）
+**Firestoreコレクション**: `users/{userId}/maintenanceRecords/{maintenanceRecordId}`
+
+### 3.6 カスタマイズ記録（Customization）
+
 ```typescript
-interface Customization {
-  id: string;
+export interface Customization extends BaseEntity {
   carId: string;
-  title: string;                    // タイトル
-  brand?: string;                   // ブランド
-  modelCode?: string;               // 型番
-  categories: CustomCategory[];     // カテゴリ（複数選択）
-  status: CustomStatus;             // ステータス
-  date: Timestamp;                  // 実施日（Date → Timestampに統一）
-  odoKm?: number;                   // 走行距離
-  vendorType?: 'self' | 'shop' | 'dealer';  // 実施場所タイプ
-  vendorName?: string;              // 実施場所名
-  partsCostJpy?: number;            // 部品代
-  laborCostJpy?: number;            // 工賃
-  otherCostJpy?: number;            // その他費用
-  currency: string;                 // 通貨（デフォルト: JPY）
-  link?: string;                    // 商品リンク
-  memo?: string;                    // メモ
-  isPublic: boolean;                // 公開設定
-  createdAt: Timestamp;             // Date → Timestampに統一
-  updatedAt: Timestamp;              // Date → Timestampに統一
+  title: string;
+  brand?: string;
+  modelCode?: string;
+  categories: CustomCategory[];
+  status: CustomStatus;
+  date: Timestamp;                  // 実施日（Timestamp統一）
+  odoKm?: number;
+  vendorType?: 'self' | 'shop' | 'dealer';
+  vendorName?: string;
+  partsCostJpy?: number;
+  laborCostJpy?: number;
+  otherCostJpy?: number;
+  currency: 'JPY';
+  link?: string;
+  memo?: string;
+  isPublic: boolean;
+  imageUrl?: string;
 }
-
-type CustomCategory = 'exterior' | 'interior' | 'intake' | 'exhaust' | 'ecu' | 
-                      'suspension' | 'brake' | 'reinforcement' | 'drivetrain' | 
-                      'tire_wheel' | 'electrical' | 'audio' | 'safety' | 'other';
-
-type CustomStatus = 'planned' | 'ordered' | 'installed' | 'removed_temp' | 'removed';
 ```
 
-### 共有プロフィール（shareProfiles / saleProfiles）
+**Firestoreコレクション**: `users/{userId}/customizations/{customizationId}`
+
+### 3.7 共有プロフィール（ShareProfile）
+
 ```typescript
-interface ShareProfile extends BaseEntity {
-  vehicleId: string;                       // 車両ID
-  ownerUid: string;                        // オーナーUID
-  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';  // 用途種別
-  status: 'active' | 'disabled';           // ステータス
-  slug: string;                            // URLスラッグ
-  visibility?: 'unlisted' | 'public' | 'disabled'; // 公開設定（後方互換）
-  includeEvidence: boolean;                // 証跡を含めるか
-  includeAmounts: boolean;                 // 金額を含めるか
-  highlightTopN: number;                   // 重要イベント上位N件
-  analyticsEnabled: boolean;               // アナリティクス有効化
-  maskPolicy?: 'auto' | 'strict' | 'custom'; // マスク強度
-  viewCount?: number;                      // 閲覧回数
-  lastPublishedAt?: Timestamp;             // 最終公開日時
-  issuedAt?: Timestamp;                    // 発行日時
-  lastUpdatedAt?: Timestamp;               // 最終更新日時
-  verificationId?: string;                  // 検証ID
+export interface ShareProfile extends BaseEntity {
+  vehicleId: string;                // 車両ID（users/{userId}/cars/{carId}のcarId）
+  ownerUid: string;                 // オーナーUID
+  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';
+  status: 'active' | 'disabled';
+  slug: string;                     // URLスラッグ（例: "abc123"）
   
-  // SNS共有（通常リンク）用フィールド（type="normal"のみ）
+  // 後方互換性のため、既存フィールドも維持
+  visibility?: 'unlisted' | 'public' | 'disabled';  // 非推奨、statusで代替
+  includeEvidence: boolean;
+  includeAmounts: boolean;
+  highlightTopN: number;
+  analyticsEnabled: boolean;
+  
+  // 新規追加フィールド
+  title?: string;
+  maskPolicy?: 'auto' | 'strict' | 'custom';
+  sections?: string[];
+  viewCount?: number;
+  lastPublishedAt?: Timestamp;      // 最終公開日時（Timestamp統一）
+  
+  // SNS共有（通常リンク）用フィールド（type="normal"のみ利用）
   sns?: {
     settings?: {
-      showPricesInDetails?: boolean;        // Detailsセクション内に価格を表示するか
+      showPricesInDetails?: boolean;
     };
-    conceptTitle?: string;                 // 短い肩書き
-    conceptBody?: string;                 // 紹介文（30〜200字）
-    highlightParts?: Array<{              // 主要カスタム最大6件
-      label: string;
-      value: string;
-    }>;
-    gallery?: Array<{                     // 画像3〜12枚
-      id: string;
-      path: string;
-      caption?: string;
-    }>;
-    socialLinks?: {                       // SNSリンク
-      youtube?: string;
-      instagram?: string;
-      x?: string;
-      web?: string;
-    };
+    conceptTitle?: string;
+    conceptBody?: string;
+    highlightParts?: Array<{ label: string; value: string }>;
+    gallery?: Array<{ id: string; path: string; caption?: string }>;
+    socialLinks?: { youtube?: string; instagram?: string; x?: string; web?: string };
     build?: {
-      featured?: Array<{                  // 主要パーツ（最大30件）
-        label: string;
-        value: string;
-        priceAmount?: number;              // 具体的な価格（JPY）
-        priceCurrency?: 'JPY';
-        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET';
-        priceAsOf?: string;               // 価格の時点（YYYY-MM形式）
-        priceVisibility?: 'HIDE' | 'SHOW';
-      }>;
-      categories?: Array<{                // カテゴリごとのビルド情報
-        name: string;
-        items: Array<{
-          name: string;
-          note?: string;
-        }>;
-      }>;
+      featured?: Array<{ label: string; value: string; priceAmount?: number; ... }>;
+      categories?: Array<{ name: string; items: Array<{ name: string; note?: string }> }>;
     };
   };
 }
 ```
 
-**車両のactiveShareProfileIds:**
-```typescript
-interface Car {
-  // ... 他のフィールド
-  activeShareProfileIds?: {
-    normal?: string;        // 通常リンクのShareProfile ID
-    sale_buyer?: string;    // 買い手向けリンクのShareProfile ID
-    sale_appraiser?: string; // 査定会社向けリンクのShareProfile ID
-  };
-  // 後方互換性のため
-  activeSaleProfileId?: string;
-}
-```
+**Firestoreコレクション**: `shareProfiles/{shareProfileId}`
 
-## UI/UX仕様
+---
 
-### デザイン原則
-- モダンでクリーンなデザイン
-- レスポンシブ対応
-- 直感的なナビゲーション
-- 一貫性のあるカラーテーマ（青系）
+## 4. 機能仕様（Current Spec）
 
-### レイアウト
-- サイドバーナビゲーション
-- メインコンテンツエリア
-- モーダルダイアログ
-- カード形式の情報表示
+### 4.1 車両管理
 
-### インタラクション
-- フィルター機能（車両別、検索）
-- 一括操作（削除など）
-- リアルタイム更新
-- エラーハンドリング
-- プラン制限の表示（車両数制限、機能制限）
-- アップグレード促進UI
+#### 4.1.1 車両登録
 
-## ビジネスロジック
+- **無料プラン**: 1台まで
+- **プレミアムプラン**: 無制限
 
-### データ整合性
-- 走行距離の整合性チェック（過去記録 ≤ 新規記録 ≤ 現在車両走行距離）
-- 関連データの自動更新
-- Zodスキーマによる型安全なバリデーション
+#### 4.1.2 車両情報管理
 
-### 車両制限ロジック
-- **無料プラン**: 1台まで車両登録可能
-- **2代目以降**: プレミアムプラン（月額480円）が必要
-- **車両追加時の制限チェック**: プランに応じた車両数の制限
-- **画像アップロード制限**: 無料プランは1台分のみ、プレミアムは全車両対応
+- 車名、メーカー、モデル、年式
+- 走行距離（ODO）
+- 車検期限（Timestamp）
+- 車両画像（Firebase Storage）
 
-### アフィリエイト機能
-- Amazon/Rakutenへのリンク生成
-- UTMパラメータ付与
-- 車種適合商品の自動選択
+### 4.2 給油記録（Fuel Logs）
 
-## セキュリティ
+#### 4.2.1 記録の登録・編集・削除
 
-### 認証・アクセス制御
+- 走行距離（ODOメーター or トリップメーター）
+- 給油量（UI入力: L、保存: ml）
+- 金額（円）
+- L価格（単価、円/L）
+- 燃料種別（レギュラー・ハイオク・軽油・EV充電）
+- スタンド名
+- 満タンフラグ
+- 給油日時（Timestamp）
+- メモ
+
+#### 4.2.2 OCR機能（プレミアム）
+
+- レシート自動読み取り
+- 給油量（L）の自動抽出
+- 金額（円）の自動抽出
+- L価格（単価）の自動抽出
+- 初回無料体験: 1枚のみ無料体験
+
+### 4.3 メンテナンス記録
+
+#### 4.3.1 記録の登録・編集・削除
+
+- タイトル（選択式: オイル交換、ブレーキフルード交換など）
+- 説明（自由記述）
+- 費用（円）
+- 走行距離（必須、現在の車両走行距離以上）
+- 日付（Timestamp）
+- 場所（自由記述）
+
+### 4.4 カスタマイズ記録
+
+#### 4.4.1 記録の登録・編集・削除
+
+- タイトル（カスタマイズ名）
+- ブランド、型番
+- カテゴリ（複数選択可）
+- ステータス（計画中、注文済み、取付済み、一時取外し、取外し）
+- 実施日（Timestamp）
+- 走行距離（km、オプション）
+- 実施場所（自分で実施、整備工場、ディーラー）
+- 費用内訳（部品代、工賃、その他）
+- 商品リンク（URL）
+- メモ
+- 公開設定
+
+### 4.5 共有機能
+
+#### 4.5.1 共有URL方式（Current Spec）
+
+**正規方式**: `/s/[slug]`（slug方式）
+
+- **URL形式**: `https://garagelog.jp/s/{slug}`
+- **slug生成**: 十分長いランダム値（例: 32文字の英数字）
+- **アクセス制御**: サーバ側で期限/失効判定
+- **失効**: `status: 'disabled'` または `activeShareProfileIds` から削除
+- **有効期限**: slug自体に期限は持たない（サーバ側で管理）
+
+**一致条件**:
+- `vehicle.activeShareProfileIds[type] === shareProfile.id` の場合のみ有効
+
+#### 4.5.2 署名トークン（別用途）
+
+- **用途**: PDF生成や機密操作（APIアクセス用）
+- **生成**: Cloud Functionsでのみ生成（JWT、HS256）
+- **有効期限**: 7日間（PDFエクスポート）、30日間（共有URL）
+- **失効機能**: `revokedAt`による即座の無効化
+
+---
+
+## 5. セキュリティ・権限（Current Spec）
+
+### 5.1 認証・アクセス制御
+
 - Firebase Authenticationによる認証
 - Firebase Storageの権限管理（ユーザー別アクセス制御）
 - ユーザー別データ分離（マルチテナンシー）
 - 論理削除（deletedAt）による安全なデータ削除
 - 監査ログ（Audit Log）による操作履歴の追跡
 
-### データ保護
-- **署名トークン**: Cloud Functionsでのみ生成する。クライアント側での秘密鍵管理・署名は行わない。
-  - **方式**: JWT（HS256）+ kid（鍵ローテーション対応）
-  - **PDFエクスポート**: 7日間有効のトークン
-  - **共有URL**: 30日間有効のトークン
-  - **失効機能**: revokedAtによる即座の無効化
-  - **スコープ制御**: `share:car` / `share:vehicle-history`
-- **PDF署名埋め込み**: エクスポート元の正当性証明
+### 5.2 Firestoreルール
+
+- すべてのエンティティで `userId` または `ownerUid` が必須
+- ユーザーは自分のデータのみアクセス可能
+- 論理削除されたデータはクエリで除外
+
+### 5.3 データ保護
+
 - 入力値の検証（Zod）
 - エラーハンドリング
-- 画像アップロードのセキュリティ（認証済みユーザーのみ）
-
-### 共有プロフィール（shareProfiles / saleProfiles）
-```typescript
-interface ShareProfile extends BaseEntity {
-  vehicleId: string;                       // 車両ID
-  ownerUid: string;                        // オーナーUID
-  type: 'normal' | 'sale' | 'appraisal' | 'sale_buyer' | 'sale_appraiser';  // 用途種別
-  status: 'active' | 'disabled';           // ステータス
-  slug: string;                            // URLスラッグ
-  visibility?: 'unlisted' | 'public' | 'disabled'; // 公開設定（後方互換）
-  includeEvidence: boolean;                // 証跡を含めるか
-  includeAmounts: boolean;                 // 金額を含めるか
-  highlightTopN: number;                   // 重要イベント上位N件
-  analyticsEnabled: boolean;               // アナリティクス有効化
-  maskPolicy?: 'auto' | 'strict' | 'custom'; // マスク強度
-  viewCount?: number;                      // 閲覧回数
-  lastPublishedAt?: Timestamp;             // 最終公開日時
-  issuedAt?: Timestamp;                    // 発行日時
-  lastUpdatedAt?: Timestamp;               // 最終更新日時
-  verificationId?: string;                  // 検証ID
-  
-  // SNS共有（通常リンク）用フィールド（type="normal"のみ）
-  sns?: {
-    settings?: {
-      showPricesInDetails?: boolean;        // Detailsセクション内に価格を表示するか
-    };
-    conceptTitle?: string;                 // 短い肩書き
-    conceptBody?: string;                 // 紹介文（30〜200字）
-    highlightParts?: Array<{              // 主要カスタム最大6件
-      label: string;
-      value: string;
-    }>;
-    gallery?: Array<{                     // 画像3〜12枚
-      id: string;
-      path: string;
-      caption?: string;
-    }>;
-    socialLinks?: {                       // SNSリンク
-      youtube?: string;
-      instagram?: string;
-      x?: string;
-      web?: string;
-    };
-    build?: {
-      featured?: Array<{                  // 主要パーツ（最大30件）
-        label: string;
-        value: string;
-        priceAmount?: number;              // 具体的な価格（JPY）
-        priceCurrency?: 'JPY';
-        priceKind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET';
-        priceAsOf?: string;               // 価格の時点（YYYY-MM形式）
-        priceVisibility?: 'HIDE' | 'SHOW';
-      }>;
-      categories?: Array<{                // カテゴリごとのビルド情報
-        name: string;
-        items: Array<{
-          name: string;
-          note?: string;
-        }>;
-      }>;
-    };
-  };
-}
-```
-
-**車両のactiveShareProfileIds:**
-```typescript
-interface Car {
-  // ... 他のフィールド
-  activeShareProfileIds?: {
-    normal?: string;        // 通常リンクのShareProfile ID
-    sale_buyer?: string;    // 買い手向けリンクのShareProfile ID
-    sale_appraiser?: string; // 査定会社向けリンクのShareProfile ID
-  };
-  // 後方互換性のため
-  activeSaleProfileId?: string;
-}
-```
-
-### 監査証跡
-```typescript
-interface AuditLog {
-  entityType: 'car' | 'maintenance' | 'fuelLog' | 'customization' | 'user';
-  entityId: string;
-  action: 'create' | 'update' | 'delete';
-  actorUid: string;
-  at: Timestamp;
-  before?: any;  // 変更前データ
-  after?: any;   // 変更後データ
-}
-```
-
-## パフォーマンス
-
-### Firestoreクエリ最適化
-- **ページング実装**: カーソルベースのページネーション（limit付きクエリ）
-  - cars: 50件/ページ
-  - maintenance: 100件/ページ
-  - fuelLogs: リアルタイムリスナーでlimit適用
-- **複合インデックス設計**: 
-  - carId + date + deletedAt
-  - ownerUid + date + deletedAt
-  - カテゴリ + ステータス + date
-- **論理削除フィルタリング**: クエリレベルでdeletedAt除外
-
-### クライアントサイド最適化
-- リアルタイムデータ同期（onSnapshot）
-- 効率的なクエリ設計
-- クライアントサイドキャッシュ
-- **画像圧縮**: 最長辺1600px、品質85%、最大800KB
-- Firebase Storageの最適化されたアップロード
-- **OCR Web Worker化**: メインスレッドをブロックしない非同期処理
-- **IndexedDBキャッシュ**: traineddataのローカルキャッシュ
-
-## プレミアム機能（月額480円 / 年額4,800円）
-
-### 無料プランの制限
-- **車両登録**: 1台まで（2台目以降はプレミアム必須）
-- **OCRスキャン**: 利用不可 🔒
-- **PDFエクスポート**: 利用不可
-- **履歴共有URL**: 利用不可
-- **リマインダー**: 車両あたり5件まで
-- **スヌーズ**: 3回まで
-- **広告**: 表示あり
-- **証憑アップロード**: 月1枚まで（メンテナンス/カスタマイズ記録の領収書等）
-
-### プレミアム機能（主要4機能）
-1. **複数車両登録**: 無制限の車両を登録・管理
-2. **OCRスキャン**: レシート・保険証券を自動読み取り 🎯
-3. **PDFエクスポート**: 全車両の履歴書生成
-4. **履歴共有URL**: 署名付き安全な共有リンク
-
-### プレミアム機能（追加）
-- **高度なリマインダー**: 無制限、走行距離ベースの推定表示
-- **スヌーズ無制限**: リマインダーのスヌーズ回数制限なし
-- **領収書自動保存**: OCRスキャン結果の自動保存
-- **自動次回予定登録**: メンテナンス完了時に次回を自動設定
-- **複数候補レコメンド**: オイル交換時に複数の商品候補
-- **フィルター同時表示**: 複数フィルタの組み合わせ
-- **詳細データ分析**: 高度な統計レポート
-- **優先サポート**: 優先的なカスタマーサポート
-- **広告非表示**: アプリ内広告の非表示
-- **証憑アップロード無制限**: メンテナンス/カスタマイズ記録の領収書等を無制限でアップロード可能
-
-### ペイウォールUI
-- **3つのvariant**: 
-  - `default`: 標準的なペイウォール（全機能表示）
-  - `minimal`: シンプルな1機能訴求
-  - `hero`: 大きなヒーロー訴求
-- **A/Bテスト対応**: variant切り替えによる効果測定
-- **インライン訴求**: 車両管理画面での自然なアップグレード誘導
-- **機能制限時の表示**: 利用不可機能へのアクセス時にペイウォール表示
-
-### 課金転換ファネル追跡
-```typescript
-// アナリティクスイベント
-- paywall_shown: ペイウォール表示
-- paywall_click: アップグレードボタンクリック
-- subscribe_started: 購読開始
-- subscribe_success: 購読成功
-- subscribe_failed: 購読失敗
-- evidence_upload_blocked: 証憑アップロード制限超過
-- evidence_upload_success: 証憑アップロード成功
-- upgrade_from_evidence: 証憑制限からのアップグレード
-```
-
-## 実装済み機能
-
-### コア機能
-- ✅ 車両管理（CRUD）
-  - ✅ TypeaheadCarSelectorによる車種選択
-  - ✅ 画像アップロード（Firebase Storage）
-  - ✅ デフォルト画像選択
-- ✅ 給油記録（CRUD）
-  - ✅ **OCR機能**: レシート自動読み取り（Tesseract.js）
-  - ✅ 給油量・金額・L価格の自動抽出
-  - ✅ 小数点第1位制限
-  - ✅ 燃料種別（レギュラー・ハイオク・軽油・EV充電）
-  - ✅ スタンド名記録
-  - ✅ 燃費自動計算
-- ✅ メンテナンス記録（CRUD）
-  - ✅ フィルター機能（車両、カテゴリ、ステータス、検索）
-  - ✅ 並び替え機能
-  - ✅ 走行距離整合性チェック
-  - ✅ 明細行・添付ファイル対応（データモデル準備済み）
-- ✅ カスタマイズ記録（CRUD）
-  - ✅ 複数カテゴリ選択
-  - ✅ ステータス管理
-  - ✅ 費用内訳（部品代・工賃・その他）
-
-### データ管理・エクスポート
-- ✅ データエクスポート（CSV、JSON、PDF）
-  - ✅ エクスポート機能の統合（データページに集約）
-  - ✅ **PDF署名埋め込み**: Cloud Functions JWT署名（7日有効）
-  - ✅ **共有URL署名トークン**: Cloud Functions JWT署名（30日有効）
-  - ✅ 改ざん防止・真正性証明
-- ✅ クライアントサイド画像圧縮（1600px、85%品質、最大800KB）
-- ✅ 進捗監視付きアップロード
-- ✅ アフィリエイトリンク生成
-- ✅ **共有URL閲覧ページ** v2.2.0 🆕
-  - ✅ 署名トークン検証（有効期限・形式チェック）
-  - ✅ 読み取り専用の軽量UI
-  - ✅ 車両情報・メンテナンス履歴の表示
-  - ✅ 統計情報（総記録数、総費用、平均費用）
-  - ✅ アクセスログ記録（プレースホルダ）
-  - ✅ エラーハンドリング（無効トークン、期限切れ、データなし）
-  - ✅ セキュアな共有リンク（30日間有効）
-
-### プレミアム機能・収益化
-- ✅ **ペイウォールUI**
-  - ✅ 3つのvariant（default, minimal, hero）
-  - ✅ 車両数制限チェック（無料: 1台、プレミアム: 無制限）
-  - ✅ PDF/共有機能の制限
-  - ✅ インライン訴求（車両管理画面）
-- ✅ **課金転換ファネル追跡**
-  - ✅ アナリティクスイベント実装
-  - ✅ paywall_shown, paywall_click, subscribe_*
-- ✅ **Stripe決済統合** v2.2.0 🆕
-  - ✅ サブスクリプション管理（月額480円 / 年額4,800円）
-  - ✅ Checkout Session作成
-  - ✅ カスタマーポータル（解約・請求書確認）
-  - ✅ Webhook処理（subscription.created/updated/deleted）
-  - ✅ 決済成功/キャンセルページ
-  - ✅ 請求管理ページ
-  - ✅ 7日間無料トライアル
-- ✅ **広告機能** v2.2.0 🆕
-  - ✅ プレースホルダー広告（sidebar, banner, inline）
-  - ✅ 表示頻度制御（最大3個/ページ、10回/日）
-  - ✅ プレミアムユーザーには非表示
-  - ✅ アフィリエイト広告カード
-  - ✅ プライバシー配慮トラッキング（個人情報なし）
-  - ✅ Google Analytics連携（匿名化）
-
-### パフォーマンス・セキュリティ
-- ✅ **Firestoreページング**
-  - ✅ limit付きクエリ（cars: 50件、maintenance: 100件）
-  - ✅ 複合インデックス設計（firestore.indexes.json）
-  - ✅ カーソルベースのページネーション基盤
-- ✅ **データ整合性・監査**
-  - ✅ 論理削除（deletedAt）
-  - ✅ 所有権フィールド（ownerUid, createdBy, updatedBy）
-- ✅ **Firestore/Storageルール強化** v2.2.0 🆕
-  - ✅ 必須フィールド検証（hasRequiredFields）
-  - ✅ データサイズ制限（車両: 100KB、メンテ: 500KB、燃料: 50KB）
-  - ✅ フィールド値検証（文字列長、数値範囲）
-  - ✅ タイムスタンプ妥当性チェック（1年前〜1日後）
-  - ✅ ユーザーID整合性チェック
-  - ✅ 画像サイズ制限（10MB上限）
-  - ✅ 許可画像タイプ（JPEG, PNG, WebP, HEIC）
-  - ✅ メタデータ検証（ownerUid必須）
-  - ✅ 監査ログ（Audit Log）
-  - ✅ データ型統一（inspectionExpiry: Date型）
-- ✅ **OCR最適化**
-  - ✅ Web Worker基盤実装
-  - ✅ IndexedDBキャッシュ機能
-- ✅ **観測性（Observability）** v2.2.0 🆕
-  - ✅ Sentry統合（エラー監視・セッションリプレイ）
-  - ✅ ユーザーIDタグ付け（ログイン時自動設定）
-  - ✅ カスタムブレッドクラム（ユーザーアクション追跡）
-  - ✅ パフォーマンストレース（0.1サンプリング）
-  - ✅ エラーフィルタリング（ブラウザ拡張機能除外）
-  - ✅ Cloud Logging構造化ログ
-  - ✅ 重要イベントログ（ocr_started/completed/failed等）
-  - ✅ 環境別設定（development/production）
-  - ✅ オフライン対応準備
-
-### UI/UX改善
-- ✅ 統一された追加ボタン（+ アイコン）
-- ✅ CustomizationModalのcontrolled/uncontrolledエラー修正
-- ✅ **リマインダー機能強化**
-  - ✅ avgKmPerMonthによる推定日数表示
-  - ✅ 車検期限の推定走行距離表示
-- ✅ 通知設定
-- ✅ 保険管理
-- ✅ データバリデーション（Zod）
-- ✅ **マイカーページv2.0**（2025年11月実装）
-  - ✅ GTスタイルの車両詳細データ表示
-  - ✅ 12セクションの包括的な情報表示
-  - ✅ カスタムパーツの折りたたみ表示（12カテゴリ）
-  - ✅ 車両ヘルスインジケータ（オイル/ブレーキ/バッテリー）
-  - ✅ 活動タイムライン（給油/メンテ/カスタム/保険の統合）
-  - ✅ コスト&燃費ダッシュボード（4枚カード + スパークライン）
-  - ✅ 燃費・単価チャート（タブ切替）
-  - ✅ 次回メンテナンス提案（テンプレート作成）
-  - ✅ 横スクロールクイックアクション
-  - ✅ レスポンシブ対応（3カラムグリッド）
-  - ✅ 登録促進UI（カスタムパーツ0件時）
-- ✅ **空/エラー/オフライン状態UI** v2.2.0 🆕
-  - ✅ EmptyStateコンポーネント（汎用空状態）
-  - ✅ EmptyCarState（車両未登録）
-  - ✅ EmptyMaintenanceState（メンテ記録なし）
-  - ✅ EmptySearchState（検索結果なし）
-  - ✅ OfflineState（オフライン通知バナー）
-  - ✅ NetworkErrorState（ネットワークエラー）
-  - ✅ ErrorBoundary（アプリ全体のエラー捕捉）
-  - ✅ useOnlineStatus（オンライン状態監視フック）
-  - ✅ アクセシビリティ向上（h1タグ追加）
-
-### 法務・サポート v2.2.0 🆕
-- ✅ **法務ページ完備**
-  - ✅ プライバシーポリシー（11章構成）
-    - 収集する情報、使用目的、情報の共有
-    - Cookie・トラッキング、ユーザーの権利
-    - データの削除、子供のプライバシー
-  - ✅ 利用規約（12章構成）
-    - 適用、定義、登録、アカウント管理
-    - プレミアムプラン（料金・自動更新・解約）
-    - 禁止事項、知的財産権、免責事項
-    - 準拠法・管轄（東京地方裁判所）
-  - ✅ 特定商取引法表記
-    - 事業者情報、料金、返金ポリシー
-    - 連絡先（メール・電話）
-- ✅ **サポート動線強化**
-  - ✅ フィードバック送信フォーム
-  - ✅ カテゴリ選択（バグ・機能リクエスト・質問・その他）
-  - ✅ よくある質問（FAQ）
-    - 請求・支払い（解約、返金、領収書）
-    - 機能・使い方（プレミアム、OCR、エクスポート）
-    - アカウント（パスワード、削除）
-  - ✅ 既知の不具合セクション
-  - ✅ お問い合わせ方法（メール・電話）
-  - ✅ 関連リンク集約
-
-### テスト・品質保証 v2.2.0 🆕
-- ✅ **E2Eテスト（Playwright）**
-  - ✅ テスト環境構築（Chromium/Firefox/WebKit/Mobile）
-  - ✅ 認証フローテスト（ログイン画面）
-  - ✅ 車両管理フローテスト（追加・編集）
-  - ✅ エラーハンドリングテスト（404、オフライン、無効トークン）
-  - ✅ アクセシビリティテスト（h1タグ、alt属性、キーボード操作）
-  - ✅ パフォーマンステスト（ページ読み込み速度）
-  - ✅ テストスクリプト（test, test:ui, test:headed, test:debug）
-  - ✅ HTMLレポート生成
-  - ✅ スクリーンショット・ビデオ録画（失敗時）
-- ✅ **品質管理**
-  - ✅ 75件のE2Eテスト実装
-  - ✅ 29件のテスト成功（前回比+4件）
-  - ✅ 21件のテスト失敗（認証依存 - 正常）
-  - ✅ 25件のテストスキップ（認証依存テストを適切にスキップ）
-  - ✅ 本番ビルド成功
-  - ✅ アクセシビリティテスト改善（認証依存テストをスキップ）
-
-## 実装予定機能
-- 🔄 メンテナンス記録のOCR機能（費用・日付・店舗名の読み取り）
-- 🔄 OCR WorkerのFuelLogModalへの完全統合
-- ✅ ~~決済システム統合（Stripe）~~ → **v2.2.0で実装完了** 🎉
-- ✅ ~~共有URL閲覧ページ~~ → **v2.2.0で実装完了** 🎉
-- ✅ ~~署名検証機能~~ → **v2.2.0で実装完了** 🎉
-- ✅ ~~E2Eテスト環境~~ → **v2.2.0で実装完了** 🎉
-- ✅ ~~法務ページ~~ → **v2.2.0で実装完了** 🎉
-- ✅ ~~サポート動線~~ → **v2.2.0で実装完了** 🎉
-- 🔄 実際の広告ネットワーク統合（Google AdSense等）
-- 🔄 PWA対応（オフライン同期）
-- 🔄 モバイルアプリ版（React Native）
-- 🔄 マルチ言語対応（i18n）
-- 🔄 AIによるメンテナンス推奨機能
-- 🔄 サムネイル生成（Cloud Functions）
-- 🔄 複合インデックスの作成（Firebase Console）
-- 🔄 サーバーサイドトークン検証（Firebase Functions）
-- 🔄 負荷テスト（1,000同時接続レベル）
-- ✅ 本番ドメイン設定（garagelog.jp） 🆕
-- 🔄 メールDNS設定（SPF/DKIM/DMARC）
-
-## 開発・運用
-
-### バージョン管理
-- Git によるバージョン管理
-- **最新コミット**: cb74f46（テスト修正と最終サマリー）
-- **主要コミット**: 
-  - `cb74f46` - テスト修正・最終サマリー追加
-  - `4a91b0c` - SPECIFICATION.md更新
-  - `cabe315` - v2.2.0メイン実装（9機能、11,255行追加）
-- **総コミット数**: 125コミット
-- **変更ファイル数**: 54ファイル
-- **追加行数**: 11,255行
-- 開発環境でのテストデータ対応
-
-### テスト環境 v2.2.0 🆕
-- **E2Eテスト**: Playwright 1.56.1
-- **テストブラウザ**: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
-- **テスト実行**: `npm run test`
-- **UIモード**: `npm run test:ui`
-- **デバッグモード**: `npm run test:debug`
-- **テストレポート**: HTMLレポート自動生成（http://localhost:9323）
-- **スクリーンショット**: 失敗時に自動キャプチャ
-- **ビデオ録画**: 失敗時に自動録画
-
-### 品質保証
-- **ビルドテスト**: `npm run build` ✅
-- **Firebaseルールテスト**: Firebase Emulator
-- **セキュリティルール**: デプロイ済み
-- **型チェック**: TypeScript strict mode
-- **Linter**: ESLint
-
-### モニタリング v2.2.0 🆕
-- **エラー監視**: Sentry（クライアント/サーバー/Edge）
-- **ログ基盤**: Cloud Logging構造化ログ
-- **アナリティクス**: Google Analytics（匿名化）
-- **パフォーマンス**: Vercel Analytics
-- **決済監視**: Stripe Dashboard
-- 本番環境でのFirebase設定
-- ESLint設定（警告レベルでの開発）
-- TypeScript型安全性の確保
-
-## 技術的改善
-- ✅ Zodスキーマによるバリデーション
-- ✅ 型安全なイベント追跡システム（アナリティクス）
-- ✅ 証明性データ生成（ハッシュ化、署名）
-- ✅ プレミアム機能ガード（usePremiumGuard）
-- ✅ メニュー名称の最適化
-- ✅ データモデル拡張（BaseEntity、論理削除、監査）
-- ✅ パフォーマンス最適化（ページング、インデックス）
-- ✅ セキュリティ強化（署名トークン、監査ログ）
-- ✅ メンテナンス提案システム（2軸判定、優先度スコア）🆕
-- ✅ Firestoreセキュリティルール対応（userId必須化）🆕
-- ✅ 製品名統一（garage log）🆕
-
-## 新規作成ファイル
-
-### v2.4.0 🆕
-- `src/lib/maintenanceSuggestions.ts`: メンテナンス提案ロジック（450行）
-- `src/components/mycar/NextMaintenanceSuggestion.tsx`: 提案UIコンポーネント（270行）
-- `MAINTENANCE_SUGGESTIONS_IMPLEMENTATION.md`: 実装ドキュメント
-- `PRODUCT_NAME_CHANGE_IMPACT.md`: 製品名変更影響範囲レポート
-- `FIRESTORE_PERMISSION_FIX.md`: Firestoreパーミッション修正レポート
-
-### v1.4.0
-- `src/lib/signatureToken.ts`: エクスポート署名システム
-- `src/lib/firestorePagination.ts`: ページネーション機能
-- `src/lib/ocrWorker.ts`: OCR Web Worker基盤
-- `src/lib/auditLog.ts`: 監査ログシステム
-- `src/lib/analytics.ts`: アナリティクスイベント追跡
-- `src/components/modals/PaywallModal.tsx`: ペイウォールUI
-- `src/hooks/usePremium.ts`: プレミアム機能フック
-- `firestore.indexes.json`: 複合インデックス定義
+- PDF署名埋め込み（エクスポート元の正当性証明）
 
 ---
 
-## OCR機能の技術詳細
+## 6. Implementation Notes
 
-### 給油レシートOCR
-#### 対応パターン
+### 6.1 Timestamp変換の実装
+
+**必須**: `src/lib/converters.ts` の関数を使用すること。
+
 ```typescript
-// 給油量の抽出パターン
-/(\d+\.?\d*)\s*[LℓＬ]/i
-/(\d+\.?\d*)\s*リットル/i
-/数量.*?(\d+\.?\d*)/i
-
-// 金額の抽出パターン
-/合計.*?[¥￥]?\s*(\d{1,3}(?:,?\d{3})*)/i
-/金額.*?[¥￥]?\s*(\d{1,3}(?:,?\d{3})*)/i
-/[¥￥]\s*(\d{1,3}(?:,?\d{3})*)/
-/(\d{1,3}(?:,?\d{3})*)\s*円/
-
-// L価格の抽出パターン
-/単価.*?[¥￥]?\s*(\d+\.?\d*)/i
-/(\d+\.?\d*)\s*円\s*[/／]\s*[LℓＬ]/i
-/[LℓＬ]\s*[¥￥]?\s*(\d+\.?\d*)/i
-```
-
-#### 処理フロー
-1. 画像ファイルの読み込み（カメラ or ファイル選択）
-2. Tesseract.jsによるOCR処理（日本語+英語）
-3. 正規表現による数値抽出
-4. バリデーション（妥当性チェック）
-5. フォームへの自動入力
-6. ユーザーによる確認・修正
-
-#### 精度向上策
-- 複数パターンマッチング
-- フォールバック処理
-- 金額と給油量からL価格を自動計算
-- 小数点第1位での四捨五入
-
-### 将来のOCR拡張（メンテナンス記録）
-- 費用（合計金額）
-- 作業日（日付）
-- 店舗名/作業場所
-- 走行距離（オプション）
-- 作業内容の推定（オプション）
-
-*最終更新: 2025年11月10日*
-## 画像管理機能の詳細
-
-### Firebase Storage統合
-- **認証ベースのアクセス制御**: ユーザーごとのディレクトリ分離
-- **セキュアなアップロード**: 認証済みユーザーのみアクセス可能
-- **進捗監視**: リアルタイムアップロード進捗表示
-- **タイムアウト処理**: 30秒のタイムアウト設定
-- **エラーハンドリング**: アップロード失敗時の適切な処理
-
-### クライアントサイド画像処理
-- **自動圧縮**: アップロード前の画像最適化
-- **品質調整**: ファイルサイズと画質のバランス
-- **形式変換**: 最適な画像形式への変換
-- **プレビュー機能**: アップロード前の画像確認
-
-### ストレージ構造
-```
-users/{userId}/cars/{carId}/{timestamp}_{filename}
-users/{userId}/temp/{timestamp}_{filename}  // 一時ファイル
-```
-
-## バージョン履歴
-
-### v2.0.0 (2025-11-02) 🚗✨
-**マイカーページv2.0 - GTスタイルの車両詳細データ表示**
-
-#### 新規実装：マイカーページv2.0
-- **12セクションの包括的な情報表示**
-  - 車両ヘッダー（ミニヒーロー）
-  - クイックアクション（横スクロール）
-  - 車両データパネル（GTスタイル、2カラム）
-  - カスタムパーツ一覧（独立セクション、12カテゴリ）
-  - 車両ヘルスインジケータ
-  - 活動タイムライン（過去30日）
-  - コスト&燃費ダッシュボード（4枚カード + スパークライン）
-  - 燃費・単価チャート（タブ切替）
-  - 次回メンテナンス提案
-  - ドキュメント&OCRドラフト
-  - 共有&PDF
-  - コンテキスト広告（無料ユーザーのみ）
-
-- **GTスタイルの車両データパネル**
-  - 基本情報、走行データ、メンテナンス統計
-  - 給油統計、コストサマリー、車検情報
-  - パフォーマンス評価（燃費効率、メンテ頻度、コスト効率）
-  - 等幅フォントで数値を整列表示
-  - S/A/B/C/D 評価システム
-
-- **カスタムパーツ管理**
-  - 12カテゴリのアコーディオン表示
-  - カスタム/純正の明確な区別
-  - 駆動系（クラッチ、LSD、デフ等）を含む
-  - サブカテゴリの例示
-  - 登録促進UI（0件時のバナー、各カテゴリに登録ボタン）
-
-- **インテリジェント推奨機能**
-  - オイル交換の残量推定（走行距離+経過日数）
-  - ブレーキ&タイヤの残量推定
-  - バッテリー経過月表示
-  - 次回メンテナンス自動提案（6種類）
-  - テンプレートからの作成機能
-
-#### バグ修正・改善
-- **42個のLintエラー完全解消**
-  - Timestamp/Date型の不一致修正（26箇所）
-  - Optional chaining追加（9箇所）
-  - 算術演算の型エラー修正（8箇所）
-  - 後方互換性の確保
-
-- **日付処理の型安全性向上**
-  - `src/lib/dateUtils.ts` 新規作成
-  - `toDate()`, `toMillis()`, `toTimestamp()`, `daysFromNow()`
-  - Timestamp/Date の混在問題を解決
-
-- **Firebase Storage画像対応**
-  - `next.config.ts` に firebasestorage.googleapis.com を追加
-  - Next.js Image最適化機能を活用
-
-#### 新規ファイル（18ファイル）
-- `src/components/mycar/MyCarPage.tsx`
-- `src/components/mycar/VehicleHeader.tsx`
-- `src/components/mycar/QuickActions.tsx`
-- `src/components/mycar/VehicleSpecsPanel.tsx`
-- `src/components/mycar/CustomPartsPanel.tsx`
-- `src/components/mycar/VehicleHealthIndicator.tsx`
-- `src/components/mycar/ActivityTimeline.tsx`
-- `src/components/mycar/CostAndFuelDashboard.tsx`
-- `src/components/mycar/FuelAndPriceChart.tsx`
-- `src/components/mycar/NextMaintenanceSuggestion.tsx`
-- `src/components/mycar/DocumentsAndDrafts.tsx`
-- `src/components/mycar/ShareAndPDF.tsx`
-- `src/components/mycar/ContextualAd.tsx`
-- `src/components/mycar/utils.ts`
-- `src/lib/dateUtils.ts`
-- `MYCAR_PAGE_INTEGRATION.md`
-- `MYCAR_PAGE_BUGFIX.md`
-- `ERROR_FIXES_SUMMARY.md`
-
-#### コミット履歴
-- `b78744b` feat: カスタムパーツの登録促進UIを追加
-- `b43be09` refactor: カスタムパーツを独立したセクションに分離
-- `071b45f` refactor: カスタムパーツのカテゴリ名からアイコンを削除
-- `29ed296` feat: カスタムパーツの表示機能を追加
-- `bf067c1` style: 車両データパネルの文字を濃く見やすく改善
-- `757839f` fix: 車検情報のnullチェックを追加
-- `77eb298` refactor: 車両データパネルをライトテーマに変更
-- `9e6778d` feat: GTスタイルの車両データパネルを追加
-- `7fd32f1` feat: 新しいマイカーページv2.0を実装し、全エラーを修正
-
-### v1.5.0 (2025-11-02) 🎯
-**OCR機能のプレミアム化＆保険管理強化**
-
-#### OCR機能の収益化
-- **プレミアム化**: OCRスキャン機能を有料化
-  - 給油レシートスキャン 🔒
-  - 保険証券スキャン 🔒
-  - 無料ユーザー → ペイウォール表示（minimal variant）
-  - ボタンクリック時にプレミアムチェック
-- **主要機能に昇格**: ペイウォールの2番目に表示
-- **課金誘導**: minimal variantで効果的な訴求
-- **UI表示**: 🔒アイコン + 「プレミアム機能」明記
-
-#### 保険管理の大幅強化
-- **データモデル拡張**: 20以上のフィールド追加
-  - 契約者情報、車両詳細、分割払い情報
-  - ノンフリート等級、割引情報（配列）
-  - 補償詳細（搭乗者傷害、弁護士特約等）
-- **OCR抽出強化**: 
-  - 商品名、契約者氏名、ナンバー、車台番号
-  - 等級、分割払い（初回・2回目以降・回数）
-  - 割引8種類の自動検出
-- **実際の保険証券対応**: ソニー損保形式を参考に設計
-
-#### OCR精度向上
-- **画像前処理2段階**:
-  - imagePreprocessor: 基本的な前処理
-  - imageEnhancer: 保険証券特化の高度処理
-- **3倍アップスケール**: 小さい文字対策
-- **シャープネスフィルタ**: 3x3カーネルでエッジ強調
-- **適応的ヒストグラム平坦化**: コントラスト自動最適化
-- **日本語特化設定**: Tesseract.js（jpn言語）
-
-#### UX改善
-- 🔒アイコンでプレミアム機能を明示
-- 読み取り結果の詳細表示（展開可能）
-- 撮影ガイドの強化
-- 手動入力推奨の案内
-
-#### 開発者向け機能
-- **環境変数設定**: `.env.local`でプレミアム制御
-  - `NEXT_PUBLIC_DEV_ALL_PREMIUM=true`: 全員プレミアム
-  - `NEXT_PUBLIC_DEVELOPER_EMAILS`: 開発者メール登録
-- **認証状態監視**: ログイン後即座にプラン更新
-- **動的UI表示**: プランに応じたアイコン・テキスト変更
-  - Free: 青色アイコン、グレーテキスト
-  - Premium: ゴールドグラデーション、✨マーク
-
-#### UI改善
-- ページタイトル統一: 「ダッシュボード」→「ガレージ」
-- プレミアムプラン表示: ゴールドグラデーション + ✨
-
-#### 新規ファイル
-- src/lib/imageEnhancer.ts: 高度な画像強化
-- src/lib/imagePreprocessor.ts: 基本的な前処理
-- .env.local: 開発環境設定
-- README.md更新: プレミアムテスト方法追加
-
-### v1.4.0 (2025-11-02) 🎉
-**高影響度改善の実装**
-
-#### 収益化・ビジネス
-- **ペイウォールUI**: 3つのvariant（default, minimal, hero）でA/Bテスト対応
-- **車両数制限**: 無料プラン1台、プレミアムプラン無制限
-- **課金転換ファネル追跡**: アナリティクスイベント実装
-- **インライン訴求**: 車両管理画面でのアップグレード誘導
-
-#### セキュリティ・データ保護
-- **署名トークン**: Cloud Functionsでのみ生成する。クライアント側での秘密鍵管理・署名は行わない。
-  - JWT（HS256）+ kid（鍵ローテーション対応）
-  - PDFエクスポート: 7日間有効
-  - 共有URL: 30日間有効
-- **PDF署名埋め込み**: エクスポート元の正当性証明
-- **監査ログ**: 全データ操作の追跡（create/update/delete）
-- **論理削除**: deletedAtによる安全なデータ削除
-
-#### パフォーマンス最適化
-- **Firestoreページング**: limit付きクエリ（cars: 50件、maintenance: 100件）
-- **複合インデックス設計**: firestore.indexes.jsonによる定義
-- **OCR Web Worker基盤**: メインスレッドをブロックしない非同期処理
-- **IndexedDBキャッシュ**: traineddataのローカルキャッシュ
-
-#### データモデル拡張
-- **BaseEntity**: 所有権・監査フィールドの統一
-- **FuelLog拡張**: fuelType, stationName, unit追加
-- **MaintenanceRecord拡張**: 明細行・添付ファイル対応
-- **データ型統一**: inspectionExpiryをDate型に統一
-
-#### UI/UX改善
-- **リマインダー強化**: avgKmPerMonthによる推定日数表示
-- **車検期限表示**: 推定走行距離の表示
-- **画像圧縮最適化**: 1600px、85%品質、最大800KB
-
-#### 新規ファイル（8個）
-- `src/lib/signatureToken.ts`
-- `src/lib/firestorePagination.ts`
-- `src/lib/ocrWorker.ts`
-- `src/lib/auditLog.ts`
-- `src/lib/analytics.ts`
-- `src/components/modals/PaywallModal.tsx`
-- `src/hooks/usePremium.ts`
-- `firestore.indexes.json`
-
-### v1.3.0 (2025-11-01)
-- **新機能**: 給油記録のOCR機能（レシート自動読み取り）
-- **UI改善**: 統一された追加ボタン、エクスポート機能統合
-- **バグ修正**: CustomizationModalエラー修正
-
-### v1.2.0 (2025-09)
-- **新機能**: 画像アップロード機能（Firebase Storage統合）
-- **新機能**: クライアントサイド画像圧縮
-
-### v1.1.0
-- 基本的な車両管理・メンテナンス記録機能
-
-### v2.0.0 (2025-11-02) - ハイインパクトリファクタリング
-
-**🎯 抜本的アーキテクチャ改善（10大FB完全実装）**
-
-#### 1. Date/Timestamp完全統一（FB1）
-- **BaseEntity型の厳格化**: すべての日時フィールドをFirestore Timestampに統一
-- **deletedAt null統一**: クエリ最適化のため未削除を`null`で統一
-- **後方互換性**: Date型からの自動変換をサポート
-- **影響範囲**: 全エンティティ（Car, MaintenanceRecord, FuelLog, Customization, InsurancePolicy）
-- **バグ根絶**: Date | string混在による将来のバグを完全撤廃
-
-#### 2. Cloud Functions署名システム（FB2）
-- **セキュリティ強化**: クライアントHMAC-SHA256を完全廃止
-- **JWT署名**: HS256 + kid（鍵ローテーション対応）
-- **短命トークン**: 7日間有効（PDF）、30日間有効（共有URL）
-- **失効機能**: revokedAtによる即座の無効化
-- **スコープ制御**: `share:car` / `share:vehicle-history`
-- **新規Cloud Functions**: 5関数（generatePdfExportToken, generateShareToken, verifyShareToken, revokeShareToken, verifyPdfExportToken）
-- **監査証跡**: アクセスカウント、lastAccessedAt記録
-
-#### 3. FuelLog物理量統一（FB3）
-- **EV完全対応**: 物理量ベース（ml / Wh整数）
-- **新フィールド**: `quantity`, `unit` (EnergyUnit), `totalCostJpy`, `pricePerUnit`
-- **後方互換性**: 旧フィールド（fuelAmount, cost, pricePerLiter）を@deprecated化
-- **マイグレーション**: watchFuelLogs内で旧→新形式を自動変換
-- **表示ヘルパー**: `getDisplayAmount()`, `getDisplayCost()`
-- **燃費計算**: EVを自動除外、ガソリンのみ計算
-
-#### 4. OCRドラフト2段階保存（FB4）
-- **新型定義**: `FuelLogDraft`, `MaintenanceDraft`, `InsurancePolicyDraft`
-- **FieldMetadata**: source（ocr/rule/user/llm）, confidence（0-1）, originalValue, editedByUser
-- **ドラフトステータス**: pending_review / confirmed / rejected
-- **新ライブラリ**: `src/lib/ocrDrafts.ts`（CRUD操作、confidence計算、要確認判定）
-- **修正学習の土台**: フィールド単位でソース・信頼度を記録
-
-#### 5. 保険OCR勝ち筋絞り込み（FB5）
-- **抽出フィールド削減**: 全20+項目 → 勝ち筋6項目
-- **最優先フィールド**: 保険会社、証券番号、契約開始日、満期日、等級、年間保険料
-- **削除した処理**: 商品名、契約者氏名、住所、車両情報、分割払い詳細、割引情報（-70行）
-- **メモ欄活用**: 詳細情報は手動入力推奨
-- **精度向上**: フォーカスを絞ることで認識精度向上
-
-#### 6. ペイウォール行動後発火（FB6）
-- **CVR最適化**: 「操作前チェック」→「結果成立直前チェック」に変更
-- **価値体験優先**: OCR成功を体験させてから課金誘導
-- **フリーミアムモデル**: ボタンクリック→OCR実行→成功→ペイウォール表示
-- **文脈表示**: 「OCRスキャンに成功しました！自動入力はプレミアムで...」
-
-#### 7. Storageルール厳格化（FB7）
-- **メタデータ検証**: `customMetadata.ownerUid == request.auth.uid`を必須化
-- **二重チェック**: パスベース + メタデータの両方で検証
-- **アップロード時記録**: ownerUid, uploadedAtをメタデータに追加
-- **不正防止**: users/{userId}/パス偽装を完全防止
-
-#### 8. Firestoreインデックス最適化（FB8）
-- **キー順統一**: carId (asc) → deletedAt (asc) → date (desc)
-- **新規インデックス**: carsコレクション（ownerUid → deletedAt → createdAt）
-- **customizations拡張**: status付きインデックス追加
-- **クエリ安定化**: deletedAt null統一でインデックス効率化
-
-#### 9. OCRファネルアナリティクス（FB9）
-- **新イベント**: `ocr_started`, `ocr_autofill_done`, `ocr_field_edited`
-- **ボトルネック可視化**: どのフィールドが低精度か追跡
-- **成功指標**: 入力フィールド数、平均confidence記録
-- **改善の土台**: データドリブンなOCR精度改善
-
-#### 10. 画像前処理高度化（FB10）
-- **罫線薄化**: テーブル構造のOCRノイズ除去
-- **適応二値化**: 局所的な明度変化に対応（16x16ブロック）
-- **台形補正**: プレースホルダー実装（将来拡張用）
-- **オプション制御**: useLineThinning, useAdaptiveBinarization
-- **統合**: imagePreprocessor.ts + imageEnhancer.ts
-
----
-
-### 🏗️ 新規作成ファイル
-- `functions/src/index.ts`: Cloud Functions実装
-- `functions/package.json`: Cloud Functions依存関係
-- `functions/tsconfig.json`: Cloud Functions TypeScript設定
-- `src/lib/cloudFunctions.ts`: Cloud Functions呼び出しラッパー
-- `src/lib/ocrDrafts.ts`: OCRドラフト管理
-
-### 📝 主要更新ファイル
-- `src/types/index.ts`: BaseEntity統一、Draft型追加、物理量統一
-- `src/lib/cars.ts`, `src/lib/maintenance.ts`, `src/lib/fuelLogs.ts`, `src/lib/customizations.ts`, `src/lib/insurance.ts`: Timestamp対応
-- `src/lib/analytics.ts`: OCRファネルイベント追加
-- `src/lib/imagePreprocessor.ts`: 罫線薄化・適応二値化
-- `storage.rules`: メタデータ検証追加
-- `firestore.indexes.json`: インデックス最適化
-
-### 🔧 技術的負債の解消
-- ❌ Date | string混在 → ✅ Timestamp統一
-- ❌ クライアントHMAC → ✅ Cloud Functions JWT
-- ❌ ガソリン特化FuelLog → ✅ EV対応物理量統一
-- ❌ OCR一発保存 → ✅ ドラフト2段階
-- ❌ 全フィールドOCR → ✅ 勝ち筋に絞る
-
-### 📊 期待効果
-- 🐛 将来のバグリスク: 80%削減
-- 🔒 セキュリティ: JWT署名で真正性保証
-- ⚡ OCR精度: フォーカスで20-30%向上
-- 💰 CVR: 価値体験後ペイウォールで15-25%向上
-- 🚗 EV対応: 物理量統一で基盤完成
-
----
-
-## 🏗️ 情報アーキテクチャ v2.1：役割の明確化
-
-### 設計思想：時間軸×粒度で役割を切る
-
-#### 役割定義
-- **ダッシュボード** = 今すぐ動くための全車横断ハブ（短期・薄く広く）
-  - Job: ① 未処理の"赤/黄"をゼロにする（今日のTo-Do）、② 直近の傾向を掴み、次の1手を決める（軽い比較）
-  
-- **マイカー** = 1台に深く潜る作戦室（中長期・深く狭く）
-  - Job: ① 1台の現状を正しく把握（指標×履歴×書類）、② 次のメンテ計画を作る（テンプレ→自動入力→予約リンク）
-
-#### 基本原則
-> **ダッシュボードは「上位N件＋"すべてを見る"」まで。編集系や深堀りは必ずマイカーページに委譲。**
-
----
-
-### Ownership Matrix（機能の所有権）
-
-| 機能/情報 | ダッシュボード（全車） | マイカー（単車） |
-|---------|-----------------|---------------|
-| **重要アラート**（車検/保険/リコール/未確認OCR） | ✅ 要約（上位3件） | ✅ 完全一覧＋根拠（残日数・履歴リンク） |
-| **次のアクション**（給油/メンテ/書類登録） | ✅ 1クリックCTA（対象車にジャンプ） | ✅ 事前入力テンプレ＋自動見積もり |
-| **燃費/コスト可視化** | ✅ スパークライン&順位（直近30日/全車比較） | ✅ 詳細チャート（期間/分位/車種補正/注釈） |
-| **活動タイムライン** | ✅ 直近7日ダイジェスト | ✅ 無制限フィルタ＋添付/メモ込み |
-| **カスタマイズ** | ⛔ **出さない**（カードが重くなる） | ✅ 12カテゴリ完全版 |
-| **PDF/共有** | ✅ ショートカットだけ | ✅ 実行画面（署名・オプション） |
-| **コンテキスト広告** | ✅ 全車横断1枠 | ⛔ **非表示**（プレミアム優先） |
-| **編集フォーム** | ⛔ **すべてマイカーページへ** | ✅ 全モーダル |
-
----
-
-### ナビゲーションと遷移の約束
-
-#### 1. 深リンク必須
-```typescript
-// ダッシュボードのカードからマイカーの特定セクションへ
-<Card onClick={() => navigate(`/vehicle/${carId}?tab=fuel&action=add`)}>
-  
-// URLパターン
-/                              // ダッシュボード（全車）
-/vehicle/{carId}               // マイカートップ
-/vehicle/{carId}?tab=fuel      // 給油セクション
-/vehicle/{carId}?tab=maintenance&action=add  // メンテ追加モーダル直起動
-```
-
-#### 2. 車両バッジ
-- ダッシュボードのすべてのカードに**車両バッジ**（例：🚗 FL5）
-- クリックでマイカーの該当セクションへ深リンク
-
-#### 3. ヘッダー車両ドロップダウンの文脈
-- **マイカーページ**: 車両切り替えドロップダウン表示
-- **ダッシュボード**: "全車"固定、ドロップダウン非表示（迷わせない）
-
-#### 4. パンくずナビゲーション
-```
-ダッシュボード > Honda Civic FL5 > メンテナンス
-```
-
-#### 5. URLクエリ契約（型定義とガード）🆕
-- `tab`: `fuel | maintenance | custom | insurance`
-- `action`: `add | add-fuel | add-maintenance | add-customization | add-insurance`
-- `draft`: `string`（ドラフトID）
-- `template`: `string`（テンプレート識別子）
-- 挙動:
-  - 未知値は無視（安全側）
-  - `readOnly`（売却/廃車）時は `action` による編集系の実行を無効化
-  - 有効な `tab` は該当セクションにスクロール（スムーズ）
-
----
-
-### 具体UI設計
-
-#### ダッシュボード（全車横断）
-
-##### 上段：アラート集約
-```typescript
-<AlertHub>
-  {/* 車検期限（上位3件） */}
-  <Alert severity="high" car="FL5" daysLeft={14}>
-    車検期限まであと14日
-    <Button onClick={() => navigate('/vehicle/xxx?tab=inspection')}>
-      詳細を見る →
-    </Button>
-  </Alert>
-  
-  {/* 保険満期（上位3件） */}
-  {/* 未確認OCRドラフト */}
-  {/* 低燃費警告 */}
-  
-  <Link to="/alerts">すべてのアラート (12) →</Link>
-</AlertHub>
-```
-
-##### 中段：全車ランキング＋スパークライン
-```typescript
-<RankingCard title="燃費ランキング（直近30日）">
-  {cars.map(car => (
-    <RankRow 
-      car={car} 
-      metric={car.avgFuelEfficiency} 
-      sparkline={last30DaysData}
-      rank={rank}
-      onClick={() => navigate(`/vehicle/${car.id}?tab=fuel`)}
-    />
-  ))}
-</RankingCard>
-
-<RankingCard title="コスト効率（¥/km、車種補正済み）">
-  {/* 同様 */}
-</RankingCard>
-```
-
-##### 下段：今日やること（自動提案3件）
-```typescript
-<ActionSuggestions>
-  <ActionCard
-    icon="⛽"
-    title="給油推奨"
-    car="FL5"
-    reason="前回給油から450km走行"
-    onClick={() => navigate('/vehicle/xxx?tab=fuel&action=add')}
-  >
-    1クリック追加 →
-  </ActionCard>
-  
-  <ActionCard
-    icon="🔧"
-    title="オイル交換時期"
-    car="GDB"
-    reason="前回交換から5,200km"
-    onClick={() => navigate('/vehicle/yyy?tab=maintenance&template=oil')}
-  >
-    テンプレから作成 →
-  </ActionCard>
-  
-  <ActionCard
-    icon="📄"
-    title="OCRドラフト確認"
-    car="FL5"
-    reason="未確認の給油レシート1件"
-    onClick={() => navigate('/vehicle/xxx?tab=fuel&draft=zzz')}
-  >
-    確認する →
-  </ActionCard>
-</ActionSuggestions>
-```
-
----
-
-#### マイカー（単車深堀り）
-
-##### ヘッダー：車両カード＋3バッジ
-```typescript
-<VehicleHeader car={car}>
-  <Badge type="inspection" status={getInspectionStatus(car)}>
-    車検 残り{daysLeft}日
-  </Badge>
-  <Badge type="insurance" status={getInsuranceStatus(car)}>
-    保険 {provider}
-  </Badge>
-  {isPremium && <Badge type="premium">Premium</Badge>}
-</VehicleHeader>
-```
-
-##### 2カラムレイアウト
-```typescript
-<Grid cols={2}>
-  {/* 左カラム：基本/走行/メンテ統計 */}
-  <Panel title="基本情報">...</Panel>
-  <Panel title="走行データ">...</Panel>
-  <Panel title="メンテナンス統計">
-    {/* 理想頻度との適合度を表示 */}
-  </Panel>
-  
-  {/* 右カラム：燃料/コスト/車検/評価バー */}
-  <Panel title="給油統計">
-    <DetailChart type="fuel" period="all" annotations={true} />
-  </Panel>
-  <Panel title="コストサマリー">
-    {/* 車種補正済みのコスト効率 */}
-  </Panel>
-  <Panel title="パフォーマンス評価">
-    <PerformanceBar label="メンテナンス品質" value={maintenanceScore} />
-    <PerformanceBar label="コスト効率" value={costEfficiencyScore} subtitle={`¥${costPerKm}/km (${vehicleClass})`} />
-  </Panel>
-</Grid>
-```
-
-##### セクション：カスタム・チャート・提案・ドキュメント
-```typescript
-<Sections>
-  <CustomPartsPanel categories={12} />  {/* 折りたたみUI */}
-  <FuelAndPriceChart detailed={true} />  {/* 重厚版チャート */}
-  <NextMaintenanceSuggestion templates={true} autoEstimate={true} />
-  <DocumentsPanel ocr={true} />
-</Sections>
-```
-
----
-
-### 重複をなくす運用ルール（実装しやすい順）
-
-#### 1. ダッシュボードでは"表示のみ・編集なし"
-```typescript
-// ❌ ダッシュボードに置かない
-<FuelLogForm />
-<MaintenanceModal />
-
-// ✅ ダッシュボードに置く
-<QuickAction onClick={() => navigate('/vehicle/xxx?action=add-fuel')}>
-  給油を追加 →
-</QuickAction>
-```
-
-#### 2. チャートは軽量版/重厚版をコンポーネント分割
-```typescript
-// src/components/charts/ChartMini.tsx（ダッシュボード用）
-export function SparklineChart({ data, height = 40 }) {
-  return <Sparklines data={data} height={height} />;
-}
-
-// src/components/charts/ChartPro.tsx（マイカー用）
-export function DetailedChart({ data, annotations, period, filters }) {
-  return (
-    <ResponsiveContainer>
-      <LineChart data={data}>
-        <XAxis />
-        <YAxis />
-        <Tooltip />
-        <Line dataKey="value" />
-        {annotations && <ReferenceArea />}
-      </LineChart>
-    </ResponsiveContainer>
-  );
-}
-```
-
-#### 3. カードに"根拠"を置かない
-```typescript
-// ❌ ダッシュボードのカードに詳細を展開
-<Card>
-  <Title>燃費が悪化しています</Title>
-  <Details>
-    <Chart />  // 重い
-    <Table />  // 重い
-  </Details>
-</Card>
-
-// ✅ ダッシュボードは要約のみ
-<Card>
-  <Title>燃費が悪化しています</Title>
-  <Summary>直近3回の平均: 8.2km/L（前月比-15%）</Summary>
-  <Link to="/vehicle/xxx?tab=fuel#analysis">
-    詳細を見る →
-  </Link>
-</Card>
-```
-
-#### 4. 深リンク必須
-```typescript
-// すべての"もっと見る"が車両ページ特定タブへ
-const deepLinks = {
-  fuelDetail: `/vehicle/${carId}?tab=fuel`,
-  maintenanceAdd: `/vehicle/${carId}?tab=maintenance&action=add`,
-  customizationCategory: `/vehicle/${carId}?tab=custom&category=engine`,
-  ocrDraft: `/vehicle/${carId}?tab=fuel&draft=${draftId}`,
-};
-```
-
----
-
-### データ/クエリ設計の切り分け
-
-#### ダッシュボード用ビュー（集約・最新N件）
-```typescript
-// Firestore構造
-dashboard_summary/{uid} {
-  lastUpdated: Timestamp,
-  alerts: {
-    inspection: [{ carId, carName, daysLeft, severity }], // 上位3件
-    insurance: [...],
-    ocrDrafts: [...],
-    lowFuelEfficiency: [...]
-  },
-  rankings: {
-    fuelEfficiency: [{ carId, value, sparkline30d: number[] }],
-    costEfficiency: [{ carId, value, sparkline30d: number[] }]
-  },
-  actionSuggestions: [
-    { type: 'fuel', carId, reason, priority },
-    { type: 'maintenance', carId, template, reason, priority },
-    { type: 'ocr', carId, draftId, reason, priority }
-  ]
-}
-
-// Cloud Functions で更新（トリガー: onWrite of fuelLogs/maintenance/cars）
-exports.updateDashboardSummary = functions.firestore
-  .document('users/{uid}/cars/{carId}/fuelLogs/{logId}')
-  .onWrite(async (change, context) => {
-    // 集約処理
-    await updateSummary(context.params.uid);
-  });
-```
-
-#### 車両ページ用クエリ（生データ＋ページング）
-```typescript
-// 既存のコレクション構造を使用
-users/{uid}/cars/{carId}/fuelLogs
-users/{uid}/cars/{carId}/maintenance
-users/{uid}/cars/{carId}/customizations
-
-// クエリ最適化（インデックス活用）
-const fuelLogsQuery = query(
-  collection(db, `users/${uid}/cars/${carId}/fuelLogs`),
-  orderBy('date', 'desc'),
-  limit(50)  // 無限スクロールで追加読み込み
-);
-```
-
-#### 体感速度目標
-- **ダッシュボード**: 100ms台でスケルトン解除（集約データ読み込み）
-- **マイカー**: 段階ロード（基本情報→グラフ→履歴）
-
----
-
-### ナビゲーションフロー
-
-#### 1. 車両バッジからの遷移
-```typescript
-// ダッシュボードの各カードに車両バッジ
-<Card>
-  <VehicleBadge 
-    name="FL5" 
-    onClick={() => navigate(`/vehicle/${carId}?tab=fuel`)}
-  />
-  <Content>燃費が悪化...</Content>
-</Card>
-```
-
-#### 2. ヘッダー車両ドロップダウンの文脈制御
-```typescript
-// page.tsx
-{currentPage === 'dashboard' ? (
-  // ダッシュボード：ドロップダウン非表示
-  <Header showCarSelector={false} />
-) : currentPage === 'my-car' ? (
-  // マイカー：ドロップダウン表示（車両切り替え）
-  <Header showCarSelector={true} activeCars={activeCars} />
-) : null}
-```
-
-#### 3. パンくずナビゲーション
-```typescript
-<Breadcrumbs>
-  <Link to="/">ダッシュボード</Link>
-  <Separator />
-  <Link to={`/vehicle/${carId}`}>{car.name} {car.modelCode}</Link>
-  <Separator />
-  <Current>メンテナンス</Current>
-</Breadcrumbs>
-```
-
----
-
-### 計測指標（やって良かったかを測る）
-
-#### KPI定義
-```typescript
-// src/lib/analytics.ts に追加
-
-// 1. 混線率（車両ページ→ダッシュボード直帰率）
-export function logPageNavigation(from: 'dashboard' | 'vehicle', to: 'dashboard' | 'vehicle') {
-  logEvent('page_navigation', { from, to });
-}
-
-// 目標: vehicle→dashboard直帰率 < 10%
-
-// 2. 解決時間（アラート発生→解消までの中央値）
-export function logAlertResolved(alertType: string, minutesToResolve: number) {
-  logEvent('alert_resolved', { alertType, minutesToResolve });
-}
-
-// 目標: ダッシュボード主導で解決時間を30%短縮
-
-// 3. 深リンククリック率
-export function logDeepLinkClicked(from: 'dashboard', to: 'vehicle', tab: string) {
-  logEvent('deeplink_clicked', { from, to, tab });
-}
-
-// 目標: クリック率 > 60%
-
-// 4. テンプレート保存率
-export function logTemplateUsed(template: string, saved: boolean) {
-  logEvent('template_used', { template, saved });
-}
-
-// 目標: 保存率 > 80%
-```
-
----
-
-### スプリント1：すぐできる差分タスク
-
-#### Phase 1: UI整理（1-2日）
-- [ ] ダッシュボードの編集UI撤去
-  - [ ] `DashboardContent`からフォーム関連のprops削除
-  - [ ] 全CTAを**車両ページ深リンク**に変更
-  - [ ] `setShowMaintenanceModal`等の呼び出しを`navigate`に置換
-
-#### Phase 2: コンポーネント分割（2-3日）
-- [ ] ChartMini/ChartPro の分割
-  - [ ] `src/components/charts/SparklineChart.tsx`作成（ダッシュボード用）
-  - [ ] `src/components/charts/DetailedChart.tsx`作成（マイカー用）
-  - [ ] propsは互換性維持
-
-- [ ] "上位3件＋もっと見る" 統一ルールを全カードに適用
-  - [ ] `AlertHub`: 上位3件＋"すべてのアラート→"
-  - [ ] タイムライン: 直近7日＋"すべての履歴→"
-  - [ ] ランキング: 上位5台＋"すべての車両→"
-
-#### Phase 3: データ最適化（3-4日）
-- [ ] `dashboard_summary` 集約データ生成
-  - [ ] Cloud Functions: `updateDashboardSummary`
-  - [ ] トリガー: fuelLogs/maintenance/cars の onWrite
-  - [ ] 集約: alerts（上位3件）、rankings、actionSuggestions
-
-#### Phase 4: 深リンク実装（2-3日）
-- [ ] URLクエリパラメータ対応
-  - [ ] `?tab=fuel&action=add` でモーダル直起動
-  - [ ] `?draft=xxx` でOCRドラフト直開
-  - [ ] パンくずナビゲーション追加
-
-#### Phase 5: 計測実装（1-2日）
-- [ ] 計測イベント追加
-  - [ ] `dash_deeplink_clicked`
-  - [ ] `vehicle_from_dash_resolved`
-  - [ ] `alert_resolution_time`
-  - [ ] `template_save_rate`
-
----
-
-### 実装優先度
-
-#### 🔴 最優先（今週）
-1. ダッシュボードの編集UI撤去
-2. 深リンク基本実装
-3. 車両バッジ追加
-
-#### 🟡 重要（来週）
-4. ChartMini/Pro分割
-5. "上位N件"統一ルール
-6. dashboard_summary生成
-
-#### 🟢 次回（再来週以降）
-7. パンくずナビゲーション
-8. 計測ダッシュボード
-9. A/Bテスト（車両ドロップダウン表示/非表示）
-
----
-
-## 📋 設計メモ（将来の改善案）
-
-> **注意**: 以下のセクションは「将来の改善案」であり、現在の仕様ではありません。実装済みの機能については各機能セクションを参照してください。
-
-### 優先度A：速攻改善ポイント（設計メモ）
-
-### 1. メンテナンス評価ロジックの改善 ⚠️
-
-#### 現状の問題
-- **現在**: メンテ回数が多いほど高評価（逆誘導の恐れ）
-- **問題点**: 不要な整備を促進してしまう可能性
-
-#### 改善提案：理想頻度との差分評価
-```typescript
-// 各整備項目の理想サイクル定義
-const IDEAL_MAINTENANCE_CYCLES = {
-  'オイル交換': { months: 6, km: 5000 },
-  'エレメント交換': { months: 12, km: 10000 },
-  'タイヤ交換': { months: 36, km: 30000 },
-  'ブレーキパッド': { months: 24, km: 20000 },
-  // ... 他の項目
+import { toTimestamp, timestampToDate } from '@/lib/converters';
+
+// Firestore書き込み前
+const cleanData = {
+  ...data,
+  date: toTimestamp(data.date),
 };
 
-// スコア計算式
-// スコア = 1 - |実績周期 - 理想周期| / 理想周期
-// 0–1の範囲を0–100%に変換
-function calculateMaintenanceScore(actual: number, ideal: number): number {
-  const deviation = Math.abs(actual - ideal);
-  const score = Math.max(1 - (deviation / ideal), 0);
-  return Math.min(score * 100, 100);
-}
+// UI表示用
+const displayDate = timestampToDate(timestamp);
 ```
 
-#### 実装ファイル
-- `src/components/mycar/VehicleSpecsPanel.tsx`: メンテナンススコアの計算ロジック
-- `src/lib/maintenance.ts`: 理想サイクル定数の定義
+### 6.2 FuelLog単位変換の実装
 
----
+**必須**: `src/lib/converters.ts` の関数を使用すること。
 
-### 2. コスト効率の車種特性補正 ⚠️
-
-#### 現状の問題
-- **現在**: 全車種で一律20円/kmを基準に評価
-- **問題点**: 軽自動車とスポーツカーで必要コストが大きく異なる
-
-#### 改善提案：車種クラス係数の導入
 ```typescript
-// 車種クラス係数
-const CLASS_FACTORS = {
-  '軽自動車': 0.7,
-  'コンパクト': 0.85,
-  'Cセグメント': 1.0,   // 基準
-  'Dセグメント': 1.15,
-  'ミニバン': 1.2,
-  'SUV': 1.25,
-  'スポーツ': 1.3,
-  'スーパーカー': 1.8,
-};
+import { 
+  litersToMilliliters, 
+  kilowatthoursToWatthours,
+  getDisplayFuelAmount 
+} from '@/lib/converters';
 
-// 補正後のコスト効率
-const costPerKmAdjusted = costPerKm / classFactor;
+// UI入力（L）→ Firestore保存（ml）
+const quantityMl = litersToMilliliters(inputLiters);
 
-// スコア計算（基準20円/kmで評価）
-const costEfficiencyScore = Math.max((1 - costPerKmAdjusted / 20) * 100, 0);
+// UI入力（kWh）→ Firestore保存（Wh）
+const quantityWh = kilowatthoursToWatthours(inputKwh);
+
+// 表示用
+const display = getDisplayFuelAmount(fuelLog);
 ```
 
-#### 実装方法
-1. `Car`型に `vehicleClass?: string` フィールドを追加
-2. `AddCarModal.tsx` で車種クラスの選択肢を追加
-3. `VehicleSpecsPanel.tsx` でクラス係数を適用したスコア計算
+### 6.3 ルート遷移の実装
 
-#### 実装ファイル
-- `src/types/index.ts`: `Car`インターフェースに`vehicleClass`追加
-- `src/components/modals/AddCarModal.tsx`: 車種クラス選択UI
-- `src/components/mycar/VehicleSpecsPanel.tsx`: 補正ロジック実装
-
----
-
-### 3. FuelLogの単位整合（物理量と価格の分離） ⚠️
-
-#### 現状の問題
-- **二重表現**: `unit: 'JPY/L'` は価格単位だが、`fuelAmount`の物理単位(L)と混在
-- **型不一致**: `EnergyUnit = 'ml' | 'wh'` なのに実装では `'JPY/L'` を使用
-
-#### 改善提案：物理量と価格を明確に分離
 ```typescript
-// 新しい型定義
-export interface FuelLogInput {
-  carId: string;
-  odoKm: number;
-  
-  // 物理量（統一）
-  quantity: number;           // 給油量または充電量
-  quantityUnit: 'L' | 'kWh';  // リットル or キロワット時
-  
-  // 価格情報
-  totalCostJpy: number;       // 合計金額（円）
-  pricePerUnit?: number;      // 単価（円/L or 円/kWh）
-  
-  // メタデータ
-  isFullTank: boolean;
-  fuelType: FuelType;
-  stationName?: string;
-  memo?: string;
-  date: Timestamp;
-}
+import { useRouter } from 'next/navigation';
 
-// 既存フィールド（後方互換）
-// @deprecated - 新規実装では quantity を使用
-fuelAmount?: number;
-// @deprecated - 新規実装では pricePerUnit を使用  
-pricePerLiter?: number;
+const router = useRouter();
+
+// 車両選択付きで遷移
+router.push(`/mycar?car=${carId}`);
+
+// 深リンクでモーダルを開く
+router.push(`/cars/${carId}?tab=fuel&action=add`);
 ```
 
-#### マイグレーション戦略
-1. 新フィールド追加（`quantity`, `quantityUnit`, `totalCostJpy`, `pricePerUnit`）
-2. 既存データ読み込み時に自動変換ヘルパで補完
-3. 表示は新フィールド優先、なければ既存フィールドにフォールバック
-4. 新規保存は新フィールドのみ使用
+### 6.4 Share機能の実装
 
-#### 実装ファイル
-- `src/types/index.ts`: FuelLog型の更新
-- `src/lib/fuelLogs.ts`: マイグレーションヘルパー追加
-- `src/components/modals/FuelLogModal.tsx`: フォーム更新
-
----
-
-### 4. Date/Timestampの完全統一 ⚠️
-
-#### 現状の問題
-- **仕様の矛盾**: `BaseEntity`では`Date | string`だが、v2.0では「Timestamp統一」と記載
-- **型の不整合**: 一部で`Date`、一部で`Timestamp`、一部で`string`が混在
-
-#### 改善提案：全フィールドをTimestampに統一
 ```typescript
-// BaseEntity の完全Timestamp統一
-export interface BaseEntity {
-  id?: string;
-  ownerUid?: string;
-  createdBy?: string;
-  updatedBy?: string;
-  deletedAt?: Timestamp | null;  // Timestamp型に統一
-  createdAt?: Timestamp;          // Timestamp型に統一
-  updatedAt?: Timestamp;          // Timestamp型に統一
-}
-
-// すべての日付フィールド
-export interface Car extends BaseEntity {
+// ShareProfileの作成
+const shareProfile = {
+  vehicleId: carId,
+  ownerUid: userId,
+  type: 'normal',
+  status: 'active',
+  slug: generateRandomSlug(32),  // 十分長いランダム値
   // ...
-  inspectionExpiry?: Timestamp;  // Date → Timestamp
-  soldDate?: Timestamp;          // Date → Timestamp
-}
+};
 
-export interface MaintenanceRecord extends BaseEntity {
-  date: Timestamp;  // Date → Timestamp
-  nextDue?: Timestamp;
-}
+// 共有URLの生成
+const shareUrl = `https://garagelog.jp/s/${shareProfile.slug}`;
 
-export interface FuelLog extends BaseEntity {
-  date: Timestamp;  // Date → Timestamp
-}
-```
-
-#### 変換ヘルパーの強制適用
-```typescript
-// src/lib/dateUtils.ts
-export function toTs(input: Date | string | Timestamp | null | undefined): Timestamp | null {
-  if (!input) return null;
-  if (input instanceof Timestamp) return input;
-  if (typeof input === 'string') return Timestamp.fromDate(new Date(input));
-  if (input instanceof Date) return Timestamp.fromDate(input);
-  return null;
-}
-
-// 全CRUD操作で強制適用
-export async function addCar(data: CarInput) {
-  const cleanData = {
-    ...data,
-    inspectionExpiry: data.inspectionExpiry ? toTs(data.inspectionExpiry) : null,
-    // ...
-  };
-  // Firestoreに保存
-}
-```
-
-#### 実装ファイル
-- `src/types/index.ts`: 全インターフェースの日付フィールドをTimestamp統一
-- `src/lib/dateUtils.ts`: `toTs()`ヘルパー追加
-- 全CRUDファイル (`cars.ts`, `maintenance.ts`, `fuelLogs.ts`, etc.): 変換ヘルパー適用
-
----
-
-### 5. 売却済み車両の到達不能問題 ⚠️
-
-#### 現状の問題
-- **良い点**: ドロップダウンとメニューから売却済み車両を除外 ✅
-- **問題点**: 履歴PDFや共有リンク、過去データが見られない
-
-#### 改善提案：READ ONLY詳細閲覧の許可
-```typescript
-// 車両管理ページから売却済み車両の詳細へ遷移
-<CarCard
-  car={soldCar}
-  readOnly={true}  // 編集不可モード
-  onClick={() => {
-    setActiveCarId(soldCar.id);
-    setCurrentPage('my-car');  // 詳細ページへ遷移
-  }}
-/>
-
-// マイカーページでREAD ONLYバナー表示
-{car.status === 'sold' && (
-  <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-    <div className="flex items-center gap-2 text-orange-800">
-      <svg className="w-5 h-5">...</svg>
-      <span className="font-semibold">この車両は売却済みです（閲覧専用）</span>
-    </div>
-    <p className="text-sm text-orange-700 mt-2">
-      売却日: {toDate(car.soldDate)?.toLocaleDateString('ja-JP')}
-      {car.soldPrice && ` / 売却価格: ¥${car.soldPrice.toLocaleString()}`}
-    </p>
-  </div>
-)}
-
-// 編集ボタンを無効化
-<button disabled={car.status === 'sold'} ...>
-```
-
-#### 共有リンクの自動失効
-```typescript
-// 共有リンク生成時に車両ステータスをチェック
-export async function generateShareLink(carId: string): Promise<string> {
-  const car = await getCar(carId);
-  
-  if (car.status === 'sold') {
-    // 既存リンクを失効させるか確認
-    const shouldRegenerate = confirm(
-      'この車両は売却済みです。\n共有リンクを再発行しますか？\n（既存のリンクは無効になります）'
-    );
-    if (!shouldRegenerate) return '';
-    
-    // リンク再発行時に「閲覧専用」フラグを付与
-    const token = await createShareToken({
-      carId,
-      readOnly: true,
-      expiresAt: Timestamp.fromDate(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)), // 90日
-    });
-    return `${window.location.origin}/share/${token}`;
-  }
-  
-  // 通常のリンク生成
-  // ...
-}
-```
-
-#### 実装ファイル
-- `src/app/page.tsx`: 売却済み車両の詳細閲覧ロジック追加
-- `src/components/mycar/MyCarPage.tsx`: READ ONLYバナーと編集制限
-- `src/lib/shareLink.ts`: ステータスチェックと失効ロジック
-- `src/components/mycar/VehicleHeader.tsx`: 売却バッジの表示改善
-
----
-
-### 6. プレミアム発火タイミングの最適化（OCR） ⚠️
-
-#### 現状
-- ✅ 結果成立直前ペイウォールは実装済み
-
-#### 改善提案：信頼度ベースの発火
-```typescript
-// OCR処理後の信頼度チェック
-async function handleOcrResult(result: Tesseract.RecognizeResult) {
-  const confidence = result.data.confidence / 100; // 0-1の範囲に正規化
-  
-  if (confidence > 0.65) {
-    // 高信頼度：プレミアム機能として価値提供
-    if (!isPremium) {
-      showPaywall('ocr_scan', 'success_moment');
-      return; // ペイウォールを表示して停止
-    }
-    // プレミアムユーザーは自動入力
-    autoFillForm(result.data.text);
-  } else {
-    // 低信頼度：無料で体験させて不満を減らす
-    console.log('OCR confidence低 - 無料体験として提供');
-    showOcrDraft(result.data.text); // ドラフトとして表示
-    
-    // 補足メッセージ
-    showNotification({
-      type: 'info',
-      message: '読み取り精度が低いため、手動入力をお勧めします。プレミアムプランでは高精度OCRをご利用いただけます。',
-      action: { label: '詳細を見る', onClick: () => showPaywall('ocr_scan', 'minimal') }
-    });
-  }
-}
-```
-
-#### A/Bテスト案
-- **パターンA**: 信頼度65%以上でペイウォール
-- **パターンB**: 信頼度80%以上でペイウォール
-- **KPI**: CVR、離脱率、満足度アンケート
-
-#### 実装ファイル
-- `src/components/modals/FuelLogModal.tsx`: OCR信頼度チェック
-- `src/components/modals/InsuranceModal.tsx`: OCR信頼度チェック
-- `src/components/modals/MaintenanceModal.tsx`: OCR信頼度チェック（将来実装）
-- `src/lib/analytics.ts`: `logOcrConfidenceAnalysis`イベント追加
-
----
-
-## 🚀 デプロイ情報
-
-### Vercelへのデプロイ
-- **プラットフォーム**: Vercel
-- **本番URL**: https://smart-garage-mmwgktgq1-kobayashis-projects-6366834f.vercel.app
-- **デプロイ方法**: `npx vercel --prod --yes`
-- **自動デプロイ**: GitHubにプッシュすると自動的にVercelがビルド＆デプロイ
-
-### ビルド設定
-- **ビルドコマンド**: `npm run build`
-- **出力ディレクトリ**: `.next`
-- **Node.jsバージョン**: 20.x
-- **環境変数**: 
-  - Firebase設定（`.env.local`）
-  - Sentry DSN v2.2.0 🆕
-  - Stripe API キー v2.2.0 🆕
-  - 詳細は `DEPLOYMENT_CHECKLIST.md` を参照
-
-### Next.js ビルド設定（next.config.ts）
-```typescript
-{
-  typescript: {
-    ignoreBuildErrors: true,  // 型エラーを一時的に無視
+// 車両のactiveShareProfileIdsを更新
+await updateCar(carId, {
+  activeShareProfileIds: {
+    normal: shareProfile.id,
   },
-  eslint: {
-    ignoreDuringBuilds: true,  // ESLintエラーを一時的に無視
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-        port: '',
-        pathname: '/v0/b/**',
-      },
-    ],
-  },
-}
+});
 ```
 
 ---
 
-**最新バージョン: 2.5.0**  
-**最終コミットID: 5656656**  
-**主要コミット**: 
-- `cb74f46` - テスト修正と最終サマリー追加
-- `4a91b0c` - SPECIFICATION.md更新
-- `cabe315` - v2.2.0メイン実装（9機能）
-**総コミット数: 125コミット**  
-**本番環境**: https://garagelog.jp（Vercel: https://smart-garage-r6awgu5qp-kobayashis-projects-6366834f.vercel.app）
+## 7. Future / Design Memo
 
-**新規ページ（v2.2.0）**:
-- `/share/[token]` - 共有URL閲覧ページ
-- `/legal/privacy` - プライバシーポリシー
-- `/legal/terms` - 利用規約
-- `/support` - サポートページ（強化）
-- `/settings/billing` - 請求管理
-- `/billing/success` - 決済成功
-- `/billing/cancel` - 決済キャンセル
+**注意**: 以下の内容は現仕様ではありません。将来の設計案です。
 
-**関連ドキュメント**:
-- `FINAL_SUMMARY.md` - v2.2.0完全実装サマリー 🆕
-- `IMPLEMENTATION_SUMMARY.md` - 実装詳細
-- `DEPLOYMENT_CHECKLIST.md` - デプロイ手順
-- `TEST_ANALYSIS.md` - テスト結果分析
-- `BUG_FIXES.md` - バグ修正サマリー
+### 7.1 ルート設計の将来案
+
+- `/vehicle/{carId}` 形式への統一化を検討中
+- 採用する場合は、現行の `/cars/[carId]` を後方互換（リダイレクト）として維持
+
+### 7.2 データモデルの将来案
+
+- メンテナンス記録の明細行（items）の詳細仕様
+- 添付ファイル（attachments）の詳細仕様
+- 証跡（Evidence）の詳細仕様
+
+### 7.3 機能の将来案
+
+- 保険管理機能の詳細仕様
+- リマインダー機能の詳細仕様
+- 広告非表示機能の詳細仕様
 
 ---
 
-## 📝 変更履歴
+## 付録
 
-詳細な変更履歴は [`CHANGELOG.md`](./CHANGELOG.md) を参照してください。
+### A. すぐ反映すべき仕様の追記テンプレ
 
-### 最新バージョン: v2.5.0 (2025-11-10)
-- 給油ログにフィルター機能追加
-- メンテナンス・カスタマイズページにサマリカード追加
-- UI改善（給油記録カードのフォントサイズ・余白調整）
+#### A.1 FuelLogの単位規約
 
-### 主要バージョン
-- **v2.4.0**: 製品名変更（Smart Garage → garage log）、メンテナンス提案機能実装
-- **v2.2.0**: 共有URL閲覧ページ、Sentry統合、E2Eテスト、法務ページ完備
-- **v2.0.0**: マイカーページv2.0、車両ステータス管理、カスタムパーツ管理
+```
+UI入力：ガソリンはL（小数1位）、EVはkWh（小数2位まで可）
+Firestore保存：quantity は整数、unit は ml | wh
+変換：
+  quantityMl = round(inputLiters * 1000)
+  quantityWh = round(inputKwh * 1000)
+表示：getDisplayFuelAmount() を必ず使用（旧フィールドは表示フォールバックのみ）
+```
+
+#### A.2 Timestamp統一規約
+
+```
+全エンティティの date/createdAt/updatedAt/soldDate/... は Firestore Timestamp
+UI層へ渡す直前のみ toDate(ts) を使用
+Firestore書き込み前に toTs(input) を必ず通す（Date/string混入禁止）
+```
+
+#### A.3 ルート統一規約
+
+```
+正規ルート：/cars/[carId] を採用
+深リンク契約：/cars/[carId]?tab=fuel&action=add 等
+旧 /vehicle 形式は仕様外（採用するなら表を全面改定）
+```
+
+#### A.4 Share URL方式規約
+
+```
+外部共有はすべて /s/[slug]（人に送るURLは短く・安定）
+アクセス制御・失効・期限は slug 自体を「十分長いランダム値」にし、サーバ側で期限/失効判定
+PDF生成や機密操作は別途署名トークン（APIアクセス用）
+```
+
+---
+
+## 変更履歴
+
+- 2025-01-25: 実装との差分を修正
+  - BaseEntityに`userId`フィールドを追加（Firestoreセキュリティルールで必須）
+  - ルート一覧を更新（/dashboard, /maintenance-mode, /vehicles/[vehicleId]/*を追加）
+  - `/vehicles/[vehicleId]/sale-mode`をCurrent Specに移動
+
+- 2025-01-25: 初版作成（コードベースから再構築）
+  - ルート設計を統一（/home, /mycar, /cars/[carId]を正規として明記）
+  - Timestamp方針を完全統一
+  - FuelLogの単位規約を明文化
+  - Share機能のURL方式を統一（/s/[slug]を正規として明記）
+  - BaseEntity継承を完全統一
+  - セクション番号を正規化
