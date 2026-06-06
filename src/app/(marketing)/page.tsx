@@ -1,12 +1,11 @@
 import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, Download, Star, Timer, Zap, ArrowRight, Clock, Play, Paperclip } from "lucide-react";
 import Header from "@/components/marketing/Header";
-import { CTAButtons, PricingCTAButtons } from "@/components/marketing/CTAButtons.client";
+import { CTAButtons } from "@/components/marketing/CTAButtons.client";
 import LandingPageAnalytics from "@/components/marketing/LandingPageAnalytics.client";
 import ScrollAnimations from "@/components/marketing/ScrollAnimations.client";
 import HeroCTAButtonsPrimary from "@/components/marketing/HeroCTAButtons.client";
 import Link from "next/link";
 import Image from "next/image";
-import { PREMIUM_PRICING } from "@/lib/premium";
 
 export const dynamic = 'force-static';
 export const revalidate = 0; // デプロイ直後に反映されるように一時的に0に設定（確認後、86400に戻す）
@@ -46,7 +45,6 @@ export default function LandingPage() {
       <BeforeAfter />
       <HowItWorks />
       <Features />
-      <Pricing />
       <Trust />
       <FAQ />
       <CTA />
@@ -178,7 +176,7 @@ function DashboardBackground() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-semibold text-slate-700 truncate">Ken</div>
-                <div className="text-[10px] text-blue-600 font-medium">Premium プラン</div>
+                <div className="text-[10px] text-blue-600 font-medium">無料</div>
               </div>
             </div>
           </div>
@@ -512,7 +510,7 @@ function Features() {
     { icon: <Camera className="h-6 w-6" />, title: "レシートOCR", desc: "給油や保険証券を自動読み取り、入力の手間を削減。" },
     { icon: <FileText className="h-6 w-6" />, title: "履歴証明PDF", desc: "売却や引き継ぎに使える書式で出力、信頼性向上。" },
     { icon: <Paperclip className="h-6 w-6" />, title: "証憑アップロード", desc: "領収書などを記録に添付、売却時の信頼性向上。" },
-    { icon: <Lock className="h-6 w-6" />, title: "プレミアムで無制限", desc: "複数台登録・PDF・OCR・証憑が使い放題、本格的な資産管理。" },
+    { icon: <Lock className="h-6 w-6" />, title: "複数台管理", desc: "複数台の車両を登録して、まとめて一元管理。" },
   ];
   
   return (
@@ -545,123 +543,6 @@ function Features() {
   );
 }
 
-function Pricing() {
-  const monthlyPrice = PREMIUM_PRICING.monthly.price;
-  const yearlyPrice = PREMIUM_PRICING.yearly.price;
-  const yearlyMonthlyEquivalent = Math.round(yearlyPrice / 12);
-  const savingsAmount = (monthlyPrice * 12) - yearlyPrice;
-
-  return (
-    <section id="pricing" className="bg-slate-50 py-20 lg:py-28">
-      <div className={`${DESIGN_TOKENS.container}`}>
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
-            <Sparkles className="h-4 w-4 text-blue-600" />
-            料金プラン
-          </div>
-          <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">シンプルでわかりやすい料金</h2>
-          <p className="text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">まずは無料で1台から。プレミアムで「資産化」が加速します。</p>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {/* Free */}
-          <div className={`${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-8 hover:shadow-md transition-all duration-200`}>
-            <h3 className="text-2xl font-semibold text-slate-900 mb-2">無料プラン</h3>
-            <p className="text-4xl font-semibold text-slate-900 mb-1">
-              ¥0<span className="text-lg font-medium text-slate-500"> / 月</span>
-            </p>
-            <p className="text-sm text-slate-500 mb-8">個人利用に最適</p>
-            <ul className="space-y-4 text-base text-slate-700 mb-8">
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span>車両登録 1台</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span>給油・メンテ・カスタムの記録</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span>グラフ・ホーム</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span>証憑アップロード（月1枚まで）</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Lock className="h-5 w-5 text-slate-400 flex-shrink-0 mt-0.5" />
-                <span className="text-slate-400">OCR / PDF</span>
-              </li>
-            </ul>
-            <PricingCTAButtons planType="free" />
-          </div>
-
-          {/* Premium Monthly */}
-          <div className={`${DESIGN_TOKENS.radius.lg} border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 hover:shadow-md transition-all duration-200`}>
-            <h3 className="text-2xl font-semibold text-slate-900 mb-2">プレミアム（月額）</h3>
-            <p className="text-4xl font-semibold text-slate-900 mb-1">
-              ¥{monthlyPrice.toLocaleString()}<span className="text-lg font-medium text-slate-500"> / 月</span>
-            </p>
-            <p className="text-sm text-blue-700 font-medium mb-2">本格的な資産管理に</p>
-            <p className="text-xs text-slate-500 mb-8">年額プランで16%お得</p>
-            <ul className="space-y-4 text-base text-slate-700 mb-8">
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">複数台登録 無制限</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">レシートOCR（給油/保険）</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">履歴証明PDF出力</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">証憑アップロード無制限</span>
-              </li>
-            </ul>
-            <PricingCTAButtons planType="premium" />
-          </div>
-
-          {/* Premium Yearly */}
-          <div className={`relative ${DESIGN_TOKENS.radius.lg} border border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 hover:shadow-md transition-all duration-200`}>
-            <span className="absolute -top-3 right-6 rounded-full bg-green-500 text-white text-xs font-bold px-4 py-1.5 shadow-sm">
-              おすすめ
-            </span>
-            <h3 className="text-2xl font-semibold text-slate-900 mb-2">プレミアム（年額）</h3>
-            <p className="text-4xl font-semibold text-slate-900 mb-1">
-              ¥{yearlyPrice.toLocaleString()}<span className="text-lg font-medium text-slate-500"> / 年</span>
-            </p>
-            <p className="text-sm text-blue-700 font-medium mb-2">本格的な資産管理に</p>
-            <p className="text-xs text-green-600 font-semibold mb-1">月額約¥{yearlyMonthlyEquivalent.toLocaleString()}相当</p>
-            <p className="text-xs text-slate-500 mb-8">実質2ヶ月分無料</p>
-            <ul className="space-y-4 text-base text-slate-700 mb-8">
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">複数台登録 無制限</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">レシートOCR（給油/保険）</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">履歴証明PDF出力</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <span className="font-medium">証憑アップロード無制限</span>
-              </li>
-            </ul>
-            <PricingCTAButtons planType="premium" />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function Trust() {
   return (
@@ -698,13 +579,12 @@ function Trust() {
 function FAQ() {
   const faqs = [
     { q: "どのような記録ができますか？", a: "メンテナンス履歴、給油記録、カスタマイズ履歴など、愛車に関するあらゆる情報を記録できます。走行距離も自動で管理されるため、次回のメンテナンス時期も一目で分かります。" },
-    { q: "無料プランから始められますか？", a: "はい、無料プランで1台の車両を登録し、基本的な記録管理ができます。いつでもプレミアムプランにアップグレード可能です。" },
+    { q: "無料で始められますか？", a: "はい、無料でアカウントを作成してすぐに使い始められます。クレジットカードも不要です。" },
     { q: "レシートOCRはどのくらい正確ですか？", a: "給油レシートや保険証券を自動読み取りします。必要に応じて手動で修正できます。" },
-    { q: "複数台の車を管理できますか？", a: "無料プランでは1台まで、プレミアムプランでは無制限に登録可能です。車ごとに記録を分けて管理できるため、家族で複数台お持ちの方にも最適です。" },
+    { q: "複数台の車を管理できますか？", a: "はい、複数台の車両を登録して管理できます。車ごとに記録を分けて管理できるため、家族で複数台お持ちの方にも最適です。" },
     { q: "データは安全に保存されますか？", a: "データは暗号化され、安全に保存されます。あなただけがアクセスできるよう、厳重に管理しています。" },
     { q: "売却時に履歴を証明できますか？", a: "PDF出力機能で、整備履歴を証明書として出力できます。署名が埋め込まれるため、第三者への提示にも安心です。売却時の価値向上にもつながります。" },
-    { q: "領収書などの証憑をアップロードできますか？", a: "無料プランでは月1枚まで、プレミアムプランでは無制限で証憑（領収書など）をアップロードできます。メンテナンスやカスタマイズの記録に添付することで、売却時の信頼性が向上します。" },
-    { q: "プレミアムプランはいつでも解約できますか？", a: "はい、いつでも解約可能です。解約後は次回更新日までプレミアム機能を利用でき、その後は無料プランに自動的に戻ります。すべてのデータは保持されます。" },
+    { q: "領収書などの証憑をアップロードできますか？", a: "はい、証憑（領収書など）をアップロードできます。メンテナンスやカスタマイズの記録に添付することで、売却時の信頼性が向上します。" },
   ];
   return (
     <section id="faq" className="bg-slate-50 py-20 lg:py-28">
