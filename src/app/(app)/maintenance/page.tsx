@@ -1,5 +1,6 @@
 "use client";
 
+import "../home/home.css";
 import { useEffect, useState, useMemo, useRef, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -496,7 +497,7 @@ function EditMaintenanceModal({
             <select
               value={carId}
               onChange={(e) => setCarId(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 text-gray-900"
               required
             >
               {cars.map((car) => (
@@ -515,7 +516,7 @@ function EditMaintenanceModal({
             <select
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 text-gray-900"
               required
             >
               <option value="">選択してください</option>
@@ -541,7 +542,7 @@ function EditMaintenanceModal({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-600 text-gray-900"
               placeholder="詳細な説明（任意）"
               rows={3}
             />
@@ -557,7 +558,7 @@ function EditMaintenanceModal({
                 type="number"
                 value={cost}
                 onChange={(e) => setCost(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-600 text-gray-900"
                 placeholder="例: 5000"
               />
             </div>
@@ -572,7 +573,7 @@ function EditMaintenanceModal({
                 className={`w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 placeholder:text-gray-600 text-gray-900 ${
                   currentMileage && Number(mileage) < currentMileage && mileage !== ""
                     ? "border-red-300 focus:ring-red-100 bg-red-50"
-                    : "border-gray-300 focus:ring-blue-100"
+                    : "border-gray-300 focus:ring-gray-200"
                 }`}
                 placeholder={currentMileage ? `現在: ${currentMileage.toLocaleString()} km` : "例: 50000"}
                 min={currentMileage || 0}
@@ -595,7 +596,7 @@ function EditMaintenanceModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 text-gray-900"
                 required
               />
             </div>
@@ -607,7 +608,7 @@ function EditMaintenanceModal({
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-600 text-gray-900"
                 placeholder="例: ガソリンスタンド"
               />
             </div>
@@ -654,7 +655,7 @@ function EditMaintenanceModal({
               <div className="mt-2">
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="h-2 transition-all duration-300" style={{ background: "var(--accent)" }}
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -668,7 +669,7 @@ function EditMaintenanceModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 transition text-gray-900"
+              className="btn-secondary-dark flex-1 rounded-none px-4 py-2"
             >
               キャンセル
             </button>
@@ -903,7 +904,7 @@ function MaintenanceHistoryContent({
               }
               setShowMaintenanceModal(true);
             }}
-            className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
+            className="btn-primary-dark rounded-none px-4 py-2 disabled:opacity-50"
           >
             ＋ メンテナンスを記録
           </button>
@@ -955,7 +956,7 @@ function MaintenanceHistoryContent({
             {summaryCards.map((card) => (
               <div
                 key={card.title}
-                className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
+                className="app-card p-5"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{card.title}</span>
@@ -970,7 +971,7 @@ function MaintenanceHistoryContent({
       })()}
 
       {/* フィルター・検索 */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4">
+      <div className="app-card p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 検索 */}
           <div>
@@ -982,7 +983,7 @@ function MaintenanceHistoryContent({
               placeholder="タイトル、説明、場所で検索..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-600 text-gray-900"
             />
           </div>
 
@@ -994,7 +995,7 @@ function MaintenanceHistoryContent({
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 text-gray-900"
             >
               {Object.entries(MAINTENANCE_CATEGORIES).map(([key, value]) => (
                 <option key={key} value={key}>
@@ -1012,7 +1013,7 @@ function MaintenanceHistoryContent({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 text-gray-900"
             >
               {Object.entries(MAINTENANCE_STATUS).map(([key, value]) => (
                 <option key={key} value={key}>
@@ -1030,7 +1031,7 @@ function MaintenanceHistoryContent({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
             >
               <option value="date">実施日</option>
               <option value="title">タイトル</option>
@@ -1053,7 +1054,7 @@ function MaintenanceHistoryContent({
       </div>
 
       {/* 履歴一覧 */}
-      <div className="bg-white rounded-2xl border border-gray-200">
+      <div className="app-card">
         {filteredRecords.length === 0 ? (
           <div className="p-8 text-center">
             <div className="text-gray-500 mb-4">
@@ -1082,7 +1083,7 @@ function MaintenanceHistoryContent({
                   }
                   setShowMaintenanceModal(true);
                 }}
-                className="rounded-xl bg-blue-600 text-white px-4 py-2 font-medium hover:bg-blue-500 transition"
+                className="btn-primary-dark rounded-none px-4 py-2 disabled:opacity-50"
               >
                 メンテナンスを記録
               </button>
@@ -1091,7 +1092,7 @@ function MaintenanceHistoryContent({
         ) : (
           <div className="divide-y divide-gray-200">
             {filteredRecords.map((record) => (
-              <div key={record.id} className="p-6 hover:bg-gray-50 transition">
+              <div key={record.id} className="p-6 transition" style={{ borderBottom: "0.5px solid var(--border-color)" }}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
                     {record.imageUrl && (
@@ -1105,7 +1106,7 @@ function MaintenanceHistoryContent({
                     )}
                     <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium" style={{ background: "var(--surface-muted)", color: "var(--text-muted)", fontFamily: "var(--font-mono)", letterSpacing: "0.06em" }}>
                         {record.title}
                       </span>
                       <span className="text-sm text-gray-500">
@@ -1142,7 +1143,7 @@ function MaintenanceHistoryContent({
                   <div className="flex gap-2 ml-4">
                     <button 
                       onClick={() => handleEditRecord(record)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="app-link text-sm"
                     >
                       編集
                     </button>
@@ -1294,7 +1295,7 @@ function MaintenanceModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="app-card p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">メンテナンスを記録 - {carName}</h2>
           <button
@@ -1312,7 +1313,7 @@ function MaintenanceModal({
             </label>
             <input
               type="date"
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 text-gray-900"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
@@ -1325,7 +1326,7 @@ function MaintenanceModal({
             <select
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 text-gray-900"
               required
             >
               <option value="">選択してください</option>
@@ -1348,7 +1349,7 @@ function MaintenanceModal({
               詳細・メモ
             </label>
             <textarea
-              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-600 text-gray-900"
               placeholder="作業内容やメモを入力..."
               rows={3}
               value={description}
@@ -1363,7 +1364,7 @@ function MaintenanceModal({
               </label>
               <input
                 type="number"
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-600 text-gray-900"
                 placeholder="0"
                 value={cost}
                 onChange={(e) => setCost(e.target.value)}
@@ -1379,7 +1380,7 @@ function MaintenanceModal({
                 className={`w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 placeholder:text-gray-600 text-gray-900 ${
                   currentMileage && Number(mileage) < currentMileage && mileage !== ""
                     ? "border-red-300 focus:ring-red-100 bg-red-50"
-                    : "border-gray-300 focus:ring-blue-100"
+                    : "border-gray-300 focus:ring-gray-200"
                 }`}
                 placeholder={currentMileage ? `現在: ${currentMileage.toLocaleString()} km` : "例: 50000"}
                 value={mileage}
@@ -1399,7 +1400,7 @@ function MaintenanceModal({
                 作業場所
               </label>
               <input
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-100 placeholder:text-gray-600 text-gray-900"
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-200 placeholder:text-gray-600 text-gray-900"
                 placeholder="例：ガソリンスタンド"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
@@ -1447,7 +1448,7 @@ function MaintenanceModal({
               <div className="mt-2">
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="h-2 transition-all duration-300" style={{ background: "var(--accent)" }}
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -1648,9 +1649,9 @@ function MaintenancePageRouteContent() {
   if (loading) {
     return (
       <AuthGate>
-        <div className="min-h-screen bg-gray-50 text-gray-900">
+        <div className="app-home min-h-screen">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
+            <div className="app-card p-6" style={{ color: "var(--text-muted)" }}>読み込み中...</div>
           </div>
         </div>
       </AuthGate>
@@ -1659,16 +1660,16 @@ function MaintenancePageRouteContent() {
 
   return (
     <AuthGate>
-      <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="app-home min-h-screen">
         {/* ヘッダー */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200">
+        <header className="app-header sticky top-0 z-30">
           <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
             <button
               onClick={() => router.push('/home')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-70 transition-opacity"
             >
               <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
-              <span className="text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight text-gray-900 truncate">garage log</span>
+              <span className="app-logo-text text-sm sm:text-base truncate">GARAGE_LOG</span>
             </button>
             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               {activeCars.length > 0 && (
@@ -1691,9 +1692,9 @@ function MaintenancePageRouteContent() {
                     auth.signOut();
                   }
                 }}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
+                className="btn-secondary-dark px-3 py-1.5 rounded-none whitespace-nowrap"
               >
-                ログアウト
+                LOGOUT
               </button>
             </div>
           </div>
@@ -1838,9 +1839,9 @@ export default function MaintenancePageRoute() {
   return (
     <Suspense fallback={
       <AuthGate>
-        <div className="min-h-screen bg-gray-50 text-gray-900">
+        <div className="app-home min-h-screen">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
+            <div className="app-card p-6" style={{ color: "var(--text-muted)" }}>読み込み中...</div>
           </div>
         </div>
       </AuthGate>

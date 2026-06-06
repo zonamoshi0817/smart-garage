@@ -108,3 +108,47 @@
   text-transform: uppercase;
   color: var(--text-muted);
 }
+
+/* ===== Tailwind blue系のLP上書き ===== */
+/* アクティブナビ・プライマリボタン */
+.app-home .bg-blue-600 { background-color: #1a1a18 !important; }
+.app-home .hover\:bg-blue-600:hover { background-color: #1a1a18 !important; }
+.app-home .hover\:bg-blue-700:hover,
+.app-home .hover\:bg-blue-500:hover { background-color: #333330 !important; }
+
+/* テキストリンク */
+.app-home .text-blue-600 { color: #1a1a18 !important; }
+.app-home .hover\:text-blue-700:hover,
+.app-home .hover\:text-blue-800:hover { color: #333330 !important; }
+
+/* バッジ・チップ */
+.app-home .bg-blue-100 { background-color: var(--surface-muted) !important; }
+.app-home .text-blue-800 { color: var(--text-muted) !important; }
+.app-home .bg-blue-50 { background-color: var(--surface-muted) !important; }
+.app-home .border-blue-200 { border-color: var(--border-bright) !important; }
+.app-home .text-blue-700 { color: var(--text-muted) !important; }
+
+/* フォーカスリング */
+.app-home .focus\:ring-blue-100:focus,
+.app-home .focus\:ring-blue-500:focus { --tw-ring-color: rgba(0,0,0,0.08) !important; }
+
+/* ホバー */
+.app-home .hover\:bg-gray-100:hover { background-color: #e8e6e0 !important; }
+.app-home .hover\:bg-gray-50:hover { background-color: var(--surface-muted) !important; }
+
+/* アクティブナビ rounded-xl → remove radius */
+.app-home .rounded-xl { border-radius: 6px; }
+.app-home .rounded-2xl { border-radius: 12px; }
+
+/* 統計カード・フィルターカード */
+.app-home .bg-white { background-color: #ffffff; }
+.app-home .border-gray-200 { border-color: rgba(0,0,0,0.1) !important; }
+.app-home .divide-y.divide-gray-200 > * + * { border-top: 0.5px solid rgba(0,0,0,0.08) !important; }
+
+/* ページ見出し */
+.app-home h1 {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
