@@ -1,6 +1,7 @@
 import Link from "next/link";
 import HeroVideo from "@/components/marketing/HeroVideo.client";
 import FloatingCTA from "@/components/marketing/FloatingCTA";
+import ScrollReveal from "@/components/marketing/ScrollReveal.client";
 import "./lp.css";
 
 export const dynamic = 'force-static';
@@ -17,6 +18,7 @@ export default function LandingPage() {
     <div className="lp-root">
       <a href="#main" className="skip-link">本文へスキップ</a>
       <FloatingCTA />
+      <ScrollReveal />
 
       {/* NAV */}
       <nav>
@@ -102,7 +104,7 @@ export default function LandingPage() {
           <p className="section-label"><span>01</span> 解決する課題</p>
           <h2>履歴は分散する。<br />価値は消える。</h2>
           <div className="problem-grid">
-            <div className="problem-col">
+            <div className="problem-col" data-reveal>
               <p className="problem-col-label bad">× これまで</p>
               <ul className="problem-list bad">
                 <li>整備履歴が紙・スマホ写真・記憶に散らばっている</li>
@@ -112,7 +114,7 @@ export default function LandingPage() {
                 <li>買い手が車両状態を信頼しにくい</li>
               </ul>
             </div>
-            <div className="problem-col">
+            <div className="problem-col" data-reveal>
               <p className="problem-col-label good">→ GarageLogなら</p>
               <ul className="problem-list good">
                 <li>車両ごとに履歴を一元化。URLひとつで共有できる</li>
@@ -140,7 +142,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="features-grid">
-            <div className="feature-card featured" id="showcase">
+            <div className="feature-card featured" id="showcase" data-reveal>
               <div className="featured-text">
                 <p className="feature-num">01</p>
                 <h3 className="feature-title">公開ガレージページ</h3>
@@ -182,29 +184,77 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            <div className="feature-card">
-              <p className="feature-num">02</p>
+            <div className="feature-card" data-reveal>
+              <div className="feature-card-head">
+                <span className="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="13" r="8" />
+                    <path d="M12 13l3-2" />
+                    <path d="M9 2h6" />
+                    <path d="M12 2v3" />
+                    <path d="M19 6l1.5-1.5" />
+                  </svg>
+                </span>
+                <p className="feature-num">02</p>
+              </div>
               <h3 className="feature-title">10秒記録</h3>
               <p className="feature-body">テンプレ選択 or レシートOCRで最短10秒。走行距離も自動更新。</p>
-              <span className="feature-tag">OCR / テンプレ</span>
+              <div className="feature-foot">
+                <span className="feature-tag">OCR / テンプレ</span>
+                <span className="feature-arrow" aria-hidden="true">→</span>
+              </div>
             </div>
-            <div className="feature-card">
-              <p className="feature-num">03</p>
+            <div className="feature-card" data-reveal>
+              <div className="feature-card-head">
+                <span className="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 8 2.5 8H3.5S6 15 6 9z" />
+                    <path d="M10.2 21a2 2 0 0 0 3.6 0" />
+                  </svg>
+                </span>
+                <p className="feature-num">03</p>
+              </div>
               <h3 className="feature-title">次回メンテ提案</h3>
               <p className="feature-body">走行距離・日付から車検/オイル/タイヤ交換を自動算出してリマインド。</p>
-              <span className="feature-tag">リマインダー</span>
+              <div className="feature-foot">
+                <span className="feature-tag">リマインダー</span>
+                <span className="feature-arrow" aria-hidden="true">→</span>
+              </div>
             </div>
-            <div className="feature-card">
-              <p className="feature-num">04</p>
+            <div className="feature-card" data-reveal>
+              <div className="feature-card-head">
+                <span className="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 3v5h5" />
+                    <path d="M9 13.5l2 2 3.5-4" />
+                  </svg>
+                </span>
+                <p className="feature-num">04</p>
+              </div>
               <h3 className="feature-title">証憑PDF出力</h3>
               <p className="feature-body">署名付きPDFで整備履歴を証明書として出力。売却・査定で信頼を補強できる。</p>
-              <span className="feature-tag">売却 / 査定</span>
+              <div className="feature-foot">
+                <span className="feature-tag">売却 / 査定</span>
+                <span className="feature-arrow" aria-hidden="true">→</span>
+              </div>
             </div>
-            <div className="feature-card">
-              <p className="feature-num">05</p>
+            <div className="feature-card" data-reveal>
+              <div className="feature-card-head">
+                <span className="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="8" width="13" height="11" rx="2" />
+                    <path d="M8 8V6a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                  </svg>
+                </span>
+                <p className="feature-num">05</p>
+              </div>
               <h3 className="feature-title">複数台管理</h3>
               <p className="feature-body">家族の車も、2台目も。車両ごとに完全分離で管理できる。</p>
-              <span className="feature-tag">複数台対応</span>
+              <div className="feature-foot">
+                <span className="feature-tag">複数台対応</span>
+                <span className="feature-arrow" aria-hidden="true">→</span>
+              </div>
             </div>
           </div>
         </div>
@@ -216,19 +266,19 @@ export default function LandingPage() {
           <p className="section-label"><span>03</span> 使い方</p>
           <h2>3ステップで<br />はじめられる。</h2>
           <div className="steps">
-            <div className="step">
+            <div className="step" data-reveal>
               <p className="step-num">01</p>
               <p className="step-title">車両を登録</p>
               <p className="step-body">車名・型式・年式を入力。30秒で車両プロフィールが完成する。</p>
               <p className="step-accent">クレカ不要 · 無料</p>
             </div>
-            <div className="step">
+            <div className="step" data-reveal>
               <p className="step-num">02</p>
               <p className="step-title">履歴を記録</p>
               <p className="step-body">テンプレかレシートOCRで最短10秒。証憑写真も添付できる。</p>
               <p className="step-accent">継続するほど価値が高まる</p>
             </div>
-            <div className="step">
+            <div className="step" data-reveal>
               <p className="step-num">03</p>
               <p className="step-title">公開・共有</p>
               <p className="step-body">URLひとつでSNS・買い手に愛車の全履歴を届ける。</p>
@@ -244,23 +294,26 @@ export default function LandingPage() {
           <p className="section-label"><span>04</span> こんな人に</p>
           <h2>履歴を見せたい<br />全ての人へ。</h2>
           <div className="persona-grid">
-            <div className="persona-card">
+            <div className="persona-card" data-reveal>
               <p className="persona-priority">Priority 01 — コアターゲット</p>
               <p className="persona-cars">FL5 / GDB / GR86 / BRZ / ロードスター</p>
               <h3 className="persona-name">スポーツカー / カスタム車オーナー</h3>
               <p className="persona-body">整備・カスタム履歴を見せたい動機が強く、SNS共有もしやすい。こだわりを1ページに集約し、仲間への共有・コミュニティ拡散の起点を作る。</p>
+              <span className="persona-arrow" aria-hidden="true">→</span>
             </div>
-            <div className="persona-card">
+            <div className="persona-card" data-reveal>
               <p className="persona-priority">Priority 02 — 売却検討者</p>
               <p className="persona-cars">中古車売却 / 個人売買 / 査定申込</p>
               <h3 className="persona-name">売却・個人売買を検討している人</h3>
               <p className="persona-body">整備履歴・カスタム一覧・証憑をまとめたPDFで、買い手の信頼を勝ち取る。透明な履歴が査定額の向上につながる。</p>
+              <span className="persona-arrow" aria-hidden="true">→</span>
             </div>
-            <div className="persona-card">
+            <div className="persona-card" data-reveal>
               <p className="persona-priority">Priority 03 — 一般オーナー</p>
               <p className="persona-cars">乗用車全般 / 複数台保有 / 家族</p>
               <h3 className="persona-name">「次の車検いつだっけ」が口癖の人</h3>
               <p className="persona-body">紙・メモ・スマホ写真に散らばった記録を一元化。車検・オイル交換の時期を逃さない。</p>
+              <span className="persona-arrow" aria-hidden="true">→</span>
             </div>
           </div>
         </div>
@@ -271,9 +324,9 @@ export default function LandingPage() {
         <p className="section-label" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
           <span>05</span> はじめる
         </p>
-        <h2>愛車の価値を、<br />最大限に。</h2>
-        <p>無料でアカウントを作成して、愛車の履歴を資産に変えよう。<br />クレジットカード不要。30秒で開始できる。</p>
-        <Link href="/signup" className="btn-primary final-cta-btn">無料ではじめる</Link>
+        <h2 data-reveal>愛車の価値を、<br />最大限に。</h2>
+        <p data-reveal>無料でアカウントを作成して、愛車の履歴を資産に変えよう。<br />クレジットカード不要。30秒で開始できる。</p>
+        <Link href="/signup" className="btn-primary final-cta-btn" data-reveal>無料ではじめる</Link>
         <p className="cta-meta">© 2026 GarageLog · garagelog.jp</p>
       </section>
 
