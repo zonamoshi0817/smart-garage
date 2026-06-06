@@ -1175,14 +1175,34 @@ function DashboardContent({
                       />
                     </div>
                   ) : (
-                    <div className="rounded-lg flex items-center justify-center h-44 md:h-full" style={{ border: '0.5px solid var(--border-bright)', background: 'var(--surface-muted)' }}>
-                      <div className="text-center" style={{ color: 'var(--text-dim)' }}>
-                        <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-xs" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>ADD PHOTO</p>
-                      </div>
-                    </div>
+                    <label
+                      htmlFor="car-image-upload-home"
+                      className="rounded-lg flex flex-col items-center justify-center h-44 md:h-full cursor-pointer transition-colors"
+                      style={{ border: '1px dashed var(--border-bright)', background: 'var(--surface-muted)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-bg)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface-muted)')}
+                    >
+                      <svg className="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-dim)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>写真を追加</p>
+                      <p className="text-xs" style={{ color: 'var(--text-dim)' }}>タップして選択</p>
+                      <input
+                        id="car-image-upload-home"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file || !car?.id) return;
+                          if (!isImageFile(file)) { alert('画像ファイルを選択してください'); return; }
+                          try {
+                            const url = await uploadCarImageWithProgress(file, car.id, () => {});
+                            await updateCar(car.id, { imagePath: url });
+                          } catch { alert('アップロードに失敗しました'); }
+                        }}
+                      />
+                    </label>
                   )}
                     <div>
                       <h2 className="text-xl font-bold mb-3">

@@ -39,7 +39,29 @@ export default function SNSSharePublicPage({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [showAllMaintenance, setShowAllMaintenance] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // ページビューイベント発火（初回マウント時のみ）
+  useEffect(() => {
+    if (!(shareProfile as any).slug) return;
+    fetch(`/api/s/${(shareProfile as any).slug}/event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'page_view' }),
+    }).catch(() => {});
+  }, []);
+
+  // スクロール進捗
+  useEffect(() => {
+    const onScroll = () => {
+      const el = document.documentElement;
+      const progress = (el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100;
+      setScrollProgress(Math.min(progress, 100));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const loadGalleryImages = async () => {
@@ -328,8 +350,9 @@ export default function SNSSharePublicPage({
         </div>
       </section>
 
-      {/* Sticky nav */}
+      {/* Sticky nav + スクロール進捗バー */}
       <nav className="nb sticky top-0 z-40">
+        <div style={{ position: 'absolute', bottom: 0, left: 0, height: 2, background: 'var(--ac)', width: `${scrollProgress}%`, transition: 'width 0.1s linear', zIndex: 1 }} />
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <a href="https://garagelog.jp" target="_blank" rel="noopener noreferrer" className="logo-lnk flex-shrink-0">GarageLog</a>
@@ -347,7 +370,18 @@ export default function SNSSharePublicPage({
       </nav>
 
       {/* Gallery */}
-      {galleryImages.length > 0 && (
+      {loadingImages && (
+        <section className="max-w-7xl mx-auto px-4 py-16">
+          <div style={{ fontFamily: 'var(--fm)', fontSize: '1.6rem', letterSpacing: '0.04em', marginBottom: '1.25rem', color: 'var(--td)' }}>Gallery</div>
+          <div className="grid grid-cols-3 gap-3">
+            {[0,1,2,3,4,5].map(i => (
+              <div key={i} style={{ aspectRatio: '4/3', borderRadius: 8, background: 'var(--muted)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            ))}
+          </div>
+          <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+        </section>
+      )}
+      {!loadingImages && galleryImages.length > 0 && (
         <section id="gallery" className="max-w-7xl mx-auto px-4 py-16">
           <h2 className="st">Gallery</h2>
 

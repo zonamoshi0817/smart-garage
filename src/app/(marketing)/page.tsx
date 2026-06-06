@@ -1,5 +1,6 @@
 import Link from "next/link";
 import HeroVideo from "@/components/marketing/HeroVideo.client";
+import FloatingCTA from "@/components/marketing/FloatingCTA";
 import "./lp.css";
 
 export const dynamic = 'force-static';
@@ -14,6 +15,7 @@ const TICKER_ITEMS = [
 export default function LandingPage() {
   return (
     <div className="lp-root">
+      <FloatingCTA />
 
       {/* NAV */}
       <nav>

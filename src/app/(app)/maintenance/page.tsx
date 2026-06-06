@@ -22,6 +22,7 @@ import AddCarModal from "@/components/modals/AddCarModal";
 import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
 import { SidebarLayout } from "@/components/common/SidebarLayout";
 import EvidenceReliabilityBadge from "@/components/EvidenceReliabilityBadge";
+import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart } from 'recharts';
 
 // ヘッダー用車両ドロップダウン（mycar/page.tsxと同じ）
 function CarHeaderDropdown({
@@ -970,6 +971,55 @@ function MaintenanceHistoryContent({
         );
       })()}
 
+      {/* 月別費用グラフ */}
+      {(() => {
+        const carRecords = maintenanceRecords.filter(r =>
+          (!effectiveCarId || r.carId === effectiveCarId) && r.cost && r.cost > 0
+        );
+        if (carRecords.length === 0) return null;
+
+        // 直近12ヶ月分を集計
+        const now = new Date();
+        const months: { label: string; cost: number }[] = [];
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const label = `${d.getMonth() + 1}月`;
+          const cost = carRecords
+            .filter(r => {
+              const rd = r.date?.toDate ? r.date.toDate() : new Date(r.date as any);
+              return rd.getFullYear() === d.getFullYear() && rd.getMonth() === d.getMonth();
+            })
+            .reduce((sum, r) => sum + (r.cost || 0), 0);
+          months.push({ label, cost });
+        }
+        const hasData = months.some(m => m.cost > 0);
+        if (!hasData) return null;
+
+        return (
+          <div className="app-card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-700">月別整備費用（直近12ヶ月）</h3>
+              <span className="text-xs text-gray-500" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>
+                合計 ¥{carRecords.reduce((s, r) => s + (r.cost || 0), 0).toLocaleString()}
+              </span>
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={months} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#a0a098', fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip
+                  formatter={(v: number) => [`¥${v.toLocaleString()}`, '費用']}
+                  contentStyle={{ fontSize: 12, fontFamily: 'var(--font-mono)', background: '#fff', border: '0.5px solid rgba(0,0,0,0.15)', borderRadius: 6 }}
+                  cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                />
+                <Bar dataKey="cost" fill="#1a1a18" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        );
+      })()}
+
       {/* フィルター・検索 */}
       <div className="app-card p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1165,20 +1215,22 @@ function MaintenanceHistoryContent({
 }
 
 // メンテナンス追加モーダル（home/page.tsxから）
-function MaintenanceModal({ 
-  carId, 
-  carName, 
+function MaintenanceModal({
+  carId,
+  carName,
   currentMileage,
   initialTitle,
-  onClose, 
-  onAdded 
-}: { 
-  carId: string; 
-  carName: string; 
+  existingRecords,
+  onClose,
+  onAdded
+}: {
+  carId: string;
+  carName: string;
   currentMileage?: number;
   initialTitle?: string;
-  onClose: () => void; 
-  onAdded: () => void; 
+  existingRecords?: MaintenanceRecord[];
+  onClose: () => void;
+  onAdded: () => void;
 }) {
   const [title, setTitle] = useState(initialTitle || "");
   const [description, setDescription] = useState("");
@@ -1235,7 +1287,23 @@ function MaintenanceModal({
     if (!title) return alert("タイトルを入力してください");
     if (!carId) return alert("車両が選択されていません");
     if (!mileage) return alert("走行距離を入力してください");
-    
+
+    // 重複チェック：同じ車両で同じタイトル＋30日以内の記録
+    if (existingRecords && existingRecords.length > 0) {
+      const inputDate = new Date(date);
+      const similar = existingRecords.filter(r => {
+        if (r.carId !== carId) return false;
+        if ((r.title || '').trim().toLowerCase() !== title.trim().toLowerCase()) return false;
+        const rDate = r.date?.toDate ? r.date.toDate() : new Date(r.date as any);
+        const diffDays = Math.abs(inputDate.getTime() - rDate.getTime()) / (1000 * 60 * 60 * 24);
+        return diffDays <= 30;
+      });
+      if (similar.length > 0) {
+        const confirm = window.confirm(`「${title}」と似た記録が30日以内に存在します。\n（${new Intl.DateTimeFormat('ja-JP').format(similar[0].date?.toDate ? similar[0].date.toDate() : new Date(similar[0].date as any))}）\n\nそれでも追加しますか？`);
+        if (!confirm) return;
+      }
+    }
+
     // 走行距離のバリデーション
     const inputMileage = Number(mileage);
     if (currentMileage && inputMileage < currentMileage) {
@@ -1803,6 +1871,7 @@ function MaintenancePageRouteContent() {
             carName={targetCar.name}
             currentMileage={targetCar.odoKm}
             initialTitle={maintenanceTemplate || undefined}
+            existingRecords={maintenanceRecords}
             onClose={() => {
               setShowMaintenanceModal(false);
               setMaintenanceTemplate(null);
