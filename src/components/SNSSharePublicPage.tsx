@@ -165,24 +165,69 @@ export default function SNSSharePublicPage({
     }).length;
   }, [maintenanceRecords]);
 
+  const styles = `
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+    .share-page {
+      --bg: #f7f5f0;
+      --card: #ffffff;
+      --muted: #f2f0eb;
+      --border: rgba(0,0,0,0.08);
+      --border-bright: rgba(0,0,0,0.15);
+      --text: #1a1a18;
+      --text-muted: #6a6a60;
+      --text-dim: #a0a098;
+      --accent: #1a1a18;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+    }
+    .share-page .hero { background: var(--accent); color: #f7f5f0; }
+    .share-page .hero-title { font-family: var(--font-display); letter-spacing: 0.04em; }
+    .share-page .tag { background: rgba(247,245,240,0.15); border: 1px solid rgba(247,245,240,0.3); border-radius: 4px; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; }
+    .share-page .stat-label { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+    .share-page nav { background: rgba(247,245,240,0.94); backdrop-filter: blur(12px); border-bottom: 0.5px solid var(--border); }
+    .share-page .nav-link { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid transparent; padding: 12px 16px; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+    .share-page .nav-link:hover { color: var(--text); }
+    .share-page .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .share-page .section-title { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: 0.04em; color: var(--text); margin-bottom: 1.25rem; }
+    .share-page .card { background: var(--card); border: 0.5px solid var(--border-bright); border-radius: 10px; }
+    .share-page .card-muted { background: var(--muted); border-radius: 8px; }
+    .share-page .btn-primary { background: var(--accent); color: #f7f5f0; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 6px; padding: 10px 20px; transition: opacity 0.15s; }
+    .share-page .btn-primary:hover { opacity: 0.85; }
+    .share-page .btn-ghost { background: rgba(247,245,240,0.12); border: 1px solid rgba(247,245,240,0.3); color: #f7f5f0; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 6px; padding: 10px 20px; transition: background 0.15s; }
+    .share-page .btn-ghost:hover { background: rgba(247,245,240,0.2); }
+    .share-page .btn-outline { background: transparent; border: 0.5px solid var(--border-bright); color: var(--text-muted); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 6px; padding: 8px 18px; transition: background 0.15s; }
+    .share-page .btn-outline:hover { background: var(--muted); }
+    .share-page details summary::-webkit-details-marker { display: none; }
+    .share-page .sns-link { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 8px 16px; border: 0.5px solid var(--border-bright); border-radius: 6px; color: var(--text); background: var(--card); transition: background 0.15s; }
+    .share-page .sns-link:hover { background: var(--muted); }
+    .share-page .viral-section { background: var(--muted); border-top: 0.5px solid var(--border-bright); }
+  `;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="share-page">
+      <style>{styles}</style>
+
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      <section className="hero relative">
         {heroImage && (
-          <div className="absolute inset-0 opacity-30">
-            <img 
-              src={heroImage} 
-              alt={vehicle.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="absolute inset-0 opacity-20">
+            <img src={heroImage} alt={vehicle.name} className="w-full h-full object-cover" />
           </div>
         )}
         <div className="relative max-w-4xl mx-auto px-4 py-16 sm:py-24">
           <div className="flex items-start justify-between mb-4 gap-4">
-            <h1 className="text-4xl sm:text-5xl font-bold">
+            <h1 className="hero-title" style={{ fontSize: 'clamp(2.4rem, 8vw, 4rem)', lineHeight: 1.05 }}>
               {vehicle.name}
-              {vehicle.modelCode && <span className="text-2xl sm:text-3xl text-gray-300 ml-2">({vehicle.modelCode})</span>}
+              {vehicle.modelCode && (
+                <span style={{ fontSize: '0.55em', opacity: 0.6, marginLeft: '0.4em', fontFamily: 'var(--font-mono)' }}>
+                  {vehicle.modelCode}
+                </span>
+              )}
             </h1>
             <ShareButton
               url={typeof window !== 'undefined' ? window.location.href : ''}
@@ -191,134 +236,52 @@ export default function SNSSharePublicPage({
               className="flex-shrink-0"
             />
           </div>
-          
-          {/* 一言キャプション（conceptBody）- より目立つ位置に */}
+
           {sns.conceptBody && (
-            <p className="text-lg sm:text-xl text-gray-100 mb-4 max-w-2xl font-medium leading-relaxed">
+            <p style={{ fontSize: '1.05rem', opacity: 0.9, marginBottom: '1rem', maxWidth: '36rem', lineHeight: 1.65 }}>
               {sns.conceptBody}
             </p>
           )}
-          
           {sns.conceptTitle && (
-            <p className="text-base sm:text-lg text-gray-300 mb-6">
-              {sns.conceptTitle}
-            </p>
+            <p style={{ fontSize: '0.9rem', opacity: 0.6, marginBottom: '1.25rem' }}>{sns.conceptTitle}</p>
           )}
 
-          {/* ハイライトタグ3点 */}
           {sns.highlightParts && sns.highlightParts.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-6">
               {sns.highlightParts.slice(0, 3).map((part, index) => (
-                <span 
-                  key={index}
-                  className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium border border-white/30"
-                >
-                  {part.value}
-                </span>
+                <span key={index} className="tag">{part.value}</span>
               ))}
             </div>
           )}
 
-          {/* 数字で伝える要約 */}
-          <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-8">
-            {buildCount > 0 && (
-              <span>ビルド {buildCount}件</span>
-            )}
-            {maintenanceCount > 0 && (
-              <span>整備 {maintenanceCount}件</span>
-            )}
-            {lastUpdated && (
-              <span>最終更新 {lastUpdated}</span>
-            )}
+          <div className="flex flex-wrap gap-4 mb-8" style={{ fontSize: '0.78rem', opacity: 0.55, fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            {buildCount > 0 && <span>Build {buildCount}</span>}
+            {maintenanceCount > 0 && <span>Service {maintenanceCount}</span>}
+            {lastUpdated && <span>Updated {lastUpdated}</span>}
           </div>
 
-          {/* CTA */}
           <div className="flex flex-wrap gap-3">
-            <a 
-              href="#gallery" 
-              className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
-            >
-              ギャラリーを見る
-            </a>
-            <a 
-              href="#build" 
-              className="inline-block px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg font-medium transition-colors"
-            >
-              ビルドを見る
-            </a>
+            <a href="#gallery" className="btn-primary">ギャラリー</a>
+            <a href="#build" className="btn-ghost">ビルド</a>
           </div>
         </div>
       </section>
 
       {/* ページ内ナビゲーション（sticky） */}
-      <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+      <nav className="sticky top-0 z-40" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.08)' }}>
         <div className="max-w-7xl mx-auto px-4">
-          <div 
-            className="flex gap-1 overflow-x-auto" 
-            style={{ 
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-            }}
-          >
-            <a
-              href="#gallery"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
-              className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                activeSection === 'gallery'
-                  ? 'text-blue-600 border-blue-600'
-                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              ギャラリー
-            </a>
-            <a
-              href="#build"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('build')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
-              className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                activeSection === 'build'
-                  ? 'text-blue-600 border-blue-600'
-                  : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              ビルド
-            </a>
+          <div className="flex overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <a href="#gallery" onClick={(e) => { e.preventDefault(); document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className={`nav-link${activeSection === 'gallery' ? ' active' : ''}`}>ギャラリー</a>
+            <a href="#build" onClick={(e) => { e.preventDefault(); document.getElementById('build')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className={`nav-link${activeSection === 'build' ? ' active' : ''}`}>ビルド</a>
             {maintenanceCount > 0 && (
-              <a
-                href="#maintenance"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('maintenance')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
-                className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                  activeSection === 'maintenance'
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
-                }`}
-              >
-                整備履歴
-              </a>
+              <a href="#maintenance" onClick={(e) => { e.preventDefault(); document.getElementById('maintenance')?.scrollIntoView({ behavior: 'smooth' }); }}
+                className={`nav-link${activeSection === 'maintenance' ? ' active' : ''}`}>整備履歴</a>
             )}
             {(maintenanceCount > 0 || buildCount > 0) && (
-              <a
-                href="#trust"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('trust')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
-                className={`flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                  activeSection === 'trust'
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300'
-                }`}
-              >
-                履歴の信頼性
-              </a>
+              <a href="#trust" onClick={(e) => { e.preventDefault(); document.getElementById('trust')?.scrollIntoView({ behavior: 'smooth' }); }}
+                className={`nav-link${activeSection === 'trust' ? ' active' : ''}`}>履歴の信頼性</a>
             )}
           </div>
         </div>
@@ -327,23 +290,15 @@ export default function SNSSharePublicPage({
       {/* Gallery Section */}
       {galleryImages.length > 0 && (
         <section id="gallery" className="max-w-7xl mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">ギャラリー</h2>
-          
-          {/* モバイル: カルーセル */}
+          <h2 className="section-title">Gallery</h2>
+
           <div className="block sm:hidden overflow-x-auto pb-4 -mx-4 px-4">
-            <div className="flex gap-4" style={{ width: 'max-content' }}>
+            <div className="flex gap-3" style={{ width: 'max-content' }}>
               {mobileGalleryImages.map((img, index) => (
-                <div 
-                  key={img.id} 
-                  className="relative flex-shrink-0 w-[80vw] aspect-[4/3] rounded-lg overflow-hidden bg-gray-200"
-                >
-                  <img 
-                    src={img.url} 
-                    alt={img.caption || `Gallery image ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
+                <div key={img.id} className="relative flex-shrink-0 overflow-hidden" style={{ width: '80vw', aspectRatio: '4/3', borderRadius: '8px', background: 'var(--muted)' }}>
+                  <img src={img.url} alt={img.caption || `Gallery ${index + 1}`} className="w-full h-full object-cover" />
                   {img.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2">
+                    <div className="absolute bottom-0 left-0 right-0 text-white text-xs p-2" style={{ background: 'rgba(0,0,0,0.5)', fontFamily: 'var(--font-mono)', fontSize: '0.65rem' }}>
                       {img.caption}
                     </div>
                   )}
@@ -352,20 +307,12 @@ export default function SNSSharePublicPage({
             </div>
           </div>
 
-          {/* デスクトップ: 3列グリッド */}
-          <div className="hidden sm:grid grid-cols-3 gap-4">
+          <div className="hidden sm:grid grid-cols-3 gap-3">
             {displayedGalleryImages.map((img) => (
-              <div 
-                key={img.id} 
-                className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-200"
-              >
-                <img 
-                  src={img.url} 
-                  alt={img.caption || 'Gallery image'}
-                  className="w-full h-full object-cover"
-                />
+              <div key={img.id} className="relative overflow-hidden" style={{ aspectRatio: '4/3', borderRadius: '8px', background: 'var(--muted)' }}>
+                <img src={img.url} alt={img.caption || 'Gallery'} className="w-full h-full object-cover" />
                 {img.caption && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2">
+                  <div className="absolute bottom-0 left-0 right-0 text-white text-xs p-2" style={{ background: 'rgba(0,0,0,0.5)', fontFamily: 'var(--font-mono)', fontSize: '0.65rem' }}>
                     {img.caption}
                   </div>
                 )}
@@ -373,13 +320,9 @@ export default function SNSSharePublicPage({
             ))}
           </div>
 
-          {/* もっと見るボタン（9枚以上の時） */}
           {galleryImages.length > 9 && (
             <div className="mt-6 text-center">
-              <button
-                onClick={() => setShowAllGallery(!showAllGallery)}
-                className="px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium text-gray-700 transition-colors"
-              >
+              <button onClick={() => setShowAllGallery(!showAllGallery)} className="btn-outline">
                 {showAllGallery ? '折りたたむ' : `もっと見る (全${galleryImages.length}枚)`}
               </button>
             </div>
@@ -389,61 +332,38 @@ export default function SNSSharePublicPage({
 
       {/* Build Section */}
       <section id="build" className="max-w-4xl mx-auto px-4 py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">ビルド</h2>
-        
-        {/* 推しパーツ（featured）- テキスト情報で表示 */}
+        <h2 className="section-title">Build</h2>
+
         {sns.build?.featured && sns.build.featured.length > 0 && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">推しパーツ</h3>
+            <p className="stat-label mb-4">推しパーツ</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {sns.build.featured.slice(0, 30).map((part: any, index) => {
                 const showPriceInDetails = shareProfile.sns?.settings?.showPricesInDetails && part.priceAmount && part.priceVisibility !== 'HIDE';
-                const formatPrice = (amount: number): string => {
-                  return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 }).format(amount);
-                };
-                const getPriceKindLabel = (kind?: 'PARTS_ONLY' | 'INSTALLED' | 'MARKET'): string => {
-                  switch (kind) {
-                    case 'PARTS_ONLY': return 'パーツ代のみ';
-                    case 'INSTALLED': return '工賃込み';
-                    case 'MARKET': return '相場';
-                    default: return '';
-                  }
-                };
+                const formatPrice = (amount: number) => new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 }).format(amount);
+                const getPriceKindLabel = (kind?: string) => ({ PARTS_ONLY: 'パーツ代のみ', INSTALLED: '工賃込み', MARKET: '相場' })[kind as string] || '';
                 return (
-                  <details key={index} className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-                    <summary className="p-4 cursor-pointer list-none">
+                  <details key={index} className="card" style={{ overflow: 'hidden' }}>
+                    <summary className="p-4 cursor-pointer" style={{ listStyle: 'none' }}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="text-xs text-gray-500 mb-1">{part.label}</div>
-                          <div className="text-base font-semibold text-gray-900">{part.value}</div>
+                          <div className="stat-label mb-1">{part.label}</div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text)' }}>{part.value}</div>
                         </div>
-                        <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="flex-shrink-0 ml-2" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ opacity: 0.4 }}>
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
                     </summary>
-                    <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+                    <div className="px-4 pb-4 pt-2" style={{ borderTop: '0.5px solid var(--border)' }}>
                       {showPriceInDetails ? (
-                        <div className="space-y-2 text-sm">
-                          <div>
-                            <span className="text-gray-600">参考価格: </span>
-                            <span className="font-semibold text-gray-900">{formatPrice(part.priceAmount)}</span>
-                          </div>
-                          {part.priceKind && (
-                            <div>
-                              <span className="text-gray-600">価格の種類: </span>
-                              <span className="text-gray-900">{getPriceKindLabel(part.priceKind)}</span>
-                            </div>
-                          )}
-                          {part.priceAsOf && (
-                            <div>
-                              <span className="text-gray-600">時点: </span>
-                              <span className="text-gray-900">{part.priceAsOf}</span>
-                            </div>
-                          )}
+                        <div className="space-y-1" style={{ fontSize: '0.85rem' }}>
+                          <div><span style={{ color: 'var(--text-muted)' }}>参考価格: </span><span style={{ fontWeight: 600 }}>{formatPrice(part.priceAmount)}</span></div>
+                          {part.priceKind && <div><span style={{ color: 'var(--text-muted)' }}>価格の種類: </span><span>{getPriceKindLabel(part.priceKind)}</span></div>}
+                          {part.priceAsOf && <div><span style={{ color: 'var(--text-muted)' }}>時点: </span><span>{part.priceAsOf}</span></div>}
                         </div>
                       ) : (
-                        <div className="text-sm text-gray-500">価格情報は表示されません</div>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>価格情報は表示されません</div>
                       )}
                     </div>
                   </details>
@@ -453,77 +373,51 @@ export default function SNSSharePublicPage({
           </div>
         )}
 
-        {/* カテゴリ別まとめ（件数表示） */}
         {Object.keys(customizationsByCategory).length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">カテゴリ別</h3>
+          <div className="space-y-2">
+            <p className="stat-label mb-4">カテゴリ別</p>
             {Object.entries(customizationsByCategory)
-              .sort(([catA], [catB]) => {
-                // 優先順位: ホイール・タイヤ > 足回り > ブレーキ > その他
-                const priority: Record<string, number> = {
-                  'tire_wheel': 1,
-                  'suspension': 2,
-                  'brake': 3,
-                  'exterior': 4,
-                  'interior': 5,
-                  'intake': 6,
-                  'exhaust': 7,
-                  'ecu': 8,
-                  'electrical': 9,
-                  'drivetrain': 10,
-                  'other': 99,
-                };
-                return (priority[catA] || 50) - (priority[catB] || 50);
+              .sort(([a], [b]) => {
+                const p: Record<string, number> = { tire_wheel: 1, suspension: 2, brake: 3, exterior: 4, interior: 5, intake: 6, exhaust: 7, ecu: 8, electrical: 9, drivetrain: 10, other: 99 };
+                return (p[a] || 50) - (p[b] || 50);
               })
-              .map(([category, items]) => {
-                const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || category;
-                return (
-                  <details 
-                    key={category}
-                    className="bg-white rounded-lg border border-gray-200 p-4"
-                  >
-                    <summary className="font-semibold text-gray-900 cursor-pointer list-none">
-                      <div className="flex justify-between items-center">
-                        <span>{categoryLabel}</span>
-                        <span className="text-sm font-normal text-gray-500">{items.length}件</span>
-                      </div>
-                    </summary>
-                    <div className="mt-4 space-y-2 pt-4 border-t border-gray-100">
-                      {items.map((custom) => (
-                        <div key={custom.id} className="text-sm text-gray-700">
-                          <span className="font-medium">
-                            {custom.brand && `${custom.brand} `}
-                            {custom.title}
-                          </span>
-                          {custom.memo && (
-                            <span className="text-gray-500 ml-2">({custom.memo})</span>
-                          )}
-                        </div>
-                      ))}
+              .map(([category, items]) => (
+                <details key={category} className="card" style={{ overflow: 'hidden' }}>
+                  <summary className="p-4 cursor-pointer" style={{ listStyle: 'none' }}>
+                    <div className="flex justify-between items-center">
+                      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] || category}</span>
+                      <span className="stat-label">{items.length}件</span>
                     </div>
-                  </details>
-                );
-              })}
+                  </summary>
+                  <div className="px-4 pb-4 pt-3 space-y-2" style={{ borderTop: '0.5px solid var(--border)' }}>
+                    {items.map((custom) => (
+                      <div key={custom.id} style={{ fontSize: '0.85rem', color: 'var(--text)' }}>
+                        <span style={{ fontWeight: 500 }}>{custom.brand && `${custom.brand} `}{custom.title}</span>
+                        {custom.memo && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem' }}>({custom.memo})</span>}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ))}
           </div>
         )}
 
-        {/* カテゴリごとの詳細（sns.build.categories） */}
         {sns.build?.categories && sns.build.categories.length > 0 && (
-          <div className="space-y-4 mt-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">その他</h3>
+          <div className="space-y-2 mt-6">
+            <p className="stat-label mb-4">その他</p>
             {sns.build.categories.map((category, index) => (
-              <details key={index} className="bg-white rounded-lg border border-gray-200 p-4">
-                <summary className="font-semibold text-gray-900 cursor-pointer list-none">
+              <details key={index} className="card" style={{ overflow: 'hidden' }}>
+                <summary className="p-4 cursor-pointer" style={{ listStyle: 'none' }}>
                   <div className="flex justify-between items-center">
-                    <span>{category.name}</span>
-                    <span className="text-sm font-normal text-gray-500">{category.items.length}件</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{category.name}</span>
+                    <span className="stat-label">{category.items.length}件</span>
                   </div>
                 </summary>
-                <div className="mt-4 space-y-2 pt-4 border-t border-gray-100">
-                  {category.items.map((item, itemIndex) => (
-                    <div key={itemIndex} className="text-sm text-gray-700">
-                      <span className="font-medium">{item.name}</span>
-                      {item.note && <span className="text-gray-500 ml-2">({item.note})</span>}
+                <div className="px-4 pb-4 pt-3 space-y-2" style={{ borderTop: '0.5px solid var(--border)' }}>
+                  {category.items.map((item, i) => (
+                    <div key={i} style={{ fontSize: '0.85rem' }}>
+                      <span style={{ fontWeight: 500 }}>{item.name}</span>
+                      {item.note && <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem' }}>({item.note})</span>}
                     </div>
                   ))}
                 </div>
@@ -532,23 +426,17 @@ export default function SNSSharePublicPage({
           </div>
         )}
 
-        {/* カスタマイズデータがない場合のフォールバック */}
-        {(!sns.build?.featured || sns.build.featured.length === 0) && 
+        {(!sns.build?.featured || sns.build.featured.length === 0) &&
          (!sns.build?.categories || sns.build.categories.length === 0) &&
          Object.keys(customizationsByCategory).length === 0 &&
          customizations.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="card p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {customizations.slice(0, 6).map((custom) => (
-                <div key={custom.id} className="border-b border-gray-100 pb-3">
-                  <div className="text-sm font-semibold text-gray-900">
-                    {custom.brand && `${custom.brand} `}
-                    {custom.title}
-                  </div>
+                <div key={custom.id} className="pb-3" style={{ borderBottom: '0.5px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{custom.brand && `${custom.brand} `}{custom.title}</div>
                   {custom.categories && custom.categories.length > 0 && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      {custom.categories.map(cat => CATEGORY_LABELS[cat] || cat).join(' / ')}
-                    </div>
+                    <div className="stat-label mt-1">{custom.categories.map(cat => CATEGORY_LABELS[cat] || cat).join(' / ')}</div>
                   )}
                 </div>
               ))}
@@ -557,63 +445,49 @@ export default function SNSSharePublicPage({
         )}
       </section>
 
-      {/* Trust Section (履歴サマリ) */}
+      {/* Trust Section */}
       {(maintenanceCount > 0 || buildCount > 0) && (
         <section id="trust" className="max-w-4xl mx-auto px-4 py-12 scroll-mt-20">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">履歴の信頼性</h2>
-          
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
+          <h2 className="section-title">Trust</h2>
+
+          <div className="card p-6 mb-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {maintenanceCount > 0 && (
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">総整備回数</div>
-                  <div className="text-xl font-bold text-gray-900">{maintenanceCount}件</div>
+                  <div className="stat-label mb-1">総整備回数</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{maintenanceCount}件</div>
                 </div>
               )}
               {evidenceCount > 0 && (
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">証跡あり</div>
-                  <div className="text-xl font-bold text-gray-900">{evidenceCount}件</div>
+                  <div className="stat-label mb-1">証跡あり</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{evidenceCount}件</div>
                 </div>
               )}
               {lastUpdated && (
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">最終更新</div>
-                  <div className="text-lg font-bold text-gray-900">{lastUpdated}</div>
+                  <div className="stat-label mb-1">最終更新</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{lastUpdated}</div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* 直近整備（1件表示） */}
           {maintenanceRecords.length > 0 && (() => {
             const latestRecord = maintenanceRecords
               .filter(r => r.category !== 'fuel' && r.title !== 'テスト')
               .sort((a, b) => {
-                const dateA = typeof a.date === 'string' ? new Date(a.date) : (a.date?.toDate?.() || new Date(a.date));
-                const dateB = typeof b.date === 'string' ? new Date(b.date) : (b.date?.toDate?.() || new Date(b.date));
-                return dateB.getTime() - dateA.getTime();
+                const dA = typeof a.date === 'string' ? new Date(a.date) : (a.date?.toDate?.() || new Date(a.date));
+                const dB = typeof b.date === 'string' ? new Date(b.date) : (b.date?.toDate?.() || new Date(b.date));
+                return dB.getTime() - dA.getTime();
               })[0];
-            
             if (!latestRecord) return null;
-            
-            const recordDate = typeof latestRecord.date === 'string' 
-              ? new Date(latestRecord.date) 
-              : (latestRecord.date?.toDate?.() || new Date(latestRecord.date));
-            
+            const recordDate = typeof latestRecord.date === 'string' ? new Date(latestRecord.date) : (latestRecord.date?.toDate?.() || new Date(latestRecord.date));
             return (
-              <div id="maintenance" className="bg-white rounded-lg border border-gray-200 p-4 scroll-mt-20">
-                <div className="font-semibold text-gray-900 mb-3">直近整備</div>
-                <div className="text-sm text-gray-700">
-                  <div className="font-medium">{latestRecord.title || 'メンテナンス'}</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {new Intl.DateTimeFormat('ja-JP', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    }).format(recordDate)}
-                  </div>
-                </div>
+              <div id="maintenance" className="card p-4 scroll-mt-20">
+                <div className="stat-label mb-2">直近整備</div>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{latestRecord.title || 'メンテナンス'}</div>
+                <div className="stat-label mt-1">{new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }).format(recordDate)}</div>
               </div>
             );
           })()}
@@ -623,76 +497,30 @@ export default function SNSSharePublicPage({
       {/* Social Links */}
       {sns.socialLinks && (
         <section className="max-w-4xl mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">SNS</h2>
-          <div className="flex flex-wrap gap-4">
-            {sns.socialLinks.youtube && (
-              <a 
-                href={sns.socialLinks.youtube} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                YouTube
-              </a>
-            )}
-            {sns.socialLinks.instagram && (
-              <a 
-                href={sns.socialLinks.instagram} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-              >
-                Instagram
-              </a>
-            )}
-            {sns.socialLinks.x && (
-              <a 
-                href={sns.socialLinks.x} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                X (Twitter)
-              </a>
-            )}
-            {sns.socialLinks.web && (
-              <a 
-                href={sns.socialLinks.web} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                ウェブサイト
-              </a>
-            )}
+          <h2 className="section-title">SNS</h2>
+          <div className="flex flex-wrap gap-3">
+            {sns.socialLinks.youtube && <a href={sns.socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="sns-link">YouTube</a>}
+            {sns.socialLinks.instagram && <a href={sns.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="sns-link">Instagram</a>}
+            {sns.socialLinks.x && <a href={sns.socialLinks.x} target="_blank" rel="noopener noreferrer" className="sns-link">X (Twitter)</a>}
+            {sns.socialLinks.web && <a href={sns.socialLinks.web} target="_blank" rel="noopener noreferrer" className="sns-link">Web</a>}
           </div>
         </section>
       )}
 
       {/* バイラル導線 */}
-      <section className="bg-gradient-to-br from-blue-50 to-indigo-50 border-t border-gray-200 py-12">
+      <section className="viral-section py-12">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200 p-8 shadow-sm">
-            <div className="flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <div className="card p-8" style={{ maxWidth: '480px', margin: '0 auto' }}>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', letterSpacing: '0.04em', marginBottom: '0.75rem' }}>
               あなたの愛車も紹介しませんか？
-            </h3>
-            <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
+            </p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.7 }}>
               GarageLogでビルド履歴やメンテナンス記録を管理し、<br className="hidden sm:inline" />
               あなただけの紹介ページを作成できます
             </p>
-            <a
-              href="https://garagelog.jp"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
-            >
+            <a href="https://garagelog.jp" target="_blank" rel="noopener noreferrer" className="btn-primary inline-flex items-center gap-2">
               <span>GarageLogを始める</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </a>
@@ -701,12 +529,10 @@ export default function SNSSharePublicPage({
       </section>
 
       {/* Footer */}
-      <footer className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-500">
-        <p>このページは閲覧専用です</p>
+      <footer className="max-w-4xl mx-auto px-4 py-8 text-center" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+        <p>Read Only</p>
         {shareProfile.viewCount !== undefined && (
-          <p className="mt-2 text-xs text-gray-400">
-            閲覧回数: {shareProfile.viewCount}
-          </p>
+          <p className="mt-2">{shareProfile.viewCount} Views</p>
         )}
       </footer>
     </div>
