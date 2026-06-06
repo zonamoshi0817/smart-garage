@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+/* フォントはルートレイアウト（src/app/layout.tsx）で全ルート一括読込 */
 
 .app-home {
   --surface-bg: #f7f5f0;

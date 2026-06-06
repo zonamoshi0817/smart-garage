@@ -194,7 +194,7 @@ export default function SNSSharePublicPage({
   const fmtPrice = (n: number) => new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumFractionDigits: 0 }).format(n);
 
   const styles = `
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+    /* フォントはルートレイアウト（src/app/layout.tsx）で全ルート一括読込 */
     .sp { --bg:#f7f5f0;--card:#ffffff;--muted:#f2f0eb;--border:rgba(0,0,0,0.08);--bb:rgba(0,0,0,0.15);--text:#1a1a18;--tm:#6a6a60;--td:#a0a098;--ac:#1a1a18;--fd:'Bebas Neue',sans-serif;--fm:'Space Mono',monospace;--fb:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-family:var(--fb);min-height:100vh; }
     .sp .hero { background:var(--ac);color:#f7f5f0; }
     .sp .hero-title { font-family:var(--fd);letter-spacing:0.04em; }

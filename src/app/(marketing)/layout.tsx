@@ -53,19 +53,6 @@ export default function MarketingLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <>
-      {/* フォントは preconnect + 単一の <link> で先行ロード（CSS @import の直列ダウンロードを回避）。
-          no-page-custom-font は Pages Router 向けのルールで、App Router のレイアウト配下では
-          全マーケティングルートに適用されるため誤検知。Noto Sans JP(CJK) の self-host を避ける狙いもある。 */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap"
-      />
-      {children}
-    </>
-  );
+  // フォントはルートレイアウト（src/app/layout.tsx）で全ルート一括読込
+  return <>{children}</>;
 }

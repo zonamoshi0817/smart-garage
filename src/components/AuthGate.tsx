@@ -71,7 +71,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap');
+          /* フォントはルートレイアウト（src/app/layout.tsx）で全ルート一括読込 */
           .gate-root {
             min-height: 100vh;
             background: #f7f5f0;

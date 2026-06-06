@@ -6,7 +6,7 @@ import { loginWithGoogle, loginWithEmail, signUpWithEmail } from "@/lib/firebase
 import Link from "next/link";
 
 const AUTH_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap');
+  /* フォントはルートレイアウト（src/app/layout.tsx）で全ルート一括読込 */
   .auth-root { min-height:100vh; background:#f7f5f0; display:flex; flex-direction:column; font-family:'Noto Sans JP',sans-serif; font-weight:300; }
   .auth-nav { padding:1.25rem 2.5rem; border-bottom:0.5px solid rgba(0,0,0,0.08); }
   .auth-logo { font-family:'Space Mono',monospace; font-size:0.85rem; letter-spacing:0.12em; color:#1a1a18; text-decoration:none; }
