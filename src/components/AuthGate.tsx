@@ -174,8 +174,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
               <h1 className="gate-heading">Welcome</h1>
               <p className="gate-sub">Vehicle History Platform</p>
               {error && <div className="gate-error">{error}</div>}
-              <a href="/signup" className="gate-btn-primary">新規登録 →</a>
-              <a href="/login" className="gate-btn-ghost">ログイン →</a>
+              <a href="/login" className="gate-btn-primary">はじめる →</a>
             </div>
           </div>
         </div>
