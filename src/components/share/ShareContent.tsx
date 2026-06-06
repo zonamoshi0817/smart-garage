@@ -1585,18 +1585,28 @@ function SaleLinkCard({
           <div className="flex-1">
             <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
             <p className="text-xs text-gray-500 mb-2">{description}</p>
-            {/* 追加情報：対象車両名、最終更新日、閲覧回数 */}
-            <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-              {car && (
-                <span>対象車両: {car.name}</span>
-              )}
+            {/* 追加情報：対象車両名、最終更新日 */}
+            <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">
+              {car && <span>対象車両: {car.name}</span>}
               {lastUpdated && (
                 <span>最終更新: {new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(lastUpdated)}</span>
               )}
-              {viewCount !== null && (
-                <span>閲覧回数: {viewCount}</span>
-              )}
             </div>
+            {/* アクセス解析ミニダッシュボード */}
+            {viewCount !== null && (
+              <div className="bg-gray-50 rounded-lg px-4 py-3 flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <div>
+                    <div className="text-xs text-gray-500">総閲覧数</div>
+                    <div className="text-base font-bold text-gray-900">{(viewCount as number).toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           {info.status === 'active' && (
             <div className="relative">

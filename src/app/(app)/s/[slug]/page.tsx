@@ -52,6 +52,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? `https://firebasestorage.googleapis.com/v0/b/smart-garage-74ad1.firebasestorage.app/o/${encodeURIComponent(sns.gallery[0].path)}?alt=media`
       : ((vehicle as any).imageUrl || null);
 
+    // OGP画像はカスタム生成APIを優先、フォールバックでheroImage
+    const ogImageUrl = `https://garagelog.jp/api/og/s/${slug}`;
+
     const metadata: Metadata = {
       title,
       description,
@@ -59,13 +62,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         title,
         description,
         type: 'website',
-        ...(heroImage && { images: [{ url: heroImage, width: 1200, height: 630 }] }),
+        images: [{ url: ogImageUrl, width: 1200, height: 630 }],
       },
       twitter: {
         card: 'summary_large_image',
         title,
         description,
-        ...(heroImage && { images: [heroImage] }),
+        images: [ogImageUrl],
       },
     };
 
