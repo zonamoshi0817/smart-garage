@@ -1,5 +1,7 @@
 "use client";
 
+import "../home/home.css";
+
 import { useEffect, useState, useMemo, useRef, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -901,7 +903,7 @@ function GasPageRouteContent() {
   if (!isReady) {
     return (
       <AuthGate>
-        <div className="min-h-screen bg-gray-50 text-gray-900">
+        <div className="app-home min-h-screen">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
             <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
           </div>
@@ -912,16 +914,16 @@ function GasPageRouteContent() {
 
   return (
     <AuthGate>
-      <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="app-home min-h-screen">
         {/* ヘッダー */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200">
+        <header className="app-header sticky top-0 z-30">
           <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
             <button
               onClick={() => router.push('/home')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-70 transition-opacity"
             >
               <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
-              <span className="text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight text-gray-900 truncate">garage log</span>
+              <span className="app-logo-text text-sm sm:text-base truncate">GARAGE_LOG</span>
             </button>
             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               {activeCars.length > 0 && (
@@ -944,9 +946,9 @@ function GasPageRouteContent() {
                     auth.signOut();
                   }
                 }}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
+                className="btn-secondary-dark px-3 py-1.5 rounded-none whitespace-nowrap"
               >
-                ログアウト
+                LOGOUT
               </button>
             </div>
           </div>
@@ -1056,7 +1058,7 @@ export default function GasPageRoute() {
   return (
     <Suspense fallback={
       <AuthGate>
-        <div className="min-h-screen bg-gray-50 text-gray-900">
+        <div className="app-home min-h-screen">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
             <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
           </div>
