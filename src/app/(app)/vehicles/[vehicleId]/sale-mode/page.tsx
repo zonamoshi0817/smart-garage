@@ -6,6 +6,8 @@
 
 'use client';
 
+import '../../../home/home.css';
+
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import AuthGate from '@/components/AuthGate';
@@ -216,7 +218,7 @@ function SaleModeContent() {
   const unclassifiedRecords = recentRecords.filter(record => !record.category);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="app-home min-h-screen p-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-md p-6">
         <h1 className="text-2xl font-bold mb-6">売却用リンク</h1>
 
