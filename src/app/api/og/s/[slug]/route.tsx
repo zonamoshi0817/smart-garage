@@ -7,7 +7,7 @@ import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { getSaleProfileBySlug, getVehicleByCarId } from '@/lib/saleProfile';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function GET(
   _req: NextRequest,
