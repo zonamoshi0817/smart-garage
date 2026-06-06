@@ -176,7 +176,7 @@ function EvidenceUploadContent() {
       });
 
       alert('証跡のアップロードが完了しました');
-      router.push(`/cars/${vehicleId}`);
+      router.push(`/mycar?car=${vehicleId}`);
     } catch (error: any) {
       console.error('Masked image upload failed:', error);
       alert(`マスク済み画像のアップロードに失敗しました: ${error.message}`);

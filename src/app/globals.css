@@ -1,12 +1,11 @@
 @import "tailwindcss";
 
 :root {
+  /* アプリはライト配色固定。OSダークモードでも崩れないよう color-scheme を固定する */
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
-  --base-bg: #F8FAFC;
-  --card-bg: #ffffff;
   --border-color: #e2e8f0;
-  --brand-blue: #2563eb;
 }
 
 @theme inline {
@@ -14,13 +13,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -37,7 +29,7 @@ body {
   animation: fadeIn 0.2s ease-in;
 }
 
-@keyframes slideInLeft {
+@keyframes drawerSlideIn {
   from {
     transform: translateX(-100%);
   }
@@ -47,7 +39,7 @@ body {
 }
 
 .animate-slide-in-left {
-  animation: slideInLeft 0.3s ease-out;
+  animation: drawerSlideIn 0.3s ease-out;
 }
 
 @keyframes blob {

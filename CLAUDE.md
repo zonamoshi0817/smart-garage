@@ -126,6 +126,10 @@ h2 { font-family: var(--font-display); }
 
 `public/videos/hero1〜3.mp4` に配置（圧縮済み、各2〜3MB）。切替ロジックは `src/components/marketing/HeroVideo.client.tsx`。
 
+## 作業ルール
+
+- **デプロイは明示的に指示されたときのみ行う。** コミット後に自動で `vercel --prod` を実行しない。
+
 ## 環境変数
 
 `.env.local` に以下を設定する（本番は Vercel の環境変数）:

@@ -6,9 +6,9 @@ import { Home, Wrench, Fuel, Sparkles, Share2 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/home', icon: Home, label: 'ホーム' },
-  { href: '/maintenance', icon: Wrench, label: '整備' },
-  { href: '/gas', icon: Fuel, label: '給油' },
-  { href: '/customizations', icon: Sparkles, label: 'カスタム' },
+  { href: '/maintenance', icon: Wrench, label: 'メンテナンス' },
+  { href: '/gas', icon: Fuel, label: 'ガソリン' },
+  { href: '/customizations', icon: Sparkles, label: 'カスタマイズ' },
   { href: '/share', icon: Share2, label: '共有' },
 ];
 
@@ -36,7 +36,7 @@ export function BottomNav() {
               style={{ color: active ? '#1a1a18' : '#a0a098', minHeight: 56 }}
             >
               <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-              <span style={{ fontSize: '0.6rem', fontFamily: "'Space Mono', monospace", letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: active ? 700 : 400 }}>
+              <span style={{ fontSize: '0.6rem', fontFamily: "'Space Mono', monospace", letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: active ? 700 : 400, whiteSpace: 'nowrap' }}>
                 {label}
               </span>
             </Link>

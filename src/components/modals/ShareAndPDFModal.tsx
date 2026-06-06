@@ -198,7 +198,7 @@ export default function ShareAndPDFModal({
                       <button
                         onClick={() => {
                           onClose();
-                          router.push(`/cars/${car.id}/maintenance`);
+                          router.push(`/maintenance?car=${car.id}`);
                         }}
                         className="text-indigo-600 hover:text-indigo-700 underline"
                       >
@@ -244,7 +244,7 @@ export default function ShareAndPDFModal({
                       <button
                         onClick={() => {
                           onClose();
-                          router.push(`/cars/${car.id}?tab=customs`);
+                          router.push(`/customizations?car=${car.id}`);
                         }}
                         className="text-blue-600 hover:text-blue-700 underline"
                       >

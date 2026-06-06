@@ -89,7 +89,6 @@ export function CollapsibleSidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const pathname = usePathname();
 
   useEffect(() => {
     // localStorageから折りたたみ状態を読み込む（デスクトップのみ）
@@ -206,22 +205,13 @@ export function CollapsibleSidebar({
           isCollapsed={isCollapsed}
           onClick={() => setIsMobileMenuOpen(false)}
         />
-        {pathname === '/data' ? (
-          <div className={`flex items-center gap-3 px-3 py-2 font-semibold ${isCollapsed ? "justify-center" : ""}`} style={{ background: "#1a1a18", color: "#f7f5f0" }}>
-            <BarChart3 className="h-5 w-5 flex-shrink-0" />
-            {!isCollapsed && <span className="text-[15px]">データ</span>}
-          </div>
-        ) : (
-          <Link
-            href="/data"
-            className={`flex items-center gap-3 px-3 py-2 transition hover:bg-[#e8e6e0] text-[#6a6a60] cursor-not-allowed ${isCollapsed ? "justify-center" : ""}`}
-            title={isCollapsed ? "データ" : undefined}
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            <BarChart3 className="h-5 w-5 flex-shrink-0" />
-            {!isCollapsed && <span className="text-[15px]">データ</span>}
-          </Link>
-        )}
+        <SidebarLink
+          href="/data"
+          icon={<BarChart3 className="h-5 w-5" />}
+          label="データ"
+          isCollapsed={isCollapsed}
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
       </nav>
 
       {/* 設定リンク */}
@@ -351,21 +341,13 @@ export function CollapsibleSidebar({
                   isCollapsed={false}
                   onClick={() => setIsMobileMenuOpen(false)}
                 />
-                {pathname === '/data' ? (
-                  <div className="flex items-center gap-3 px-3 py-2 font-semibold" style={{ background: "#1a1a18", color: "#f7f5f0" }}>
-                    <BarChart3 className="h-5 w-5 flex-shrink-0" />
-                    <span className="text-[15px]">データ</span>
-                  </div>
-                ) : (
-                  <Link
-                    href="/data"
-                    className="flex items-center gap-3 px-3 py-2 transition hover:bg-[#e8e6e0] cursor-not-allowed" style={{ color: "#6a6a60" }}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <BarChart3 className="h-5 w-5 flex-shrink-0" />
-                    <span className="text-[15px]">データ</span>
-                  </Link>
-                )}
+                <SidebarLink
+                  href="/data"
+                  icon={<BarChart3 className="h-5 w-5" />}
+                  label="データ"
+                  isCollapsed={false}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                />
               </nav>
 
               {/* 設定リンク */}
