@@ -974,7 +974,7 @@ function MaintenanceHistoryContent({
       {/* 月別費用グラフ */}
       {(() => {
         const carRecords = maintenanceRecords.filter(r =>
-          (!effectiveCarId || r.carId === effectiveCarId) && r.cost && r.cost > 0
+          (!activeCarId || r.carId === activeCarId) && r.cost && r.cost > 0
         );
         if (carRecords.length === 0) return null;
 
