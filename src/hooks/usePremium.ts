@@ -126,14 +126,15 @@ export function usePremium() {
     return () => unsubscribe();
   }, []);
 
+  // 全ユーザーを無料開放中（ユーザー獲得フェーズ）
   return {
-    userPlan,
+    userPlan: 'premium' as UserPlan,
     isLoading,
     subscriptionStatus,
     currentPeriodEnd,
     stripeCustomerId,
     cancelAtPeriodEnd,
-    isPremium: isPremiumPlan(userPlan),
+    isPremium: true,
   };
 }
 
