@@ -46,4 +46,3 @@ next-env.d.ts
 playwright-report.json
 
 # 動画ファイル（サイズが大きいためgit管理外）
-public/videos/
