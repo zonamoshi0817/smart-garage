@@ -84,6 +84,48 @@ const display = getDisplayFuelAmount(fuelLog); // 必ずこの関数を通す
 
 外部共有 URL は `/s/[slug]` 形式のみ正規。slug は 32 文字のランダム英数字。有効/無効の管理は `Car.activeShareProfileIds` と `ShareProfile.status` で行う。
 
+## 現在の運用方針（2026-06）
+
+### 全ユーザー無料開放中
+
+ユーザー獲得フェーズのため、`usePremium`（`src/hooks/usePremium.ts`）が常に `isPremium: true` を返すようにしてある。有料化を再導入する際はこの変更を戻すだけでよい。LP・サイドバーのプレミアム表記も同時に削除済み。
+
+### 認証ページ統合
+
+`/signup` は `/login` にリダイレクト。`/login` 1ページでログイン・新規登録を兼ねる（メール認証はログイン試行→失敗時に自動で新規登録）。
+
+### デプロイ
+
+```bash
+vercel --prod   # Vercel本番デプロイ
+```
+
+## LP・認証ページのデザイン規約
+
+### フォント
+
+Bebas Neue（見出し）・Space Mono（ラベル/ボタン）・Noto Sans JP（本文）をGoogle Fontsから読み込む。
+
+### LP CSS スコープ
+
+`src/app/(marketing)/lp.css` のスタイルは **必ず `.lp-root` スコープ内に書くこと**。グローバルに書くとアプリ側の `h1`/`h2`/`section` 等に漏れて壊れる。
+
+```css
+/* NG */
+h2 { font-family: var(--font-display); }
+
+/* OK */
+.lp-root h2 { font-family: var(--font-display); }
+```
+
+### 認証ページのスタイル
+
+`/login` のスタイルはコンポーネント内の `<style>` タグにインライン定義（`AUTH_STYLES` 定数）。Tailwind は使わない。背景 `#f7f5f0`、カード `#ffffff`、アクセント `#1a1a18`。
+
+### ヒーロー動画
+
+`public/videos/hero1〜3.mp4` に配置（圧縮済み、各2〜3MB）。切替ロジックは `src/components/marketing/HeroVideo.client.tsx`。
+
 ## 環境変数
 
 `.env.local` に以下を設定する（本番は Vercel の環境変数）:
