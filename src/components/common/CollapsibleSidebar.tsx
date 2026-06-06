@@ -133,10 +133,7 @@ export function CollapsibleSidebar({
             <div className="font-semibold truncate">
               {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ユーザー'}
             </div>
-            <div className={`text-xs ${isPremiumPlan?.(userPlan) ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
-              {isPremiumPlan?.(userPlan) ? '✨ Premium プラン' : 'Free プラン'}
             </div>
-          </div>
         )}
       </div>
 
@@ -239,19 +236,6 @@ export function CollapsibleSidebar({
         </Link>
       </div>
 
-      {/* プレミアムアップグレード（無料ユーザーのみ表示、折りたたみ時は非表示） */}
-      {!isPremiumPlan?.(userPlan) && !isCollapsed && (
-        <div className="mt-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl border border-yellow-300 p-4 text-white">
-          <div className="text-sm font-semibold mb-1">✨ Premium プラン</div>
-          <div className="text-xs opacity-90 mb-3">より多くの機能を利用できます</div>
-          <button
-            onClick={() => setShowPaywall(true)}
-            className="block w-full text-center px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-          >
-            アップグレード
-          </button>
-        </div>
-      )}
     </>
   );
 
@@ -307,9 +291,6 @@ export function CollapsibleSidebar({
                 <div className="text-sm min-w-0 flex-1">
                   <div className="font-semibold truncate text-gray-900">
                     {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ユーザー'}
-                  </div>
-                  <div className={`text-xs ${isPremiumPlan?.(userPlan) ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
-                    {isPremiumPlan?.(userPlan) ? '✨ Premium プラン' : 'Free プラン'}
                   </div>
                 </div>
               </div>
@@ -399,21 +380,6 @@ export function CollapsibleSidebar({
               </div>
 
               {/* プレミアムアップグレード（無料ユーザーのみ表示） */}
-              {!isPremiumPlan?.(userPlan) && (
-                <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl border border-yellow-300 p-4 text-white">
-                  <div className="text-sm font-semibold mb-1">✨ Premium プラン</div>
-                  <div className="text-xs opacity-90 mb-3">より多くの機能を利用できます</div>
-                  <button
-                    onClick={() => {
-                      setShowPaywall(true);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="block w-full text-center px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                  >
-                    アップグレード
-                  </button>
-                </div>
-              )}
             </div>
           </aside>
         </>
