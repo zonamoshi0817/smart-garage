@@ -2,16 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-const INTERVAL = 8000;
+const INTERVAL = 10000;
 const VIDEOS = ['/videos/hero1.mp4', '/videos/hero2.mp4', '/videos/hero3.mp4'];
 
 export default function HeroVideo() {
   const [current, setCurrent] = useState(0);
-  const [failed, setFailed] = useState<boolean[]>([false, false, false]);
+  const currentRef = useRef(0);
+  const failedRef = useRef<boolean[]>([false, false, false]);
   const refs = [useRef<HTMLVideoElement>(null), useRef<HTMLVideoElement>(null), useRef<HTMLVideoElement>(null)];
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const getActives = (f: boolean[]) => VIDEOS.map((_, i) => i).filter(i => !f[i]);
+  const getActives = () => VIDEOS.map((_, i) => i).filter(i => !failedRef.current[i]);
 
   const showVideo = (idx: number) => {
     refs.forEach((r, i) => {
@@ -19,42 +20,40 @@ export default function HeroVideo() {
       if (i === idx) {
         r.current.classList.add('active');
         r.current.play().catch(() => {
-          setFailed(prev => { const n = [...prev]; n[idx] = true; return n; });
+          failedRef.current[idx] = true;
         });
       } else {
         r.current.classList.remove('active');
       }
     });
+    currentRef.current = idx;
     setCurrent(idx);
   };
 
-  const advance = (f: boolean[]) => {
-    const actives = getActives(f);
+  const advance = () => {
+    const actives = getActives();
     if (!actives.length) return;
-    const pos = actives.indexOf(current);
+    const pos = actives.indexOf(currentRef.current);
     const next = actives[(pos + 1) % actives.length];
     showVideo(next);
   };
 
-  const startTimer = (f: boolean[]) => {
+  const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => advance(f), INTERVAL);
+    timerRef.current = setInterval(advance, INTERVAL);
   };
 
   useEffect(() => {
-    // 最初の動画を再生
-    refs[0].current?.play().catch(() => {
-      setFailed(prev => { const n = [...prev]; n[0] = true; return n; });
-    });
-    startTimer(failed);
+    refs[0].current?.play().catch(() => { failedRef.current[0] = true; });
+    startTimer();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDotClick = (i: number) => {
-    if (failed[i]) return;
+    if (failedRef.current[i]) return;
     showVideo(i);
-    startTimer(failed);
+    startTimer();
   };
 
   return (
@@ -64,13 +63,12 @@ export default function HeroVideo() {
           <video
             key={i}
             ref={refs[i]}
-            id={`vid${i}`}
             className={i === 0 ? 'active' : ''}
             muted
             loop
             playsInline
             preload="auto"
-            onError={() => setFailed(prev => { const n = [...prev]; n[i] = true; return n; })}
+            onError={() => { failedRef.current[i] = true; }}
           >
             <source src={src} type="video/mp4" />
           </video>

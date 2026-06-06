@@ -69,50 +69,117 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        {/* ロゴ */}
-        <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-4">
-          <Logo size="md" />
-        </div>
-        
-        <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md w-full space-y-8">
-            <div>
-              <h1 className="text-3xl font-semibold text-slate-900 text-center">
-                ログインして始めましょう
-              </h1>
-              <p className="mt-4 text-sm text-slate-600 text-center">
-                アカウントをお持ちでない方は新規登録、既にお持ちの方はログインしてください。
-              </p>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 p-4 rounded-2xl">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <button
-                onClick={() => router.push('/signup')}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 text-white px-5 py-3 font-semibold hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                <UserPlus className="h-5 w-5" />
-                新規登録
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => router.push('/login')}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white text-slate-700 px-5 py-3 font-semibold border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-sm"
-              >
-                <LogIn className="h-5 w-5" />
-                ログイン
-                <ArrowRight className="h-4 w-4" />
-              </button>
+      <>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap');
+          .gate-root {
+            min-height: 100vh;
+            background: #f7f5f0;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-weight: 300;
+          }
+          .gate-nav {
+            padding: 1.25rem 2.5rem;
+            border-bottom: 0.5px solid rgba(0,0,0,0.08);
+          }
+          .gate-logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            letter-spacing: 0.12em;
+            color: #1a1a18;
+            text-decoration: none;
+          }
+          .gate-body {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1.5rem;
+          }
+          .gate-card {
+            width: 100%;
+            max-width: 400px;
+            background: #ffffff;
+            border: 0.5px solid rgba(0,0,0,0.1);
+            padding: 2.5rem;
+          }
+          .gate-heading {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3rem;
+            letter-spacing: 0.05em;
+            color: #1a1a18;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+          }
+          .gate-sub {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.62rem;
+            letter-spacing: 0.15em;
+            color: #a0a098;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+          }
+          .gate-error {
+            background: rgba(192,64,32,0.06);
+            border: 0.5px solid rgba(192,64,32,0.3);
+            padding: 0.85rem 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.8rem;
+            color: #c04020;
+          }
+          .gate-btn-primary {
+            width: 100%;
+            padding: 0.85rem;
+            background: #1a1a18;
+            color: #f7f5f0;
+            border: none;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+            margin-bottom: 0.75rem;
+            display: block;
+            text-align: center;
+            text-decoration: none;
+          }
+          .gate-btn-primary:hover { background: #333330; transform: translateY(-1px); }
+          .gate-btn-ghost {
+            width: 100%;
+            padding: 0.85rem;
+            background: transparent;
+            color: #6a6a60;
+            border: 0.5px solid rgba(0,0,0,0.12);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+            display: block;
+            text-align: center;
+            text-decoration: none;
+          }
+          .gate-btn-ghost:hover { border-color: rgba(0,0,0,0.3); color: #1a1a18; }
+        `}</style>
+        <div className="gate-root">
+          <nav className="gate-nav">
+            <a href="/" className="gate-logo">GARAGE_LOG</a>
+          </nav>
+          <div className="gate-body">
+            <div className="gate-card">
+              <h1 className="gate-heading">Welcome</h1>
+              <p className="gate-sub">Vehicle History Platform</p>
+              {error && <div className="gate-error">{error}</div>}
+              <a href="/signup" className="gate-btn-primary">新規登録 →</a>
+              <a href="/login" className="gate-btn-ghost">ログイン →</a>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 

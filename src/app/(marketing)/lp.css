@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.lp-root *, .lp-root *::before, .lp-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --black: #f7f5f0;
   --dark: #ffffff;
@@ -314,7 +314,7 @@
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* SECTION COMMON */
-.lp-root section { padding: 7rem 2.5rem; }
+.lp-root section { padding: 7rem 2.5rem; margin: 0; }
 .section-label {
   font-family: var(--font-mono);
   font-size: 0.65rem;
