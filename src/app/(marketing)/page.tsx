@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HeroVideo from "@/components/marketing/HeroVideo.client";
 import "./lp.css";
 
 export const dynamic = 'force-static';
@@ -13,13 +14,13 @@ const TICKER_ITEMS = [
 export default function LandingPage() {
   return (
     <div className="lp-root">
+
       {/* NAV */}
       <nav>
         <Link href="/" className="nav-logo">GARAGE_LOG</Link>
         <div className="nav-links">
           <a href="#features">機能</a>
           <a href="#how">使い方</a>
-          <a href="#pricing">収益モデル</a>
           <Link href="/login" className="nav-cta">ログイン</Link>
         </div>
         <Link href="/signup" className="nav-cta mobile-cta" style={{ display: 'none' }}>無料で始める</Link>
@@ -27,7 +28,7 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section className="hero">
-        <div className="hero-grid-lines" />
+        <HeroVideo />
         <div className="hero-content">
           <div className="hero-left">
             <p className="hero-eyebrow">Vehicle History Platform</p>
@@ -132,8 +133,7 @@ export default function LandingPage() {
             </div>
             <p className="features-desc">
               日常のメンテから売却まで、愛車の一生を1つのページにまとめる。
-              広告ではなく、ユーザーにとって自然な次アクションとして設計した導線が、
-              必要なタイミングで整備・査定・パーツ購入につながる。
+              記録が積み上がるほど、共有・売却時の信頼と価値が高まる。
             </p>
           </div>
           <div className="features-grid">
@@ -161,18 +161,12 @@ export default function LandingPage() {
             </div>
             <div className="feature-card">
               <p className="feature-num">04</p>
-              <h3 className="feature-title">整備・査定相談導線</h3>
-              <p className="feature-body">「この履歴で相談する」ボタンで、履歴情報付きの問い合わせが整備工場へ届く。</p>
-              <span className="feature-tag">送客 / 提携</span>
-            </div>
-            <div className="feature-card">
-              <p className="feature-num">05</p>
               <h3 className="feature-title">証憑PDF出力</h3>
               <p className="feature-body">署名付きPDFで整備履歴を証明書として出力。売却・査定で信頼を補強できる。</p>
               <span className="feature-tag">売却 / 査定</span>
             </div>
             <div className="feature-card">
-              <p className="feature-num">06</p>
+              <p className="feature-num">05</p>
               <h3 className="feature-title">複数台管理</h3>
               <p className="feature-body">家族の車も、2台目も。車両ごとに完全分離で管理できる。</p>
               <span className="feature-tag">複数台対応</span>
@@ -185,7 +179,7 @@ export default function LandingPage() {
       <section className="how" id="how">
         <div className="how-inner">
           <p className="section-label"><span>03</span> 使い方</p>
-          <h2>4ステップで<br />はじめられる。</h2>
+          <h2>3ステップで<br />はじめられる。</h2>
           <div className="steps">
             <div className="step">
               <p className="step-num">01</p>
@@ -202,14 +196,8 @@ export default function LandingPage() {
             <div className="step">
               <p className="step-num">03</p>
               <p className="step-title">公開・共有</p>
-              <p className="step-body">URLひとつでSNS・整備工場・買い手に愛車の全履歴を届ける。</p>
+              <p className="step-body">URLひとつでSNS・買い手に愛車の全履歴を届ける。</p>
               <p className="step-accent">SNSカード / QR / PDF</p>
-            </div>
-            <div className="step">
-              <p className="step-num">04</p>
-              <p className="step-title">必要時に相談</p>
-              <p className="step-body">車検・整備・売却/査定のタイミングで、履歴付きの相談が整備工場へ届く。</p>
-              <p className="step-accent">履歴が信頼を作る</p>
             </div>
           </div>
         </div>
@@ -234,92 +222,24 @@ export default function LandingPage() {
               <p className="persona-body">整備履歴・カスタム一覧・証憑をまとめたPDFで、買い手の信頼を勝ち取る。透明な履歴が査定額の向上につながる。</p>
             </div>
             <div className="persona-card">
-              <p className="persona-priority">Priority 03 — 整備工場 / ショップ</p>
-              <p className="persona-cars">整備工場 / カスタムショップ / タイヤ店</p>
-              <h3 className="persona-name">顧客の次回接点を維持したい整備工場</h3>
-              <p className="persona-body">店舗名入り履歴、次回整備リマインダー、履歴付き問い合わせで、広告依存しない顧客接点を作る。</p>
-            </div>
-            <div className="persona-card">
-              <p className="persona-priority">Priority 04 — 一般オーナー</p>
+              <p className="persona-priority">Priority 03 — 一般オーナー</p>
               <p className="persona-cars">乗用車全般 / 複数台保有 / 家族</p>
               <h3 className="persona-name">「次の車検いつだっけ」が口癖の人</h3>
               <p className="persona-body">紙・メモ・スマホ写真に散らばった記録を一元化。車検・オイル交換の時期を逃さない。</p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* REVENUE */}
-      <section className="how" id="pricing">
-        <div className="revenue-inner">
-          <p className="section-label"><span>05</span> 料金と収益モデル</p>
-          <h2>個人は無料。<br />ずっと。</h2>
-          <div className="revenue-table">
-            <div className="revenue-row header">
-              <div className="revenue-cell header-cell">収益源</div>
-              <div className="revenue-cell header-cell">価格</div>
-              <div className="revenue-cell header-cell">詳細</div>
-            </div>
-            <div className="revenue-row">
-              <div className="revenue-cell revenue-main">個人ユーザー利用 <span className="badge-free">FREE</span></div>
-              <div className="revenue-cell revenue-price">¥0</div>
-              <div className="revenue-cell revenue-desc">記録・公開ページ・SNS共有・PDF出力まで無料。履歴データが増えるほどプラットフォームの価値が高まるため、個人課金は設けない。</div>
-            </div>
-            <div className="revenue-row">
-              <div className="revenue-cell revenue-main">整備 / 車検 / タイヤ 送客</div>
-              <div className="revenue-cell revenue-price">¥500〜5,000/件</div>
-              <div className="revenue-cell revenue-desc">車検期限・メンテ履歴・交換時期を起点に「この履歴で相談する」という自然な流れで問い合わせ/予約を発生させる本命収益。</div>
-            </div>
-            <div className="revenue-row">
-              <div className="revenue-cell revenue-main">売却 / 査定 送客</div>
-              <div className="revenue-cell revenue-price">数千〜1万円超/件</div>
-              <div className="revenue-cell revenue-desc">整備・カスタム履歴を持ったまま査定/個人売買へ進む高単価な送客。</div>
-            </div>
-            <div className="revenue-row">
-              <div className="revenue-cell revenue-main">カー用品 / パーツ アフィリエイト</div>
-              <div className="revenue-cell revenue-price">購入額の数%</div>
-              <div className="revenue-cell revenue-desc">交換時期に合わせてオイル・タイヤ・ワイパーなどを自然に提案。補助収益。</div>
-            </div>
-            <div className="revenue-row">
-              <div className="revenue-cell revenue-main">整備工場 / ショップ掲載</div>
-              <div className="revenue-cell revenue-price">¥5,000〜3万/月</div>
-              <div className="revenue-cell revenue-desc">送客実績が出た後に店舗掲載・優先表示へ移行。初期は成果報酬から開始。</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* KPI */}
-      <section id="kpi">
-        <div className="kpi-inner">
-          <p className="section-label"><span>06</span> 初期目標 KPI</p>
-          <h2>90日で<br />証明する。</h2>
-          <div className="kpi-grid">
-            <div className="kpi-card">
-              <p className="kpi-num">500</p>
-              <p className="kpi-unit">台 / 90日以内</p>
-              <p className="kpi-label">登録車両数。無料利用の導線が車好きコミュニティに刺さっているかの指標。</p>
-            </div>
-            <div className="kpi-card">
-              <p className="kpi-num">30%</p>
-              <p className="kpi-unit">公開ページ作成率</p>
-              <p className="kpi-label">登録した車両のうち公開ページを作成した割合。「共有価値」が機能しているか。</p>
-            </div>
-            <div className="kpi-card">
-              <p className="kpi-num">3-5%</p>
-              <p className="kpi-unit">相談導線クリック率</p>
-              <p className="kpi-label">「この履歴で相談する」が自然なアクションになっているか。送客モデルの成立確認。</p>
-            </div>
+            <div className="persona-card" style={{ background: 'transparent' }} />
           </div>
         </div>
       </section>
 
       {/* FINAL CTA */}
       <section className="final-cta">
-        <p className="section-label" style={{ justifyContent: 'center', marginBottom: '2rem' }}><span>07</span> はじめる</p>
+        <p className="section-label" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
+          <span>05</span> はじめる
+        </p>
         <h2>愛車の価値を、<br />最大限に。</h2>
         <p>無料でアカウントを作成して、愛車の履歴を資産に変えよう。<br />クレジットカード不要。30秒で開始できる。</p>
-        <Link href="/signup" className="btn-primary">無料ではじめる</Link>
+        <Link href="/signup" className="btn-primary final-cta-btn">無料ではじめる</Link>
         <p className="cta-meta">© 2026 GarageLog · garagelog.jp</p>
       </section>
 
