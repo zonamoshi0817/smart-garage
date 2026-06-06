@@ -1,46 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef, Suspense } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Timestamp } from "firebase/firestore";
-import AuthGate from "@/components/AuthGate";
-import { addCar, watchCars, updateCar } from "@/lib/cars";
-import type { Car, CarInput } from "@/types";
-import { auth, watchAuth, db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import type { User } from "firebase/auth";
-import { addMaintenanceRecord, watchMaintenanceRecords, watchAllMaintenanceRecords, updateMaintenanceRecord, deleteMaintenanceRecord, deleteMultipleMaintenanceRecords } from "@/lib/maintenance";
+import { useEffect, useState, useRef } from "react";
+import type { Car } from "@/types";
 import type { MaintenanceRecord } from "@/types";
-import { downloadMaintenancePDF, downloadBuildSheetPDF, type PDFExportOptions } from "@/lib/pdfExport";
-import { uploadCarImageWithProgress, isImageFile, uploadMaintenanceImage } from "@/lib/storage";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytes } from "firebase/storage";
-import { compressImage, getCompressionInfo } from "@/lib/imageCompression";
-import { addCustomization, getCustomizations, updateCustomization, deleteCustomization, CATEGORY_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/customizations";
-import type { Customization } from "@/types";
-import { watchFuelLogs, calculateFuelEfficiency, calculateAverageFuelEfficiency, getDisplayAmount, getDisplayCost } from "@/lib/fuelLogs";
-import type { FuelLog } from "@/types";
-import { Bar as RechartsBar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart } from 'recharts';
-import { Car as CarIcon } from 'lucide-react';
-import FuelLogModal from "@/components/modals/FuelLogModal";
-import AddCarModal from "@/components/modals/AddCarModal";
-import FuelLogCard from "@/components/dashboard/FuelLogCard";
-import CustomizationModal from "@/components/modals/CustomizationModal";
-import PaywallModal from "@/components/modals/PaywallModal";
-import SellCarModal from "@/components/modals/SellCarModal";
-import OCRModal from "@/components/modals/OCRModal";
-import { usePremiumGuard } from "@/hooks/usePremium";
-import NextMaintenanceSuggestion from "@/components/mycar/NextMaintenanceSuggestion";
-import { generateMaintenanceSuggestions } from "@/lib/maintenanceSuggestions";
-import UnifiedCTA from "@/components/UnifiedCTA";
-import { toDate, toMillis, toTimestamp } from "@/lib/dateUtils";
-import { isPremiumPlan } from "@/lib/plan";
-import ShareContent from "@/components/share/ShareContent";
 import { useSelectedCar } from "@/contexts/SelectedCarContext";
-import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
-import { SidebarLayout } from "@/components/common/SidebarLayout";
-import { useSidebarCollapse } from "@/hooks/useSidebarCollapse";
 
 export function CarHeaderDropdown({
   cars,
