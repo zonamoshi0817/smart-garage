@@ -15,6 +15,7 @@ const TICKER_ITEMS = [
 export default function LandingPage() {
   return (
     <div className="lp-root">
+      <a href="#main" className="skip-link">本文へスキップ</a>
       <FloatingCTA />
 
       {/* NAV */}
@@ -25,11 +26,11 @@ export default function LandingPage() {
           <a href="#how">使い方</a>
           <Link href="/login" className="nav-cta">ログイン</Link>
         </div>
-        <Link href="/signup" className="nav-cta mobile-cta" style={{ display: 'none' }}>無料で始める</Link>
+        <Link href="/login" className="nav-cta mobile-cta" style={{ display: 'none' }}>無料で始める</Link>
       </nav>
 
       {/* HERO */}
-      <section className="hero">
+      <section className="hero" id="main">
         <HeroVideo />
         <div className="hero-content">
           <div className="hero-left">
@@ -40,8 +41,8 @@ export default function LandingPage() {
               見せられる履歴が、信頼と価値を生む。
             </p>
             <div className="hero-actions">
-              <Link href="/signup" className="btn-primary">無料ではじめる</Link>
-              <a href="#features" className="btn-ghost">デモを見る</a>
+              <Link href="/login" className="btn-primary">無料ではじめる</Link>
+              <a href="#showcase" className="btn-ghost">画面を見る</a>
             </div>
             <div className="hero-meta">
               <span>クレカ不要</span>
@@ -139,15 +140,47 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="features-grid">
-            <div className="feature-card featured">
-              <p className="feature-num">01</p>
-              <h3 className="feature-title">公開ガレージページ</h3>
-              <p className="feature-body">
-                車両プロフィール・整備履歴・カスタム一覧・証憑写真をまとめた専用URL。
-                SNS共有カード対応で、X/Instagramに貼るだけで愛車の全履歴が伝わる。
-                売却時はQRコードを印刷して買い手に渡せる。
-              </p>
-              <span className="feature-tag">SNS連携 / QR / PDF対応</span>
+            <div className="feature-card featured" id="showcase">
+              <div className="featured-text">
+                <p className="feature-num">01</p>
+                <h3 className="feature-title">公開ガレージページ</h3>
+                <p className="feature-body">
+                  車両プロフィール・整備履歴・カスタム一覧・証憑写真をまとめた専用URL。
+                  SNS共有カード対応で、X/Instagramに貼るだけで愛車の全履歴が伝わる。
+                  売却時はQRコードを印刷して買い手に渡せる。
+                </p>
+                <span className="feature-tag">SNS連携 / QR / PDF対応</span>
+              </div>
+              {/* TODO: 実際の公開ページのスクリーンショットに差し替え推奨（現状はCSSモック） */}
+              <div className="featured-mock" aria-hidden="true">
+                <div className="browser-frame">
+                  <div className="browser-bar">
+                    <span className="browser-dot" />
+                    <span className="browser-dot" />
+                    <span className="browser-dot" />
+                    <span className="browser-url">garagelog.jp/g/fl5-champ-white</span>
+                  </div>
+                  <div className="browser-body">
+                    <div className="mock-hero">
+                      <p className="mock-eyebrow">PUBLIC GARAGE</p>
+                      <p className="mock-car">CIVIC TYPE R</p>
+                      <p className="mock-spec">FL5 · 2022 · CHAMPIONSHIP WHITE</p>
+                    </div>
+                    <div className="mock-stats">
+                      <div><span>ODO</span><strong>12,480 km</strong></div>
+                      <div><span>記録</span><strong>24件</strong></div>
+                      <div><span>車検</span><strong>2027/4</strong></div>
+                    </div>
+                    <p className="mock-section-label">整備・カスタム履歴</p>
+                    <div className="mock-row"><span>SPOON オイル交換 (5W-40)</span><em>2026/05</em></div>
+                    <div className="mock-row"><span>Endless ブレーキパッド</span><em>2026/03</em></div>
+                    <div className="mock-row"><span>Öhlins DFV 車高調</span><em>2025/11</em></div>
+                    <div className="mock-tags">
+                      <span>整備</span><span>カスタム</span><span>証憑付き</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="feature-card">
               <p className="feature-num">02</p>
@@ -229,7 +262,6 @@ export default function LandingPage() {
               <h3 className="persona-name">「次の車検いつだっけ」が口癖の人</h3>
               <p className="persona-body">紙・メモ・スマホ写真に散らばった記録を一元化。車検・オイル交換の時期を逃さない。</p>
             </div>
-            <div className="persona-card" style={{ background: 'transparent' }} />
           </div>
         </div>
       </section>

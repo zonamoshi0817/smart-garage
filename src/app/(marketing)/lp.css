@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+/* フォントは (marketing)/layout.tsx で preconnect + <link> 経由で読み込む（render-blocking な @import を排除） */
 
 .lp-root *, .lp-root *::before, .lp-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -116,7 +116,7 @@
 .hero-video-credit {
   position: absolute; bottom: 1rem; right: 1.5rem; z-index: 10;
   font-family: var(--font-mono); font-size: 0.55rem;
-  color: rgba(255,255,255,0.3); letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.5); letter-spacing: 0.08em;
 }
 .hero-content {
   display: grid;
@@ -194,7 +194,7 @@
   display: flex; gap: 1.5rem;
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  color: rgba(240,237,230,0.45);
+  color: rgba(240,237,230,0.72);
   letter-spacing: 0.08em;
   margin-top: 2rem;
 }
@@ -372,13 +372,95 @@
 .features-desc { max-width: 38ch; font-size: 0.9rem; color: var(--text-muted); line-height: 1.8; }
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1px;
   background: var(--border);
 }
 .feature-card { background: var(--dark); padding: 2.25rem; position: relative; transition: background 0.25s; }
 .feature-card:hover { background: var(--surface); }
-.feature-card.featured { grid-column: span 2; background: var(--surface); border-bottom: 2px solid var(--accent); }
+.feature-card.featured {
+  grid-column: span 2;
+  background: var(--surface);
+  border-bottom: 2px solid var(--accent);
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 3rem;
+  align-items: center;
+  padding: 3rem;
+}
+.featured-text { min-width: 0; }
+
+/* 公開ページのプロダクトモック（ブラウザ枠） */
+.featured-mock { perspective: 1400px; }
+.browser-frame {
+  background: #ffffff;
+  border: 0.5px solid var(--border-bright);
+  box-shadow: 0 24px 60px -24px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  transform: rotateY(-7deg) rotateX(2deg);
+  transform-origin: center left;
+  transition: transform 0.5s ease;
+}
+.feature-card.featured:hover .browser-frame { transform: rotateY(0deg) rotateX(0deg); }
+.browser-bar {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 0.85rem;
+  background: #ebe9e3;
+  border-bottom: 0.5px solid var(--border);
+}
+.browser-dot { width: 8px; height: 8px; border-radius: 50%; background: #c9c6bf; flex-shrink: 0; }
+.browser-url {
+  margin-left: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: #f7f5f0;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  flex: 1;
+}
+.browser-body { padding: 1.5rem 1.5rem 1.75rem; background: #faf9f6; }
+.mock-eyebrow {
+  font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.22em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem;
+}
+.mock-car {
+  font-family: var(--font-display); font-size: 2rem; line-height: 1;
+  letter-spacing: 0.04em; color: var(--text-primary);
+}
+.mock-spec {
+  font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--text-muted); text-transform: uppercase; margin-top: 0.35rem;
+}
+.mock-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border);
+  border: 0.5px solid var(--border); margin: 1.25rem 0;
+}
+.mock-stats > div { background: #ffffff; padding: 0.65rem 0.7rem; }
+.mock-stats span {
+  display: block; font-family: var(--font-mono); font-size: 0.48rem;
+  letter-spacing: 0.12em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.2rem;
+}
+.mock-stats strong { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-primary); font-weight: 700; }
+.mock-section-label {
+  font-family: var(--font-mono); font-size: 0.52rem; letter-spacing: 0.15em;
+  color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.6rem;
+}
+.mock-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 0.45rem 0; border-bottom: 0.5px solid var(--border);
+  font-size: 0.72rem; color: var(--text-primary);
+}
+.mock-row em { font-family: var(--font-mono); font-style: normal; font-size: 0.58rem; color: var(--text-muted); }
+.mock-tags { display: flex; gap: 0.4rem; margin-top: 1rem; flex-wrap: wrap; }
+.mock-tags span {
+  font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent-dim);
+  border: 0.5px solid var(--border-bright); padding: 0.22rem 0.5rem;
+}
 .feature-num { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.15em; margin-bottom: 2rem; }
 .feature-title { color: var(--text-primary); margin-bottom: 0.75rem; }
 .feature-body { font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; }
@@ -412,7 +494,7 @@
 
 /* PERSONAS */
 .personas-inner { max-width: 1100px; margin: 0 auto; }
-.persona-grid { margin-top: 4rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--border); }
+.persona-grid { margin-top: 4rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); }
 .persona-card { background: var(--dark); padding: 2.25rem; transition: background 0.25s; }
 .persona-card:hover { background: var(--surface); }
 .persona-priority { font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 1rem; }
@@ -456,27 +538,111 @@
 .footer-links a:hover { color: var(--text-muted); }
 .footer-copy { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim); letter-spacing: 0.08em; }
 
+/* ACCESSIBILITY */
+.skip-link {
+  position: absolute; left: 1rem; top: -3rem; z-index: 200;
+  background: var(--accent); color: #f7f5f0;
+  font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  padding: 0.6rem 1rem; text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-link:focus { top: 1rem; }
+.lp-root a:focus-visible,
+.lp-root button:focus-visible {
+  outline: 2px solid #e8d5a0;
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
 /* ANIMATIONS */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* RESPONSIVE */
+/* モーション抑制設定を尊重する */
+@media (prefers-reduced-motion: reduce) {
+  .lp-root *,
+  .lp-root *::before,
+  .lp-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hero-content { animation: none; }
+  .ticker-track { animation: none; }
+  .hero-card { transform: none; }
+  .browser-frame { transform: none; }
+}
+
+/* RESPONSIVE
+   モバイルは「デスクトップの縮小」ではなく、画面サイズごとに別のレイアウト判断を行う。
+   - tablet (≤1024): 多列を2列へ、余白を圧縮
+   - phone  (≤640):  単列・縦積み・サムリーチ最適化（CTAを全幅化）       */
+
+/* ── TABLET ───────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .lp-root section { padding: 6rem 2rem; }
+  .hero { padding: 0 2rem; }
+  .hero-content { gap: 2.5rem; }
+  .persona-grid { grid-template-columns: repeat(2, 1fr); }
+  .feature-card.featured { gap: 2rem; padding: 2.5rem; }
+  .browser-frame { transform: none; }
+}
+
+/* ── 縦積みに切り替え（ヒーロー2カラム・機能の2カラムを解消） ── */
 @media (max-width: 900px) {
   .lp-root nav { padding: 1rem 1.25rem; }
   .nav-links { display: none; }
   .mobile-cta { display: inline-block !important; }
-  .hero-content { grid-template-columns: 1fr; padding-top: 100px; }
-  .hero-card { transform: none; }
+
+  /* ヒーロー: テキスト → カード の縦並び。カードの傾きは外す */
+  .hero-content { grid-template-columns: 1fr; padding-top: 110px; align-items: start; }
+  .hero-card { transform: none; max-width: 460px; }
+
   .problem-grid { grid-template-columns: 1fr; }
   .problem-col + .problem-col { border-left: none; border-top: 0.5px solid var(--border); }
+
+  /* 機能: フィーチャーは内部も縦積み（文章 → モック）、小カードは1列 */
   .features-grid { grid-template-columns: 1fr; }
-  .feature-card.featured { grid-column: span 1; }
+  .feature-card.featured { grid-column: span 1; grid-template-columns: 1fr; gap: 2rem; padding: 2.25rem; }
+
   .steps { grid-template-columns: 1fr; }
   .step { border-right: none; border-bottom: 0.5px solid var(--border); }
   .persona-grid { grid-template-columns: 1fr; }
-  .lp-root section { padding: 5rem 1.25rem; }
-  .final-cta { padding: 7rem 1.25rem; }
-  .lp-root footer { padding: 1.5rem 1.25rem; }
+
+  .lp-root section { padding: 5rem 1.5rem; }
+  .final-cta { padding: 7rem 1.5rem; }
+  .lp-root footer { padding: 1.5rem 1.5rem; }
+}
+
+/* ── PHONE ────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .lp-root section { padding: 4.5rem 1.25rem; }
+
+  /* 見出しスケールをスマホ用に作り直す（clamp の下限がデスクトップ基準で大きすぎるため） */
+  .lp-root h1 { font-size: clamp(3.4rem, 15vw, 5rem); margin-bottom: 1.5rem; }
+  .lp-root h2 { font-size: clamp(2.6rem, 11vw, 3.6rem); }
+  .hero-desc { font-size: 0.92rem; margin-bottom: 2rem; }
+
+  /* CTA: サムリーチ重視で全幅・縦積み・最小タップ高を確保 */
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-ghost { text-align: center; padding: 0.95rem 1.5rem; }
+  .hero-meta { gap: 0.75rem 1.25rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+  /* ヒーローカードはモック性が強いので情報量と余白を絞る */
+  .hero-card { padding: 1.4rem; }
+  .card-car-name { font-size: 1.9rem; }
+  .hero-video-dots { bottom: 4.5rem; left: 1.25rem; }
+  .ticker-item { font-size: 0.58rem; }
+
+  .features-header { margin-bottom: 2.5rem; }
+  .problem-col, .feature-card, .persona-card { padding: 1.75rem; }
+  .feature-card.featured { padding: 1.75rem; }
+
+  .final-cta { padding: 6rem 1.25rem; }
+  .final-cta-btn { display: block; width: 100%; padding: 1.1rem !important; }
+  .lp-root footer { padding: 1.5rem 1.25rem; flex-direction: column; align-items: flex-start; }
 }
