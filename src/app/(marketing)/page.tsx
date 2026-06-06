@@ -1,673 +1,338 @@
-import { Check, Shield, Gauge, Wrench, FileText, Camera, Lock, Sparkles, Car, LineChart, Download, Star, Timer, Zap, ArrowRight, Clock, Play, Paperclip } from "lucide-react";
-import Header from "@/components/marketing/Header";
-import { CTAButtons } from "@/components/marketing/CTAButtons.client";
-import LandingPageAnalytics from "@/components/marketing/LandingPageAnalytics.client";
-import ScrollAnimations from "@/components/marketing/ScrollAnimations.client";
-import HeroCTAButtonsPrimary from "@/components/marketing/HeroCTAButtons.client";
 import Link from "next/link";
-import Image from "next/image";
+import "./lp.css";
 
 export const dynamic = 'force-static';
-export const revalidate = 0; // デプロイ直後に反映されるように一時的に0に設定（確認後、86400に戻す）
 
-// ===== デザイントークン定数 =====
-const DESIGN_TOKENS = {
-  container: "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
-  radius: {
-    sm: "rounded-lg",
-    md: "rounded-xl",
-    lg: "rounded-2xl",
-  },
-  shadow: {
-    sm: "shadow-sm",
-    md: "shadow-md",
-    lg: "shadow-lg",
-    xl: "shadow-xl",
-    xxl: "shadow-2xl",
-  },
-  accent: {
-    blue: "blue-600",
-    blueLight: "blue-50",
-    blueDark: "blue-700",
-  },
-} as const;
-
-// GarageLog LP — 2026 Modern SaaS Design
+const TICKER_ITEMS = [
+  "FL5 CIVIC TYPE R", "GDB IMPREZA WRX STi", "GR86 TOYOTA",
+  "ROADSTER ND5RC", "BRZ ZD8 SUBARU", "LANCER EVO X", "SUPRA A90", "GTR R35 NISSAN",
+  "FL5 CIVIC TYPE R", "GDB IMPREZA WRX STi", "GR86 TOYOTA",
+  "ROADSTER ND5RC", "BRZ ZD8 SUBARU", "LANCER EVO X", "SUPRA A90", "GTR R35 NISSAN",
+];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <LandingPageAnalytics />
-      <ScrollAnimations />
-      <Header />
-      <Hero />
-      <FeatureScreenshotsSection />
-      <BeforeAfter />
-      <HowItWorks />
-      <Features />
-      <Trust />
-      <FAQ />
-      <CTA />
-      <Footer />
-    </div>
-  );
-}
+    <div className="lp-root">
+      {/* NAV */}
+      <nav>
+        <Link href="/" className="nav-logo">GARAGE_LOG</Link>
+        <div className="nav-links">
+          <a href="#features">機能</a>
+          <a href="#how">使い方</a>
+          <a href="#pricing">収益モデル</a>
+          <Link href="/login" className="nav-cta">ログイン</Link>
+        </div>
+        <Link href="/signup" className="nav-cta mobile-cta" style={{ display: 'none' }}>無料で始める</Link>
+      </nav>
 
-function Hero() {
-  return (
-    <section className="relative overflow-hidden">
-      {/* 背景：薄い放射グラデーション + ごく薄いテクスチャ（最新感、白の清潔感は維持） */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: 'radial-gradient(ellipse at top, rgba(37, 99, 235, 0.04) 0%, rgba(255, 255, 255, 0) 70%)',
-        }}
-      ></div>
-      <div 
-        className="absolute inset-0 opacity-[0.015]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}
-      ></div>
-      
-      <div className={`${DESIGN_TOKENS.container} relative py-16 lg:py-24`}>
-        {/* メイングリッド：モバイルでは画像→テキストの順、デスクトップでは左（コンテンツ）+ 右（モック） */}
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-16 lg:mb-20">
-          {/* 左側：H1 + ベネフィット + CTA（モバイルでは2番目） */}
-          <div className="space-y-6 slide-in-left-on-scroll order-2 lg:order-1">
-            {/* バッジ */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200/60 text-sm font-medium text-slate-700 shadow-sm">
-              <Sparkles className="h-4 w-4 text-blue-600" />
-              <span>クルマの記録を、もっとスマートに</span>
-            </div>
-            
-            {/* H1：改行を自然に、縦リズムを詰める */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight text-slate-900 leading-[1.05] mt-4">
-              クルマと、<br className="hidden sm:block" />
-              <span className="text-blue-600">ずっと</span>いい関係。
-            </h1>
-            
-            {/* サブコピー：行幅を最適化 */}
-            <p className="text-base lg:text-lg text-slate-600 leading-relaxed max-w-lg mt-6">
-              メンテ・給油・カスタムをまとめて記録。クルマのコンディションを見える化して、長く気持ちよく走れる状態をキープします。
+      {/* HERO */}
+      <section className="hero">
+        <div className="hero-grid-lines" />
+        <div className="hero-content">
+          <div className="hero-left">
+            <p className="hero-eyebrow">Vehicle History Platform</p>
+            <h1>愛車の<em>履歴を、</em>資産に。</h1>
+            <p className="hero-desc">
+              整備・カスタム・証憑を記録し、URLひとつで共有できる車両履歴プラットフォーム。
+              見せられる履歴が、信頼と価値を生む。
             </p>
-            
-            {/* CTA：Primary + Secondary */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-8">
-              <HeroCTAButtonsPrimary variant="primary" />
-              <HeroCTAButtonsPrimary variant="secondary" />
+            <div className="hero-actions">
+              <Link href="/signup" className="btn-primary">無料ではじめる</Link>
+              <a href="#features" className="btn-ghost">デモを見る</a>
             </div>
-
-            {/* 信頼要素のチップ3つ（CTA直下） */}
-            <div className="flex flex-wrap items-center gap-2 mt-4">
-              <TrustChip icon={<Check className="h-3.5 w-3.5" />} text="クレカ不要" />
-              <TrustChip icon={<Clock className="h-3.5 w-3.5" />} text="30秒で開始" />
-              <TrustChip icon={<Download className="h-3.5 w-3.5" />} text="データはいつでもエクスポート" />
+            <div className="hero-meta">
+              <span>クレカ不要</span>
+              <span>30秒で開始</span>
+              <span>完全無料</span>
             </div>
           </div>
-          
-          {/* 右側：プロダクトスクショ（注釈付き、モバイルでは1番目） */}
-          <div className="relative slide-in-right-on-scroll lg:mt-0 order-1 lg:order-2">
-            <HeroScreenshot />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-
-// ヒーロー用スクリーンショット（Spotlight表現：背景にダッシュボードUI、前面に次回メンテカードを強調）
-function HeroScreenshot() {
-  return (
-    <div className="relative">
-      {/* スクショカード：大きめの角丸、控えめなシャドウ、外周余白 */}
-      <div className={`relative ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white ${DESIGN_TOKENS.shadow.lg} overflow-hidden p-4 lg:p-6`}>
-        {/* ブラウザウィンドウ風ヘッダー */}
-        <div className="px-3 py-2 border-b border-slate-200/60 flex items-center gap-2 bg-slate-50/50 mb-4">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
-          <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-          <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
-          <span className="text-xs text-slate-600 ml-2 font-medium">GarageLog</span>
-        </div>
-        
-        {/* コンテンツエリア：Spotlight表現 */}
-        <div className={`relative w-full aspect-[4/3] bg-gradient-to-br from-slate-50 to-blue-50/30 ${DESIGN_TOKENS.radius.md} overflow-hidden`}>
-          {/* 背景：ダッシュボードUIをうっすら読める状態で表示（情報量が読める状態） */}
-          <div className="absolute inset-0 opacity-60">
-            <DashboardBackground />
-          </div>
-          
-          {/* 前面：次回メンテ提案カードを強調表示 */}
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <MaintenanceCard />
-          </div>
-        </div>
-      </div>
-
-    </div>
-  );
-}
-
-// 背景用：ダッシュボードUI（薄く表示、画像差し替え可能な構造）
-function DashboardBackground() {
-  return (
-    <div className="w-full h-full p-4">
-      {/* 実際の画像がある場合はこちらを使用（コメントアウトを外す） */}
-      {/* 
-      <Image
-        src="/lp-screenshots/hero-dashboard-background.png"
-        alt="GarageLog ダッシュボード（背景用）"
-        width={1200}
-        height={900}
-        className="w-full h-full object-cover"
-        style={{ opacity: 0.35, filter: 'blur(1.5px)' }}
-      />
-      */}
-      
-      {/* プレースホルダー：HTML構造でダッシュボードUIを再現 */}
-      <div className="grid grid-cols-[140px_1fr] gap-4 h-full">
-        {/* サイドバー */}
-        <aside className="space-y-3">
-          <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-xs">
-                K
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold text-slate-700 truncate">Ken</div>
-                <div className="text-[10px] text-blue-600 font-medium">無料</div>
-              </div>
-            </div>
-          </div>
-          <nav className="bg-white/80 rounded-xl border border-slate-200/60 p-2 space-y-0.5">
-            <div className="px-2 py-1 rounded-lg bg-blue-50/50 text-blue-600 text-xs font-medium">ホーム</div>
-            <div className="px-2 py-1 rounded-lg text-xs text-slate-600">マイカー</div>
-            <div className="px-2 py-1 rounded-lg text-xs text-slate-600">ガソリン</div>
-            <div className="px-2 py-1 rounded-lg text-xs text-slate-600">メンテナンス</div>
-          </nav>
-        </aside>
-
-        {/* メインコンテンツ */}
-        <div className="space-y-4">
-          {/* ヘッダー */}
-          <div className="bg-white/80 rounded-xl border border-slate-200/60 p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700">ホーム</h3>
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <Car className="h-3.5 w-3.5 text-blue-600" />
+          <div className="hero-right">
+            <div className="hero-card">
+              <p className="card-car-name">CIVIC TYPE R</p>
+              <p className="card-car-sub">FL5 · 2022 · CHAMPIONSHIP WHITE</p>
+              <div className="card-stat-row">
+                <div className="card-stat">
+                  <p className="card-stat-label">ODO</p>
+                  <p className="card-stat-val">12,480</p>
                 </div>
-                <span className="text-xs font-medium text-slate-600">シビック TYPER</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 車情報カード */}
-          <div className="bg-white/80 rounded-2xl border border-slate-200/60 p-4">
-            <div className="flex items-start gap-4">
-              <div className="w-24 h-16 rounded-xl border border-slate-200/60 bg-gradient-to-br from-blue-400/30 to-blue-600/30"></div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-slate-700 mb-2">シビック TYPER (FL5)</div>
-                <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
-                  <div>走行距離: <span className="font-medium">4,822 km</span></div>
-                  <div>車検期限: <span className="font-medium">2027/4/30</span></div>
+                <div className="card-stat">
+                  <p className="card-stat-label">車検</p>
+                  <p className="card-stat-val">2027/4</p>
+                </div>
+                <div className="card-stat">
+                  <p className="card-stat-label">記録数</p>
+                  <p className="card-stat-val">24件</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* 活動カード */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
-              <div className="text-xs font-semibold text-slate-700 mb-2">最近のメンテナンス</div>
-              <div className="bg-slate-50/50 rounded-lg p-2">
-                <div className="text-xs font-medium text-slate-700">オイル交換</div>
-                <div className="text-[10px] text-slate-500">2026/01/15</div>
+              <p className="card-history-label">最近の履歴</p>
+              <div className="card-history-item">
+                <span className="card-history-name">SPOON オイル交換 (5W-40)</span>
+                <span className="card-history-date">2026/05/12</span>
               </div>
-            </div>
-            <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
-              <div className="text-xs font-semibold text-slate-700 mb-2">最近の給油</div>
-              <div className="bg-slate-50/50 rounded-lg p-2">
-                <div className="text-xs font-medium text-slate-700">11/16 • 35.6L</div>
-                <div className="text-xs font-bold text-slate-700">¥6,111</div>
+              <div className="card-history-item">
+                <span className="card-history-name">ブレーキパッド交換 (Endless)</span>
+                <span className="card-history-date">2026/03/08</span>
               </div>
-            </div>
-            <div className="bg-white/80 rounded-xl border border-slate-200/60 p-3">
-              <div className="text-xs font-semibold text-slate-700 mb-2">最近のカスタマイズ</div>
-              <div className="bg-slate-50/50 rounded-lg p-2">
-                <div className="text-xs font-medium text-slate-700">SPOON ダウンサス</div>
-                <div className="text-xs font-bold text-slate-700">¥30,000</div>
+              <div className="card-history-item">
+                <span className="card-history-name">車高調整 (Öhlins DFV)</span>
+                <span className="card-history-date">2025/11/22</span>
               </div>
-            </div>
-          </div>
-
-          {/* グラフ */}
-          <div className="bg-white/80 rounded-2xl border border-slate-200/60 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <LineChart className="h-4 w-4 text-blue-600/60" />
-              <span className="text-sm font-semibold text-slate-700">月別費用推移</span>
-            </div>
-            <div className="h-20 bg-slate-50/50 rounded-lg flex items-end justify-between gap-1 p-2">
-              {[15, 20, 85, 18, 10, 35].map((h, i) => (
-                <div key={i} className="flex-1 bg-blue-400/30 rounded-t" style={{ height: `${h}%` }}></div>
-              ))}
+              <p className="card-url">garagelog.jp/g/fl5-champ-white</p>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// 前面強調：次回メンテ提案カード（shadow強め、border薄い、角丸は既存と合わせる、数値を強調）
-function MaintenanceCard() {
-  return (
-    <div className={`bg-white ${DESIGN_TOKENS.radius.lg} border border-slate-200 ${DESIGN_TOKENS.shadow.sm} p-5 lg:p-6 max-w-sm mx-auto backdrop-blur-sm`}>
-      {/* 見出し */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`h-11 w-11 lg:h-12 lg:w-12 ${DESIGN_TOKENS.radius.md} bg-blue-100 flex items-center justify-center shadow-md`}>
-          <Timer className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
-        </div>
-        <div>
-          <h3 className="text-base lg:text-lg font-semibold text-slate-900">次回メンテ</h3>
-        </div>
-      </div>
-      
-      {/* 本文：数値を強調 */}
-      <div className={`bg-slate-50 ${DESIGN_TOKENS.radius.md} p-4 lg:p-5`}>
-        <div className="text-xs lg:text-sm text-slate-600 mb-2">次回まで残り</div>
-        <div className="text-2xl lg:text-3xl font-bold text-slate-900 mb-3">1,234km</div>
-        
-        {/* 進捗バー */}
-        <div className="mb-3">
-          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{ width: '75%' }}></div>
+        <div className="hero-ticker">
+          <div className="ticker-track">
+            {TICKER_ITEMS.map((item, i) => (
+              <span key={i} className="ticker-item">
+                {item} <span className="ticker-sep">—</span>
+              </span>
+            ))}
           </div>
         </div>
-        
-        {/* 推奨メンテナンス */}
-        <div className="pt-3 border-t border-slate-200">
-          <div className="text-xs text-slate-500 mb-1">推奨メンテナンス</div>
-          <div className="text-sm lg:text-base font-semibold text-slate-900">オイル交換</div>
-        </div>
-      </div>
-    </div>
-  );
-}
+      </section>
 
-// 信頼要素のチップ（CTA直下、視認性が高いが主張しすぎない見た目）
-function TrustChip({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 ${DESIGN_TOKENS.radius.sm} bg-white/90 backdrop-blur-sm border border-slate-200/60 text-xs font-medium text-slate-700 ${DESIGN_TOKENS.shadow.sm} hover:shadow-sm transition-shadow`}>
-      <div className="text-green-600 flex-shrink-0">{icon}</div>
-      <span className="whitespace-nowrap">{text}</span>
-    </div>
-  );
-}
-
-
-// 機能別スクショ3枚セクション
-function FeatureScreenshotsSection() {
-  return (
-    <section className="bg-white py-20 lg:py-32">
-      <div className={`${DESIGN_TOKENS.container}`}>
-        <FeatureScreenshots />
-      </div>
-    </section>
-  );
-}
-
-// 機能別スクショ3枚
-function FeatureScreenshots() {
-  const features = [
-    {
-      icon: <Camera className="h-5 w-5" />,
-      title: "撮って10秒で記録",
-      description: "レシートを撮るだけで自動入力。",
-      imageSrc: "/lp-screenshots/feature-ocr.png",
-      imageAlt: "レシートOCR機能",
-    },
-    {
-      icon: <Timer className="h-5 w-5" />,
-      title: "次のメンテを逃さない",
-      description: "走行距離から次回タイミングを自動算出。",
-      imageSrc: "/lp-screenshots/feature-maintenance.png",
-      imageAlt: "次回メンテ提案機能",
-    },
-    {
-      icon: <FileText className="h-5 w-5" />,
-      title: "履歴が証明書になる",
-      description: "署名付きPDFで第三者にそのまま提示。",
-      imageSrc: "/lp-screenshots/feature-pdf.png",
-      imageAlt: "履歴証明PDF機能",
-    },
-  ];
-
-  return (
-    <div>
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
-          <Sparkles className="h-4 w-4 text-blue-600" />
-          主要機能
-        </div>
-        <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">
-          ひと目でわかる、GarageLogの3つの価値
-        </h2>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-        {features.map((feature, index) => (
-          <div key={index} className="relative group">
-            {/* カード（ウィンドウ枠なし、ミニマル） */}
-            <div className="relative rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-sm hover:border-slate-300 transition-all duration-200 overflow-hidden">
-              {/* コンテンツエリア */}
-              <div className="p-6 lg:p-8">
-                <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4 text-blue-600">
-                  {feature.icon}
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{feature.description}</p>
-              </div>
+      {/* PROBLEM */}
+      <section className="problem" id="problem">
+        <div className="problem-inner">
+          <p className="section-label"><span>01</span> 解決する課題</p>
+          <h2>履歴は分散する。<br />価値は消える。</h2>
+          <div className="problem-grid">
+            <div className="problem-col">
+              <p className="problem-col-label bad">× これまで</p>
+              <ul className="problem-list bad">
+                <li>整備履歴が紙・スマホ写真・記憶に散らばっている</li>
+                <li>カスタムのこだわりを売却時にうまく伝えられない</li>
+                <li>次の車検・オイル交換がいつか分からない</li>
+                <li>SNS投稿は流れていく。蓄積されない</li>
+                <li>買い手が車両状態を信頼しにくい</li>
+              </ul>
+            </div>
+            <div className="problem-col">
+              <p className="problem-col-label good">→ GarageLogなら</p>
+              <ul className="problem-list good">
+                <li>車両ごとに履歴を一元化。URLひとつで共有できる</li>
+                <li>整備・カスタム・証憑が揃った「見せる履歴」を作れる</li>
+                <li>走行距離と日付から次回メンテを自動提案・リマインド</li>
+                <li>公開ガレージページがSNSカード対応。拡散できる</li>
+                <li>PDF出力で買い手・査定担当に信頼を証明できる</li>
+              </ul>
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function BeforeAfter() {
-  return (
-    <section className="bg-slate-50 py-20 lg:py-32">
-      <div className={`${DESIGN_TOKENS.container}`}>
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
-            <Zap className="h-4 w-4 text-blue-600" />
-            変革の瞬間
-          </div>
-          <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">紙やメモで散らばる → 車ごとに一元管理</h2>
-          <p className="text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            従来の管理方法から、GarageLogでの管理へ。あなたの愛車管理が劇的に変わります。
-          </p>
         </div>
+      </section>
 
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Before */}
-          <div className={`${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-slate-50/80 p-8 lg:p-10 shadow-sm`}>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-12 w-12 rounded-xl bg-slate-200 flex items-center justify-center shadow-sm">
-                <span className="text-xl font-bold text-slate-600">×</span>
-              </div>
-              <h3 className="text-2xl font-semibold text-slate-900">これまで</h3>
-            </div>
-            <ul className="space-y-5">
-              <li className="flex items-start gap-4">
-                <span className="mt-2 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="text-base text-slate-700 leading-relaxed">整備や給油の記録が紙やメモに散らばっている</span>
-              </li>
-              <li className="flex items-start gap-4">
-                <span className="mt-2 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="text-base text-slate-700 leading-relaxed">いくらかかっているか、今月のコストが分からない</span>
-              </li>
-              <li className="flex items-start gap-4">
-                <span className="mt-2 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="text-base text-slate-700 leading-relaxed">次に何をやればいいか（オイル/車検など）が曖昧</span>
-              </li>
-              <li className="flex items-start gap-4">
-                <span className="mt-2 h-2 w-2 rounded-full bg-slate-400 flex-shrink-0"></span>
-                <span className="text-base text-slate-700 leading-relaxed">売却時に整備履歴をうまく伝えられない</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* After */}
-          <div className={`${DESIGN_TOKENS.radius.lg} border border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50/50 p-8 lg:p-10 shadow-sm`}>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-12 w-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm">
-                <Check className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-semibold text-slate-900">GarageLogなら</h3>
-            </div>
-            <ul className="space-y-5">
-              <li className="flex items-start gap-4">
-                <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Check className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-base font-semibold text-slate-900 leading-relaxed">すべてを1か所で一元管理（車ごとに整理）</span>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Check className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-base font-semibold text-slate-900 leading-relaxed">自動グラフ化で「見るだけで価値」</span>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Check className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-base font-semibold text-slate-900 leading-relaxed">走行距離/期間から次回メンテを自動提案</span>
-              </li>
-              <li className="flex items-start gap-4">
-                <div className="mt-1 h-6 w-6 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Check className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-base font-semibold text-slate-900 leading-relaxed">PDFで第三者にも「証明」できる</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorks() {
-  const steps = [
-    { icon: <Camera className="h-6 w-6" />, title: "記録する", desc: "テンプレ or レシートOCRで最短10秒。" },
-    { icon: <LineChart className="h-6 w-6" />, title: "見える化", desc: "費用・燃費を自動でグラフ化。" },
-    { icon: <Wrench className="h-6 w-6" />, title: "次の一手", desc: "次回メンテナンスを提案＆リマインド。" },
-    { icon: <FileText className="h-6 w-6" />, title: "資産化", desc: 'PDFで履歴を"価値"に。' },
-  ];
-  
-  return (
-    <section id="how" className="bg-white py-20 lg:py-32">
-      <div className={`${DESIGN_TOKENS.container}`}>
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
-            <Zap className="h-4 w-4 text-blue-600" />
-            使い方はシンプル
-          </div>
-          <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight mb-4">4ステップで始められます</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-          {steps.map((s, i) => (
-            <div 
-              key={i} 
-              className={`group relative ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-slate-300 hover:shadow-sm transition-all duration-200 scale-in-on-scroll`}
-              style={{ animationDelay: `${i * 0.1}s` }}
-            >
-              <div className="h-14 w-14 lg:h-16 lg:w-16 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-105 transition-transform duration-200 shadow-sm">
-                {s.icon}
-              </div>
-              <div className="absolute top-6 right-6 h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm group-hover:scale-110 transition-transform">
-                {i + 1}
-              </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-3 pr-10">{s.title}</h3>
-              <p className="text-base text-slate-600 leading-relaxed">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Features() {
-  const feats = [
-    { icon: <Gauge className="h-6 w-6" />, title: "ホーム", desc: "今月のコスト・燃費・やることを一目で確認。" },
-    { icon: <Wrench className="h-6 w-6" />, title: "メンテ記録", desc: "テンプレで素早く、走行距離も自動更新。" },
-    { icon: <Camera className="h-6 w-6" />, title: "レシートOCR", desc: "給油や保険証券を自動読み取り、入力の手間を削減。" },
-    { icon: <FileText className="h-6 w-6" />, title: "履歴証明PDF", desc: "売却や引き継ぎに使える書式で出力、信頼性向上。" },
-    { icon: <Paperclip className="h-6 w-6" />, title: "証憑アップロード", desc: "領収書などを記録に添付、売却時の信頼性向上。" },
-    { icon: <Lock className="h-6 w-6" />, title: "複数台管理", desc: "複数台の車両を登録して、まとめて一元管理。" },
-  ];
-  
-  return (
-    <section id="features" className="bg-slate-50 py-20 lg:py-32">
-      <div className={`${DESIGN_TOKENS.container}`}>
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4 shadow-sm">
-            <Sparkles className="h-4 w-4 text-blue-600" />
-            主な機能
-          </div>
-          <h2 className="text-3xl lg:text-4xl font-semibold text-slate-900 leading-tight">あなたの愛車管理をサポート</h2>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {feats.map((f, i) => (
-            <div 
-              key={i} 
-              className={`group ${DESIGN_TOKENS.radius.lg} border border-slate-200 bg-white p-6 lg:p-8 hover:border-slate-300 hover:shadow-sm transition-all duration-200 scale-in-on-scroll`}
-              style={{ animationDelay: `${i * 0.1}s` }}
-            >
-              <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-4 group-hover:scale-105 transition-transform duration-200 shadow-sm">
-                {f.icon}
-              </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-3">{f.title}</h3>
-              <p className="text-base text-slate-600 leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-
-function Trust() {
-  return (
-    <section className="bg-white py-16 lg:py-20">
-      <div className={`${DESIGN_TOKENS.container}`}>
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <div className="text-center">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
-              <Shield className="h-6 w-6 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">データはあなたのもの</h3>
-            <p className="text-sm text-slate-600 leading-relaxed">すべてのデータはあなたのもので、いつでもエクスポートできます。</p>
-          </div>
-          <div className="text-center">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
-              <Download className="h-6 w-6 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">エクスポート可</h3>
-            <p className="text-sm text-slate-600 leading-relaxed">記録データをCSVやPDFで出力し、他のサービスでも利用できます。</p>
-          </div>
-          <div className="text-center">
-            <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
-              <Lock className="h-6 w-6 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">セキュリティ重視</h3>
-            <p className="text-sm text-slate-600 leading-relaxed">データは暗号化され、安全に保存されます。あなただけがアクセスできます。</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FAQ() {
-  const faqs = [
-    { q: "どのような記録ができますか？", a: "メンテナンス履歴、給油記録、カスタマイズ履歴など、愛車に関するあらゆる情報を記録できます。走行距離も自動で管理されるため、次回のメンテナンス時期も一目で分かります。" },
-    { q: "無料で始められますか？", a: "はい、無料でアカウントを作成してすぐに使い始められます。クレジットカードも不要です。" },
-    { q: "レシートOCRはどのくらい正確ですか？", a: "給油レシートや保険証券を自動読み取りします。必要に応じて手動で修正できます。" },
-    { q: "複数台の車を管理できますか？", a: "はい、複数台の車両を登録して管理できます。車ごとに記録を分けて管理できるため、家族で複数台お持ちの方にも最適です。" },
-    { q: "データは安全に保存されますか？", a: "データは暗号化され、安全に保存されます。あなただけがアクセスできるよう、厳重に管理しています。" },
-    { q: "売却時に履歴を証明できますか？", a: "PDF出力機能で、整備履歴を証明書として出力できます。署名が埋め込まれるため、第三者への提示にも安心です。売却時の価値向上にもつながります。" },
-    { q: "領収書などの証憑をアップロードできますか？", a: "はい、証憑（領収書など）をアップロードできます。メンテナンスやカスタマイズの記録に添付することで、売却時の信頼性が向上します。" },
-  ];
-  return (
-    <section id="faq" className="bg-slate-50 py-20 lg:py-28">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-medium text-slate-700 mb-4">
-            <Sparkles className="h-4 w-4 text-blue-600" />
-            よくある質問
-          </div>
-          <h2 className="text-3xl font-semibold text-slate-900 leading-tight">気になることを解決</h2>
-        </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          {faqs.map((f, i) => (
-            <div 
-              key={i} 
-              className="rounded-2xl border border-slate-200 bg-white p-6 hover:border-blue-300 hover:shadow-sm transition-all scale-in-on-scroll" 
-              style={{ animationDelay: `${i * 0.1}s` }}
-            >
-              <h3 className="font-semibold text-lg text-slate-900 mb-3">{f.q}</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{f.a}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CTA() {
-  return (
-    <section id="cta" className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 py-20 lg:py-32">
-      {/* 控えめなノイズ/テクスチャ風のオーバーレイ */}
-      <div className="absolute inset-0 opacity-[0.08]" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-      }}></div>
-      <div className={`${DESIGN_TOKENS.container} relative`}>
-        <div className={`${DESIGN_TOKENS.radius.lg} bg-white/10 backdrop-blur-xl border border-white/30 p-8 lg:p-12 text-white shadow-lg`}>
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+      {/* FEATURES */}
+      <section id="features">
+        <div className="features-inner">
+          <div className="features-header">
             <div>
-              <h2 className="text-3xl lg:text-4xl xl:text-5xl font-semibold mb-4 leading-tight">愛車の価値を、最大限に。</h2>
-              <p className="text-lg lg:text-xl text-blue-50 leading-relaxed">プロレベルの管理を、今すぐ無料で。</p>
+              <p className="section-label"><span>02</span> 主な機能</p>
+              <h2>記録する。<br />見せる。<br />資産にする。</h2>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 sm:justify-end">
-              <CTAButtons variant="cta-section" />
+            <p className="features-desc">
+              日常のメンテから売却まで、愛車の一生を1つのページにまとめる。
+              広告ではなく、ユーザーにとって自然な次アクションとして設計した導線が、
+              必要なタイミングで整備・査定・パーツ購入につながる。
+            </p>
+          </div>
+          <div className="features-grid">
+            <div className="feature-card featured">
+              <p className="feature-num">01</p>
+              <h3 className="feature-title">公開ガレージページ</h3>
+              <p className="feature-body">
+                車両プロフィール・整備履歴・カスタム一覧・証憑写真をまとめた専用URL。
+                SNS共有カード対応で、X/Instagramに貼るだけで愛車の全履歴が伝わる。
+                売却時はQRコードを印刷して買い手に渡せる。
+              </p>
+              <span className="feature-tag">SNS連携 / QR / PDF対応</span>
+            </div>
+            <div className="feature-card">
+              <p className="feature-num">02</p>
+              <h3 className="feature-title">10秒記録</h3>
+              <p className="feature-body">テンプレ選択 or レシートOCRで最短10秒。走行距離も自動更新。</p>
+              <span className="feature-tag">OCR / テンプレ</span>
+            </div>
+            <div className="feature-card">
+              <p className="feature-num">03</p>
+              <h3 className="feature-title">次回メンテ提案</h3>
+              <p className="feature-body">走行距離・日付から車検/オイル/タイヤ交換を自動算出してリマインド。</p>
+              <span className="feature-tag">リマインダー</span>
+            </div>
+            <div className="feature-card">
+              <p className="feature-num">04</p>
+              <h3 className="feature-title">整備・査定相談導線</h3>
+              <p className="feature-body">「この履歴で相談する」ボタンで、履歴情報付きの問い合わせが整備工場へ届く。</p>
+              <span className="feature-tag">送客 / 提携</span>
+            </div>
+            <div className="feature-card">
+              <p className="feature-num">05</p>
+              <h3 className="feature-title">証憑PDF出力</h3>
+              <p className="feature-body">署名付きPDFで整備履歴を証明書として出力。売却・査定で信頼を補強できる。</p>
+              <span className="feature-tag">売却 / 査定</span>
+            </div>
+            <div className="feature-card">
+              <p className="feature-num">06</p>
+              <h3 className="feature-title">複数台管理</h3>
+              <p className="feature-body">家族の車も、2台目も。車両ごとに完全分離で管理できる。</p>
+              <span className="feature-tag">複数台対応</span>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-function Footer() {
-  const currentYear = new Date().getFullYear();
-
-  return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 text-sm text-slate-600">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <img
-              src="/icon.png"
-              alt="GarageLog"
-              className="h-10 w-10 rounded-xl shadow-sm"
-            />
-            <div>
-              <p className="font-semibold text-slate-900 text-lg">GarageLog</p>
-              <p className="text-xs text-slate-500">© {currentYear} GarageLog</p>
+      {/* HOW */}
+      <section className="how" id="how">
+        <div className="how-inner">
+          <p className="section-label"><span>03</span> 使い方</p>
+          <h2>4ステップで<br />はじめられる。</h2>
+          <div className="steps">
+            <div className="step">
+              <p className="step-num">01</p>
+              <p className="step-title">車両を登録</p>
+              <p className="step-body">車名・型式・年式を入力。30秒で車両プロフィールが完成する。</p>
+              <p className="step-accent">クレカ不要 · 無料</p>
+            </div>
+            <div className="step">
+              <p className="step-num">02</p>
+              <p className="step-title">履歴を記録</p>
+              <p className="step-body">テンプレかレシートOCRで最短10秒。証憑写真も添付できる。</p>
+              <p className="step-accent">継続するほど価値が高まる</p>
+            </div>
+            <div className="step">
+              <p className="step-num">03</p>
+              <p className="step-title">公開・共有</p>
+              <p className="step-body">URLひとつでSNS・整備工場・買い手に愛車の全履歴を届ける。</p>
+              <p className="step-accent">SNSカード / QR / PDF</p>
+            </div>
+            <div className="step">
+              <p className="step-num">04</p>
+              <p className="step-title">必要時に相談</p>
+              <p className="step-body">車検・整備・売却/査定のタイミングで、履歴付きの相談が整備工場へ届く。</p>
+              <p className="step-accent">履歴が信頼を作る</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-6">
-            <Link className="hover:text-blue-600 font-medium transition-colors text-sm" href="/legal/privacy">
-              プライバシーポリシー
-            </Link>
-            <Link className="hover:text-blue-600 font-medium transition-colors text-sm" href="/legal/terms">
-              利用規約
-            </Link>
-            <Link className="hover:text-blue-600 font-medium transition-colors text-sm" href="/support">
-              サポート
-            </Link>
+        </div>
+      </section>
+
+      {/* PERSONAS */}
+      <section id="personas">
+        <div className="personas-inner">
+          <p className="section-label"><span>04</span> こんな人に</p>
+          <h2>履歴を見せたい<br />全ての人へ。</h2>
+          <div className="persona-grid">
+            <div className="persona-card">
+              <p className="persona-priority">Priority 01 — コアターゲット</p>
+              <p className="persona-cars">FL5 / GDB / GR86 / BRZ / ロードスター</p>
+              <h3 className="persona-name">スポーツカー / カスタム車オーナー</h3>
+              <p className="persona-body">整備・カスタム履歴を見せたい動機が強く、SNS共有もしやすい。こだわりを1ページに集約し、仲間への共有・コミュニティ拡散の起点を作る。</p>
+            </div>
+            <div className="persona-card">
+              <p className="persona-priority">Priority 02 — 売却検討者</p>
+              <p className="persona-cars">中古車売却 / 個人売買 / 査定申込</p>
+              <h3 className="persona-name">売却・個人売買を検討している人</h3>
+              <p className="persona-body">整備履歴・カスタム一覧・証憑をまとめたPDFで、買い手の信頼を勝ち取る。透明な履歴が査定額の向上につながる。</p>
+            </div>
+            <div className="persona-card">
+              <p className="persona-priority">Priority 03 — 整備工場 / ショップ</p>
+              <p className="persona-cars">整備工場 / カスタムショップ / タイヤ店</p>
+              <h3 className="persona-name">顧客の次回接点を維持したい整備工場</h3>
+              <p className="persona-body">店舗名入り履歴、次回整備リマインダー、履歴付き問い合わせで、広告依存しない顧客接点を作る。</p>
+            </div>
+            <div className="persona-card">
+              <p className="persona-priority">Priority 04 — 一般オーナー</p>
+              <p className="persona-cars">乗用車全般 / 複数台保有 / 家族</p>
+              <h3 className="persona-name">「次の車検いつだっけ」が口癖の人</h3>
+              <p className="persona-body">紙・メモ・スマホ写真に散らばった記録を一元化。車検・オイル交換の時期を逃さない。</p>
+            </div>
           </div>
         </div>
-      </div>
-    </footer>
+      </section>
+
+      {/* REVENUE */}
+      <section className="how" id="pricing">
+        <div className="revenue-inner">
+          <p className="section-label"><span>05</span> 料金と収益モデル</p>
+          <h2>個人は無料。<br />ずっと。</h2>
+          <div className="revenue-table">
+            <div className="revenue-row header">
+              <div className="revenue-cell header-cell">収益源</div>
+              <div className="revenue-cell header-cell">価格</div>
+              <div className="revenue-cell header-cell">詳細</div>
+            </div>
+            <div className="revenue-row">
+              <div className="revenue-cell revenue-main">個人ユーザー利用 <span className="badge-free">FREE</span></div>
+              <div className="revenue-cell revenue-price">¥0</div>
+              <div className="revenue-cell revenue-desc">記録・公開ページ・SNS共有・PDF出力まで無料。履歴データが増えるほどプラットフォームの価値が高まるため、個人課金は設けない。</div>
+            </div>
+            <div className="revenue-row">
+              <div className="revenue-cell revenue-main">整備 / 車検 / タイヤ 送客</div>
+              <div className="revenue-cell revenue-price">¥500〜5,000/件</div>
+              <div className="revenue-cell revenue-desc">車検期限・メンテ履歴・交換時期を起点に「この履歴で相談する」という自然な流れで問い合わせ/予約を発生させる本命収益。</div>
+            </div>
+            <div className="revenue-row">
+              <div className="revenue-cell revenue-main">売却 / 査定 送客</div>
+              <div className="revenue-cell revenue-price">数千〜1万円超/件</div>
+              <div className="revenue-cell revenue-desc">整備・カスタム履歴を持ったまま査定/個人売買へ進む高単価な送客。</div>
+            </div>
+            <div className="revenue-row">
+              <div className="revenue-cell revenue-main">カー用品 / パーツ アフィリエイト</div>
+              <div className="revenue-cell revenue-price">購入額の数%</div>
+              <div className="revenue-cell revenue-desc">交換時期に合わせてオイル・タイヤ・ワイパーなどを自然に提案。補助収益。</div>
+            </div>
+            <div className="revenue-row">
+              <div className="revenue-cell revenue-main">整備工場 / ショップ掲載</div>
+              <div className="revenue-cell revenue-price">¥5,000〜3万/月</div>
+              <div className="revenue-cell revenue-desc">送客実績が出た後に店舗掲載・優先表示へ移行。初期は成果報酬から開始。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* KPI */}
+      <section id="kpi">
+        <div className="kpi-inner">
+          <p className="section-label"><span>06</span> 初期目標 KPI</p>
+          <h2>90日で<br />証明する。</h2>
+          <div className="kpi-grid">
+            <div className="kpi-card">
+              <p className="kpi-num">500</p>
+              <p className="kpi-unit">台 / 90日以内</p>
+              <p className="kpi-label">登録車両数。無料利用の導線が車好きコミュニティに刺さっているかの指標。</p>
+            </div>
+            <div className="kpi-card">
+              <p className="kpi-num">30%</p>
+              <p className="kpi-unit">公開ページ作成率</p>
+              <p className="kpi-label">登録した車両のうち公開ページを作成した割合。「共有価値」が機能しているか。</p>
+            </div>
+            <div className="kpi-card">
+              <p className="kpi-num">3-5%</p>
+              <p className="kpi-unit">相談導線クリック率</p>
+              <p className="kpi-label">「この履歴で相談する」が自然なアクションになっているか。送客モデルの成立確認。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="final-cta">
+        <p className="section-label" style={{ justifyContent: 'center', marginBottom: '2rem' }}><span>07</span> はじめる</p>
+        <h2>愛車の価値を、<br />最大限に。</h2>
+        <p>無料でアカウントを作成して、愛車の履歴を資産に変えよう。<br />クレジットカード不要。30秒で開始できる。</p>
+        <Link href="/signup" className="btn-primary">無料ではじめる</Link>
+        <p className="cta-meta">© 2026 GarageLog · garagelog.jp</p>
+      </section>
+
+      {/* FOOTER */}
+      <footer>
+        <p className="footer-logo">GARAGE_LOG</p>
+        <div className="footer-links">
+          <Link href="/legal/privacy">プライバシーポリシー</Link>
+          <Link href="/legal/terms">利用規約</Link>
+          <Link href="/support">サポート</Link>
+        </div>
+        <p className="footer-copy">© 2026 GarageLog</p>
+      </footer>
+    </div>
   );
 }
