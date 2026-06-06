@@ -136,6 +136,14 @@
 .app-home .hover\:bg-gray-100:hover { background-color: #e8e6e0 !important; }
 .app-home .hover\:bg-gray-50:hover { background-color: var(--surface-muted) !important; }
 
+/* グレー背景をLP準拠のウォームトーンに */
+.app-home .bg-gray-50 { background-color: var(--surface-muted) !important; }
+.app-home .bg-gray-100 { background-color: #e8e6e0 !important; }
+
+/* shadow をフラットに */
+.app-home .shadow-sm { box-shadow: none !important; }
+.app-home .shadow-md { box-shadow: none !important; }
+
 /* アクティブナビ rounded-xl → remove radius */
 .app-home .rounded-xl { border-radius: 6px; }
 .app-home .rounded-2xl { border-radius: 12px; }
