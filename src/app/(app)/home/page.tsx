@@ -1,6 +1,7 @@
 // src/app/page.tsx
 "use client";
 
+import "./home.css";
 import { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -476,22 +477,22 @@ function HomeContent() {
 
   return (
     <AuthGate>
-      <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="app-home min-h-screen">
         {/* ヘッダー */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200">
+        <header className="app-header sticky top-0 z-30">
           <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
             <button
               onClick={() => router.push('/home')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-70 transition-opacity"
             >
               <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
-              <span className="text-lg sm:text-xl lg:text-2xl font-semibold tracking-tight text-gray-900 truncate">garage log</span>
+              <span className="app-logo-text text-sm sm:text-base truncate">GARAGE_LOG</span>
             </button>
             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               {/* ヘッダー車両セレクター（右上に配置） */}
               {activeCars.length > 0 && (
                 <div className="relative">
-                  <CarHeaderDropdown 
+                  <CarHeaderDropdown
                     cars={activeCars}
                     activeCarId={selectedCarId || activeCarId}
                     onSelectCar={(id) => {
@@ -508,9 +509,9 @@ function HomeContent() {
                     auth.signOut();
                   }
                 }}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors whitespace-nowrap"
+                className="btn-secondary-dark px-3 py-1.5 rounded-none whitespace-nowrap"
               >
-                ログアウト
+                LOGOUT
               </button>
             </div>
           </div>
@@ -1147,15 +1148,15 @@ function DashboardContent({
 
 
             {/* 車カード（選択中の車を表示 / なければダミー） */}
-            <section className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
+            <section className="app-card p-4 sm:p-6">
         {/* 車選択ヘッダー */}
         {cars.length > 1 && (
           <div className="mb-4 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
               現在の車: {car?.name || "未選択"}
               {car?.modelCode && `（${car.modelCode}）`}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs" style={{ color: 'var(--text-dim)' }}>
               {cars.length}台登録済み
             </div>
           </div>
@@ -1166,20 +1167,20 @@ function DashboardContent({
                   {/* 上：サマリー */}
                   <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 mb-4">
                   {car.imagePath ? (
-                    <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                    <div className="overflow-hidden rounded-lg" style={{ border: '0.5px solid var(--border-bright)', background: 'var(--surface-muted)' }}>
                       <img
                         src={car.imagePath}
                         alt={car.name || "My Car"}
-                        className="w-full h-44 md:h-full object-cover rounded-xl"
+                        className="w-full h-44 md:h-full object-cover"
                       />
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-gray-200 bg-gray-100 flex items-center justify-center h-44 md:h-full">
-                      <div className="text-center text-gray-400">
+                    <div className="rounded-lg flex items-center justify-center h-44 md:h-full" style={{ border: '0.5px solid var(--border-bright)', background: 'var(--surface-muted)' }}>
+                      <div className="text-center" style={{ color: 'var(--text-dim)' }}>
                         <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <p className="text-sm">写真を追加しましょう</p>
+                        <p className="text-xs" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>ADD PHOTO</p>
                       </div>
                     </div>
                   )}
@@ -1255,44 +1256,42 @@ function DashboardContent({
                     </div>
                   </div>
                   {/* 下：アクション（1つに統一） */}
-                  <div className="pt-4 border-t border-gray-200">
-                      <button 
+                  <div className="pt-4" style={{ borderTop: '0.5px solid var(--border-color)' }}>
+                      <button
                         onClick={() => {
                           console.log("Navigate to vehicle data, activeCarId:", activeCarId);
                           router.push('/mycar');
                         }}
-                      className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                        className="btn-primary-dark w-full px-4 py-2.5 rounded-none"
                       >
-                      マイカーを見る
+                        VIEW MY CAR
                       </button>
                     </div>
                 </>
               ) : cars.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                  <div className="text-gray-400 mb-4">
+                  <div className="mb-4" style={{ color: 'var(--text-dim)' }}>
                     <CarIcon className="h-16 w-16 mx-auto" />
                   </div>
-                  <p className="text-lg font-medium text-gray-700 mb-2">
+                  <p className="text-sm mb-4" style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
                     まず車を追加してください
                   </p>
                   <button
                     onClick={() => setShowAddCarModal(true)}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                    className="btn-primary-dark px-4 py-2 rounded-none"
                   >
-                    車を追加する
+                    ADD CAR
                   </button>
                 </div>
               ) : activeCarId && !car ? (
-                // 自動選択が進行中（activeCarIdは設定されているが、carオブジェクトがまだ読み込まれていない）
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                  <div className="animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 w-8 h-8 mb-4"></div>
-                  <p className="text-lg font-medium text-gray-700 mb-2">車両情報を読み込んでいます...</p>
+                  <div className="animate-spin rounded-full border-2 w-8 h-8 mb-4" style={{ borderColor: 'var(--border-bright)', borderTopColor: 'var(--accent)' }}></div>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>読み込み中...</p>
                 </div>
               ) : (
-                // 車両が存在するが選択されていない場合（自動選択ロジックが実行されるまで待つ）
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                  <div className="animate-spin rounded-full border-2 border-gray-300 border-t-blue-600 w-8 h-8 mb-4"></div>
-                  <p className="text-lg font-medium text-gray-700 mb-2">車両を読み込んでいます...</p>
+                  <div className="animate-spin rounded-full border-2 w-8 h-8 mb-4" style={{ borderColor: 'var(--border-bright)', borderTopColor: 'var(--accent)' }}></div>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>読み込み中...</p>
                 </div>
               )}
             </section>
@@ -1300,14 +1299,14 @@ function DashboardContent({
             {/* メンテナンス、給油情報、カスタマイズ情報を3列に配置 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
               {/* メンテナンス */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
+              <div className="app-card p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">最近のメンテナンス</h3>
+                  <h3 className="app-section-title">MAINTENANCE</h3>
                     <button
                       onClick={() => router.push('/maintenance')}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="app-link"
                     >
-                      すべて見る →
+                      ALL →
                     </button>
                 </div>
               
@@ -1317,15 +1316,15 @@ function DashboardContent({
                   {(() => {
                     const latest = maintenanceRecords.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
                     return (
-                      <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="app-stat-cell p-3">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xs text-gray-500 mb-1">最新の整備</div>
-                            <div className="text-sm font-medium text-gray-900">{latest.title}</div>
+                            <div className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>LATEST</div>
+                            <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{latest.title}</div>
                           </div>
                           <div className="text-right">
                             {latest.cost && (
-                              <div className="text-sm font-bold text-gray-900">
+                              <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
                                 ¥{latest.cost.toLocaleString()}
                               </div>
                             )}
@@ -1347,17 +1346,17 @@ function DashboardContent({
                         const recentTotalCost = recentRecords.reduce((sum, r) => sum + (r.cost || 0), 0);
                         return (
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="text-center p-2 bg-gray-50 rounded-lg">
-                              <div className="text-xs font-bold text-blue-600">
+                            <div className="app-stat-cell text-center p-2">
+                              <div className="text-xs font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                                 {recentRecords.length}件
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">直近90日</div>
+                              <div className="text-xs mt-1" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>90日</div>
                             </div>
-                            <div className="text-center p-2 bg-gray-50 rounded-lg">
-                              <div className="text-xs font-bold text-green-600">
+                            <div className="app-stat-cell text-center p-2">
+                              <div className="text-xs font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                                 ¥{recentTotalCost.toLocaleString()}
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">総費用</div>
+                              <div className="text-xs mt-1" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>費用</div>
                             </div>
                           </div>
                         );
@@ -1369,25 +1368,26 @@ function DashboardContent({
                     .sort((a, b) => toMillis(b.date) - toMillis(a.date))
                     .slice(0, 3)
                     .map((record) => (
-                      <div key={record.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
+                      <div key={record.id} className="app-list-item p-2">
                         <div className="flex items-center gap-2 text-sm">
                           {record.imageUrl && (
                             <div className="flex-shrink-0">
                               <img
                                 src={record.imageUrl}
                                 alt={record.title}
-                                className="w-12 h-12 object-cover rounded border border-gray-200"
+                                className="w-12 h-12 object-cover"
+                                style={{ border: '0.5px solid var(--border-color)' }}
                               />
                             </div>
                           )}
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900">{record.title}</div>
-                            <div className="text-xs text-gray-600 mt-0.5">
-                              {(record.date?.toDate ? record.date.toDate() : toDate(record.date) || new Date()).toLocaleDateString('ja-JP')} • {record.mileage?.toLocaleString()}km
+                            <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{record.title}</div>
+                            <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                              {(record.date?.toDate ? record.date.toDate() : toDate(record.date) || new Date()).toLocaleDateString('ja-JP')} · {record.mileage?.toLocaleString()}km
                             </div>
                           </div>
                           {record.cost && (
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                               ¥{record.cost.toLocaleString()}
                             </div>
                           )}
@@ -1396,31 +1396,31 @@ function DashboardContent({
                     ))}
                   </div>
                   {maintenanceRecords.length > 3 && (
-                    <div className="pt-2 text-center border-t border-gray-200">
+                    <div className="pt-2 text-center" style={{ borderTop: '0.5px solid var(--border-color)' }}>
                       <button
                         onClick={() => router.push('/maintenance')}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        className="app-link"
                       >
-                        もっと見る ({maintenanceRecords.length}件) →
+                        MORE ({maintenanceRecords.length}) →
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <div className="text-gray-400 mb-4">
-                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mb-4" style={{ color: 'var(--text-dim)' }}>
+                    <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">最初の整備を1件追加しましょう</h4>
-                  <p className="text-gray-500 mb-4 text-sm">オイル交換や車検の記録からでOKです</p>
+                  <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>NO RECORDS</p>
+                  <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>オイル交換・車検から始めましょう</p>
                   <div className="flex items-center justify-center">
                     <button
                       onClick={() => activeCarId ? setShowMaintenanceModal(true) : router.push('/mycar')}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                      className="btn-secondary-dark px-4 py-2 rounded-none"
                     >
-                      整備を追加
+                      ADD RECORD
                     </button>
                   </div>
                 </div>
@@ -1428,32 +1428,32 @@ function DashboardContent({
             </div>
 
               {/* 最近の給油 */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
+              <div className="app-card p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">最近の給油</h3>
+                  <h3 className="app-section-title">FUEL LOG</h3>
                     <button
                       onClick={() => router.push('/gas')}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="app-link"
                     >
-                      すべて見る →
+                      ALL →
                     </button>
                 </div>
                 
                 {!car ? (
                   <div className="text-center py-8">
-                    <div className="text-gray-400 mb-4">
-                      <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="mb-4" style={{ color: 'var(--text-dim)' }}>
+                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                       </svg>
                     </div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                    <p className="text-gray-500 mb-4 text-sm">まず車を追加してください</p>
+                    <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>NO RECORDS</p>
+                    <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>まず車を追加してください</p>
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => setShowAddCarModal(true)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+                        className="btn-primary-dark px-4 py-2 rounded-none"
                       >
-                        車を追加する
+                        ADD CAR
                       </button>
                     </div>
                   </div>
@@ -1468,16 +1468,16 @@ function DashboardContent({
                         })[0];
                         const amt = getDisplayAmount(latest);
                         return (
-                          <div className="bg-gray-50 rounded-lg p-3">
+                          <div className="app-stat-cell p-3">
                     <div className="flex items-center justify-between">
                               <div>
-                                <div className="text-xs text-gray-500 mb-1">最新の給油</div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  {(latest.date?.toDate ? latest.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} • {((latest.quantity || 0) / 1000 || latest.fuelAmount || 0).toLocaleString()}L
+                                <div className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>LATEST</div>
+                                <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                                  {(latest.date?.toDate ? latest.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} · {((latest.quantity || 0) / 1000 || latest.fuelAmount || 0).toLocaleString()}L
                         </div>
                       </div>
                       <div className="text-right">
-                            <div className="text-sm font-bold text-gray-900">
+                            <div className="text-sm font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                                   ¥{getDisplayCost(latest).toLocaleString()}
                         </div>
                       </div>
@@ -1510,17 +1510,17 @@ function DashboardContent({
                         const distanceSinceLastRefuel = latestKm > 0 && previousKm > 0 ? latestKm - previousKm : null;
                         return (
                             <div className="grid grid-cols-2 gap-3">
-                            <div className="text-center p-2 bg-gray-50 rounded-lg">
-                              <div className="text-xs font-bold text-blue-600">
+                            <div className="app-stat-cell text-center p-2">
+                              <div className="text-xs font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                                 {avgPricePerLiter > 0 ? `¥${avgPricePerLiter.toLocaleString()}` : '--'}
                                 </div>
-                              <div className="text-xs text-gray-500 mt-1">平均単価</div>
+                              <div className="text-xs mt-1" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>単価</div>
                               </div>
-                            <div className="text-center p-2 bg-gray-50 rounded-lg">
-                              <div className="text-xs font-bold text-indigo-600">
-                                {distanceSinceLastRefuel !== null ? `${distanceSinceLastRefuel.toLocaleString()} km` : '--'}
+                            <div className="app-stat-cell text-center p-2">
+                              <div className="text-xs font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                                {distanceSinceLastRefuel !== null ? `${distanceSinceLastRefuel.toLocaleString()}km` : '--'}
                                 </div>
-                              <div className="text-xs text-gray-500 mt-1">前回からの走行</div>
+                              <div className="text-xs mt-1" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>前回比</div>
                             </div>
                           </div>
                         );
@@ -1536,22 +1536,22 @@ function DashboardContent({
                             })
                             .slice(0, 3)
                             .map((log) => (
-                            <div key={log.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
-                            <div className="flex items-center justify-between text-sm">
+                            <div key={log.id} className="app-list-item p-2">
+                            <div className="flex items-center justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-600">
+                                <span style={{ color: 'var(--text-muted)' }}>
                                       {(log.date?.toDate ? log.date.toDate() : new Date()).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                                 </span>
-                                <span className="text-gray-900">
+                                <span style={{ color: 'var(--text-primary)' }}>
                                   {((log.quantity || 0) / 1000 || log.fuelAmount || 0).toLocaleString()}L
                                 </span>
-                                <span className="text-gray-900 font-medium">
+                                <span className="font-bold" style={{ color: 'var(--text-primary)' }}>
                                   ¥{(log.totalCostJpy || log.cost || 0).toLocaleString()}
                                 </span>
                                   </div>
                                   {log.isFullTank && (
-                                <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
-                                      満タン
+                                <span className="px-2 py-0.5" style={{ background: 'var(--surface-muted)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', letterSpacing: '0.06em' }}>
+                                      FULL
                                 </span>
                   )}
                               </div>
@@ -1559,31 +1559,31 @@ function DashboardContent({
                           ))}
                         </div>
                         {fuelLogs.length > 3 && (
-                        <div className="pt-2 text-center border-t border-gray-200">
+                        <div className="pt-2 text-center" style={{ borderTop: '0.5px solid var(--border-color)' }}>
                             <button
                               onClick={() => router.push('/gas')}
-                              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                              className="app-link"
                             >
-                              もっと見る ({fuelLogs.length}件) →
+                              MORE ({fuelLogs.length}) →
                             </button>
                           </div>
                         )}
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <div className="text-gray-400 mb-4">
-                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="mb-4" style={{ color: 'var(--text-dim)' }}>
+                        <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                         </svg>
                       </div>
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">給油記録がありません</h4>
-                      <p className="text-gray-500 mb-4">1件目の給油を記録しましょう</p>
+                      <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>NO RECORDS</p>
+                      <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>1件目の給油を記録しましょう</p>
                       <div className="flex items-center justify-center">
                         <button
                           onClick={() => activeCarId ? setShowFuelLogModal(true) : router.push('/mycar')}
-                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                          className="btn-secondary-dark px-4 py-2 rounded-none"
                         >
-                          給油を記録
+                          ADD FUEL LOG
                         </button>
                       </div>
                     </div>
@@ -1591,17 +1591,17 @@ function DashboardContent({
               </div>
 
               {/* カスタマイズ履歴 */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
+              <div className="app-card p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">最近のカスタマイズ</h3>
+                  <h3 className="app-section-title">CUSTOM</h3>
                   <button
                     onClick={() => {
                       setCurrentPage('customizations');
                       router.push('/home?tab=customizations');
                     }}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="app-link"
                   >
-                    すべて見る →
+                    ALL →
                   </button>
                 </div>
                 
@@ -1612,15 +1612,15 @@ function DashboardContent({
                       const latest = customizations.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
                       const totalCost = (latest.partsCostJpy || 0) + (latest.laborCostJpy || 0) + (latest.otherCostJpy || 0);
                       return (
-                        <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="app-stat-cell p-3">
                           <div className="flex items-center justify-between">
                             <div>
-                              <div className="text-xs text-gray-500 mb-1">最新のカスタマイズ</div>
-                              <div className="text-sm font-medium text-gray-900">{latest.title}</div>
+                              <div className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>LATEST</div>
+                              <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{latest.title}</div>
                             </div>
                             <div className="text-right">
                               {totalCost > 0 && (
-                                <div className="text-sm font-bold text-gray-900">
+                                <div className="text-sm font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                                   ¥{totalCost.toLocaleString()}
                                 </div>
                               )}
@@ -1644,17 +1644,17 @@ function DashboardContent({
                       const categoryCount = new Set(recentCustoms.flatMap(c => c.categories)).size;
                       return (
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="text-center p-2 bg-gray-50 rounded-lg">
-                            <div className="text-xs font-bold text-purple-600">
+                          <div className="app-stat-cell text-center p-2">
+                            <div className="text-xs font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                               ¥{recentTotalCost.toLocaleString()}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">総費用</div>
+                            <div className="text-xs mt-1" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>費用</div>
                           </div>
-                          <div className="text-center p-2 bg-gray-50 rounded-lg">
-                            <div className="text-xs font-bold text-indigo-600">
+                          <div className="app-stat-cell text-center p-2">
+                            <div className="text-xs font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                               {categoryCount}種類
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">カテゴリ</div>
+                            <div className="text-xs mt-1" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>カテゴリ</div>
                           </div>
                         </div>
                       );
@@ -1668,20 +1668,21 @@ function DashboardContent({
                         .map((customization) => {
                           const totalCost = (customization.partsCostJpy || 0) + (customization.laborCostJpy || 0) + (customization.otherCostJpy || 0);
                           return (
-                            <div key={customization.id} className="border border-gray-200 rounded-lg p-2 hover:bg-gray-50 transition">
+                            <div key={customization.id} className="app-list-item p-2">
                               <div className="flex items-center gap-2 text-sm">
                                 {customization.imageUrl && (
                                   <div className="flex-shrink-0">
                                     <img
                                       src={customization.imageUrl}
                                       alt={customization.title}
-                                      className="w-12 h-12 object-cover rounded border border-gray-200"
+                                      className="w-12 h-12 object-cover"
+                                      style={{ border: '0.5px solid var(--border-color)' }}
                                     />
                                   </div>
                                 )}
                                 <div className="flex-1">
-                                  <div className="font-medium text-gray-900">{customization.title}</div>
-                                  <div className="text-xs text-gray-600 mt-0.5">
+                                  <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{customization.title}</div>
+                                  <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                                     {(customization.date?.toDate ? customization.date.toDate() : toDate(customization.date) || new Date()).toLocaleDateString('ja-JP')}
                                     {customization.categories.length > 0 && (
                                       <span className="ml-2">
@@ -1691,7 +1692,7 @@ function DashboardContent({
                                   </div>
                                 </div>
                                 {totalCost > 0 && (
-                                  <div className="text-sm font-medium text-gray-900">
+                                  <div className="text-sm font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                                     ¥{totalCost.toLocaleString()}
                                   </div>
                                 )}
@@ -1701,34 +1702,34 @@ function DashboardContent({
                         })}
                     </div>
                     {customizations.length > 3 && (
-                      <div className="pt-2 text-center border-t border-gray-200">
+                      <div className="pt-2 text-center" style={{ borderTop: '0.5px solid var(--border-color)' }}>
                         <button
                           onClick={() => {
                             setCurrentPage('customizations');
                             router.push('/home?tab=customizations');
                           }}
-                          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          className="app-link"
                         >
-                          もっと見る ({customizations.length}件) →
+                          MORE ({customizations.length}) →
                         </button>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="text-gray-400 mb-4">
-                      <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="mb-4" style={{ color: 'var(--text-dim)' }}>
+                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                       </svg>
                     </div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-2">最初のカスタマイズを追加しましょう</h4>
-                    <p className="text-gray-500 mb-4 text-sm">タイヤ/ホイール/足回りなどからでOKです</p>
+                    <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>NO RECORDS</p>
+                    <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>タイヤ・ホイール・足回りなど</p>
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => (activeCarId && auth.currentUser) ? setShowCustomizationModal(true) : router.push('/mycar')}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                        className="btn-secondary-dark px-4 py-2 rounded-none"
                       >
-                        カスタマイズを追加
+                        ADD CUSTOM
                       </button>
                     </div>
                   </div>
@@ -1738,43 +1739,40 @@ function DashboardContent({
 
             {/* 下段：月別費用推移 */}
             <section className="w-full">
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
+              <div className="app-card p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">
-                    {expensePeriod === 'monthly' ? '月別費用推移' : 
-                     expensePeriod === 'yearly' ? '年別費用推移' : 
-                     '費用推移（全期間）'}
+                  <h3 className="app-section-title">
+                    {expensePeriod === 'monthly' ? 'MONTHLY COST' : 
+                     expensePeriod === 'yearly' ? 'YEARLY COST' : 
+                     'ALL TIME COST'}
                   </h3>
-                  <div className="flex gap-2 text-sm">
+                  <div className="flex gap-1" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', letterSpacing: '0.08em' }}>
                     <button 
                       onClick={() => setExpensePeriod('monthly')}
-                      className={`px-3 py-1 rounded-full transition-colors ${
-                        expensePeriod === 'monthly'
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
+                      className="px-2 py-1 transition-colors"
+                      style={expensePeriod === 'monthly'
+                        ? { background: 'var(--accent)', color: '#f7f5f0' }
+                        : { color: 'var(--text-muted)', background: 'transparent' }}
                     >
-                      月次
+                      MON
                     </button>
                     <button 
                       onClick={() => setExpensePeriod('yearly')}
-                      className={`px-3 py-1 rounded-full transition-colors ${
-                        expensePeriod === 'yearly'
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
+                      className="px-2 py-1 transition-colors"
+                      style={expensePeriod === 'yearly'
+                        ? { background: 'var(--accent)', color: '#f7f5f0' }
+                        : { color: 'var(--text-muted)', background: 'transparent' }}
                     >
-                      年次
+                      YR
                     </button>
                     <button 
                       onClick={() => setExpensePeriod('all')}
-                      className={`px-3 py-1 rounded-full transition-colors ${
-                        expensePeriod === 'all'
-                          ? 'bg-blue-100 text-blue-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
+                      className="px-2 py-1 transition-colors"
+                      style={expensePeriod === 'all'
+                        ? { background: 'var(--accent)', color: '#f7f5f0' }
+                        : { color: 'var(--text-muted)', background: 'transparent' }}
                     >
-                      全期間
+                      ALL
                     </button>
                 </div>
                 </div>
@@ -1787,27 +1785,22 @@ function DashboardContent({
                   const totalCost = currentMonthData.cost;
                   const diff = previousMonthData ? totalCost - previousMonthData.cost : 0;
                   return (
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      <div className="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
-                        <div className="text-xs text-gray-600 mb-0.5">今月の総費用</div>
-                        <div className="text-lg font-bold text-gray-900">¥{totalCost.toLocaleString()}</div>
+                    <div className="mb-4 flex flex-wrap gap-3">
+                      <div className="app-stat-cell px-3 py-2">
+                        <div className="text-xs mb-0.5" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>THIS MONTH</div>
+                        <div className="text-xl font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>¥{totalCost.toLocaleString()}</div>
                       </div>
-                      <div className="px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-xs text-gray-600 mb-0.5">内訳</div>
-                        <div className="text-sm text-gray-900">
-                          整備: ¥{currentMonthData.maintenanceCost.toLocaleString()} / 給油: ¥{currentMonthData.fuelCost.toLocaleString()} / カスタム: ¥{currentMonthData.customizationCost.toLocaleString()}
+                      <div className="app-stat-cell px-3 py-2">
+                        <div className="text-xs mb-0.5" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>BREAKDOWN</div>
+                        <div className="text-xs" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                          MNT: ¥{currentMonthData.maintenanceCost.toLocaleString()} / GAS: ¥{currentMonthData.fuelCost.toLocaleString()} / MOD: ¥{currentMonthData.customizationCost.toLocaleString()}
                         </div>
                       </div>
                       {previousMonthData && (
-                        <div className={`px-3 py-1.5 rounded-lg border ${
-                          diff >= 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-                        }`}>
-                          <div className="text-xs text-gray-600 mb-0.5">前月比</div>
-                          <div className={`text-sm font-bold ${diff >= 0 ? 'text-red-700' : 'text-green-700'}`}>
+                        <div className="app-stat-cell px-3 py-2">
+                          <div className="text-xs mb-0.5" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>VS PREV</div>
+                          <div className="text-sm font-bold" style={{ fontFamily: 'var(--font-mono)', color: diff >= 0 ? '#c04020' : '#2a6a35' }}>
                             {diff >= 0 ? '+' : ''}¥{Math.abs(diff).toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            前月: ¥{previousMonthData.cost.toLocaleString()}
                           </div>
                         </div>
                       )}
@@ -1817,53 +1810,53 @@ function DashboardContent({
                 <div className="mt-4 h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={monthlyExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
                       <XAxis 
                         dataKey="month" 
-                        tick={{ fontSize: 12 }}
-                        axisLine={{ stroke: '#e0e0e0' }}
+                        tick={{ fontSize: 10, fontFamily: 'Space Mono, monospace', fill: '#6a6a60' }}
+                        axisLine={{ stroke: 'rgba(0,0,0,0.08)' }}
                       />
                       <YAxis 
-                        tick={{ fontSize: 12 }}
-                        axisLine={{ stroke: '#e0e0e0' }}
+                        tick={{ fontSize: 10, fontFamily: 'Space Mono, monospace', fill: '#6a6a60' }}
+                        axisLine={{ stroke: 'rgba(0,0,0,0.08)' }}
                         tickFormatter={(value) => `¥${(value / 1000).toFixed(0)}k`}
                       />
                       <Tooltip 
                         formatter={(value: number, name: string) => {
                           const nameMap: { [key: string]: string } = {
-                            'maintenanceCost': 'メンテナンス費用',
-                            'fuelCost': '給油費用',
-                            'customizationCost': 'カスタマイズ費用',
-                            'cumulativeCost': '累積費用'
+                            'maintenanceCost': 'MNT',
+                            'fuelCost': 'GAS',
+                            'customizationCost': 'MOD',
+                            'cumulativeCost': 'TOTAL'
                           };
                           return [`¥${value.toLocaleString()}`, nameMap[name] || name];
                         }}
                         labelFormatter={(label) => `${label}`}
                         contentStyle={{
-                          backgroundColor: 'white',
-                          border: '1px solid #e0e0e0',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          backgroundColor: '#f7f5f0',
+                          border: '0.5px solid rgba(0,0,0,0.15)',
+                          borderRadius: '0',
+                          fontFamily: 'Space Mono, monospace',
+                          fontSize: '11px'
                         }}
-                        // 累積費用の重複を防ぐため、Areaは非表示にする
                         filterNull={false}
                       />
                       <RechartsBar 
                         dataKey="maintenanceCost" 
-                        fill="#3b82f6" 
-                        radius={[2, 2, 0, 0]}
+                        fill="#1a1a18" 
+                        radius={[0, 0, 0, 0]}
                         name="maintenanceCost"
                       />
                       <RechartsBar 
                         dataKey="fuelCost" 
-                        fill="#10b981" 
-                        radius={[2, 2, 0, 0]}
+                        fill="#6a6a60" 
+                        radius={[0, 0, 0, 0]}
                         name="fuelCost"
                       />
                       <RechartsBar 
                         dataKey="customizationCost" 
-                        fill="#8b5cf6" 
-                        radius={[2, 2, 0, 0]}
+                        fill="#a0a098" 
+                        radius={[0, 0, 0, 0]}
                         name="customizationCost"
                       />
                       <Line 

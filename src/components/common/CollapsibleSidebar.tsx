@@ -37,9 +37,10 @@ function SidebarLink({ href, icon, label, isCollapsed, isActive, onClick }: Side
   
   const content = (
     <div
-      className={`flex items-center gap-3 px-3 py-2 rounded-xl transition ${
-        active ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700"
+      className={`flex items-center gap-3 px-3 py-2 transition ${
+        active ? "font-semibold" : "hover:bg-[#e8e6e0] text-[#6a6a60]"
       } ${isCollapsed ? "justify-center" : ""}`}
+      style={active ? { background: '#1a1a18', color: '#f7f5f0' } : {}}
       title={isCollapsed ? label : undefined}
     >
       <div className="flex-shrink-0">{icon}</div>
@@ -114,7 +115,7 @@ export function CollapsibleSidebar({
   const sidebarContent = (
     <>
       {/* ユーザー情報カード */}
-      <div className={`bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
+      <div className={`p-4 flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`} style={{ background: "#ffffff", border: "0.5px solid rgba(0,0,0,0.12)", borderRadius: "8px" }}>
         {currentUser?.photoURL ? (
           <img 
             src={currentUser.photoURL} 
@@ -123,7 +124,7 @@ export function CollapsibleSidebar({
           />
         ) : (
           <div className={`h-8 w-8 rounded-full grid place-items-center font-semibold text-sm flex-shrink-0 ${
-            isPremiumPlan?.(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-blue-100 text-blue-600'
+            isPremiumPlan?.(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-[#e8e6e0] text-[#1a1a18]'
           }`}>
             {currentUser?.displayName?.[0] || currentUser?.email?.[0]?.toUpperCase() || 'U'}
           </div>
@@ -140,18 +141,18 @@ export function CollapsibleSidebar({
       {/* 折りたたみトグルボタン（デスクトップのみ） */}
       <button
         onClick={toggleCollapse}
-        className="hidden lg:block mt-2 w-full bg-white rounded-2xl border border-gray-200 p-2 flex items-center justify-center hover:bg-gray-50 transition-colors"
+        className="hidden lg:block mt-2 w-full p-2 flex items-center justify-center transition-colors" style={{ background: "#ffffff", border: "0.5px solid rgba(0,0,0,0.12)", borderRadius: "8px" }} onMouseEnter={(e) => (e.currentTarget.style.background = "#f2f0eb")} onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
         aria-label={isCollapsed ? "サイドバーを展開" : "サイドバーを折りたたむ"}
       >
         {isCollapsed ? (
-          <ChevronRight className="h-5 w-5 text-gray-600" />
+          <ChevronRight className="h-5 w-5" style={{ color: "#6a6a60" }} />
         ) : (
-          <ChevronLeft className="h-5 w-5 text-gray-600" />
+          <ChevronLeft className="h-5 w-5" style={{ color: "#6a6a60" }} />
         )}
       </button>
 
       {/* ナビゲーションメニュー */}
-      <nav className={`mt-4 bg-white rounded-2xl border border-gray-200 p-2 space-y-1 text-[15px] ${isCollapsed ? "px-2" : ""}`}>
+      <nav className={`mt-4 p-2 space-y-1 text-[15px] ${isCollapsed ? "px-2" : ""}`} style={{ background: "#ffffff", border: "0.5px solid rgba(0,0,0,0.12)", borderRadius: "8px" }}>
         <SidebarLink
           href="/home"
           icon={<Home className="h-5 w-5" />}
@@ -206,14 +207,14 @@ export function CollapsibleSidebar({
           onClick={() => setIsMobileMenuOpen(false)}
         />
         {pathname === '/data' ? (
-          <div className={`flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-600 text-white font-semibold ${isCollapsed ? "justify-center" : ""}`}>
+          <div className={`flex items-center gap-3 px-3 py-2 font-semibold ${isCollapsed ? "justify-center" : ""}`} style={{ background: "#1a1a18", color: "#f7f5f0" }}>
             <BarChart3 className="h-5 w-5 flex-shrink-0" />
             {!isCollapsed && <span className="text-[15px]">データ</span>}
           </div>
         ) : (
           <Link
             href="/data"
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl transition hover:bg-gray-100 text-gray-700 cursor-not-allowed ${isCollapsed ? "justify-center" : ""}`}
+            className={`flex items-center gap-3 px-3 py-2 transition hover:bg-[#e8e6e0] text-[#6a6a60] cursor-not-allowed ${isCollapsed ? "justify-center" : ""}`}
             title={isCollapsed ? "データ" : undefined}
             onClick={() => setIsMobileMenuOpen(false)}
           >
@@ -224,10 +225,10 @@ export function CollapsibleSidebar({
       </nav>
 
       {/* 設定リンク */}
-      <div className={`mt-4 bg-white rounded-2xl border border-gray-200 p-2 ${isCollapsed ? "px-2" : ""}`}>
+      <div className={`mt-4 p-2 ${isCollapsed ? "px-2" : ""}`} style={{ background: "#ffffff", border: "0.5px solid rgba(0,0,0,0.12)", borderRadius: "8px" }}>
         <Link
           href="/settings/account"
-          className={`flex items-center gap-2 px-3 py-2 text-[15px] text-gray-700 hover:bg-gray-50 rounded-lg transition-colors ${isCollapsed ? "justify-center" : ""}`}
+          className={`flex items-center gap-2 px-3 py-2 text-[15px] hover:bg-[#e8e6e0] transition-colors ${isCollapsed ? "justify-center" : ""}`} style={{ color: "#6a6a60" }}
           title={isCollapsed ? "アカウント設定" : undefined}
           onClick={() => setIsMobileMenuOpen(false)}
         >
@@ -244,10 +245,10 @@ export function CollapsibleSidebar({
       {/* モバイル: ハンバーガーメニューボタン */}
       <button
         onClick={toggleMobileMenu}
-        className="lg:hidden fixed top-20 left-4 z-50 bg-white rounded-xl border border-gray-200 p-2 shadow-lg hover:bg-gray-50 transition-colors"
+        className="lg:hidden fixed top-20 left-4 z-50 p-2 shadow-lg transition-colors" style={{ background: "#f7f5f0", border: "0.5px solid rgba(0,0,0,0.15)", borderRadius: "6px" }}
         aria-label="メニューを開く"
       >
-        <Menu className="h-6 w-6 text-gray-700" />
+        <Menu className="h-6 w-6" style={{ color: "#1a1a18" }} />
       </button>
 
       {/* モバイル: ドロワーメニュー */}
@@ -259,22 +260,22 @@ export function CollapsibleSidebar({
             onClick={toggleMobileMenu}
           />
           {/* ドロワー */}
-          <aside className="lg:hidden fixed top-0 left-0 h-full w-72 bg-white overflow-y-auto z-50 shadow-2xl animate-slide-in-left">
+          <aside className="lg:hidden fixed top-0 left-0 h-full w-72 overflow-y-auto z-50 shadow-2xl animate-slide-in-left" style={{ background: "#f7f5f0" }}>
             <div className="p-4 space-y-4">
               {/* ヘッダー */}
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">メニュー</h2>
+              <div className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: "0.5px solid rgba(0,0,0,0.1)" }}>
+                <h2 className="text-sm" style={{ fontFamily: "Space Mono, monospace", letterSpacing: "0.1em", color: "#1a1a18" }}>メニュー</h2>
                 <button
                   onClick={toggleMobileMenu}
-                  className="bg-gray-100 rounded-lg p-2 hover:bg-gray-200 transition-colors"
+                  className="p-2 transition-colors" style={{ background: "rgba(0,0,0,0.06)", borderRadius: "4px" }}
                   aria-label="メニューを閉じる"
                 >
-                  <X className="h-5 w-5 text-gray-700" />
+                  <X className="h-5 w-5" style={{ color: "#1a1a18" }} />
                 </button>
               </div>
               
               {/* ユーザー情報カード */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3">
+              <div className="p-4 flex items-center gap-3" style={{ background: "#ffffff", border: "0.5px solid rgba(0,0,0,0.12)", borderRadius: "8px" }}>
                 {currentUser?.photoURL ? (
                   <img 
                     src={currentUser.photoURL} 
@@ -283,20 +284,20 @@ export function CollapsibleSidebar({
                   />
                 ) : (
                   <div className={`h-10 w-10 rounded-full grid place-items-center font-semibold text-base flex-shrink-0 ${
-                    isPremiumPlan?.(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-blue-100 text-blue-600'
+                    isPremiumPlan?.(userPlan) ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-[#e8e6e0] text-[#1a1a18]'
                   }`}>
                     {currentUser?.displayName?.[0] || currentUser?.email?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
                 <div className="text-sm min-w-0 flex-1">
-                  <div className="font-semibold truncate text-gray-900">
+                  <div className="font-semibold truncate" style={{ color: "#1a1a18" }}>
                     {currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ユーザー'}
                   </div>
                 </div>
               </div>
 
               {/* ナビゲーションメニュー */}
-              <nav className="bg-white rounded-2xl border border-gray-200 p-2 space-y-1">
+              <nav className="p-2 space-y-1" style={{ background: "#ffffff", border: "0.5px solid rgba(0,0,0,0.12)", borderRadius: "8px" }}>
                 <SidebarLink
                   href="/home"
                   icon={<Home className="h-5 w-5" />}
@@ -351,14 +352,14 @@ export function CollapsibleSidebar({
                   onClick={() => setIsMobileMenuOpen(false)}
                 />
                 {pathname === '/data' ? (
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-600 text-white font-semibold">
+                  <div className="flex items-center gap-3 px-3 py-2 font-semibold" style={{ background: "#1a1a18", color: "#f7f5f0" }}>
                     <BarChart3 className="h-5 w-5 flex-shrink-0" />
                     <span className="text-[15px]">データ</span>
                   </div>
                 ) : (
                   <Link
                     href="/data"
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl transition hover:bg-gray-100 text-gray-700 cursor-not-allowed"
+                    className="flex items-center gap-3 px-3 py-2 transition hover:bg-[#e8e6e0] cursor-not-allowed" style={{ color: "#6a6a60" }}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <BarChart3 className="h-5 w-5 flex-shrink-0" />
@@ -368,10 +369,10 @@ export function CollapsibleSidebar({
               </nav>
 
               {/* 設定リンク */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-2">
+              <div className="p-2" style={{ background: "#ffffff", border: "0.5px solid rgba(0,0,0,0.12)", borderRadius: "8px" }}>
                 <Link
                   href="/settings/account"
-                  className="flex items-center gap-2 px-3 py-2 text-[15px] text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-[15px] hover:bg-[#e8e6e0] transition-colors" style={{ color: "#6a6a60" }}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Settings className="h-5 w-5 flex-shrink-0" />

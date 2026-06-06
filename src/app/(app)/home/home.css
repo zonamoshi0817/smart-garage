@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+
+.app-home {
+  --surface-bg: #f7f5f0;
+  --surface-card: #ffffff;
+  --surface-muted: #f2f0eb;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-bright: rgba(0, 0, 0, 0.15);
+  --text-primary: #1a1a18;
+  --text-muted: #6a6a60;
+  --text-dim: #a0a098;
+  --accent: #1a1a18;
+  --accent-bright: #333330;
+  --font-mono: 'Space Mono', monospace;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'Noto Sans JP', sans-serif;
+
+  background: var(--surface-bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+/* ヘッダー */
+.app-home .app-header {
+  background: rgba(247, 245, 240, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 0.5px solid var(--border-color);
+}
+
+.app-home .app-logo-text {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+/* カード */
+.app-home .app-card {
+  background: var(--surface-card);
+  border: 0.5px solid var(--border-bright);
+  border-radius: 12px;
+}
+
+/* ミュートされた背景のスタット */
+.app-home .app-stat-cell {
+  background: var(--surface-muted);
+  border-radius: 6px;
+}
+
+/* リストアイテム */
+.app-home .app-list-item {
+  border: 0.5px solid var(--border-color);
+  border-radius: 6px;
+}
+.app-home .app-list-item:hover {
+  background: var(--surface-muted);
+}
+
+/* プライマリボタン */
+.app-home .btn-primary-dark {
+  background: var(--accent);
+  color: #f7f5f0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: none;
+  transition: background 0.2s;
+}
+.app-home .btn-primary-dark:hover {
+  background: var(--accent-bright);
+}
+
+/* セカンダリボタン */
+.app-home .btn-secondary-dark {
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 0.5px solid var(--border-bright);
+  transition: background 0.2s, border-color 0.2s;
+}
+.app-home .btn-secondary-dark:hover {
+  background: var(--surface-muted);
+  border-color: var(--accent);
+}
+
+/* テキストリンク */
+.app-home .app-link {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.app-home .app-link:hover {
+  color: var(--text-primary);
+}
+
+/* セクションタイトル */
+.app-home .app-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
