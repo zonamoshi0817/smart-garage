@@ -1,6 +1,6 @@
 'use client';
 
-import '../home/home.css';
+import '../../home/home.css';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
