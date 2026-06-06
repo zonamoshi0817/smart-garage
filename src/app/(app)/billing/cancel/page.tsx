@@ -6,13 +6,15 @@
 
 'use client';
 
+import '../../home/home.css';
+
 import { useRouter } from 'next/navigation';
 
 export default function BillingCancelPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="app-home min-h-screen flex items-center justify-center px-4">
       <div className="bg-white rounded-3xl shadow-lg p-12 max-w-2xl w-full text-center">
         {/* アイコン */}
         <div className="mb-6">
@@ -43,27 +45,27 @@ export default function BillingCancelPage() {
         </p>
 
         {/* 無料プランでできること */}
-        <div className="bg-gray-50 rounded-xl p-6 mb-8">
+        <div className="rounded-xl p-6 mb-8" style={{ background: "var(--surface-muted)" }}>
           <h2 className="font-bold text-gray-900 mb-4">無料プランでできること</h2>
           <div className="space-y-2 text-left text-sm text-gray-600">
             <div className="flex items-center space-x-2">
-              <span className="text-blue-600">✓</span>
+              <span style={{ color: "var(--accent)" }}>✓</span>
               <span>1台の車両登録</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-blue-600">✓</span>
+              <span style={{ color: "var(--accent)" }}>✓</span>
               <span>基本的なメンテナンス記録</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-blue-600">✓</span>
+              <span style={{ color: "var(--accent)" }}>✓</span>
               <span>給油ログの管理</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-blue-600">✓</span>
+              <span style={{ color: "var(--accent)" }}>✓</span>
               <span>基本的なリマインダー（5件まで）</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-blue-600">✓</span>
+              <span style={{ color: "var(--accent)" }}>✓</span>
               <span>証憑アップロード（月1枚まで）</span>
             </div>
           </div>
@@ -73,13 +75,13 @@ export default function BillingCancelPage() {
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => router.push('/home')}
-            className="rounded-xl bg-blue-600 text-white px-8 py-3 font-bold hover:bg-blue-700 transition"
+            className="btn-primary-dark rounded-none px-8 py-3"
           >
             ホームに戻る
           </button>
           <button
             onClick={() => router.push('/settings/billing')}
-            className="rounded-xl border-2 border-gray-300 text-gray-700 px-8 py-3 font-bold hover:border-gray-400 transition"
+            className="btn-secondary-dark rounded-none px-8 py-3"
           >
             プランを見る
           </button>
@@ -88,7 +90,7 @@ export default function BillingCancelPage() {
         {/* サポート */}
         <div className="mt-8 text-sm text-gray-500">
           質問がありますか？{' '}
-          <a href="mailto:kobayashi0817@gmail.com" className="text-blue-600 hover:underline">
+          <a href="mailto:kobayashi0817@gmail.com" className="underline" style={{ color: "var(--text-primary)" }}>
             サポートに問い合わせる
           </a>
         </div>

@@ -1895,7 +1895,7 @@ function DashboardContent({
             </section>
 
       {/* フッター */}
-      <footer className="border-t border-gray-200 bg-gray-50 mt-12">
+      <footer className="border-t mt-12" style={{ borderColor: "var(--border-color)" }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-gray-600">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="flex items-center gap-3">

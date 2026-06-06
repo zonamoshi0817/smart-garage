@@ -6,6 +6,8 @@
 
 'use client';
 
+import '../../home/home.css';
+
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -32,7 +34,7 @@ function SuccessContent() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center px-4">
+    <div className="app-home min-h-screen flex items-center justify-center px-4">
       <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-2xl w-full text-center">
         {/* 成功アイコン */}
         <div className="mb-6">
@@ -123,7 +125,7 @@ function SuccessContent() {
 export default function BillingSuccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+      <div className="app-home min-h-screen flex items-center justify-center">
         <div className="text-white text-xl">読み込み中...</div>
       </div>
     }>
