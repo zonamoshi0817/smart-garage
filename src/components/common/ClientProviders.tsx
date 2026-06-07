@@ -4,6 +4,7 @@ import React from "react";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { OfflineDetector } from "@/components/common/OfflineDetector";
 import { SelectedCarProvider } from "@/contexts/SelectedCarContext";
+import { FeedbackProvider } from "@/components/common/Feedback";
 
 export default function ClientProviders({
   children,
@@ -12,12 +13,14 @@ export default function ClientProviders({
 }) {
   return (
     <SelectedCarProvider>
-      <ErrorBoundary>
-        <OfflineDetector />
-      </ErrorBoundary>
-      <ErrorBoundary>
-        {children}
-      </ErrorBoundary>
+      <FeedbackProvider>
+        <ErrorBoundary>
+          <OfflineDetector />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
+      </FeedbackProvider>
     </SelectedCarProvider>
   );
 }

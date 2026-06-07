@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { Fuel, Wrench, Sparkles, Share2, Camera } from 'lucide-react';
 import { parseQuery } from '@/lib/urlParams';
+import { useToast } from '@/components/common/Feedback';
 import { Car, MaintenanceRecord, FuelLog, Customization } from '@/types';
 import { usePremiumGuard } from '@/hooks/usePremium';
 import { getDisplayAmount, getDisplayCost } from '@/lib/fuelLogs';
@@ -38,6 +40,7 @@ export default function MyCarPage({
   const isPremium = isPremiumPlan(userPlan);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const toast = useToast();
 
   const dayMs = 1000 * 60 * 60 * 24;
 
@@ -201,10 +204,10 @@ export default function MyCarPage({
       
       if (result.ok) {
         if (result.method === 'copy') {
-          alert('URLをクリップボードにコピーしました');
+          toast('URLをクリップボードにコピーしました');
         }
       } else if (result.error && result.error !== 'User cancelled') {
-        alert(`共有に失敗しました: ${result.error}`);
+        toast(`共有に失敗しました: ${result.error}`, 'error');
       }
     } catch (error) {
       console.error('Failed to get share URL:', error);
@@ -215,11 +218,11 @@ export default function MyCarPage({
         text: `${car.name}の情報を共有`,
         url: fallbackUrl,
       });
-      
+
       if (result.ok && result.method === 'copy') {
-        alert('URLをクリップボードにコピーしました');
+        toast('URLをクリップボードにコピーしました');
       } else if (result.error && result.error !== 'User cancelled') {
-        alert(`共有に失敗しました: ${result.error}`);
+        toast(`共有に失敗しました: ${result.error}`, 'error');
       }
     } finally {
       setIsSharing(false);
@@ -227,35 +230,36 @@ export default function MyCarPage({
   };
 
   // クイックアクションの定義（高頻度操作のみに絞る）
+  const qaIconClass = "w-6 h-6 sm:w-7 sm:h-7";
   const quickActions = [
     {
       id: 'fuel',
       label: '給油を記録',
-      icon: '⛽',
+      icon: <Fuel className={qaIconClass} />,
       onClick: () => onOpenModal('fuel')
     },
     {
       id: 'maintenance',
       label: 'メンテを追加',
-      icon: '🔧',
+      icon: <Wrench className={qaIconClass} />,
       onClick: () => onOpenModal('maintenance')
     },
     {
       id: 'customization',
       label: 'カスタム追加',
-      icon: '✨',
+      icon: <Sparkles className={qaIconClass} />,
       onClick: () => onOpenModal('customization')
     },
     {
       id: 'share',
       label: '共有',
-      icon: '📤',
+      icon: <Share2 className={qaIconClass} />,
       onClick: handleShare
     },
     {
       id: 'ocr',
       label: 'レシートOCR',
-      icon: '📸',
+      icon: <Camera className={qaIconClass} />,
       isPremium: true,
       onClick: () => onOpenModal('ocr')
     }
@@ -291,7 +295,7 @@ export default function MyCarPage({
   };
 
   return (
-    <div className="bg-gray-50 pb-16 overflow-x-hidden">
+    <div className="pb-16 overflow-x-hidden" style={{ background: 'var(--surface-bg)' }}>
       {showPaywall && (
         <PaywallModal
           onClose={closePaywall}

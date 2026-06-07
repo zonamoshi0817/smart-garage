@@ -23,191 +23,9 @@ import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
 import { SidebarLayout } from "@/components/common/SidebarLayout";
 import EvidenceReliabilityBadge from "@/components/EvidenceReliabilityBadge";
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart } from 'recharts';
-
-// ヘッダー用車両ドロップダウン（mycar/page.tsxと同じ）
-function CarHeaderDropdown({
-  cars,
-  activeCarId,
-  onSelectCar,
-  onAddCar
-}: {
-  cars: Car[];
-  activeCarId?: string;
-  onSelectCar: (id: string) => void;
-  onAddCar: () => void;
-}) {
-  const { setSelectedCarId } = useSelectedCar();
-  const [open, setOpen] = useState(false);
-  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  const [isMobile, setIsMobile] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && open) {
-        setOpen(false);
-      }
-    };
-    
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [open]);
-
-  const handleImageError = (carId: string) => {
-    setImageErrors(prev => new Set(prev).add(carId));
-  };
-
-  const activeCar = cars.find(c => c.id === activeCarId) || cars[0];
-
-  return (
-    <div className="relative flex-shrink-0" ref={dropdownRef}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="h-9 sm:h-10 px-2 sm:px-3 rounded-lg border border-gray-300 bg-white flex items-center gap-1.5 sm:gap-2 shadow-sm hover:bg-gray-50 min-w-0"
-      >
-        {activeCar && (
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
-            {activeCar.imagePath && !imageErrors.has(activeCar.id!) ? (
-              <img
-                src={activeCar.imagePath}
-                alt={activeCar.name}
-                className="w-full h-full object-cover"
-                onError={() => handleImageError(activeCar.id!)}
-              />
-            ) : (
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-          </div>
-        )}
-        <span className="truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[200px] text-xs sm:text-sm font-medium text-gray-900">
-          {activeCar?.name}
-          {activeCar?.modelCode && !isMobile ? ` (${activeCar.modelCode})` : ''}
-        </span>
-        <svg 
-          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`} 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && (
-        <>
-          <div 
-            className="fixed inset-0 z-30" 
-            onClick={() => setOpen(false)}
-          />
-          <div className="fixed sm:absolute z-40 top-[3.5rem] sm:top-full right-2 sm:right-0 left-2 sm:left-auto mt-0 sm:mt-2 w-[calc(100vw-1rem)] sm:w-80 max-w-[calc(100vw-1rem)] sm:max-w-[320px] bg-white rounded-lg border border-gray-200 shadow-xl">
-            <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900">車両を選択</h3>
-                <span className="text-xs text-gray-500">{cars.length}台</span>
-              </div>
-            </div>
-            
-            <div className="max-h-80 overflow-auto py-1 sm:py-2">
-            {cars.map((car) => (
-              <button
-                key={car.id}
-                onClick={() => {
-                  const carId = car.id!;
-                  setSelectedCarId(carId); // グローバルコンテキストを更新
-                  onSelectCar(carId);
-                  setOpen(false);
-                }}
-                className={`w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
-                  car.id === activeCarId ? 'bg-gray-50' : ''
-                }`}
-              >
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
-                    {car.imagePath && !imageErrors.has(car.id!) ? (
-                      <img
-                        src={car.imagePath}
-                        alt={car.name}
-                        className="w-full h-full object-cover"
-                        onError={() => handleImageError(car.id!)}
-                      />
-                    ) : (
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="font-medium text-gray-900 truncate">
-                        {car.name}
-                      </div>
-                      {car.id === activeCarId && (
-                        <svg className="w-4 h-4 text-gray-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      {car.modelCode && (
-                        <span className="bg-gray-100 px-1.5 py-0.5 rounded">
-                          {car.modelCode}
-                        </span>
-                      )}
-                      {car.year && <span>{car.year}年式</span>}
-                      {car.odoKm && <span>• {car.odoKm.toLocaleString()}km</span>}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-            </div>
-            
-            <div className="px-3 sm:px-4 py-2 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={() => { 
-                  setOpen(false); 
-                  onAddCar(); 
-                }}
-                className="w-full text-left px-3 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                車両を追加
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+import { AppHeader } from "@/components/common/AppHeader";
+import { AppLoading } from "@/components/common/AppLoading";
+import { useToast, useConfirm } from "@/components/common/Feedback";
 
 // ナビゲーションアイテム
 function NavItem({ 
@@ -355,6 +173,7 @@ function EditMaintenanceModal({
   onClose: () => void;
   onUpdated: () => void;
 }) {
+  const toast = useToast();
   const [title, setTitle] = useState(record.title);
   const [description, setDescription] = useState(record.description || '');
   const [cost, setCost] = useState(record.cost?.toString() || '');
@@ -380,14 +199,14 @@ function EditMaintenanceModal({
     if (!file) return;
 
     if (!isImageFile(file)) {
-      alert("画像ファイルを選択してください。");
+      toast("画像ファイルを選択してください。", "error");
       return;
     }
 
     // ファイルサイズチェック（10MB制限）
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
+      toast("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。", "error");
       return;
     }
 
@@ -417,7 +236,7 @@ function EditMaintenanceModal({
     if (mileage) {
       const inputMileage = Number(mileage);
       if (currentMileage && inputMileage < currentMileage) {
-        alert(`走行距離は現在の値（${currentMileage.toLocaleString()} km）以上である必要があります`);
+        toast(`走行距離は現在の値（${currentMileage.toLocaleString()} km）以上である必要があります`, "error");
         return;
       }
     }
@@ -442,7 +261,7 @@ function EditMaintenanceModal({
           finalImageUrl = uploadedUrl;
         } catch (uploadError) {
           console.error("Image upload failed:", uploadError);
-          alert(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`);
+          toast(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`, "error");
           setIsUploadingImage(false);
           setIsSubmitting(false);
           return;
@@ -466,9 +285,9 @@ function EditMaintenanceModal({
     } catch (error) {
       console.error("Error updating maintenance record:", error);
       if (error instanceof Error) {
-        alert(`更新に失敗しました: ${error.message}`);
+        toast(`更新に失敗しました: ${error.message}`, "error");
       } else {
-        alert("更新に失敗しました。");
+        toast("更新に失敗しました。", "error");
       }
     } finally {
       setIsSubmitting(false);
@@ -704,6 +523,8 @@ function MaintenanceHistoryContent({
   setShowEditMaintenanceModal: (show: boolean) => void;
   setEditingMaintenanceRecord: (record: MaintenanceRecord | null) => void;
 }) {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState<'suggestions' | 'history'>('history');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -880,12 +701,18 @@ function MaintenanceHistoryContent({
   const handleDeleteRecord = async (record: MaintenanceRecord) => {
     if (!record.id) return;
     
-    if (confirm(`「${record.title}」を削除しますか？`)) {
+    const ok = await confirm({
+      title: 'メンテナンスを削除',
+      message: `「${record.title}」を削除しますか？`,
+      confirmLabel: '削除',
+      tone: 'danger',
+    });
+    if (ok) {
       try {
         await deleteMaintenanceRecord(record.id);
       } catch (error) {
         console.error("Error deleting maintenance record:", error);
-        alert("削除に失敗しました。");
+        toast("削除に失敗しました。", "error");
       }
     }
   };
@@ -900,7 +727,7 @@ function MaintenanceHistoryContent({
           <button
             onClick={() => {
               if (cars.length === 0) {
-                alert('メンテナンスを記録するには、まず車両を登録してください。');
+                toast('メンテナンスを記録するには、まず車両を登録してください。', 'error');
                 return;
               }
               setShowMaintenanceModal(true);
@@ -1128,7 +955,7 @@ function MaintenanceHistoryContent({
               <button
                 onClick={() => {
                   if (cars.length === 0) {
-                    alert('メンテナンスを記録するには、まず車両を登録してください。');
+                    toast('メンテナンスを記録するには、まず車両を登録してください。', 'error');
                     return;
                   }
                   setShowMaintenanceModal(true);
@@ -1232,6 +1059,8 @@ function MaintenanceModal({
   onClose: () => void;
   onAdded: () => void;
 }) {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [title, setTitle] = useState(initialTitle || "");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState<string>("");
@@ -1257,14 +1086,14 @@ function MaintenanceModal({
     if (!file) return;
 
     if (!isImageFile(file)) {
-      alert("画像ファイルを選択してください。");
+      toast("画像ファイルを選択してください。", "error");
       return;
     }
 
     // ファイルサイズチェック（10MB制限）
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。");
+      toast("ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。", "error");
       return;
     }
 
@@ -1284,9 +1113,9 @@ function MaintenanceModal({
   };
 
   async function handleAdd() {
-    if (!title) return alert("タイトルを入力してください");
-    if (!carId) return alert("車両が選択されていません");
-    if (!mileage) return alert("走行距離を入力してください");
+    if (!title) return toast("タイトルを入力してください", "error");
+    if (!carId) return toast("車両が選択されていません", "error");
+    if (!mileage) return toast("走行距離を入力してください", "error");
 
     // 重複チェック：同じ車両で同じタイトル＋30日以内の記録
     if (existingRecords && existingRecords.length > 0) {
@@ -1299,15 +1128,19 @@ function MaintenanceModal({
         return diffDays <= 30;
       });
       if (similar.length > 0) {
-        const confirm = window.confirm(`「${title}」と似た記録が30日以内に存在します。\n（${new Intl.DateTimeFormat('ja-JP').format(similar[0].date?.toDate ? similar[0].date.toDate() : new Date(similar[0].date as any))}）\n\nそれでも追加しますか？`);
-        if (!confirm) return;
+        const proceed = await confirm({
+          title: '似た記録があります',
+          message: `「${title}」と似た記録が30日以内に存在します。（${new Intl.DateTimeFormat('ja-JP').format(similar[0].date?.toDate ? similar[0].date.toDate() : new Date(similar[0].date as any))}）\n\nそれでも追加しますか？`,
+          confirmLabel: '追加する',
+        });
+        if (!proceed) return;
       }
     }
 
     // 走行距離のバリデーション
     const inputMileage = Number(mileage);
     if (currentMileage && inputMileage < currentMileage) {
-      return alert(`走行距離は現在の値（${currentMileage.toLocaleString()} km）以上である必要があります`);
+      return toast(`走行距離は現在の値（${currentMileage.toLocaleString()} km）以上である必要があります`, "error");
     }
     
     try {
@@ -1329,7 +1162,7 @@ function MaintenanceModal({
           finalImageUrl = uploadedUrl;
         } catch (uploadError) {
           console.error("Image upload failed:", uploadError);
-          alert(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`);
+          toast(`画像のアップロードに失敗しました: ${uploadError instanceof Error ? uploadError.message : '不明なエラー'}`, "error");
           setIsUploadingImage(false);
           return;
         }
@@ -1357,7 +1190,7 @@ function MaintenanceModal({
       onAdded?.();
     } catch (error) {
       console.error("Error adding maintenance record:", error);
-      alert(`履歴の追加に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      toast(`履歴の追加に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`, "error");
     }
   }
 
@@ -1566,6 +1399,7 @@ function MaintenancePageRouteContent() {
 
   // プレミアムガード
   const { userPlan } = usePremiumGuard();
+  const toast = useToast();
 
   // activeCarIdを決定（優先順位: URLクエリ > グローバルコンテキスト > ローカル状態）
   const effectiveCarId = useMemo(() => {
@@ -1715,58 +1549,23 @@ function MaintenancePageRouteContent() {
   }, [cars, effectiveCarId]);
 
   if (loading) {
-    return (
-      <AuthGate>
-        <div className="app-home min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="app-card p-6" style={{ color: "var(--text-muted)" }}>読み込み中...</div>
-          </div>
-        </div>
-      </AuthGate>
-    );
+    return <AppLoading />;
   }
 
   return (
     <AuthGate>
       <div className="app-home min-h-screen">
         {/* ヘッダー */}
-        <header className="app-header sticky top-0 z-30">
-          <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
-            <button
-              onClick={() => router.push('/home')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-70 transition-opacity"
-            >
-              <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
-              <span className="app-logo-text text-sm sm:text-base truncate">GARAGE_LOG</span>
-            </button>
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-              {activeCars.length > 0 && (
-                <div className="relative">
-                  <CarHeaderDropdown 
-                    cars={activeCars}
-                    activeCarId={effectiveCarId}
-                    onSelectCar={(id) => {
-                      setSelectedCarId(id);
-                      setActiveCarId(id);
-                      router.replace(`${pathname}?car=${id}`);
-                    }}
-                    onAddCar={() => setShowAddCarModal(true)}
-                  />
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  if (confirm('ログアウトしますか？')) {
-                    auth.signOut();
-                  }
-                }}
-                className="btn-secondary-dark px-3 py-1.5 rounded-none whitespace-nowrap"
-              >
-                LOGOUT
-              </button>
-            </div>
-          </div>
-        </header>
+        <AppHeader
+          cars={activeCars}
+          activeCarId={effectiveCarId}
+          onSelectCar={(id) => {
+            setSelectedCarId(id);
+            setActiveCarId(id);
+            router.replace(`${pathname}?car=${id}`);
+          }}
+          onAddCar={() => setShowAddCarModal(true)}
+        />
 
         {/* 軽量アラート（車検期限など） */}
         {(() => {
@@ -1849,7 +1648,7 @@ function MaintenancePageRouteContent() {
               // 必要に応じて、watchCarsで自動的に更新される
             } catch (error) {
               console.error("Failed to add car:", error);
-              alert("車両の追加に失敗しました");
+              toast("車両の追加に失敗しました", "error");
             }
           }}
         />
@@ -1906,15 +1705,7 @@ function MaintenancePageRouteContent() {
 
 export default function MaintenancePageRoute() {
   return (
-    <Suspense fallback={
-      <AuthGate>
-        <div className="app-home min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="app-card p-6" style={{ color: "var(--text-muted)" }}>読み込み中...</div>
-          </div>
-        </div>
-      </AuthGate>
-    }>
+    <Suspense fallback={<AppLoading />}>
       <MaintenancePageRouteContent />
     </Suspense>
   );

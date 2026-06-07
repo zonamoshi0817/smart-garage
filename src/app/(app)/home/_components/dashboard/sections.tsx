@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/common/Feedback";
 import { updateCar } from "@/lib/cars";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from 'firebase/firestore';
@@ -77,6 +78,7 @@ export function CarSummaryCard({
   setShowAddCarModal: (show: boolean) => void;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [shareStatus, setShareStatus] = useState<'none' | 'active' | 'stopped' | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
@@ -163,11 +165,12 @@ export function CarSummaryCard({
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file || !car?.id) return;
-                          if (!isImageFile(file)) { alert('画像ファイルを選択してください'); return; }
+                          if (!isImageFile(file)) { toast('画像ファイルを選択してください', 'error'); return; }
                           try {
                             const url = await uploadCarImageWithProgress(file, car.id, () => {});
                             await updateCar(car.id, { imagePath: url });
-                          } catch { alert('アップロードに失敗しました'); }
+                            toast('写真を更新しました');
+                          } catch { toast('アップロードに失敗しました', 'error'); }
                         }}
                       />
                     </label>
@@ -216,7 +219,7 @@ export function CarSummaryCard({
                       {/* 履歴の充実度 */}
                       {(() => {
                         const maintenanceCount = maintenanceRecords.length;
-                        const latestMaintenance = maintenanceRecords.length > 0 ? maintenanceRecords.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0] : null;
+                        const latestMaintenance = maintenanceRecords.length > 0 ? [...maintenanceRecords].sort((a, b) => toMillis(b.date) - toMillis(a.date))[0] : null;
                         const evidenceCount = maintenanceRecords.filter(r => r.attachments && r.attachments.length > 0).length;
                         const evidenceDisplay = evidenceCount > 0 
                           ? `証憑: ${evidenceCount}件（${Math.round((evidenceCount / maintenanceCount) * 100)}%）`
@@ -252,7 +255,7 @@ export function CarSummaryCard({
                         }}
                         className="btn-primary-dark w-full px-4 py-2.5 rounded-none"
                       >
-                        VIEW MY CAR
+                        マイカーを見る
                       </button>
                     </div>
                 </>
@@ -268,7 +271,7 @@ export function CarSummaryCard({
                     onClick={() => setShowAddCarModal(true)}
                     className="btn-primary-dark px-4 py-2 rounded-none"
                   >
-                    ADD CAR
+                    車を追加
                   </button>
                 </div>
               ) : activeCarId && !car ? (

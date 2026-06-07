@@ -25,7 +25,7 @@ export function MaintenanceSummaryCard({
                       onClick={() => router.push('/maintenance')}
                       className="app-link"
                     >
-                      ALL →
+                      すべて見る →
                     </button>
                 </div>
               
@@ -33,7 +33,7 @@ export function MaintenanceSummaryCard({
                 <div className="space-y-3">
                   {/* 最新1件 */}
                   {(() => {
-                    const latest = maintenanceRecords.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
+                    const latest = [...maintenanceRecords].sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
                     return (
                       <div className="app-stat-cell p-3">
                         <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ export function MaintenanceSummaryCard({
 
                   {/* 最近の履歴（直近3件） */}
                   <div className="space-y-2">
-                  {maintenanceRecords
+                  {[...maintenanceRecords]
                     .sort((a, b) => toMillis(b.date) - toMillis(a.date))
                     .slice(0, 3)
                     .map((record) => (
@@ -120,7 +120,7 @@ export function MaintenanceSummaryCard({
                         onClick={() => router.push('/maintenance')}
                         className="app-link"
                       >
-                        MORE ({maintenanceRecords.length}) →
+                        もっと見る ({maintenanceRecords.length}) →
                       </button>
                     </div>
                   )}
@@ -132,14 +132,14 @@ export function MaintenanceSummaryCard({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>NO RECORDS</p>
+                  <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>記録なし</p>
                   <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>オイル交換・車検から始めましょう</p>
                   <div className="flex items-center justify-center">
                     <button
                       onClick={() => activeCarId ? setShowMaintenanceModal(true) : router.push('/mycar')}
                       className="btn-secondary-dark px-4 py-2 rounded-none"
                     >
-                      ADD RECORD
+                      記録を追加
                     </button>
                   </div>
                 </div>
@@ -170,7 +170,7 @@ export function FuelSummaryCard({
                       onClick={() => router.push('/gas')}
                       className="app-link"
                     >
-                      ALL →
+                      すべて見る →
                     </button>
                 </div>
                 
@@ -181,14 +181,14 @@ export function FuelSummaryCard({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                       </svg>
                     </div>
-                    <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>NO RECORDS</p>
+                    <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>記録なし</p>
                     <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>まず車を追加してください</p>
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => setShowAddCarModal(true)}
                         className="btn-primary-dark px-4 py-2 rounded-none"
                       >
-                        ADD CAR
+                        車を追加
                       </button>
                     </div>
                   </div>
@@ -196,7 +196,7 @@ export function FuelSummaryCard({
                     <div className="space-y-3">
                       {/* 最新1件 */}
                       {(() => {
-                        const latest = fuelLogs.sort((a, b) => {
+                        const latest = [...fuelLogs].sort((a, b) => {
                           const aSeconds = a.date?.seconds || 0;
                           const bSeconds = b.date?.seconds || 0;
                           return bSeconds - aSeconds;
@@ -235,7 +235,7 @@ export function FuelSummaryCard({
                         const totalFuelAmount = recentLogs.reduce((sum, log) => sum + ((log.quantity || 0) / 1000 || log.fuelAmount || 0), 0);
                         const avgPricePerLiter = totalFuelAmount > 0 ? Math.round(recentTotalCost / totalFuelAmount) : 0;
                         // 前回からの走行距離
-                        const sortedLogs = fuelLogs.sort((a, b) => {
+                        const sortedLogs = [...fuelLogs].sort((a, b) => {
                           const aSeconds = a.date?.seconds || 0;
                           const bSeconds = b.date?.seconds || 0;
                           return bSeconds - aSeconds;
@@ -263,7 +263,7 @@ export function FuelSummaryCard({
 
                       {/* 最近の給油履歴（直近3件） */}
                         <div className="space-y-2">
-                          {fuelLogs
+                          {[...fuelLogs]
                             .sort((a, b) => {
                               const aSeconds = a.date?.seconds || 0;
                               const bSeconds = b.date?.seconds || 0;
@@ -299,7 +299,7 @@ export function FuelSummaryCard({
                               onClick={() => router.push('/gas')}
                               className="app-link"
                             >
-                              MORE ({fuelLogs.length}) →
+                              もっと見る ({fuelLogs.length}) →
                             </button>
                           </div>
                         )}
@@ -311,14 +311,14 @@ export function FuelSummaryCard({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                         </svg>
                       </div>
-                      <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>NO RECORDS</p>
+                      <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>記録なし</p>
                       <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>1件目の給油を記録しましょう</p>
                       <div className="flex items-center justify-center">
                         <button
                           onClick={() => activeCarId ? setShowFuelLogModal(true) : router.push('/mycar')}
                           className="btn-secondary-dark px-4 py-2 rounded-none"
                         >
-                          ADD FUEL LOG
+                          給油を記録
                         </button>
                       </div>
                     </div>
@@ -350,7 +350,7 @@ export function CustomSummaryCard({
                     }}
                     className="app-link"
                   >
-                    ALL →
+                    すべて見る →
                   </button>
                 </div>
                 
@@ -358,7 +358,7 @@ export function CustomSummaryCard({
                   <div className="space-y-3">
                     {/* 最新1件 */}
                     {(() => {
-                      const latest = customizations.sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
+                      const latest = [...customizations].sort((a, b) => toMillis(b.date) - toMillis(a.date))[0];
                       const totalCost = (latest.partsCostJpy || 0) + (latest.laborCostJpy || 0) + (latest.otherCostJpy || 0);
                       return (
                         <div className="app-stat-cell p-3">
@@ -411,7 +411,7 @@ export function CustomSummaryCard({
 
                     {/* 最近の履歴（直近3件） */}
                     <div className="space-y-2">
-                    {customizations
+                    {[...customizations]
                       .sort((a, b) => toMillis(b.date) - toMillis(a.date))
                       .slice(0, 3)
                         .map((customization) => {
@@ -459,7 +459,7 @@ export function CustomSummaryCard({
                           }}
                           className="app-link"
                         >
-                          MORE ({customizations.length}) →
+                          もっと見る ({customizations.length}) →
                         </button>
                       </div>
                     )}
@@ -471,14 +471,14 @@ export function CustomSummaryCard({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                       </svg>
                     </div>
-                    <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>NO RECORDS</p>
+                    <p className="text-xs mb-1" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', letterSpacing: '0.1em' }}>記録なし</p>
                     <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>タイヤ・ホイール・足回りなど</p>
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => (activeCarId && auth.currentUser) ? setShowCustomizationModal(true) : router.push('/mycar')}
                         className="btn-secondary-dark px-4 py-2 rounded-none"
                       >
-                        ADD CUSTOM
+                        カスタムを追加
                       </button>
                     </div>
                   </div>

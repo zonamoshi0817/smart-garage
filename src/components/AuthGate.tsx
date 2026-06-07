@@ -7,27 +7,32 @@ import type { User } from "firebase/auth";
 import { UserPlus, LogIn, ArrowRight } from "lucide-react";
 import Logo from "@/components/common/Logo";
 
+// セッション内で認証状態をモジュールキャッシュする。
+// 各ページが自前の AuthGate を持つため、これが無いと遷移のたびに user が
+// null から始まり、一瞬「未ログイン扱い」になってログイン画面（＝Google
+// アカウント再選択への入口）が表示されてしまう。一度解決した状態を引き継ぐ。
+// undefined = 未解決, null = 未ログイン, User = ログイン済み
+let cachedUser: User | null | undefined = undefined;
+
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [ready, setReady] = useState<boolean>(false); // 型を明示
+  const [user, setUser] = useState<User | null | undefined>(() => cachedUser);
+  const [ready, setReady] = useState<boolean>(() => cachedUser !== undefined);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    
-    console.log("AuthGate: Initializing authentication...");
-    
+
     try {
       const unsub = watchAuth((u) => {
-        console.log("AuthGate: Auth state changed:", u ? "logged in" : "logged out");
+        cachedUser = u;
         setUser(u);
         setReady(true);
         clearTimeout(timeoutId);
-        
+
         // Sentryにユーザー情報を設定
         setSentryUser(u);
-        
+
         // ユーザーアクションを追跡
         if (u) {
           trackUserAction.login();
@@ -35,15 +40,14 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
           trackUserAction.logout();
         }
       });
-      
-      // 3秒後にタイムアウトして強制的にreadyにする
+
+      // 3秒後にタイムアウトして強制的にreadyにする（初回ロードのみ意味を持つ）
       timeoutId = setTimeout(() => {
         console.warn("AuthGate: Auth state check timed out, proceeding without authentication");
         setReady(true);
       }, 3000);
-      
+
       return () => {
-        console.log("AuthGate: Cleaning up auth listener");
         unsub(); // cleanup
         clearTimeout(timeoutId);
       };

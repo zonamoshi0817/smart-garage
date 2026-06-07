@@ -4,7 +4,6 @@
 import "./home.css";
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Timestamp } from "firebase/firestore";
 import AuthGate from "@/components/AuthGate";
 import { watchCars } from "@/lib/cars";
 import { Car } from "@/types";
@@ -29,9 +28,12 @@ import ShareContent from "@/components/share/ShareContent";
 import { useSelectedCar } from "@/contexts/SelectedCarContext";
 import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
 import { SidebarLayout } from "@/components/common/SidebarLayout";
+import { AppHeader } from "@/components/common/AppHeader";
+import { AppLoading } from "@/components/common/AppLoading";
+import { useToast } from "@/components/common/Feedback";
 import { EditMaintenanceModal, MaintenanceModal, EditCarModal } from "./_components/modals";
 import { DashboardContent } from "./_components/Dashboard";
-import { CarHeaderDropdown, NotificationsContent } from "./_components/widgets";
+import { NotificationsContent } from "./_components/widgets";
 
 /* -------------------- ページ本体 -------------------- */
 function HomeContent() {
@@ -61,13 +63,8 @@ function HomeContent() {
   const [authTrigger, setAuthTrigger] = useState(0); // 認証状態変更のトリガー
   const [currentUser, setCurrentUser] = useState<User | null>(null); // 現在のユーザー情報
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'my-car' | 'maintenance-history' | 'fuel-logs' | 'customizations' | 'notifications' | 'share'>('dashboard');
-  // 軽量トースト（成功フィードバック）
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  useEffect(() => {
-    if (!toastMessage) return;
-    const t = setTimeout(() => setToastMessage(null), 1800);
-    return () => clearTimeout(t);
-  }, [toastMessage]);
+  // 成功フィードバック（共通トースト）
+  const toast = useToast();
 
   // プレミアムガード
   const { userPlan, checkFeature, showPaywall, closePaywall, paywallFeature, paywallVariant } = usePremiumGuard();
@@ -83,14 +80,11 @@ function HomeContent() {
 
   // 認証状態を監視
   useEffect(() => {
-    console.log("Setting up auth watcher...");
     const unsubscribe = watchAuth((user) => {
-      console.log("Auth state changed:", user ? `User: ${user.email}` : "No user");
       // ユーザー情報をstateに保存
       setCurrentUser(user);
       
       if (user) {
-        console.log("User authenticated, forcing data refresh");
         // 認証されたらデータをクリアして再取得を促す
         setCars([]);
         setActiveCarId(undefined);
@@ -101,7 +95,6 @@ function HomeContent() {
         // 認証トリガーを更新してデータ取得を促す
         setAuthTrigger(prev => prev + 1);
       } else {
-        console.log("User not authenticated, clearing all data");
         setCars([]);
         setActiveCarId(undefined);
         setMaintenanceRecords([]);
@@ -112,7 +105,6 @@ function HomeContent() {
     });
     
     return () => {
-      console.log("Cleaning up auth watcher");
       unsubscribe();
     };
   }, []);
@@ -120,7 +112,6 @@ function HomeContent() {
   // 車両リストが変更されたときに自動選択（グローバルコンテキストを優先）
   useEffect(() => {
     if (cars.length === 0) {
-      console.log("No cars available, clearing activeCarId");
       return;
     }
 
@@ -128,7 +119,6 @@ function HomeContent() {
     const activeCarsList = cars.filter((c) => !c.status || c.status === 'active');
     
     if (activeCarsList.length === 0) {
-      console.log("No active cars available");
       return;
     }
 
@@ -148,7 +138,6 @@ function HomeContent() {
     
     // targetCarIdが設定されている場合、activeCarIdがundefinedまたは異なる場合に更新
     if (targetCarId && (!activeCarId || targetCarId !== activeCarId)) {
-      console.log("Setting activeCarId from context/fallback:", targetCarId);
       setActiveCarId(targetCarId);
       // グローバルコンテキストも更新（まだ設定されていない場合）
       if (!selectedCarId) {
@@ -162,25 +151,16 @@ function HomeContent() {
   useEffect(() => {
     // 認証されていない場合は何もしない
     if (!auth.currentUser) {
-      console.log("No user authenticated, skipping cars watcher setup");
       return;
     }
     
-    console.log("Setting up cars watcher...");
-    console.log("Current activeCarId:", activeCarId);
-    console.log("Current user:", auth.currentUser.email);
     
     try {
     const off = watchCars((list) => {
-        console.log("Cars received in component:", list.length, "cars");
-        console.log("Current activeCarId when cars received:", activeCarId);
-        console.log("Cars data:", list.map(car => ({ id: car.id, name: car.name, imagePath: car.imagePath })));
-        console.log("Previous cars state:", cars.map(car => ({ id: car.id, name: car.name, imagePath: car.imagePath })));
         
         
         // 実際のデータがある場合はそれを使用
         if (list.length > 0) {
-          console.log("Using real cars from Firestore");
           setCars(list);
           
           // 優先順位: 1) グローバルselectedCarId 2) 現在のactiveCarId 3) 最初の車
@@ -200,7 +180,6 @@ function HomeContent() {
           }
           
           if (targetCarId && targetCarId !== activeCarId) {
-            console.log("Auto-selecting car from context/fallback:", targetCarId);
             setActiveCarId(targetCarId);
             if (!selectedCarId) {
               setSelectedCarId(targetCarId);
@@ -208,18 +187,15 @@ function HomeContent() {
           }
         } else {
           // データがない場合は空の配列を設定
-          console.log("No cars found, setting empty array");
           setCars([]);
         }
       });
       return () => {
-        console.log("Cleaning up cars watcher");
         off && off();
       };
     } catch (error) {
       console.error("Error watching cars:", error);
       // エラーの場合は空の配列を設定
-      console.log("Error occurred, setting empty array");
       setCars([]);
     }
   }, [auth.currentUser, activeCarId, authTrigger]); // 認証状態、activeCarId、認証トリガーの変更に反応
@@ -227,7 +203,6 @@ function HomeContent() {
   // activeCarIdの設定を別途処理
   useEffect(() => {
     if (cars.length > 0 && !activeCarId) {
-      console.log("Setting activeCarId to first car:", cars[0].id);
       setActiveCarId(cars[0].id);
     }
   }, [cars, activeCarId]);
@@ -236,28 +211,22 @@ function HomeContent() {
   useEffect(() => {
     // 認証されていない場合は何もしない
     if (!auth.currentUser) {
-      console.log("No user authenticated, skipping maintenance records watch");
       setMaintenanceRecords([]);
       return;
     }
     
     if (!activeCarId) {
-      console.log("No activeCarId, skipping maintenance records watch");
       setMaintenanceRecords([]);
       return;
     }
     
-    console.log("Setting up maintenance records watcher for car:", activeCarId);
-    console.log("Current user:", auth.currentUser.email);
     
     try {
       const off = watchMaintenanceRecords(activeCarId, (records) => {
-        console.log("Maintenance records received for car", activeCarId, ":", records.length, "records");
         setMaintenanceRecords(records);
         
       });
       return () => {
-        console.log("Cleaning up maintenance records watcher");
         off && off();
       };
     } catch (error) {
@@ -270,23 +239,16 @@ function HomeContent() {
   useEffect(() => {
     // 認証されていない場合は何もしない
     if (!auth.currentUser) {
-      console.log("No user authenticated, skipping all maintenance records watch");
       setAllMaintenanceRecords([]);
       return;
     }
     
-    console.log("Setting up all maintenance records watcher");
-    console.log("Current user:", auth.currentUser.email);
     
     try {
       const off = watchAllMaintenanceRecords((records) => {
-        console.log("All maintenance records received:", records.length, "records");
-        console.log("Records data:", records.map(r => ({ id: r.id, title: r.title, carId: r.carId })));
         setAllMaintenanceRecords(records);
       });
-      console.log("All maintenance records watcher set up successfully");
       return () => {
-        console.log("Cleaning up all maintenance records watcher");
         off && off();
       };
     } catch (error) {
@@ -302,14 +264,11 @@ function HomeContent() {
       return;
     }
 
-    console.log("Setting up fuel logs watcher for car:", activeCarId);
     const unsubscribe = watchFuelLogs(activeCarId, (logs) => {
-      console.log("Fuel logs updated:", logs.length);
       setFuelLogs(logs);
     });
 
     return () => {
-      console.log("Cleaning up fuel logs watcher");
       unsubscribe();
     };
   }, [auth.currentUser, activeCarId, authTrigger]);
@@ -317,25 +276,16 @@ function HomeContent() {
   // カスタマイズデータの監視
   useEffect(() => {
     if (!auth.currentUser || !activeCarId) {
-      console.log("No user or active car, skipping customizations watch");
       setCustomizations([]);
       return;
     }
 
-    console.log("Setting up customizations watcher for car:", activeCarId);
     const loadCustomizations = async () => {
       try {
-        console.log("Loading customizations...");
         const customizations = await getCustomizations(auth.currentUser!.uid, activeCarId);
-        console.log("Customizations loaded successfully:", customizations.length);
         setCustomizations(customizations);
       } catch (error) {
         console.error("Error loading customizations:", error);
-        console.error("Error details:", {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          code: (error as any)?.code,
-          stack: error instanceof Error ? error.stack : undefined
-        });
         setCustomizations([]);
       }
     };
@@ -359,133 +309,22 @@ function HomeContent() {
 
   const car = useMemo(() => {
     // 売却/廃車含む全車から選択中IDを解決（READ ONLYはMyCarPage側で制御）
-    const foundCar = cars.find((c) => c.id === activeCarId);
-    console.log("Finding car:", {
-      activeCarId,
-      carsCount: cars.length,
-      activeCarsCount: activeCars.length,
-      foundCar: foundCar ? { id: foundCar.id, name: foundCar.name } : null
-    });
-    return foundCar;
-  }, [cars, activeCars.length, activeCarId]);
-
-
-  // デバッグ情報
-  console.log("Dashboard state:", {
-    activeCarId,
-    carName: car?.name,
-    maintenanceRecordsCount: maintenanceRecords.length,
-    allMaintenanceRecordsCount: allMaintenanceRecords.length,
-    fuelLogsCount: fuelLogs.length,
-    carsCount: cars.length
-  });
-
-  // テスト用のメンテナンス記録を追加（開発時のみ）- 一時的に有効化
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && activeCarId && allMaintenanceRecords.length === 0) {
-      console.log("Adding test maintenance record for debugging");
-      const testRecord = {
-        id: 'test-record-1',
-        carId: activeCarId,
-        title: 'テスト記録',
-        description: 'これはテスト用のメンテナンス記録です',
-        cost: 5000,
-        mileage: 50000,
-        date: Timestamp.now(),
-        location: 'テスト工場',
-        deletedAt: null,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now()
-      } as MaintenanceRecord;
-      setAllMaintenanceRecords([testRecord]);
-    }
-  }, [activeCarId, allMaintenanceRecords.length]);
-
-
-
-  // 簡単なテスト用のFirestore直接アクセス
-  const testFirestoreAccess = async () => {
-    try {
-      console.log("Testing direct Firestore access...");
-      const { collection, getDocs } = await import('firebase/firestore');
-      const { db } = await import('@/lib/firebase');
-      const { auth } = await import('@/lib/firebase');
-      
-      if (!auth.currentUser) {
-        console.log("No user authenticated");
-        return;
-      }
-      
-      console.log("Current user:", auth.currentUser.uid, auth.currentUser.email);
-      
-      // 車両データのテスト
-      console.log("Testing cars collection...");
-      const carsRef = collection(db, "users", auth.currentUser.uid, "cars");
-      const carsSnapshot = await getDocs(carsRef);
-      console.log("Cars collection result:", carsSnapshot.docs.length, "documents");
-      carsSnapshot.docs.forEach(doc => {
-        console.log("Car document:", doc.id, doc.data());
-      });
-      
-      // メンテナンスデータのテスト
-      console.log("Testing maintenance collection...");
-      const maintenanceRef = collection(db, "users", auth.currentUser.uid, "maintenance");
-      const maintenanceSnapshot = await getDocs(maintenanceRef);
-      console.log("Maintenance collection result:", maintenanceSnapshot.docs.length, "documents");
-      maintenanceSnapshot.docs.forEach(doc => {
-        console.log("Maintenance document:", doc.id, doc.data());
-      });
-      
-    } catch (error) {
-      console.error("Direct Firestore access error:", error);
-      if (error instanceof Error) {
-        console.error("Error code:", (error as any).code);
-        console.error("Error message:", error.message);
-      }
-    }
-  };
+    return cars.find((c) => c.id === activeCarId);
+  }, [cars, activeCarId]);
 
   return (
     <AuthGate>
       <div className="app-home min-h-screen">
         {/* ヘッダー */}
-        <header className="app-header sticky top-0 z-30">
-          <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
-            <button
-              onClick={() => router.push('/home')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-70 transition-opacity"
-            >
-              <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
-              <span className="app-logo-text text-sm sm:text-base truncate">GARAGE_LOG</span>
-            </button>
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-              {/* ヘッダー車両セレクター（右上に配置） */}
-              {activeCars.length > 0 && (
-                <div className="relative">
-                  <CarHeaderDropdown
-                    cars={activeCars}
-                    activeCarId={selectedCarId || activeCarId}
-                    onSelectCar={(id) => {
-                      setSelectedCarId(id);
-                      setActiveCarId(id);
-                    }}
-                    onAddCar={() => setShowAddCarModal(true)}
-                  />
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  if (confirm('ログアウトしますか？')) {
-                    auth.signOut();
-                  }
-                }}
-                className="btn-secondary-dark px-3 py-1.5 rounded-none whitespace-nowrap"
-              >
-                LOGOUT
-              </button>
-            </div>
-          </div>
-        </header>
+        <AppHeader
+          cars={activeCars}
+          activeCarId={selectedCarId || activeCarId}
+          onSelectCar={(id) => {
+            setSelectedCarId(id);
+            setActiveCarId(id);
+          }}
+          onAddCar={() => setShowAddCarModal(true)}
+        />
 
 
         {/* 軽量アラート（車検期限など） */}
@@ -588,11 +427,9 @@ function HomeContent() {
       {showAddCarModal && (
         <AddCarModal
           onClose={() => {
-            console.log("Closing add car modal");
             setShowAddCarModal(false);
           }}
           onAdded={() => {
-            console.log("Car added, closing modal");
             setShowAddCarModal(false);
           }}
         />
@@ -610,7 +447,6 @@ function HomeContent() {
             setShowEditCarModal(false);
             setEditingCar(null);
             // 車両データを再取得してUIを更新
-            console.log("Car updated, refreshing data...");
             // 強制的に再レンダリングをトリガー
             setAuthTrigger(prev => prev + 1);
           }}
@@ -629,16 +465,9 @@ function HomeContent() {
             setMaintenanceTemplate(null);
           }}
           onAdded={() => {
-            console.log("Maintenance record added, closing modal");
-            console.log("Current allMaintenanceRecords count:", allMaintenanceRecords.length);
             setShowMaintenanceModal(false);
             setMaintenanceTemplate(null);
-            setToastMessage("メンテナンス記録を追加しました");
-            // 少し待ってから再度確認
-            setTimeout(() => {
-              console.log("After timeout - allMaintenanceRecords count:", allMaintenanceRecords.length);
-              console.log("After timeout - allMaintenanceRecords data:", allMaintenanceRecords.map(r => ({ id: r.id, title: r.title })));
-            }, 2000);
+            toast("メンテナンス記録を追加しました");
           }}
         />
       )}
@@ -666,8 +495,7 @@ function HomeContent() {
           onClose={() => setShowFuelLogModal(false)}
           car={car}
           onSuccess={() => {
-            console.log("Fuel log added successfully");
-            setToastMessage("給油を記録しました");
+            toast("給油を記録しました");
           }}
         />
       )}
@@ -690,15 +518,6 @@ function HomeContent() {
             }
           }}
         />
-      )}
-
-      {/* トースト（右下） */}
-      {toastMessage && (
-        <div className="fixed bottom-4 right-4 z-[60]">
-          <div className="rounded-xl bg-gray-900 text-white shadow-lg px-4 py-2 text-sm">
-            {toastMessage}
-          </div>
-        </div>
       )}
 
       {/* 車両売却モーダル */}
@@ -746,7 +565,7 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="p-6">読み込み中…</div>}>
+    <Suspense fallback={<AppLoading />}>
       <HomeContent />
     </Suspense>
   );

@@ -2,11 +2,12 @@
 
 import "../home/home.css";
 
-import { useEffect, useState, useMemo, useRef, Suspense } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Plus, Receipt, Fuel as FuelIcon, JapaneseYen, TrendingUp } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
-import { watchCars, addCar } from "@/lib/cars";
+import { watchCars } from "@/lib/cars";
 import { watchFuelLogs, getDisplayAmount, getDisplayCost } from "@/lib/fuelLogs";
 import { auth, watchAuth } from "@/lib/firebase";
 import { toDate } from "@/lib/dateUtils";
@@ -20,301 +21,9 @@ import FuelLogCard from "@/components/dashboard/FuelLogCard";
 import AddCarModal from "@/components/modals/AddCarModal";
 import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
 import { SidebarLayout } from "@/components/common/SidebarLayout";
-
-// ヘッダー用車両ドロップダウン（mycar/page.tsxと同じ）
-function CarHeaderDropdown({
-  cars,
-  activeCarId,
-  onSelectCar,
-  onAddCar
-}: {
-  cars: Car[];
-  activeCarId?: string;
-  onSelectCar: (id: string) => void;
-  onAddCar: () => void;
-}) {
-  const { setSelectedCarId } = useSelectedCar();
-  const [open, setOpen] = useState(false);
-  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  const [isMobile, setIsMobile] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && open) {
-        setOpen(false);
-      }
-    };
-    
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [open]);
-
-  const handleImageError = (carId: string) => {
-    setImageErrors(prev => new Set(prev).add(carId));
-  };
-
-  const activeCar = cars.find(c => c.id === activeCarId) || cars[0];
-
-  return (
-    <div className="relative flex-shrink-0" ref={dropdownRef}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="h-9 sm:h-10 px-2 sm:px-3 rounded-lg border border-gray-300 bg-white flex items-center gap-1.5 sm:gap-2 shadow-sm hover:bg-gray-50 min-w-0"
-      >
-        {activeCar && (
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
-            {activeCar.imagePath && !imageErrors.has(activeCar.id!) ? (
-              <img
-                src={activeCar.imagePath}
-                alt={activeCar.name}
-                className="w-full h-full object-cover"
-                onError={() => handleImageError(activeCar.id!)}
-              />
-            ) : (
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-          </div>
-        )}
-        <span className="truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[200px] text-xs sm:text-sm font-medium text-gray-900">
-          {activeCar?.name}
-          {activeCar?.modelCode && !isMobile ? ` (${activeCar.modelCode})` : ''}
-        </span>
-        <svg 
-          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`} 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && (
-        <>
-          <div 
-            className="fixed inset-0 z-30" 
-            onClick={() => setOpen(false)}
-          />
-          <div className="fixed sm:absolute z-40 top-[3.5rem] sm:top-full right-2 sm:right-0 left-2 sm:left-auto mt-0 sm:mt-2 w-[calc(100vw-1rem)] sm:w-80 max-w-[calc(100vw-1rem)] sm:max-w-[320px] bg-white rounded-lg border border-gray-200 shadow-xl">
-            <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900">車両を選択</h3>
-                <span className="text-xs text-gray-500">{cars.length}台</span>
-              </div>
-            </div>
-            
-            <div className="max-h-80 overflow-auto py-1 sm:py-2">
-            {cars.map((car) => (
-              <button
-                key={car.id}
-                onClick={() => {
-                  const carId = car.id!;
-                  setSelectedCarId(carId); // グローバルコンテキストを更新
-                  onSelectCar(carId);
-                  setOpen(false);
-                }}
-                className={`w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 ${
-                  car.id === activeCarId ? 'bg-gray-50' : ''
-                }`}
-              >
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 bg-gray-50">
-                    {car.imagePath && !imageErrors.has(car.id!) ? (
-                      <img
-                        src={car.imagePath}
-                        alt={car.name}
-                        className="w-full h-full object-cover"
-                        onError={() => handleImageError(car.id!)}
-                      />
-                    ) : (
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="font-medium text-gray-900 truncate">
-                        {car.name}
-                      </div>
-                      {car.id === activeCarId && (
-                        <svg className="w-4 h-4 text-gray-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      {car.modelCode && (
-                        <span className="bg-gray-100 px-1.5 py-0.5 rounded">
-                          {car.modelCode}
-                        </span>
-                      )}
-                      {car.year && <span>{car.year}年式</span>}
-                      {car.odoKm && <span>• {car.odoKm.toLocaleString()}km</span>}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-            </div>
-            
-            <div className="px-3 sm:px-4 py-2 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={() => { 
-                  setOpen(false); 
-                  onAddCar(); 
-                }}
-                className="w-full text-left px-3 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                車両を追加
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ナビゲーションアイテム
-function NavItem({ 
-  label, 
-  active = false, 
-  onClick,
-  href
-}: { 
-  label: string; 
-  active?: boolean; 
-  onClick?: () => void;
-  href?: string;
-}) {
-  if (href) {
-    return (
-      <Link
-        href={href}
-        className={
-          "w-full text-left px-3 py-2 rounded-xl transition block " +
-          (active ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
-        }
-      >
-        {label}
-      </Link>
-    );
-  }
-  return (
-    <button
-      onClick={onClick}
-      className={
-        "w-full text-left px-3 py-2 rounded-xl transition " +
-        (active ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
-      }
-    >
-      {label}
-    </button>
-  );
-}
-
-// URLベースのガソリンナビゲーションリンク
-function GasNavLink() {
-  const pathname = usePathname();
-  const isActive = pathname === '/gas';
-  
-  return (
-    <Link
-      href="/gas"
-      className={
-        "w-full text-left px-3 py-2 rounded-xl transition block " +
-        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
-      }
-    >
-      ガソリン
-    </Link>
-  );
-}
-
-// URLベースのマイカーナビゲーションリンク
-function MyCarNavLink() {
-  const pathname = usePathname();
-  const isActive = pathname === '/mycar';
-  
-  return (
-    <Link
-      href="/mycar"
-      className={
-        "w-full text-left px-3 py-2 rounded-xl transition block " +
-        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
-      }
-    >
-      マイカー
-    </Link>
-  );
-}
-
-// URLベースのメンテナンスナビゲーションリンク
-function MaintenanceNavLink() {
-  const pathname = usePathname();
-  const isActive = pathname === '/maintenance';
-  
-  return (
-    <Link
-      href="/maintenance"
-      className={
-        "w-full text-left px-3 py-2 rounded-xl transition block " +
-        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
-      }
-    >
-      メンテナンス
-    </Link>
-  );
-}
-
-// URLベースの共有ナビゲーションリンク
-function ShareNavLink() {
-  const pathname = usePathname();
-  const isActive = pathname === '/share';
-  
-  return (
-    <Link
-      href="/share"
-      className={
-        "w-full text-left px-3 py-2 rounded-xl transition block " +
-        (isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-100 text-gray-700")
-      }
-    >
-      共有
-    </Link>
-  );
-}
+import { AppHeader } from "@/components/common/AppHeader";
+import { AppLoading } from "@/components/common/AppLoading";
+import { useToast } from "@/components/common/Feedback";
 
 // 給油ログコンテンツ（home/page.tsxから抽出）
 function FuelLogsContent({
@@ -546,25 +255,25 @@ function FuelLogsContent({
       title: '総給油回数',
       value: summary.totalLogs ? `${formatNumber(summary.totalLogs)} 回` : '0 回',
       description: '保存済みの記録',
-      icon: '🧾',
+      Icon: Receipt,
     },
     {
       title: '累計給油量',
       value: totalVolumeLabel,
       description: 'レギュラー/ハイオクを含む',
-      icon: '⛽',
+      Icon: FuelIcon,
     },
     {
       title: '累計ガソリン代',
       value: totalCostLabel,
       description: '税込み合計',
-      icon: '💴',
+      Icon: JapaneseYen,
     },
     {
       title: '平均単価',
       value: avgPriceLabel,
       description: '全期間平均',
-      icon: '📈',
+      Icon: TrendingUp,
     },
   ]), [summary.totalLogs, totalVolumeLabel, totalCostLabel, avgPriceLabel]);
 
@@ -573,32 +282,30 @@ function FuelLogsContent({
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">給油ログ</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>給油ログ</h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             {activeCar ? `${activeCar.name} の給油記録` : '車両を選択してください'}
           </p>
         </div>
         <button
           onClick={() => setShowFuelLogModal(true)}
-          className="rounded-xl bg-emerald-600 text-white px-5 py-2.5 font-medium hover:bg-emerald-500 transition-colors shadow-sm"
+          className="btn-primary-dark px-5 py-2.5 rounded-none inline-flex items-center gap-1.5"
         >
-          ＋ 給油を記録
+          <Plus className="w-4 h-4" />
+          給油を記録
         </button>
       </div>
 
       {/* 統計カード */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {summaryCards.map((card) => (
-          <div
-            key={card.title}
-            className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
-          >
+          <div key={card.title} className="app-card p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{card.title}</span>
-              <span className="text-xl">{card.icon}</span>
+              <span className="app-section-title">{card.title}</span>
+              <card.Icon className="w-5 h-5" style={{ color: 'var(--text-dim)' }} />
             </div>
-            <div className="text-2xl font-bold text-gray-900">{card.value}</div>
-            <p className="mt-1 text-xs text-gray-500">{card.description}</p>
+            <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{card.value}</div>
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>{card.description}</p>
           </div>
         ))}
       </div>
@@ -720,20 +427,19 @@ function FuelLogsContent({
           fuelLogs={filteredFuelLogs}
         />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-            <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+        <div className="app-card p-12 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'var(--surface-muted)' }}>
+            <FuelIcon className="h-8 w-8" style={{ color: 'var(--text-dim)' }} />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">表示できる給油データがありません</h3>
-          <p className="mt-2 text-sm text-gray-500">サイドバーから車両を選択するか、新しく車両を追加してください。</p>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>表示できる給油データがありません</h3>
+          <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>サイドバーから車両を選択するか、新しく車両を追加してください。</p>
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => setShowFuelLogModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white px-5 py-2.5 font-medium hover:bg-emerald-500 transition-colors shadow-sm"
+              className="btn-primary-dark px-5 py-2.5 rounded-none inline-flex items-center gap-1.5"
             >
-              ⛽ 給油を記録
+              <Plus className="w-4 h-4" />
+              給油を記録
             </button>
           </div>
         </div>
@@ -759,6 +465,7 @@ function GasPageRouteContent() {
 
   // プレミアムガード
   const { userPlan } = usePremiumGuard();
+  const toast = useToast();
 
   // activeCarIdを決定（優先順位: URLクエリ > グローバルコンテキスト > ローカル状態）
   const effectiveCarId = useMemo(() => {
@@ -901,58 +608,23 @@ function GasPageRouteContent() {
   const isReady = !loading && auth.currentUser;
 
   if (!isReady) {
-    return (
-      <AuthGate>
-        <div className="app-home min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
-          </div>
-        </div>
-      </AuthGate>
-    );
+    return <AppLoading />;
   }
 
   return (
     <AuthGate>
       <div className="app-home min-h-screen">
         {/* ヘッダー */}
-        <header className="app-header sticky top-0 z-30">
-          <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
-            <button
-              onClick={() => router.push('/home')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-70 transition-opacity"
-            >
-              <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
-              <span className="app-logo-text text-sm sm:text-base truncate">GARAGE_LOG</span>
-            </button>
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-              {activeCars.length > 0 && (
-                <div className="relative">
-                  <CarHeaderDropdown 
-                    cars={activeCars}
-                    activeCarId={effectiveCarId}
-                    onSelectCar={(id) => {
-                      setSelectedCarId(id);
-                      setActiveCarId(id);
-                      router.replace(`${pathname}?car=${id}`);
-                    }}
-                    onAddCar={() => setShowAddCarModal(true)}
-                  />
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  if (confirm('ログアウトしますか？')) {
-                    auth.signOut();
-                  }
-                }}
-                className="btn-secondary-dark px-3 py-1.5 rounded-none whitespace-nowrap"
-              >
-                LOGOUT
-              </button>
-            </div>
-          </div>
-        </header>
+        <AppHeader
+          cars={activeCars}
+          activeCarId={effectiveCarId}
+          onSelectCar={(id) => {
+            setSelectedCarId(id);
+            setActiveCarId(id);
+            router.replace(`${pathname}?car=${id}`);
+          }}
+          onAddCar={() => setShowAddCarModal(true)}
+        />
 
         {/* 軽量アラート（車検期限など） */}
         {(() => {
@@ -1045,8 +717,8 @@ function GasPageRouteContent() {
           onClose={() => setShowFuelLogModal(false)}
           car={car}
           onSuccess={() => {
-            console.log("Fuel log added successfully");
-            // 給油ログはwatchFuelLogsで自動的に更新されるため、authTriggerは不要
+            // 給油ログはwatchFuelLogsで自動的に更新される
+            toast("給油を記録しました");
           }}
         />
       )}
@@ -1056,15 +728,7 @@ function GasPageRouteContent() {
 
 export default function GasPageRoute() {
   return (
-    <Suspense fallback={
-      <AuthGate>
-        <div className="app-home min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
-          </div>
-        </div>
-      </AuthGate>
-    }>
+    <Suspense fallback={<AppLoading />}>
       <GasPageRouteContent />
     </Suspense>
   );

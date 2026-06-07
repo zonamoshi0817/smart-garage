@@ -17,118 +17,9 @@ import { downloadMaintenancePDF, type PDFExportOptions } from "@/lib/pdfExport";
 import type { Car, MaintenanceRecord, Customization, User } from "@/types";
 import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
 import { SidebarLayout } from "@/components/common/SidebarLayout";
-
-// ヘッダー用車両ドロップダウン
-function CarHeaderDropdown({
-  cars,
-  activeCarId,
-  onSelectCar,
-  onAddCar
-}: {
-  cars: Car[];
-  activeCarId: string | undefined;
-  onSelectCar: (id: string) => void;
-  onAddCar: () => void;
-}) {
-  const { setSelectedCarId } = useSelectedCar();
-  const [isOpen, setIsOpen] = useState(false);
-  const activeCar = cars.find(c => c.id === activeCarId);
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors min-w-0 max-w-[200px] sm:max-w-[300px]"
-      >
-        {activeCar?.imagePath ? (
-          <img 
-            src={activeCar.imagePath} 
-            alt={activeCar.name}
-            className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover flex-shrink-0"
-          />
-        ) : (
-          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-        )}
-        <span className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-          {activeCar?.name || '車両を選択'}
-        </span>
-        <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {isOpen && (
-        <>
-          <div 
-            className="fixed inset-0 z-10" 
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 z-20 max-h-[400px] overflow-y-auto">
-            <div className="p-2">
-              {cars.filter(c => !c.status || c.status === 'active').map((car) => (
-                <button
-                  key={car.id}
-                  onClick={() => {
-                    const carId = car.id!;
-                    setSelectedCarId(carId); // グローバルコンテキストを更新
-                    onSelectCar(carId);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors ${
-                    activeCarId === car.id ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  {car.imagePath ? (
-                    <img 
-                      src={car.imagePath} 
-                      alt={car.name}
-                      className="w-10 h-10 rounded object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded bg-gray-200 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">{car.name}</div>
-                    {car.modelCode && (
-                      <div className="text-xs text-gray-500 truncate">{car.modelCode}</div>
-                    )}
-                  </div>
-                  {activeCarId === car.id && (
-                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </button>
-              ))}
-              <div className="border-t border-gray-200 mt-2 pt-2">
-                <button
-                  onClick={() => {
-                    onAddCar();
-                    setIsOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-blue-600"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="text-sm font-medium">車両を追加</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+import { AppHeader } from "@/components/common/AppHeader";
+import { AppLoading } from "@/components/common/AppLoading";
+import { useToast } from "@/components/common/Feedback";
 
 function NavItem({ label, href, active }: { label: string; href: string; active: boolean }) {
   return (
@@ -276,11 +167,12 @@ function DataManagementContent({
 }) {
   // プレミアムガード（このコンポーネント内で使用）
   const { checkFeature } = usePremiumGuard();
-  
+  const toast = useToast();
+
   // CSVエクスポート機能
   const exportToCSV = (data: any[], filename: string) => {
     if (data.length === 0) {
-      alert('エクスポートするデータがありません。');
+      toast('エクスポートするデータがありません。', 'error');
       return;
     }
 
@@ -343,7 +235,7 @@ function DataManagementContent({
 
   const handleExportCustomizations = () => {
     if (!activeCarId) {
-      alert('車両を選択してください。');
+      toast('車両を選択してください。', 'error');
       return;
     }
     
@@ -449,7 +341,7 @@ function DataManagementContent({
         // 特定の車両のPDFを生成
         const car = cars.find(c => c.id === carId);
         if (!car) {
-          alert('車両が見つかりません。');
+          toast('車両が見つかりません。', 'error');
           return;
         }
         
@@ -475,7 +367,7 @@ function DataManagementContent({
       }
     } catch (error) {
       console.error('PDF出力エラー:', error);
-      alert('PDFの生成に失敗しました。');
+      toast('PDFの生成に失敗しました。', 'error');
     }
   };
 
@@ -803,59 +695,23 @@ function DataPageRouteContent() {
   );
 
   if (loading) {
-    return (
-      <AuthGate>
-        <div className="app-home min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
-          </div>
-        </div>
-      </AuthGate>
-    );
+    return <AppLoading />;
   }
 
   return (
     <AuthGate>
       <div className="app-home min-h-screen">
         {/* ヘッダー */}
-        <header className="app-header sticky top-0 z-30">
-          <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
-            <button
-              onClick={() => router.push('/home')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-70 transition-opacity"
-            >
-              <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
-              <span className="app-logo-text text-sm sm:text-base truncate">GARAGE_LOG</span>
-            </button>
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-              {/* ヘッダー車両セレクター（右上に配置） */}
-              {activeCars.length > 0 && (
-                <div className="relative">
-                  <CarHeaderDropdown 
-                    cars={activeCars}
-                    activeCarId={effectiveCarId}
-                    onSelectCar={(id) => {
-                      setSelectedCarId(id);
-                      setActiveCarId(id);
-                      router.push(`${pathname}?car=${id}`);
-                    }}
-                    onAddCar={() => setShowAddCarModal(true)}
-                  />
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  if (confirm('ログアウトしますか？')) {
-                    auth.signOut();
-                  }
-                }}
-                className="btn-secondary-dark px-3 py-1.5 rounded-none whitespace-nowrap"
-              >
-                LOGOUT
-              </button>
-            </div>
-          </div>
-        </header>
+        <AppHeader
+          cars={activeCars}
+          activeCarId={effectiveCarId}
+          onSelectCar={(id) => {
+            setSelectedCarId(id);
+            setActiveCarId(id);
+            router.push(`${pathname}?car=${id}`);
+          }}
+          onAddCar={() => setShowAddCarModal(true)}
+        />
 
         {/* レイアウト */}
         <SidebarLayout>
@@ -884,15 +740,7 @@ function DataPageRouteContent() {
 
 export default function DataPageRoute() {
   return (
-    <Suspense fallback={
-      <AuthGate>
-        <div className="app-home min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
-          </div>
-        </div>
-      </AuthGate>
-    }>
+    <Suspense fallback={<AppLoading />}>
       <DataPageRouteContent />
     </Suspense>
   );

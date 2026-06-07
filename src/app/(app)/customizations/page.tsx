@@ -2,7 +2,7 @@
 
 import "../home/home.css";
 
-import { useEffect, useState, useMemo, useRef, Suspense } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthGate from "@/components/AuthGate";
@@ -21,163 +21,9 @@ import { CollapsibleSidebar } from "@/components/common/CollapsibleSidebar";
 import { SidebarLayout } from "@/components/common/SidebarLayout";
 import CustomizationModal from "@/components/modals/CustomizationModal";
 import EvidenceReliabilityBadge from "@/components/EvidenceReliabilityBadge";
-
-// ヘッダー用車両ドロップダウン（mycar/page.tsxと同じ）
-function CarHeaderDropdown({
-  cars,
-  activeCarId,
-  onSelectCar,
-  onAddCar
-}: {
-  cars: Car[];
-  activeCarId?: string;
-  onSelectCar: (id: string) => void;
-  onAddCar: () => void;
-}) {
-  const { setSelectedCarId } = useSelectedCar();
-  const [open, setOpen] = useState(false);
-  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  const [isMobile, setIsMobile] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    
-    if (open) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && open) {
-        setOpen(false);
-      }
-    };
-    
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [open]);
-
-  const handleImageError = (carId: string) => {
-    setImageErrors(prev => new Set(prev).add(carId));
-  };
-
-  const activeCar = cars.find(c => c.id === activeCarId) || cars[0];
-
-  return (
-    <div className="relative flex-shrink-0" ref={dropdownRef}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="h-9 sm:h-10 px-2 sm:px-3 rounded-lg border border-gray-300 bg-white flex items-center gap-1.5 sm:gap-2 shadow-sm hover:bg-gray-50 min-w-0"
-      >
-        {activeCar && (
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
-            {activeCar.imagePath && !imageErrors.has(activeCar.id!) ? (
-              <img
-                src={activeCar.imagePath}
-                alt={activeCar.name}
-                className="w-full h-full object-cover"
-                onError={() => handleImageError(activeCar.id!)}
-              />
-            ) : (
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-          </div>
-        )}
-        <span className="truncate max-w-[120px] sm:max-w-[180px] lg:max-w-[200px] text-xs sm:text-sm font-medium text-gray-900">
-          {activeCar?.name || "車を選択"}
-        </span>
-        <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 w-64 sm:w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[70vh] overflow-y-auto">
-          <div className="p-2">
-            {cars.length === 0 ? (
-              <div className="p-4 text-center text-sm text-gray-500">
-                車が登録されていません
-              </div>
-            ) : (
-              cars.map((car) => (
-                <button
-                  key={car.id}
-                  onClick={() => {
-                    const carId = car.id!;
-                    setSelectedCarId(carId); // グローバルコンテキストを更新
-                    onSelectCar(carId);
-                    setOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors ${
-                    activeCarId === car.id ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
-                    {car.imagePath && !imageErrors.has(car.id!) ? (
-                      <img
-                        src={car.imagePath}
-                        alt={car.name}
-                        className="w-full h-full object-cover"
-                        onError={() => handleImageError(car.id!)}
-                      />
-                    ) : (
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">{car.name}</div>
-                    {car.modelCode && (
-                      <div className="text-xs text-gray-500 truncate">{car.modelCode}</div>
-                    )}
-                  </div>
-                  {activeCarId === car.id && (
-                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </button>
-              ))
-            )}
-            <button
-              onClick={() => {
-                onAddCar();
-                setOpen(false);
-              }}
-              className="w-full mt-2 p-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              車を追加
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+import { AppHeader } from "@/components/common/AppHeader";
+import { AppLoading } from "@/components/common/AppLoading";
+import { useToast, useConfirm } from "@/components/common/Feedback";
 
 function NavItem({ 
   label, 
@@ -319,7 +165,9 @@ function CustomizationsContent({
   backfillCompleted?: boolean;
 }) {
   const activeCar = cars.find(car => car.id === activeCarId);
-  
+  const toast = useToast();
+  const confirm = useConfirm();
+
   // フィルタリングと検索の状態
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -428,7 +276,13 @@ function CustomizationsContent({
   const handleDelete = async (customizationId: string) => {
     if (!activeCarId || !auth.currentUser) return;
     
-    if (confirm('このカスタマイズ記録を削除しますか？')) {
+    const ok = await confirm({
+      title: 'カスタマイズを削除',
+      message: 'このカスタマイズ記録を削除しますか？',
+      confirmLabel: '削除',
+      tone: 'danger',
+    });
+    if (ok) {
       try {
         console.log('Deleting customization:', customizationId);
         await deleteCustomization(auth.currentUser.uid, activeCarId, customizationId);
@@ -446,7 +300,7 @@ function CustomizationsContent({
           code: (error as any)?.code,
           stack: error instanceof Error ? error.stack : undefined
         });
-        alert(`削除に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+        toast(`削除に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`, 'error');
       }
     }
   };
@@ -960,58 +814,23 @@ function CustomizationsPageRouteContent() {
   }, [cars, effectiveCarId]);
 
   if (loading) {
-    return (
-      <AuthGate>
-        <div className="app-home min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
-          </div>
-        </div>
-      </AuthGate>
-    );
+    return <AppLoading />;
   }
 
   return (
     <AuthGate>
       <div className="app-home min-h-screen">
         {/* ヘッダー */}
-        <header className="app-header sticky top-0 z-30">
-          <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
-            <button
-              onClick={() => router.push('/home')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink hover:opacity-70 transition-opacity"
-            >
-              <img src="/icon.png" alt="garage log" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shadow-sm ring-1 ring-black/5 flex-shrink-0" />
-              <span className="app-logo-text text-sm sm:text-base truncate">GARAGE_LOG</span>
-            </button>
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-              {activeCars.length > 0 && (
-                <div className="relative">
-                  <CarHeaderDropdown
-                    cars={activeCars}
-                    activeCarId={effectiveCarId}
-                    onSelectCar={(id) => {
-                      setSelectedCarId(id);
-                      setActiveCarId(id);
-                      router.replace(`${pathname}?car=${id}`);
-                    }}
-                    onAddCar={() => setShowAddCarModal(true)}
-                  />
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  if (confirm('ログアウトしますか？')) {
-                    auth.signOut();
-                  }
-                }}
-                className="btn-secondary-dark px-3 py-1.5 rounded-none whitespace-nowrap"
-              >
-                LOGOUT
-              </button>
-            </div>
-          </div>
-        </header>
+        <AppHeader
+          cars={activeCars}
+          activeCarId={effectiveCarId}
+          onSelectCar={(id) => {
+            setSelectedCarId(id);
+            setActiveCarId(id);
+            router.replace(`${pathname}?car=${id}`);
+          }}
+          onAddCar={() => setShowAddCarModal(true)}
+        />
 
         {/* レイアウト */}
         <SidebarLayout>
@@ -1079,15 +898,7 @@ function CustomizationsPageRouteContent() {
 
 export default function CustomizationsPageRoute() {
   return (
-    <Suspense fallback={
-      <AuthGate>
-        <div className="app-home min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <div className="rounded-xl border border-gray-200 p-6 text-gray-600 bg-white">読み込み中...</div>
-          </div>
-        </div>
-      </AuthGate>
-    }>
+    <Suspense fallback={<AppLoading />}>
       <CustomizationsPageRouteContent />
     </Suspense>
   );
